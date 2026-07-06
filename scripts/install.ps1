@@ -1769,7 +1769,7 @@ function Install-Venv {
     # normal progress such as "Using CPython ..." on stderr; under Windows
     # PowerShell 5.1 with EAP=Stop that stderr is a NativeCommandError unless
     # we temporarily relax EAP and trust $LASTEXITCODE for real failures.
-    Invoke-NativeWithRelaxedErrorAction { & $UvCmd venv venv --python $PythonVersion }
+    Invoke-NativeWithRelaxedErrorAction { & $UvCmd venv venv --python $PythonVersion --seed }
     # Relaxing EAP above means a *genuine* uv-venv failure (exit != 0) no longer
     # aborts on its own. Capture $LASTEXITCODE immediately and fail fast, so the
     # `venv` stage can't falsely report success (and Invoke-Stage can't emit
@@ -2065,6 +2065,42 @@ print(','.join(scripts))
 
 function Set-PathVariable {
     Write-Info "Setting up lucifex command..."
+    
+    # Clean up legacy Hermes environment variables and PATH entries
+    try {
+        [Environment]::SetEnvironmentVariable("HERMES_HOME", $null, "User")
+        [Environment]::SetEnvironmentVariable("HERMES_GIT_BASH_PATH", $null, "User")
+        $env:HERMES_HOME = $null
+        $env:HERMES_GIT_BASH_PATH = $null
+
+        $regPath = [Environment]::GetEnvironmentVariable("Path", "User")
+        if ($regPath) {
+            $pathItems = $regPath -split ";"
+            $filteredPathItems = $pathItems | Where-Object { 
+                $_ -and 
+                $_ -notlike "*\hermes\hermes-agent*" -and 
+                $_ -notlike "*\hermes\bin*" -and
+                $_ -notlike "*\AppData\Local\hermes*"
+            }
+            $newCleanPath = $filteredPathItems -join ";"
+            if ($regPath -ne $newCleanPath) {
+                [Environment]::SetEnvironmentVariable("Path", $newCleanPath, "User")
+                Write-Success "Cleaned legacy Hermes paths from user PATH"
+            }
+        }
+        
+        # Clean current session's PATH as well
+        if ($env:Path) {
+            $env:Path = ($env:Path -split ";" | Where-Object { 
+                $_ -and 
+                $_ -notlike "*\hermes\hermes-agent*" -and 
+                $_ -notlike "*\hermes\bin*" -and
+                $_ -notlike "*\AppData\Local\hermes*"
+            }) -join ";"
+        }
+    } catch {
+        Write-Warn "Could not clean up legacy Hermes registry values: $($_.Exception.Message)"
+    }
     
     if ($NoVenv) {
         $lucifexBin = "$InstallDir"

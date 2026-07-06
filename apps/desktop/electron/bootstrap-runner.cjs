@@ -109,7 +109,7 @@ function downloadInstallScript(commit, destPath) {
   // is immutable (unlike a branch ref), so we don't need integrity
   // verification beyond "did the file we wrote pass a syntax probe."
   const scriptName = installScriptName()
-  const url = `https://raw.githubusercontent.com/NousResearch/hermes-agent/${commit}/scripts/${scriptName}`
+  const url = `https://raw.githubusercontent.com/Gabrie-yx/lucifexia/${commit}/scripts/${scriptName}`
   return new Promise((resolve, reject) => {
     fs.mkdirSync(path.dirname(destPath), { recursive: true })
     const tmpPath = destPath + '.tmp'
@@ -493,12 +493,12 @@ function spawnBash(scriptPath, args, { emit, stageName, abortSignal, LUCIFEXHome
 
 // Build the install.ps1 pin args (-Branch) from the install-stamp.
 // We intentionally do NOT pass -Commit: the commit SHA is from a local build
-// and almost certainly does not exist on the remote hermes-agent repo, which
+// and almost certainly does not exist on the remote lucifexia repo, which
 // would cause `git fetch origin <sha>` to fail with exit 128 every time.
 function buildPinArgs(installStamp) {
   const args = []
   // Only pass a branch if it's a real remote branch (not master/HEAD which
-  // don't exist on hermes-agent; fall back to its default 'main').
+  // don't exist on lucifexia; fall back to its default 'main').
   const branch = installStamp && installStamp.branch
   if (branch && branch !== 'master' && branch !== 'HEAD') {
     args.push('-Branch', branch)
