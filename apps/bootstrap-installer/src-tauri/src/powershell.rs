@@ -1,4 +1,4 @@
-//! Drives PowerShell (Windows) or bash (Unix) for install.ps1 / install.sh.
+﻿//! Drives PowerShell (Windows) or bash (Unix) for install.ps1 / install.sh.
 //!
 //! Port of `spawnPowerShell` from bootstrap-runner.cjs, with the same
 //! line-buffered stdout/stderr streaming + cancellation semantics.
@@ -29,18 +29,18 @@ pub struct ScriptResult {
     pub killed: bool,
 }
 
-/// Cancellation signal — `cancel_tx.send(()).await` aborts the running script.
+/// Cancellation signal â€” `cancel_tx.send(()).await` aborts the running script.
 pub type CancelRx = mpsc::Receiver<()>;
 
 /// Spawns install.ps1 / install.sh with the given args and streams output.
 ///
-/// `hermes_home_override` propagates to the child as $HERMES_HOME so the
+/// `lucifex_home_override` propagates to the child as $LUCIFEX_HOME so the
 /// install script writes to the same directory the installer is reading from.
 pub async fn run_script(
     script_path: &Path,
     args: &[String],
     sink: StreamSink,
-    hermes_home_override: Option<&str>,
+    lucifex_home_override: Option<&str>,
     mut cancel_rx: Option<CancelRx>,
 ) -> Result<ScriptResult> {
     let mut cmd = build_command(script_path, args);
@@ -49,12 +49,12 @@ pub async fn run_script(
     // during self-update. Pin child scripts to a stable directory so bash/zsh
     // never starts from a deleted cwd and emits getcwd/job-working-directory
     // errors at the end of an otherwise successful install.
-    if let Some(cwd) = stable_script_cwd(script_path, hermes_home_override) {
+    if let Some(cwd) = stable_script_cwd(script_path, lucifex_home_override) {
         cmd.current_dir(cwd);
     }
 
-    if let Some(home) = hermes_home_override {
-        cmd.env("HERMES_HOME", home);
+    if let Some(home) = lucifex_home_override {
+        cmd.env("LUCIFEX_HOME", home);
     }
 
     cmd.stdin(Stdio::null())
@@ -95,7 +95,7 @@ pub async fn run_script(
                         combined_stdout.push('\n');
                     }
                     Ok(None) => {
-                        // EOF on stdout — wait for stderr + exit.
+                        // EOF on stdout â€” wait for stderr + exit.
                         break;
                     }
                     Err(e) => {
@@ -112,7 +112,7 @@ pub async fn run_script(
                         combined_stderr.push('\n');
                     }
                     Ok(None) => {
-                        // stderr EOF — keep draining stdout.
+                        // stderr EOF â€” keep draining stdout.
                     }
                     Err(e) => {
                         tracing::warn!("stderr read error: {e}");
@@ -120,7 +120,7 @@ pub async fn run_script(
                 }
             }
             _ = recv_cancel(&mut cancel_rx) => {
-                tracing::warn!("cancellation received — killing child");
+                tracing::warn!("cancellation received â€” killing child");
                 killed = true;
                 // best-effort kill; don't propagate errors
                 let _ = child.start_kill();
@@ -154,8 +154,8 @@ pub async fn run_script(
     })
 }
 
-fn stable_script_cwd<'a>(script_path: &'a Path, hermes_home_override: Option<&'a str>) -> Option<&'a Path> {
-    if let Some(home) = hermes_home_override {
+fn stable_script_cwd<'a>(script_path: &'a Path, lucifex_home_override: Option<&'a str>) -> Option<&'a Path> {
+    if let Some(home) = lucifex_home_override {
         let path = Path::new(home);
         if path.is_dir() {
             return Some(path);
@@ -177,7 +177,7 @@ async fn recv_cancel(rx: &mut Option<CancelRx>) {
 fn build_command(script_path: &Path, args: &[String]) -> Command {
     // We want PowerShell 5.1 / 7. install.ps1 uses 5.1-safe syntax everywhere.
     // Prefer `powershell.exe` (5.1 baseline, present on every Windows since 7)
-    // over `pwsh.exe` (7+, may not be present). Resolve it by absolute path —
+    // over `pwsh.exe` (7+, may not be present). Resolve it by absolute path â€”
     // see `windows_powershell_exe`.
     let mut cmd = Command::new(windows_powershell_exe());
     cmd.arg("-NoProfile");
@@ -218,7 +218,7 @@ fn powershell_under_root(root: &Path) -> std::path::PathBuf {
 /// `%SystemRoot%\System32\WindowsPowerShell\v1.0`. On machines whose PATH was
 /// trimmed or truncated (Windows silently drops entries once the variable grows
 /// past its length limit), that lookup fails and the spawn dies with
-/// "program not found" before install.ps1 ever runs — the installer then stalls
+/// "program not found" before install.ps1 ever runs â€” the installer then stalls
 /// at "0 of 0 steps". Resolve by absolute path first, then fall back to PATH
 /// (powershell 5.1, then pwsh 7), then a bare name as a last resort.
 #[cfg(target_os = "windows")]
@@ -339,7 +339,7 @@ info line
     }
 
     #[test]
-    fn stable_script_cwd_prefers_existing_hermes_home() {
+    fn stable_script_cwd_prefers_existing_LUCIFEX_HOME() {
         let script = Path::new("/tmp/install.sh");
         let cwd = stable_script_cwd(script, Some("/"));
         assert_eq!(cwd, Some(Path::new("/")));
