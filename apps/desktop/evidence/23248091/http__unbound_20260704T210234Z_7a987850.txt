@@ -1,0 +1,20 @@
+REQUEST:
+GET https://ilimitadolov3.lovable.app/ftp/package.json.bak
+User-Agent: pentest-ai/0.11 (+https://pentestai.xyz)
+
+
+
+RESPONSE:
+HTTP 404
+Date: Sat, 04 Jul 2026 21:02:33 GMT
+Content-Type: text/plain; charset=UTF-8
+Content-Length: 9
+Connection: keep-alive
+Strict-Transport-Security: max-age=31536000; includeSubDomains
+Referrer-Policy: strict-origin-when-cross-origin
+X-Content-Type-Options: nosniff
+Set-Cookie: __cf_bm=VRIKBhEFu4AGQOlsYj4PBF4n5QRE4Jnu0ZgyrLK3mQs-1783198952.857188-1.0.1.1-ewd2BFe1DlzCF62frpFGramM14vDA39STjxMxp_6eVhswU_CSzh0Q1sxwGrMC0ZqyYXju07NZTJJh0zP_WvmcV6Q0zs20NyyLFkaIzlPJaJN5HFM3rFaKezz8I7YZR2o; HttpOnly; SameSite=None; Secure; Path=/; Domain=lovable.app; Expires=Sat, 04 Jul 2026 21:32:33 GMT
+Server: cloudflare
+CF-RAY: a161124f5ba97d48-GRU
+
+Not found

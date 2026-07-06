@@ -1,0 +1,23 @@
+REQUEST:
+GET https://ilimitadolov3.lovable.app/assets/client-CzJlWlzy.js
+User-Agent: pentest-ai/0.11 (+https://pentestai.xyz)
+
+
+
+RESPONSE:
+HTTP 200
+Date: Sat, 04 Jul 2026 21:02:01 GMT
+Content-Type: text/javascript; charset=utf-8
+Transfer-Encoding: chunked
+Connection: keep-alive
+Cache-Control: public, max-age=31536000, immutable
+x-deployment-id: 5c19c247-e562-4b08-9d3a-eec35833bced
+Strict-Transport-Security: max-age=31536000; includeSubDomains
+Referrer-Policy: strict-origin-when-cross-origin
+X-Content-Type-Options: nosniff
+Etag: W/"883be883534ef918c4d1f1a8089b5556"
+Content-Encoding: gzip
+Server: cloudflare
+CF-RAY: a16111897fbaf19c-GRU
+
+import{t as e}from"./supabase-vendor-Cjzo618h.js";var t=e(`https://wvelcefgihlxcnrmslul.supabase.co`,`eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind2ZWxjZWZnaWhseGNucm1zbHVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxNDUzMDcsImV4cCI6MjA5NDcyMTMwN30.NuzN6PlTAdCI_36DWG_4C2UAGLEe5hmVppxoake7-6s`,{auth:{storage:localStorage,persistSession:!0,autoRefreshToken:!0}});export{t};

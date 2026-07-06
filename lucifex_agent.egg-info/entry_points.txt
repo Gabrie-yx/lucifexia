@@ -1,0 +1,4 @@
+[console_scripts]
+lucifex = lucifex_cli.main:main
+lucifex-acp = acp_adapter.entry:main
+lucifex-agent = run_agent:main

@@ -1,0 +1,35 @@
+REQUEST:
+GET https://ilimitadolov3.lovable.app/robots.txt
+User-Agent: pentest-ai/0.11 (+https://pentestai.xyz)
+
+
+
+RESPONSE:
+HTTP 200
+Date: Sat, 04 Jul 2026 21:01:57 GMT
+Content-Type: text/plain; charset=utf-8
+Transfer-Encoding: chunked
+Connection: keep-alive
+x-deployment-id: 5c19c247-e562-4b08-9d3a-eec35833bced
+Strict-Transport-Security: max-age=31536000; includeSubDomains
+Referrer-Policy: strict-origin-when-cross-origin
+X-Content-Type-Options: nosniff
+Etag: W/"f9dff89adf98833e676de2205921996a"
+Content-Encoding: gzip
+Server: cloudflare
+CF-RAY: a161116b5bbcf19c-GRU
+
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: *
+Allow: /

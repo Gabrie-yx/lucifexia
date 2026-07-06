@@ -1,0 +1,19 @@
+REQUEST:
+GET https://ilimitadolov3.lovable.app/reseller/licenses/assets/rolldown-runtime-Bhmf7a9N.js
+User-Agent: pentest-ai/0.11 (+https://pentestai.xyz)
+
+
+
+RESPONSE:
+HTTP 404
+Date: Sat, 04 Jul 2026 20:51:31 GMT
+Content-Type: text/plain; charset=UTF-8
+Content-Length: 9
+Connection: keep-alive
+Strict-Transport-Security: max-age=31536000; includeSubDomains
+Referrer-Policy: strict-origin-when-cross-origin
+X-Content-Type-Options: nosniff
+Server: cloudflare
+CF-RAY: a16102279dd4aecc-GRU
+
+Not found
