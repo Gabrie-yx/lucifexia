@@ -29,7 +29,7 @@ _REF_CAPABLE = ("nous", "openai", "openai-codex", "openrouter", "krea")
 # Friendly display label per reference-capable provider, surfaced in the desktop
 # pet-gen picker.
 _PROVIDER_LABELS: dict[str, str] = {
-    "nous": "Nous Portal",
+    "nous": "LUCIFEXIA (Ollama)",
     "openrouter": "OpenRouter",
     "openai": "OpenAI",
     "openai-codex": "OpenAI (Codex)",

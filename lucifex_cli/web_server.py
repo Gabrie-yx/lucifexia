@@ -6529,7 +6529,7 @@ def _copilot_acp_status() -> Dict[str, Any]:
 _OAUTH_PROVIDER_CATALOG: tuple[Dict[str, Any], ...] = (
     {
         "id": "nous",
-        "name": "LucifexIA",
+        "name": "LUCIFEXIA (Ollama)",
         "flow": "device_code",
         "cli_command": "lucifex auth add nous",
         "docs_url": "",

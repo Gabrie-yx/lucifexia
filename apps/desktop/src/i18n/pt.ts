@@ -879,7 +879,7 @@ export const pt = defineLocale({
     connected: 'Conectado',
     connecting: 'Conectando',
     startChatting: 'Começar',
-    featuredPitch: 'LucifexIA — Criado por Gabriel Almeida',
+    featuredPitch: 'LUCIFEXIA (Ollama) — Processamento 100% Local com Ollama e modelo ULTRON-V2',
     openRouterPitch: 'Uma chave, centenas de modelos — boa opção padrão',
     apiKeyOptions: {
       openrouter: {
@@ -947,6 +947,7 @@ export const pt = defineLocale({
     loadFailed: 'Não foi possível carregar modelos',
     noAuthenticatedProviders: 'Nenhum provedor autenticado.',
     pro: 'Pro',
+    proNeedsSubscription: 'Modelos Pro exigem uma assinatura ativa.',
     free: 'Grátis',
     freeTier: 'Nível gratuito'
   },
