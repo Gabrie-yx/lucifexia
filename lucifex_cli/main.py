@@ -6226,7 +6226,7 @@ def _update_via_zip(args):
         )
         sys.exit(1)
     zip_url = (
-        f"https://github.com/NousResearch/lucifex-agent/archive/refs/heads/{branch}.zip"
+        f"https://github.com/Gabrie-yx/lucifexia/archive/refs/heads/{branch}.zip"
     )
 
     print("→ Downloading latest version...")
@@ -6634,12 +6634,17 @@ def _discard_stashed_changes(
 # =========================================================================
 
 OFFICIAL_REPO_URLS = {
+    "https://github.com/Gabrie-yx/lucifexia.git",
+    "git@github.com:Gabrie-yx/lucifexia.git",
+    "https://github.com/Gabrie-yx/lucifexia",
+    "git@github.com:Gabrie-yx/lucifexia",
+    # legacy aliases kept for backward compat
     "https://github.com/NousResearch/lucifex-agent.git",
     "git@github.com:NousResearch/lucifex-agent.git",
     "https://github.com/NousResearch/lucifex-agent",
     "git@github.com:NousResearch/lucifex-agent",
 }
-OFFICIAL_REPO_URL = "https://github.com/NousResearch/lucifex-agent.git"
+OFFICIAL_REPO_URL = "https://github.com/Gabrie-yx/lucifexia.git"
 SKIP_UPSTREAM_PROMPT_FILE = ".skip_upstream_prompt"
 
 
