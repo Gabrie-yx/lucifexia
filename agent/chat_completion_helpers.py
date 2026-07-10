@@ -606,14 +606,22 @@ def interruptible_api_call(agent, api_kwargs: dict):
 def build_api_kwargs(agent, api_messages: list) -> dict:
     """Build the keyword arguments dict for the active API mode."""
     tools_for_api = agent.tools
-
     model_name = agent.model
     if model_name:
         is_nous = agent.provider == "nous" or "nous" in (agent.base_url or "").lower()
         is_ollama = agent.provider == "ollama" or "ollama" in (agent.base_url or "").lower()
         if is_nous or is_ollama:
             if model_name in ("lucifexia:latest", "lucifexia"):
-                model_name = "ULTRON-V2:latest"
+                import urllib.request
+                import json
+                try:
+                    with urllib.request.urlopen("http://localhost:11434/api/tags", timeout=0.5) as response:
+                        models = json.loads(response.read().decode()).get("models", [])
+                        model_names = [m.get("name") for m in models]
+                        if "lucifexia:latest" not in model_names and "lucifexia" not in model_names:
+                            model_name = "ULTRON-V2:latest"
+                except Exception:
+                    model_name = "ULTRON-V2:latest"
             elif model_name in ("lucifexia-vision:latest", "lucifexia-vision"):
                 model_name = "ultron-vision:latest"
 
