@@ -77,6 +77,26 @@ _LUCIFEX_CORE_TOOLS = [
     "kanban_unblock",
     # Computer use (macOS, gated on cua-driver being installed via check_fn)
     "computer_use",
+    # ── Phase 2: Computer (OS Control) Toolset ───────────────────────────────
+    "screenshot", "read_screen", "ask_about_screen", "find_text_on_screen",
+    "clipboard_get", "clipboard_set", "clipboard_search", "clipboard_format",
+    "window_list", "window_focus", "window_arrange", "layout_save", "layout_restore",
+    "ui_click", "ui_type", "ui_press", "ui_scroll", "ui_find_and_click",
+    "macro_record", "macro_run", "get_mouse_position",
+    "network_block", "network_unblock", "network_focus", "network_status", "network_monitor_suspicious",
+    "file_watch", "file_organize", "file_recent", "file_rename_smart",
+    "meeting_list", "meeting_prep", "meeting_register",
+    # ── Phase 3: AGI Capability Toolset ──────────────────────────────────────
+    "world_model_query", "world_model_add", "world_model_connect", "world_model_impact",
+    "goal_add", "goal_list", "goal_log_progress",
+    "pre_flight_simulate", "get_user_knowledge_model", "find_analogous_solution",
+    "run_specialist_panel", "get_agent_evolution_stats", "get_active_commitments_tool",
+    "supersede_commitment_tool", "get_cognitive_state", "get_project_ontology",
+    "trace_consequences", "set_persona", "get_current_persona",
+    # ── Playbook tool ────────────────────────────────────────────────────────
+    "playbook_sync",
+    # ── Inner Life tool ──────────────────────────────────────────────────────
+    "get_inner_state",
 ]
 
 # Webhook events may originate from untrusted third-party content (for example,
@@ -154,6 +174,34 @@ TOOLSETS = {
             "user's cursor or keyboard focus. Works with any tool-capable model."
         ),
         "tools": ["computer_use"],
+        "includes": []
+    },
+
+    "computer": {
+        "description": "Visual screen understanding, clipboard monitor, named window layouts, UI macro automation, network control, file watcher, and meeting prep.",
+        "tools": [
+            "screenshot", "read_screen", "ask_about_screen", "find_text_on_screen",
+            "clipboard_get", "clipboard_set", "clipboard_search", "clipboard_format",
+            "window_list", "window_focus", "window_arrange", "layout_save", "layout_restore",
+            "ui_click", "ui_type", "ui_press", "ui_scroll", "ui_find_and_click",
+            "macro_record", "macro_run", "get_mouse_position",
+            "network_block", "network_unblock", "network_focus", "network_status", "network_monitor_suspicious",
+            "file_watch", "file_organize", "file_recent", "file_rename_smart",
+            "meeting_list", "meeting_prep", "meeting_register"
+        ],
+        "includes": []
+    },
+
+    "agi": {
+        "description": "AGI Cognition and Self-Awareness: world model graph, long-horizon goal tracking, adversarial Red Teaming, domain expertise modeling, cross-domain pattern transfer, autonomous skill acquisition, and consequence propagation.",
+        "tools": [
+            "world_model_query", "world_model_add", "world_model_connect", "world_model_impact",
+            "goal_add", "goal_list", "goal_log_progress",
+            "pre_flight_simulate", "get_user_knowledge_model", "find_analogous_solution",
+            "run_specialist_panel", "get_agent_evolution_stats", "get_active_commitments_tool",
+            "supersede_commitment_tool", "get_cognitive_state", "get_project_ontology",
+            "trace_consequences", "set_persona", "get_current_persona"
+        ],
         "includes": []
     },
 

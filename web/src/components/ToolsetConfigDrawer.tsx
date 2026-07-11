@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+﻿import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Check, ExternalLink, Loader2, Terminal, X } from "lucide-react";
 import { api } from "@/lib/api";
@@ -299,7 +299,7 @@ export function ToolsetConfigDrawer({ toolset, profile, onClose, onChanged }: Pr
                       )}
                       {provider.requires_nous_auth && (
                         <Badge tone="outline" className="text-xs">
-                          Nous Portal
+                          Ollama
                         </Badge>
                       )}
                     </div>

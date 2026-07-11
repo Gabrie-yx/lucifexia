@@ -479,7 +479,242 @@ def finalize_turn(
         except Exception:
             pass  # Background review is best-effort
 
-    # Note: Memory provider on_session_end() + shutdown_all() are NOT
+    # ── Inner Life hooks (best-effort, non-blocking) ─────────────────────
+    # All five autonomy systems fire here, after the response is delivered.
+    # Each runs in a try/except — none may block or raise to the caller.
+
+    if final_response and not interrupted:
+        _session_id = agent.session_id or ""
+        _tool_errors = getattr(agent, "_last_turn_tool_errors", 0)
+        _tool_calls = getattr(agent, "_last_turn_tool_calls", 0)
+        _context_tokens = getattr(agent, "_last_context_tokens", 0)
+
+        # Feature 1: Curiosity — detect and queue unanswered questions
+        try:
+            from agent.curiosity_engine import log_unanswered
+            log_unanswered(
+                response_text=final_response,
+                context=user_message or "",
+                session_id=_session_id,
+            )
+        except Exception:
+            pass
+
+        # Feature 4: Emotional State — update mood from turn metrics
+        try:
+            from agent.emotional_state import update_mood
+            update_mood(
+                error_count=_tool_errors,
+                tool_call_count=_tool_calls,
+                context_tokens=_context_tokens,
+                context_limit=getattr(agent, "context_limit", 131072),
+                succeeded=not failed,
+                session_id=_session_id,
+            )
+        except Exception:
+            pass
+
+        # Feature 6: Self-Reflection — analyse turn quality
+        try:
+            import threading as _threading
+            from agent.self_reflection import reflect_on_session as _reflect
+
+            def _bg_reflect():
+                try:
+                    _reflect(
+                        session_id=_session_id,
+                        final_response=final_response,
+                        tool_error_count=_tool_errors,
+                        clarification_count=0,
+                        api_call_count=api_call_count,
+                    )
+                except Exception:
+                    pass
+
+            _threading.Thread(target=_bg_reflect, daemon=True).start()
+        except Exception:
+            pass
+
+        # Feature 3: Proactive Will — scan workspace for actionable issues
+        try:
+            import threading as _threading2
+            from agent.proactive_will import scan_and_register_intentions as _scan
+
+            def _bg_scan():
+                try:
+                    _scan()
+                except Exception:
+                    pass
+
+            _threading2.Thread(target=_bg_scan, daemon=True).start()
+        except Exception:
+            pass
+
+        # ── Phase 2: AGI Capability Hooks ────────────────────────────────
+
+        # Theory of Mind — update user knowledge model from this turn
+        try:
+            from agent.theory_of_mind import update_from_message, proactive_misconception_warning
+            update_from_message(user_message or "", session_id=_session_id, from_user=True)
+            update_from_message(final_response, session_id=_session_id, from_user=False)
+        except Exception:
+            pass
+
+        # World Model — extract entities from conversation and update graph
+        try:
+            import threading as _threading_wm
+            from agent.world_model import auto_update_from_conversation as _wm_update
+
+            def _bg_world_model():
+                try:
+                    combined = f"{user_message or ''}\n{final_response}"
+                    _wm_update(combined, session_id=_session_id)
+                except Exception:
+                    pass
+
+            _threading_wm.Thread(target=_bg_world_model, daemon=True).start()
+        except Exception:
+            pass
+
+        # Skill Hunter — detect capability gaps in the response
+        try:
+            import threading as _threading_sh
+            from agent.skill_hunter import detect_gaps
+
+            def _bg_skill_hunt():
+                try:
+                    detect_gaps(final_response, session_id=_session_id)
+                except Exception:
+                    pass
+
+            _threading_sh.Thread(target=_bg_skill_hunt, daemon=True).start()
+        except Exception:
+            pass
+
+        # Predictive Pre-execution — pre-compute likely follow-up responses
+        try:
+            import threading as _threading_pred
+            from agent.predictor import preexecute_followups
+
+            def _bg_predict():
+                try:
+                    preexecute_followups(
+                        last_user_message=user_message or "",
+                        agent_response=final_response,
+                        session_context=_session_id,
+                    )
+                except Exception:
+                    pass
+
+            _threading_pred.Thread(target=_bg_predict, daemon=True).start()
+        except Exception:
+            pass
+
+        # Isomorphism — extract abstract pattern from this turn's solution
+        try:
+            import threading as _threading_iso
+            from agent.isomorphism_engine import extract_and_store_pattern as _iso_extract
+
+            def _bg_iso():
+                try:
+                    if len(final_response) > 200 and len(user_message or "") > 30:
+                        _iso_extract(
+                            problem=user_message or "",
+                            solution=final_response,
+                        )
+                except Exception:
+                    pass
+
+            _threading_iso.Thread(target=_bg_iso, daemon=True).start()
+        except Exception:
+            pass
+
+        # Long Horizon — log progress on active goals if response is substantive
+        try:
+            from agent.long_horizon import get_active_goals, log_progress as _lh_log
+            _active_goals = get_active_goals()
+            if _active_goals and len(final_response) > 100 and not failed:
+                # Micro-progress: 1% per substantive turn (model calibrates higher deltas explicitly)
+                for _g in _active_goals[:1]:
+                    _lh_log(_g["id"], delta=0.01, session_id=_session_id,
+                            note=f"Turn completed: {(user_message or '')[:60]}")
+        except Exception:
+            pass
+
+        # ── Phase 3: AGI Self-Awareness Hooks ────────────────────────────
+
+        # Commitment Tracker — extract decisions from both sides of the conversation
+        try:
+            import threading as _threading_ct
+            from agent.commitment_tracker import extract_and_store_commitments, find_contradictions
+
+            def _bg_commitment():
+                try:
+                    combined = f"{user_message or ''}\n{final_response}"
+                    extract_and_store_commitments(combined, session_id=_session_id,
+                                                  context=f"session:{_session_id}")
+                except Exception:
+                    pass
+
+            _threading_ct.Thread(target=_bg_commitment, daemon=True).start()
+        except Exception:
+            pass
+
+        # Cognitive Load — analyse this user message for load signals
+        try:
+            from agent.cognitive_load import analyse_message as _cog_analyse
+            if user_message and isinstance(user_message, str):
+                _cog_analyse(user_message, session_id=_session_id)
+        except Exception:
+            pass
+
+        # Ontology Builder — learn concepts from the conversation
+        try:
+            import threading as _threading_onto
+            from agent.ontology_builder import extract_and_store_concepts as _onto_extract
+
+            def _bg_onto():
+                try:
+                    combined = f"{user_message or ''}\n{final_response}"
+                    _onto_extract(combined, session_id=_session_id)
+                except Exception:
+                    pass
+
+            _threading_onto.Thread(target=_bg_onto, daemon=True).start()
+        except Exception:
+            pass
+
+        # Persona Engine — auto-detect persona for next turn based on this message
+        try:
+            import threading as _threading_pe
+            from agent.persona_engine import detect_persona as _detect_persona
+
+            def _bg_persona():
+                try:
+                    _detect_persona(
+                        message=user_message or "",
+                        session_id=_session_id,
+                    )
+                except Exception:
+                    pass
+
+            _threading_pe.Thread(target=_bg_persona, daemon=True).start()
+        except Exception:
+            pass
+
+        # Self-Evolution — score this turn from user follow-up signals
+        try:
+            from agent.self_evolution import score_turn as _score_turn
+            if user_message and isinstance(user_message, str):
+                _score_turn(
+                    user_followup=user_message,
+                    session_id=_session_id,
+                    context=final_response[:100],
+                )
+        except Exception:
+            pass
+
+
     # called here — run_conversation() is called once per user message in
     # multi-turn sessions. Shutting down after every turn would kill the
     # provider before the second message. Actual session-end cleanup is

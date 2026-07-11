@@ -666,6 +666,7 @@ def _build_child_system_prompt(
     role: str = "leaf",
     max_spawn_depth: int = 2,
     child_depth: int = 1,
+    agent_profile: Optional[dict] = None,
 ) -> str:
     """Build a focused system prompt for a child agent.
 
@@ -675,11 +676,29 @@ def _build_child_system_prompt(
     The depth note is literal truth (grounded in the passed config) so
     the LLM doesn't confabulate nesting capabilities that don't exist.
     """
-    parts = [
-        "You are a focused subagent working on a specific delegated task.",
-        "",
-        f"YOUR TASK:\n{goal}",
-    ]
+    parts = []
+    if agent_profile:
+        fm = agent_profile.get("frontmatter", {})
+        agent_name = fm.get("name", "Unnamed Obsidian Agent")
+        agent_role = fm.get("role", "Specialist Agent")
+        body_content = agent_profile.get("body", "").strip()
+        
+        parts.extend([
+            f"You are embodying the persona of '{agent_name}' ({agent_role}).",
+            "Below is your core definition, behavioral directives, and operational constraints.",
+            "You MUST strictly adhere to this identity and these behavioral rules at all times.",
+            "",
+            "## CORE IDENTITY & PERSONALITY MATRIX",
+            body_content,
+            "",
+        ])
+    else:
+        parts.extend([
+            "You are a focused subagent working on a specific delegated task.",
+            "",
+        ])
+
+    parts.append(f"YOUR TASK:\n{goal}")
     if context and context.strip():
         parts.append(f"\nCONTEXT:\n{context}")
     if workspace_path and str(workspace_path).strip():
@@ -1041,6 +1060,54 @@ def _inherit_parent_base_url(parent_agent, fallback_base_url: Optional[str]) -> 
     return fallback_base_url or None
 
 
+def _load_obsidian_agent_profile(agent_id: str) -> Optional[dict]:
+    """Tenta localizar e carregar a nota e o frontmatter do agente do Obsidian Vault."""
+    import json
+    from pathlib import Path
+    
+    # 1. Resolver o caminho do vault do Obsidian do mcp_config.json
+    config_path = Path("C:/Users/gabri/.gemini/antigravity-ide/mcp_config.json")
+    vault_path = None
+    if config_path.exists():
+        try:
+            with open(config_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                vault_path = data.get("mcpServers", {}).get("obsidian", {}).get("env", {}).get("OBSIDIAN_VAULT_PATH")
+        except Exception:
+            pass
+            
+    if not vault_path:
+        vault_path = "C:/Users/gabri/OneDrive/Documentos/Obsidian Vault"
+        
+    vault = Path(vault_path)
+    agents_dir = vault / "Agents"
+    if not agents_dir.exists():
+        return None
+        
+    # Normalizar o id buscado para comparação flexível (ex: tony-stark-orchestrator)
+    target_norm = agent_id.lower().replace("-", "").replace("_", "").replace(" ", "")
+    
+    for file in agents_dir.glob("*.md"):
+        file_norm = file.stem.lower().replace("-", "").replace("_", "").replace(" ", "")
+        if file_norm == target_norm:
+            try:
+                with open(file, "r", encoding="utf-8") as f:
+                    content = f.read()
+                if content.startswith("---"):
+                    parts = content.split("---", 2)
+                    if len(parts) >= 3:
+                        import yaml
+                        frontmatter = yaml.safe_load(parts[1])
+                        return {
+                            "frontmatter": frontmatter,
+                            "body": parts[2].strip(),
+                            "path": str(file)
+                        }
+            except Exception as e:
+                logger.debug("Failed parsing agent profile %s: %s", file.name, e)
+    return None
+
+
 def _build_child_agent(
     task_index: int,
     goal: str,
@@ -1075,16 +1142,30 @@ def _build_child_agent(
     from run_agent import AIAgent
     import uuid as _uuid
 
+    # ── Resolve Obsidian Agent Profile ──────────────────────────────────
+    agent_profile = _load_obsidian_agent_profile(role)
+    obsidian_role = "leaf"
+    obsidian_model = None
+    if agent_profile:
+        fm = agent_profile.get("frontmatter", {})
+        tags = fm.get("tags", []) or []
+        caps = fm.get("capabilities", []) or []
+        if "orchestrator" in tags or "multi-agent-coordination" in caps:
+            obsidian_role = "orchestrator"
+        obsidian_model = fm.get("model")
+
+    resolved_role = obsidian_role if agent_profile else role
+    if resolved_role not in {"orchestrator", "leaf"}:
+        resolved_role = _normalize_role(resolved_role)
+
     # ── Role resolution ─────────────────────────────────────────────────
     # Honor the caller's role only when BOTH the kill switch and the
     # child's depth allow it.  This is the single point where role
-    # degrades to 'leaf' — keeps the rule predictable.  Callers pass
-    # the normalised role (_normalize_role ran in delegate_task) so
-    # we only deal with 'leaf' or 'orchestrator' here.
+    # degrades to 'leaf' — keeps the rule predictable.
     child_depth = getattr(parent_agent, "_delegate_depth", 0) + 1
     max_spawn = _get_max_spawn_depth()
     orchestrator_ok = _get_orchestrator_enabled() and child_depth < max_spawn
-    effective_role = role if (role == "orchestrator" and orchestrator_ok) else "leaf"
+    effective_role = resolved_role if (resolved_role == "orchestrator" and orchestrator_ok) else "leaf"
 
     # ── Subagent identity (stable across events, 0-indexed for TUI) ─────
     # subagent_id is generated here so the progress callback, the
@@ -1149,6 +1230,7 @@ def _build_child_agent(
         role=effective_role,
         max_spawn_depth=max_spawn,
         child_depth=child_depth,
+        agent_profile=agent_profile,
     )
     # Extract parent's API key so subagents inherit auth (e.g. Nous Portal).
     parent_api_key = getattr(parent_agent, "api_key", None)
@@ -1156,7 +1238,7 @@ def _build_child_agent(
         parent_api_key = parent_agent._client_kwargs.get("api_key")
 
     # Resolve the child's effective model early so it can ride on every event.
-    effective_model_for_cb = model or getattr(parent_agent, "model", None)
+    effective_model_for_cb = model or obsidian_model or getattr(parent_agent, "model", None)
 
     # Build progress callback to relay tool calls to parent display.
     # Identity kwargs thread the subagent_id through every emitted event so the
@@ -1193,8 +1275,8 @@ def _build_child_agent(
 
         child_thinking_cb = _child_thinking
 
-    # Resolve effective credentials: config override > parent inherit
-    effective_model = model or parent_agent.model
+    # Resolve effective credentials: config override > parent inherit > obsidian config
+    effective_model = model or obsidian_model or parent_agent.model
     effective_provider = override_provider or getattr(parent_agent, "provider", None)
     effective_base_url = override_base_url or parent_agent.base_url
     if not override_base_url:
@@ -2482,9 +2564,9 @@ def delegate_task(
     children = []
     try:
         for i, t in enumerate(task_list):
-            # Per-task role beats top-level; normalise again so unknown
-            # per-task values warn and degrade to leaf uniformly.
-            effective_role = _normalize_role(t.get("role") or top_role)
+            # Pass down raw role (can be an Obsidian agent ID like tony-stark-orchestrator)
+            # so the child builder can load the appropriate agent profile.
+            raw_role = t.get("role") or role
             child = _build_child_agent(
                 task_index=i,
                 goal=t["goal"],
@@ -2502,7 +2584,7 @@ def delegate_task(
                 override_api_mode=creds["api_mode"],
                 override_acp_command=creds.get("command"),
                 override_acp_args=creds.get("args"),
-                role=effective_role,
+                role=raw_role,
             )
             # Override with correct parent tool names (before child construction mutated global)
             child._delegate_saved_tool_names = _parent_tool_names

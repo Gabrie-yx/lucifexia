@@ -1,4 +1,4 @@
-import { buildLucifexWebSocketUrl } from "@lucifex/shared";
+﻿import { buildLucifexWebSocketUrl } from "@lucifex/shared";
 
 // The dashboard can be served either at the root of its host (e.g.
 // https://kanban.tilos.com/) or under a URL prefix when reverse-proxied
@@ -1197,7 +1197,7 @@ export const api = {
  *
  * Returned by the dashboard's gated middleware when a valid session cookie
  * is attached. ``email`` and ``display_name`` are empty strings under the
- * Nous Portal contract V1 (the access token has no email/name claims —
+ * Ollama contract V1 (the access token has no email/name claims —
  * see Contract Anchor C4 in the plan). The AuthWidget surfaces a
  * truncated ``user_id`` instead.
  */

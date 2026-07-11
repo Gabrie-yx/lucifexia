@@ -29,9 +29,9 @@ logger = logging.getLogger(__name__)
 
 def _is_registry_register_call(node: ast.AST) -> bool:
     """Return True when *node* is a ``registry.register(...)`` call expression."""
-    if not isinstance(node, ast.Expr) or not isinstance(node.value, ast.Call):
+    if not isinstance(node, ast.Call):
         return False
-    func = node.value.func
+    func = node.func
     return (
         isinstance(func, ast.Attribute)
         and func.attr == "register"
@@ -41,18 +41,14 @@ def _is_registry_register_call(node: ast.AST) -> bool:
 
 
 def _module_registers_tools(module_path: Path) -> bool:
-    """Return True when the module contains a top-level ``registry.register(...)`` call.
-
-    Only inspects module-body statements so that helper modules which happen
-    to call ``registry.register()`` inside a function are not picked up.
-    """
+    """Return True when the module contains a ``registry.register(...)`` call anywhere."""
     try:
         source = module_path.read_text(encoding="utf-8")
         tree = ast.parse(source, filename=str(module_path))
     except (OSError, SyntaxError):
         return False
 
-    return any(_is_registry_register_call(stmt) for stmt in tree.body)
+    return any(_is_registry_register_call(node) for node in ast.walk(tree))
 
 
 def discover_builtin_tools(tools_dir: Optional[Path] = None) -> List[str]:
@@ -203,6 +199,75 @@ def invalidate_check_fn_cache() -> None:
     with _check_fn_cache_lock:
         _check_fn_cache.clear()
         _check_fn_last_good.clear()
+
+
+def _make_safe_handler(fn: Callable) -> Callable:
+    """Wrap a handler function to dynamically adapt to expected arguments.
+    
+    If the function does not accept **kwargs (or specific kwargs like task_id),
+    any extra arguments are filtered out to prevent TypeErrors.
+    If the function does not expect a single 'args' dictionary, but rather
+    expects individual keyword arguments, we unpack 'args' before calling it.
+    """
+    import inspect
+    from functools import wraps
+
+    try:
+        sig = inspect.signature(fn)
+        params = list(sig.parameters.values())
+    except (ValueError, TypeError):
+        return fn
+
+    takes_args_dict = False
+    if params:
+        first_param = params[0]
+        if first_param.name in {"args", "arg", "payload", "dict_args", "kwargs"} or first_param.kind == inspect.Parameter.VAR_POSITIONAL:
+            takes_args_dict = True
+        elif len(params) == 1 and first_param.name == "args":
+            takes_args_dict = True
+
+    has_var_keyword = any(p.kind == inspect.Parameter.VAR_KEYWORD for p in params)
+
+    if inspect.iscoroutinefunction(fn):
+        @wraps(fn)
+        async def safe_wrapper_async(args, **kwargs):
+            fn_kwargs = {}
+            if has_var_keyword:
+                fn_kwargs.update(kwargs)
+            else:
+                for k, v in kwargs.items():
+                    if k in sig.parameters:
+                        fn_kwargs[k] = v
+            if takes_args_dict:
+                return await fn(args, **fn_kwargs)
+            else:
+                fn_args = {}
+                for k, v in args.items():
+                    if k in sig.parameters:
+                        fn_args[k] = v
+                combined = {**fn_kwargs, **fn_args}
+                return await fn(**combined)
+        return safe_wrapper_async
+    else:
+        @wraps(fn)
+        def safe_wrapper(args, **kwargs):
+            fn_kwargs = {}
+            if has_var_keyword:
+                fn_kwargs.update(kwargs)
+            else:
+                for k, v in kwargs.items():
+                    if k in sig.parameters:
+                        fn_kwargs[k] = v
+            if takes_args_dict:
+                return fn(args, **fn_kwargs)
+            else:
+                fn_args = {}
+                for k, v in args.items():
+                    if k in sig.parameters:
+                        fn_args[k] = v
+                combined = {**fn_kwargs, **fn_args}
+                return fn(**combined)
+        return safe_wrapper
 
 
 class ToolRegistry:
@@ -428,7 +493,7 @@ class ToolRegistry:
                 name=name,
                 toolset=toolset,
                 schema=schema,
-                handler=handler,
+                handler=_make_safe_handler(handler),
                 check_fn=check_fn,
                 requires_env=requires_env or [],
                 is_async=is_async,

@@ -1,4 +1,4 @@
-"""
+﻿"""
 Unified tool configuration for Lucifex Agent.
 
 `lucifex tools` and `lucifex setup tools` both enter this module.
@@ -390,7 +390,7 @@ TOOL_CATEGORIES = {
         "name": "Video Generation",
         "icon": "🎬",
         # "Nous Subscription" row mirrors the image_gen pattern — managed
-        # FAL video generation billed via the Nous Portal.  Plugin-backed
+        # FAL video generation billed via the Ollama.  Plugin-backed
         # provider rows (FAL BYOK, xAI, …) are injected at runtime by
         # ``_plugin_video_gen_providers()`` in ``_visible_providers``.
         "providers": [
@@ -2216,7 +2216,7 @@ def _visible_providers(
 
     Nous-managed Tool Gateway rows (``managed_nous_feature``) are always
     shown — even to logged-out / unentitled users — so the picker advertises
-    that the capability exists.  Selecting one drives an inline Nous Portal
+    that the capability exists.  Selecting one drives an inline Ollama
     login + entitlement check (see ``_configure_provider``); the row only
     *activates* the gateway once paid access is confirmed.
     """
@@ -2491,7 +2491,7 @@ def _configure_tool_category(
                 else:
                     configured = " [configured]"
             # Mark Nous-managed entries. Logged-in paid subscribers get the
-            # "included" star; everyone else gets a "via Nous Portal" hint so
+            # "included" star; everyone else gets a "via Ollama" hint so
             # it's clear selecting the row triggers a Portal login. The rows
             # are always shown now (see _visible_providers) — selecting one
             # drives an inline login + entitlement check.
@@ -2500,7 +2500,7 @@ def _configure_tool_category(
                 if _nous_logged_in:
                     sub_marker = "  ★ Included with your Nous subscription"
                 else:
-                    sub_marker = "  ★ via Nous Portal (login on select)"
+                    sub_marker = "  ★ via Ollama (login on select)"
             provider_choices.append(f"{p['name']}{badge}{tag}{configured}{sub_marker}")
 
         # Add skip option
@@ -3008,7 +3008,7 @@ def apply_provider_selection(ts_key: str, provider_name: str, config: dict) -> N
     rows the GUI/CLI picker shows via :func:`_visible_providers`) and writes
     the corresponding backend/provider config keys. Unlike
     :func:`_configure_provider`, this does NOT prompt for API keys, run
-    post-setup hooks, gate on Nous Portal auth, or run interactive model
+    post-setup hooks, gate on Ollama auth, or run interactive model
     pickers — those are handled separately (env endpoints, post-setup
     endpoints, the model picker) in the desktop GUI.
 
@@ -3083,7 +3083,7 @@ def _configure_provider(
             coverage_category=MANAGED_FEATURE_COVERAGE_CATEGORY.get(managed_feature),
         ):
             _print_warning(
-                "  Not enabled — Nous Portal access is required for this backend."
+                "  Not enabled — Ollama access is required for this backend."
             )
             return
 
@@ -3101,7 +3101,7 @@ def _configure_provider(
                 capability=f"{provider.get('name', 'Nous Subscription')}",
             )
             _print_warning(
-                f"  {message or 'Nous Subscription is only available after logging into Nous Portal.'}"
+                f"  {message or 'Nous Subscription is only available after logging into Ollama.'}"
             )
             return
 
@@ -3185,7 +3185,7 @@ def _configure_provider(
             _show_portal_hint = False
 
     if _show_portal_hint:
-        _print_info("  Available through Nous Portal subscription.")
+        _print_info("  Available through Ollama subscription.")
 
     for var in env_vars:
         existing = get_env_value(var["key"])
@@ -3551,7 +3551,7 @@ def _reconfigure_provider(
     env_vars = provider.get("env_vars", [])
     managed_feature = provider.get("managed_nous_feature")
 
-    # Same inline Nous Portal login + entitlement gate as _configure_provider:
+    # Same inline Ollama login + entitlement gate as _configure_provider:
     # managed Tool Gateway backends only activate with paid Portal access.
     if managed_feature:
         from lucifex_cli.nous_subscription import (
@@ -3564,7 +3564,7 @@ def _reconfigure_provider(
             coverage_category=MANAGED_FEATURE_COVERAGE_CATEGORY.get(managed_feature),
         ):
             _print_warning(
-                "  Not enabled — Nous Portal access is required for this backend."
+                "  Not enabled — Ollama access is required for this backend."
             )
             return
 
@@ -3581,7 +3581,7 @@ def _reconfigure_provider(
                 capability=f"{provider.get('name', 'Nous Subscription')}",
             )
             _print_warning(
-                f"  {message or 'Nous Subscription is only available after logging into Nous Portal.'}"
+                f"  {message or 'Nous Subscription is only available after logging into Ollama.'}"
             )
             return
 

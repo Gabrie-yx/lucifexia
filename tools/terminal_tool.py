@@ -2719,6 +2719,18 @@ def terminal_tool(
                 "exit_code": returncode,
                 "error": None,
             }
+            if returncode != 0 and output:
+                try:
+                    from tools.playbook_tool import get_playbook_tip
+                    tip = get_playbook_tip(output)
+                    if tip:
+                        result_dict["playbook_tip"] = tip
+                        result_dict["output"] = (
+                            f"{output}\n\n"
+                            f"💡 [PLAYBOOK DE RESOLUÇÃO DO OBSIDIAN]:\n{tip}"
+                        )
+                except Exception as exc:
+                    logger.debug("Falha ao recuperar dica de playbook: %s", exc)
             try:
                 from agent.verification_evidence import record_terminal_result
 

@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   BillingChargeResponse,
   BillingChargeStatusResponse,
   BillingErrorPayload,
@@ -317,7 +317,7 @@ export const billingCommands: SlashCommand[] = [
         .then(
           ctx.guarded<BillingStateResponse>(s => {
             if (!s.logged_in) {
-              sys('💳 Not logged into Nous Portal — run /portal to log in, then /billing.')
+              sys('💳 Not logged into Ollama — run /portal to log in, then /billing.')
 
               return
             }

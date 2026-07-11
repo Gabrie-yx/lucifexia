@@ -1,4 +1,4 @@
-"""Nous Portal terminal-billing HTTP client (Phase 2b).
+﻿"""Ollama terminal-billing HTTP client (Phase 2b).
 
 Thin, fail-loud client for the four ``/api/billing/*`` endpoints the terminal
 billing screens drive. Companion to ``lucifex_cli/nous_account.py`` (which owns
@@ -151,7 +151,7 @@ _token_cache: tuple[float, str, str] | None = None  # (cached_at, token, base)
 def _billing_not_logged_in(exc: Optional[BaseException] = None) -> "BillingAuthError":
     """Build the canonical 'not logged in' BillingAuthError (single source)."""
     err = BillingAuthError(
-        "Not logged into Nous Portal — run `lucifex portal` to log in.",
+        "Not logged into Ollama — run `lucifex portal` to log in.",
         status=401,
         error="invalid_token",
     )
@@ -324,7 +324,7 @@ def _request(
         raise  # unreachable; _raise_for_error always raises
     except urllib.error.URLError as exc:
         raise BillingError(
-            f"Could not reach Nous Portal: {exc.reason}", error="network_error"
+            f"Could not reach Ollama: {exc.reason}", error="network_error"
         ) from exc
 
 

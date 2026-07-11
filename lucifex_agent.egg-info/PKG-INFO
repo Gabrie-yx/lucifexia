@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: lucifex-agent
-Version: 0.18.0
+Version: 0.20.1
 Summary: The self-improving AI agent — creates skills from experience, improves them during use, and runs anywhere
 Author: Nous Research
 License-Expression: MIT
@@ -176,25 +176,45 @@ Dynamic: license-file
 </p>
 
 # Lucifex Agent ☤
+
 <p align="center">
   <a href="https://github.com/Gabrie-yx/lucifexia">Lucifex Agent</a> | <a href="https://github.com/Gabrie-yx/lucifexia">Lucifex Desktop</a>
 </p>
 <p align="center">
   <a href="https://github.com/Gabrie-yx/lucifexia/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License: MIT"></a>
   <a href="https://github.com/Gabrie-yx/lucifexia"><img src="https://img.shields.io/badge/Built%20for-LUCIFEXIA-blueviolet?style=for-the-badge" alt="Built for LUCIFEXIA"></a>
+  <img src="https://img.shields.io/badge/version-0.20.1-ff6b6b?style=for-the-badge" alt="Version 0.20.1">
 </p>
 
 **O agente de IA auto-melhorável projetado para ser executado de forma local e independente.** É o único agente com um loop de aprendizado integrado: ele cria habilidades a partir da experiência, melhora-as durante o uso, gerencia seu próprio conhecimento, busca em conversas passadas e constrói um perfil profundo de suas preferências entre as sessões. Pode ser executado em sua máquina local, em uma VPS de $5 ou em servidores na nuvem.
 
 Use qualquer modelo que desejar — **Ollama** (processamento 100% local e privado), OpenRouter, OpenAI, seu próprio endpoint personalizado e muitos outros. Mude facilmente usando o comando `lucifex model` — sem alterações de código, sem dependências de fornecedores.
 
+---
+
+## ✨ v0.20.1 — A Atualização AGI
+
+> *A versão que transforma o Lucifex de assistente em parceiro cognitivo.*
+
 <table>
-<tr><td><b>Uma interface de terminal real</b></td><td>TUI completa com edição de várias linhas, preenchimento automático de comandos de barra (/), histórico de conversas e saída em tempo real das ferramentas.</td></tr>
-<tr><td><b>Integração com Mensageiros</b></td><td>Telegram, Discord, Slack, WhatsApp e CLI — tudo a partir de um único processo de gateway. Transcrição de áudio e continuidade de conversas entre plataformas.</td></tr>
-<tr><td><b>Loop de Aprendizado Fechado</b></td><td>Memória com curadoria própria. Criação autônoma de habilidades após tarefas complexas. Habilidades que melhoram sozinhas. Busca textual nas sessões para lembrança rápida entre conversas.</td></tr>
-<tr><td><b>Automações Agendadas</b></td><td>Agendador cron integrado para envio de relatórios diários, backups e auditorias em linguagem natural para qualquer mensageiro.</td></tr>
-<tr><td><b>Subagentes e Paralelismo</b></td><td>Inicie subagentes isolados para fluxos de trabalho paralelos ou escreva scripts Python que executam ferramentas via RPC.</td></tr>
-<tr><td><b>Roda em qualquer lugar</b></td><td>Compatível com execução local, Docker, SSH, Singularity e provedores de nuvem para economizar recursos quando ocioso.</td></tr>
+<tr><td><b>🖥️ Controle do Sistema Operacional</b></td><td>Clipboard inteligente, gerenciador de janelas, leitor de tela com OCR, automação de UI, guardião de rede, organização de arquivos, preparador de reuniões e IFTTT local.</td></tr>
+<tr><td><b>🧠 Camada AGI</b></td><td>Modelo de mundo causal, planejamento de longo prazo, validação adversarial, teoria da mente, isomorfismo entre domínios, aquisição autônoma de habilidades, predição de consequências e simulação de cenários.</td></tr>
+<tr><td><b>⚡ Autoconsciência</b></td><td>Painel de 4 especialistas em paralelo, evolução do próprio prompt, rastreador de compromissos, otimizador de carga cognitiva, ontologia pessoal e 7 personas auto-adaptativas.</td></tr>
+</table>
+
+[Ver CHANGELOG completo →](CHANGELOG.md)
+
+---
+
+## Capacidades Principais
+
+<table>
+<tr><td><b>🖥️ Controle do Sistema Operacional</b></td><td>Execução local de ações com clipboard inteligente, controle de janelas por presets, leitura de tela via OCR (Tesseract), automação de clique/teclado, bloqueio de sites distrátores, organização inteligente de arquivos, preparação de reuniões baseada em calendário e reator de eventos IFTTT.</td></tr>
+<tr><td><b>🧠 Raciocínio & Cognição AGI</b></td><td>Modelo de mundo baseado em grafos causais persistentes, metas de longo prazo com milestoning automático, validação adversarial com Red Team interno, modelo de Theory of Mind para calibrar explicações e detectar misconceptions, isomorfismo de padrões cross-domain e Skill Hunter autônomo.</td></tr>
+<tr><td><b>⚡ Autoconsciência & Adaptação</b></td><td>Painel de 4 subagentes especialistas concorrentes (segurança, performance, arquitetura, devil's advocate), rastreador de compromissos com detector de contradições, modelagem de carga cognitiva em tempo real, ontologia pessoal comprimida de projetos e engine de personas contextuais adaptativas.</td></tr>
+<tr><td><b>🔋 Vida Interior & Autonomia</b></td><td>Loop contínuo de curiosidade, hipóteses de trabalho, sonhos em background, autocrítica pós-execução e estados emocionais que afetam diretamente o comportamento de resposta.</td></tr>
+<tr><td><b>💬 Interface Multicanal Real</b></td><td>TUI completa para terminal com preenchimento automático, além de gateway para Telegram, Discord, Slack e WhatsApp integrados, com suporte a transcrição de áudio e continuidade de contexto.</td></tr>
+<tr><td><b>⚙️ Execução e Orquestração</b></td><td>Agendador cron integrado em linguagem natural, subagentes em threads paralelas, scripts Python RPC e execução em Docker, SSH local ou nuvem.</td></tr>
 </table>
 
 ---

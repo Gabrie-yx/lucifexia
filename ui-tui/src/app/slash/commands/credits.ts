@@ -1,4 +1,4 @@
-import type { CreditsViewResponse } from '../../../gatewayTypes.js'
+﻿import type { CreditsViewResponse } from '../../../gatewayTypes.js'
 import { openExternalUrl } from '../../../lib/openExternalUrl.js'
 import { patchOverlayState } from '../../overlayStore.js'
 import type { SlashCommand } from '../types.js'
@@ -13,7 +13,7 @@ export const creditsCommands: SlashCommand[] = [
         .then(
           ctx.guarded<CreditsViewResponse>(view => {
             if (!view.logged_in) {
-              ctx.transcript.sys('💳 Not logged into Nous Portal — run /portal to log in.')
+              ctx.transcript.sys('💳 Not logged into Ollama — run /portal to log in.')
 
               return
             }
