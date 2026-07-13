@@ -1297,7 +1297,11 @@ export function DesktopController() {
       mainOverlays={mainOverlays}
       onOpenSettings={openSettings}
       overlays={overlays}
-      previewPaneOpen={chatOpen && Boolean(previewTarget || filePreviewTarget)}
+      previewPaneOpen={
+        chatOpen &&
+        (Boolean(previewTarget || filePreviewTarget) ||
+          rightRailActiveTabId === RIGHT_RAIL_BROWSER_TAB_ID)
+      }
       statusbarItems={statusbarItems}
       terminalPaneOpen={terminalSidebarOpen}
       titlebarTools={titlebarToolGroups.flat.right}
