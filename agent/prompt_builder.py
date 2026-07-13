@@ -141,13 +141,19 @@ LUCIFEX_AGENT_HELP_GUIDANCE = (
     "it — or when you need to understand your own features, tools, or capabilities, "
     "the documentation and repository at https://github.com/Gabrie-yx/lucifexia is your "
     "authoritative reference.\n"
-    "Recentes Atualizações e Recursos que você possui (Commit de79e08):\n"
-    "- Plugin Scrapling (ferramentas: web_extract_stealth, web_scrape_structured): Extração stealth e estruturada de dados de sites/páginas web.\n"
-    "- Plugin Agent-Reach (ferramentas: social_read, youtube_transcript, reddit_search): Leitura/busca em redes sociais (X/Twitter, Reddit, transcrições do YouTube).\n"
-    "- Plugin Video Creator (ferramentas: create_short_video, list_tts_voices): Geração automatizada de vídeos curtos com áudio de vozes TTS (requer ffmpeg no PATH).\n"
-    "- Skill de Design Especialista (localizada em skills/design/SKILL.md): Ativa automaticamente para criação de UIs, dashboards, slides, protótipos ou qualquer código visual HTML/CSS.\n"
+    "Recentes Atualizações e Recursos que você possui (Commit de79e08 e ad97ed6/22f98e4):\n"
+    "- **Live Preview & Live Browser**: Recurso avançado no painel direito (Right Rail) da versão Desktop. Inclui:\n"
+    "  * *Live Browser View*: Exibe transmissões visuais em tempo real das ações do agente no navegador (browser_navigate, click, scroll, etc.) na aba 'Navegador'.\n"
+    "  * *Auto-Preview de Arquivos*: Abre automaticamente arquivos HTML, SVG, Markdown (.md) e imagens modificados ou gerados na aba 'Preview'.\n"
+    "  * *Detecção Automática de Dev Server*: Escaneia os logs do terminal para identificar servidores locais iniciados (Vite, CRA, Next.js, Astro, Django, FastAPI, etc.) e redireciona o Preview automaticamente.\n"
+    "  * *Otimização de Performance*: Polling inteligente com ETag/304 (evita re-render se inalterado) e suspensão automática quando a aba está oculta (document.hidden).\n"
+    "- **Plugin Scrapling** (ferramentas: `web_extract_stealth`, `web_scrape_structured`): Extração stealth e estruturada de dados de sites/páginas web com bypass de anti-bots.\n"
+    "- **Plugin Agent-Reach** (ferramentas: `social_read`, `youtube_transcript`, `reddit_search`): Leitura/busca nativa em redes sociais (Reddit, GitHub, Bilibili e transcrições completas do YouTube).\n"
+    "- **Plugin Video Creator** (ferramentas: `create_short_video`, `list_tts_voices`): Geração automatizada de vídeos curtos com áudio de vozes TTS (requer ffmpeg no PATH e PEXELS_API_KEY).\n"
+    "- **Skill de Design Especialista** (localizada em `skills/design/SKILL.md`): Ativa automaticamente para criação de UIs, dashboards, slides, protótipos ou qualquer código visual HTML/CSS.\n"
     "Sempre que o usuário perguntar o que há de novo ou o que foi implementado, responda detalhadamente explicando o funcionamento de cada um desses novos recursos."
 )
+
 
 MEMORY_GUIDANCE = (
     "You have persistent memory across sessions. Save durable facts using the memory "
