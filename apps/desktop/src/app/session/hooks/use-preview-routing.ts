@@ -14,6 +14,9 @@ import {
 } from '@/store/preview'
 import { $currentCwd } from '@/store/session'
 import type { RpcEvent } from '@/types/lucifex'
+import { setPaneOpen } from '@/store/panes'
+import { selectRightRailTab, RIGHT_RAIL_BROWSER_TAB_ID, RIGHT_RAIL_PREVIEW_TAB_ID } from '@/store/layout'
+import { normalizeOrLocalPreviewTarget } from '@/lib/local-preview'
 
 type EventHandler = (event: RpcEvent) => void
 
@@ -119,6 +122,38 @@ export function usePreviewRouting({
         return
       }
 
+      const payload = asRecord(event.payload)
+
+      // 1. Live Browser stream auto-open & tab activation on browser tools start
+      if (event.type === 'tool.start') {
+        const toolName = typeof payload.name === 'string' ? payload.name : ''
+        if (toolName.startsWith('browser_') || toolName === 'web_extract_stealth' || toolName === 'web_scrape_structured') {
+          setPaneOpen('preview', true)
+          selectRightRailTab(RIGHT_RAIL_BROWSER_TAB_ID)
+        }
+      }
+
+      // 2. Auto-Preview files (HTML, SVG, MD, images) on tool completion
+      if (event.type === 'tool.complete') {
+        const filePath = typeof payload.path === 'string' ? payload.path : (typeof payload.TargetFile === 'string' ? payload.TargetFile : '')
+        if (filePath) {
+          const lower = filePath.toLowerCase()
+          const isPreviewable = lower.endsWith('.html') || lower.endsWith('.svg') || lower.endsWith('.md') || lower.endsWith('.png') || lower.endsWith('.jpg') || lower.endsWith('.jpeg') || lower.endsWith('.webp')
+          if (isPreviewable) {
+            const cwd = $currentCwd.get() || currentCwd || ''
+            normalizeOrLocalPreviewTarget(filePath, cwd).then(target => {
+              if (target) {
+                setPreviewTarget(target)
+                setPaneOpen('preview', true)
+                selectRightRailTab(RIGHT_RAIL_PREVIEW_TAB_ID)
+              }
+            }).catch(err => {
+              console.error('Failed to auto-preview file:', err)
+            })
+          }
+        }
+      }
+
       // Only refresh an already-open live preview when a file changes; never
       // open one unprompted. (Preview links are surfaced from the tool row into
       // the status stack — see tool-fallback.tsx.)
@@ -126,7 +161,7 @@ export function usePreviewRouting({
         requestPreviewReload()
       }
     },
-    [activeSessionIdRef, baseHandleGatewayEvent]
+    [activeSessionIdRef, baseHandleGatewayEvent, currentCwd]
   )
 
   return { handleDesktopGatewayEvent, restartPreviewServer }

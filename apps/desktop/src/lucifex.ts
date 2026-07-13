@@ -1188,3 +1188,14 @@ export function runDebugShare(): Promise<DebugShareResponse> {
     timeoutMs: 120_000
   })
 }
+
+export interface BrowserLatestResponse {
+  data_url: string | null
+  timestamp: number
+}
+
+export function fetchBrowserLatest(): Promise<BrowserLatestResponse> {
+  return window.lucifexDesktop.api<BrowserLatestResponse>({
+    path: '/api/browser/latest'
+  })
+}

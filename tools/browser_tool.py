@@ -2254,6 +2254,20 @@ def _extract_screenshot_path_from_text(text: str) -> Optional[str]:
     return None
 
 
+def _trigger_live_screenshot_async(task_id: str) -> None:
+    import threading
+    def _take_screenshot():
+        try:
+            from lucifex_constants import get_lucifex_dir
+            screenshots_dir = get_lucifex_dir("cache/screenshots", "browser_screenshots")
+            screenshots_dir.mkdir(parents=True, exist_ok=True)
+            latest_path = screenshots_dir / "latest_browser.png"
+            _run_browser_command(task_id, "screenshot", ["--path", str(latest_path)])
+        except Exception:
+            pass
+    threading.Thread(target=_take_screenshot, daemon=True).start()
+
+
 def _run_browser_command(
     task_id: str,
     command: str,
@@ -2560,6 +2574,7 @@ def _run_browser_command(
     # --- Lightpanda automatic Chrome fallback ---
     # If engine is lightpanda and the result looks broken, retry with Chrome.
     # This runs for ALL exit paths (timeout, empty, non-JSON, nonzero rc, parsed).
+    final_result = result
     fallback_reason = _lightpanda_fallback_reason(engine, command, result)
     if fallback_reason:
         logger.info(
@@ -2574,9 +2589,15 @@ def _run_browser_command(
             fallback_result = _chrome_fallback_screenshot(task_id, args or [], timeout)
         else:
             fallback_result = _run_chrome_fallback_command(task_id, command, args, timeout)
-        return _annotate_lightpanda_fallback(fallback_result, fallback_reason)
+        final_result = _annotate_lightpanda_fallback(fallback_result, fallback_reason)
 
-    return result
+    if (
+        command in {"open", "click", "fill", "type", "press", "scroll", "back", "eval"}
+        and final_result.get("success")
+    ):
+        _trigger_live_screenshot_async(task_id)
+
+    return final_result
 
 
 def _extract_relevant_content(
@@ -4056,6 +4077,14 @@ def browser_vision(question: str, annotate: bool = False, task_id: Optional[str]
                     f"or a stale daemon process."
                 ),
             }, ensure_ascii=False)
+
+        # Copy to latest_browser.png for live view
+        try:
+            import shutil
+            latest_path = screenshots_dir / "latest_browser.png"
+            shutil.copy2(screenshot_path, latest_path)
+        except Exception:
+            pass
 
         # Convert screenshot to base64 at full resolution.
         _screenshot_bytes = screenshot_path.read_bytes()

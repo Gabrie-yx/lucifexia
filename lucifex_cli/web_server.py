@@ -1493,6 +1493,27 @@ async def get_media(path: str):
     return {"data_url": f"data:{_MEDIA_CONTENT_TYPES[target.suffix.lower()]};base64,{encoded}"}
 
 
+@app.get("/api/browser/latest")
+async def get_browser_latest():
+    """Return the latest screenshot taken by the browser as a base64 data URL.
+
+    Used by the desktop app to stream the live view of browser actions.
+    """
+    home = get_lucifex_home()
+    latest_path = home / "cache" / "screenshots" / "latest_browser.png"
+
+    if not latest_path.exists():
+        return {"data_url": None, "timestamp": 0}
+
+    try:
+        stat = latest_path.stat()
+        mtime = stat.st_mtime
+        encoded = base64.b64encode(latest_path.read_bytes()).decode("ascii")
+        return {"data_url": f"data:image/png;base64,{encoded}", "timestamp": mtime}
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Failed to read screenshot: {exc}")
+
+
 def _canonical_path(path: Path, *, require_exists: bool = False) -> Path:
     try:
         return path.expanduser().resolve(strict=require_exists)
