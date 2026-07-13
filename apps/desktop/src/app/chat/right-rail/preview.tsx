@@ -1,5 +1,6 @@
 import { useStore } from '@nanostores/react'
 import { useCallback, useEffect, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 
 import type { SetTitlebarToolGroup } from '@/app/shell/titlebar-controls'
 import { Codicon } from '@/components/ui/codicon'
@@ -116,7 +117,7 @@ export function ChatPreviewRail({ onRestartServer, setTitlebarToolGroup }: ChatP
 
   const isPreview = activeTab.id === RIGHT_RAIL_PREVIEW_TAB_ID
 
-  return (
+  const content = (
     <aside
       className={cn(
         'flex h-full w-full min-w-0 flex-col overflow-hidden border-(--ui-stroke-tertiary) bg-(--ui-editor-surface-background) text-(--ui-text-tertiary)',
@@ -267,4 +268,10 @@ export function ChatPreviewRail({ onRestartServer, setTitlebarToolGroup }: ChatP
       </div>
     </aside>
   )
+
+  if (isMaximized && typeof window !== 'undefined') {
+    return createPortal(content, document.body)
+  }
+
+  return content
 }
