@@ -97,6 +97,8 @@ export const $filePreviewTarget = computed([$filePreviewTabs, $rightRailActiveTa
 export const $previewReloadRequest = atom(0)
 export const $previewServerRestart = atom<PreviewServerRestart | null>(null)
 export const $previewServerRestartStatus = computed($previewServerRestart, restart => restart?.status ?? 'idle')
+export const $isPreviewMaximized = atom(false)
+export const togglePreviewMaximized = () => $isPreviewMaximized.set(!$isPreviewMaximized.get())
 export const $sessionPreviewRegistry = atom<SessionPreviewRegistry>(loadSessionPreviewRegistry())
 
 $sessionPreviewRegistry.subscribe(persistSessionPreviewRegistry)

@@ -24,12 +24,14 @@ import {
 } from '@/store/layout'
 import {
   $filePreviewTabs,
+  $isPreviewMaximized,
   $previewReloadRequest,
   $previewTarget,
   closeOtherRightRailTabs,
   closeRightRail,
   closeRightRailTab,
   closeRightRailTabsToRight,
+  togglePreviewMaximized,
   type PreviewTarget
 } from '@/store/preview'
 import { $dirtyPreviewUrls } from '@/store/preview-edit'
@@ -74,6 +76,7 @@ export function ChatPreviewRail({ onRestartServer, setTitlebarToolGroup }: ChatP
   const filePreviewTabs = useStore($filePreviewTabs)
   const previewTarget = useStore($previewTarget)
   const dirtyPreviewUrls = useStore($dirtyPreviewUrls)
+  const isMaximized = useStore($isPreviewMaximized)
 
   const tabs = useMemo<readonly RailTab[]>(
     () => [
@@ -103,15 +106,18 @@ export function ChatPreviewRail({ onRestartServer, setTitlebarToolGroup }: ChatP
   return (
     <aside
       className={cn(
-        'relative flex h-full w-full min-w-0 flex-col overflow-hidden border-(--ui-stroke-tertiary) bg-(--ui-editor-surface-background) text-(--ui-text-tertiary)',
-        panesFlipped ? 'border-r' : 'border-l'
+        'flex h-full w-full min-w-0 flex-col overflow-hidden border-(--ui-stroke-tertiary) bg-(--ui-editor-surface-background) text-(--ui-text-tertiary)',
+        panesFlipped ? 'border-r' : 'border-l',
+        isMaximized
+          ? 'fixed inset-0 z-[100] w-screen h-screen border-0'
+          : 'relative'
       )}
       // Windows/WSLg paint Electron's Window Controls Overlay across our
       // titlebar band, so the editor-style tab strip (which normally sits IN that
       // band) would land under the fixed titlebar tools. --right-rail-top-inset
       // (set by AppShell only when the overlay is present) drops the rail one
       // titlebar-height so it opens below the band. 0px elsewhere → unchanged.
-      style={{ paddingTop: 'var(--right-rail-top-inset, 0px)' }}
+      style={{ paddingTop: isMaximized ? 0 : 'var(--right-rail-top-inset, 0px)' }}
     >
       <div className="group/rail-tabs flex h-(--titlebar-height) shrink-0 border-b border-(--ui-stroke-tertiary) bg-(--ui-sidebar-surface-background)">
         <div
@@ -207,6 +213,16 @@ export function ChatPreviewRail({ onRestartServer, setTitlebarToolGroup }: ChatP
             )
           })}
         </div>
+        <Tip label={isMaximized ? 'Restore preview' : 'Maximize preview'}>
+          <button
+            aria-label={isMaximized ? 'Restore preview' : 'Maximize preview'}
+            className="mr-0.5 grid size-6 shrink-0 self-center place-items-center rounded-md text-(--ui-text-tertiary) opacity-0 transition-opacity hover:bg-(--ui-control-hover-background) hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring group-hover/rail-tabs:opacity-100 [-webkit-app-region:no-drag]"
+            onClick={togglePreviewMaximized}
+            type="button"
+          >
+            <Codicon name={isMaximized ? 'screen-normal' : 'screen-full'} size="0.75rem" />
+          </button>
+        </Tip>
         <button
           aria-label={t.preview.closePane}
           className="mr-1.5 grid size-6 shrink-0 self-center place-items-center rounded-md text-(--ui-text-tertiary) opacity-0 transition-opacity hover:bg-(--ui-control-hover-background) hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring group-hover/rail-tabs:opacity-100 [-webkit-app-region:no-drag]"

@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useStore } from '@nanostores/react'
 import {
   IconArrowLeft,
   IconArrowRight,
@@ -10,16 +11,36 @@ import {
 import { fetchBrowserLatest } from '@/lucifex'
 import { Codicon } from '@/components/ui/codicon'
 import { cn } from '@/lib/utils'
+import { $activeSessionId } from '@/store/session'
 
 export function LiveBrowserPane() {
   const [dataUrl, setDataUrl] = useState<string | null>(null)
   const [timestamp, setTimestamp] = useState<number>(0)
   const [active, setActive] = useState<boolean>(false)
   const [currentUrl, setCurrentUrl] = useState<string>('about:blank')
+  const sessionId = useStore($activeSessionId)
+
+  // Reset all screenshot state when the active session changes so we never
+  // show a stale screenshot from a previous session/project.
+  const prevSessionRef = useRef<string | null | undefined>(undefined)
+  useEffect(() => {
+    if (prevSessionRef.current === undefined) {
+      // First render — just record the initial session, no reset needed.
+      prevSessionRef.current = sessionId
+      return
+    }
+    if (prevSessionRef.current !== sessionId) {
+      prevSessionRef.current = sessionId
+      setDataUrl(null)
+      setTimestamp(0)
+      setActive(false)
+      setCurrentUrl('about:blank')
+    }
+  }, [sessionId])
 
   useEffect(() => {
     let cancelled = false
-    // Track last mtime so we skip re-rendering unchanged screenshots.
+    // Reset ETag guard on every new polling lifecycle (incl. session switch).
     let lastMtime = 0
 
     const poll = async () => {
@@ -58,7 +79,9 @@ export function LiveBrowserPane() {
       cancelled = true
       clearInterval(timer)
     }
-  }, [])
+  // Re-run the polling loop when the session changes so lastMtime resets cleanly.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId])
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden bg-(--ui-editor-surface-background)">
