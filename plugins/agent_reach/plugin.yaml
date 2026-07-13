@@ -1,0 +1,5 @@
+name: agent-reach
+version: 1.0.0
+description: "Dá olhos ao agente para ler e pesquisar conteúdo de Twitter/X, Reddit, YouTube (com transcrições), GitHub, XiaoHongShu e Bilibili — sem custos de API."
+author: "LucifexIA"
+hooks: []

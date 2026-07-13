@@ -1,0 +1,5 @@
+name: video-creator
+version: 1.0.0
+description: "Pipeline completo de geração de vídeos curtos com IA: prompt → script → footage gratuito (Pexels) → narração → legenda → vídeo MP4. Baseado no MoneyPrinterTurbo."
+author: "LucifexIA"
+hooks: []

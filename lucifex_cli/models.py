@@ -1,4 +1,4 @@
-﻿"""
+"""
 Canonical model catalogs and lightweight validation helpers.
 
 Add, remove, or reorder entries here — both `lucifex setup` and
@@ -989,8 +989,12 @@ class ProviderEntry(NamedTuple):
     label: str
     tui_desc: str   # detailed description for `lucifex model` TUI
 
+# Provedores marcados como indisponíveis temporariamente.
+# Aparecem na lista com aviso visual mas bloqueiam seleção.
+COMING_SOON_PROVIDERS: frozenset[str] = frozenset({"nous"})
+
 CANONICAL_PROVIDERS: list[ProviderEntry] = [
-    ProviderEntry("nous",           "OLLAMA",                   "OLLAMA (LUCIFEXIA local model processing)"),
+    ProviderEntry("nous",           "🚧 OLLAMA — Em Breve",     "[EM BREVE] Processamento 100% local LUCIFEXIA — aguarde o próximo lançamento!"),
     ProviderEntry("openrouter",     "OpenRouter",               "OpenRouter (Pay-per-use API aggregator)"),
     ProviderEntry("moa",            "Mixture of Agents",        "Mixture of Agents (named presets; aggregator acts after reference models)"),
     ProviderEntry("novita",         "NovitaAI",                 "NovitaAI (Cloud: Model API, Agent Sandbox, GPU Cloud)"),

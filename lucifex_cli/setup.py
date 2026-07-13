@@ -1,4 +1,4 @@
-﻿"""
+"""
 Interactive setup wizard for Lucifex Agent.
 
 Modular wizard with independently-runnable sections:
@@ -610,6 +610,69 @@ def _print_setup_summary(config: dict, lucifex_home):
         print_warning(f"or edit {_dhh()}/.env directly to add the missing API keys.")
         print()
 
+    # Novas Capacidades — anunciar para todos os usuarios no setup
+    print()
+    print(
+        color(
+            "╔═════════════════════════════════════════════════════════╗",
+            Colors.CYAN,
+        )
+    )
+    print(
+        color(
+            "║         ✨  Novas Capacidades Disponíveis!  ✨           ║",
+            Colors.CYAN,
+        )
+    )
+    print(
+        color(
+            "╚═════════════════════════════════════════════════════════╝",
+            Colors.CYAN,
+        )
+    )
+    print()
+    print(
+        color("  🕷️  Web Scraping Stealth  (plugin: scrapling)", Colors.GREEN)
+    )
+    print(
+        color("     Bypass automático de Cloudflare, anti-bot e JS challenges.", Colors.DIM)
+    )
+    print(
+        color("     Ferramenta: web_extract_stealth — instala sozinho!", Colors.DIM)
+    )
+    print()
+    print(
+        color("  📡  Redes Sociais sem API  (plugin: agent-reach)", Colors.GREEN)
+    )
+    print(
+        color("     Twitter, Reddit, YouTube (transcrições!), GitHub — zero API key.", Colors.DIM)
+    )
+    print(
+        color("     Ferramentas: social_read, youtube_transcript, reddit_search", Colors.DIM)
+    )
+    print()
+    print(
+        color("  🎬  Criador de Vídeos  (plugin: video-creator)", Colors.GREEN)
+    )
+    print(
+        color("     Prompt → script → footage Pexels → narração → MP4 completo.", Colors.DIM)
+    )
+    print(
+        color("     Ferramenta: create_short_video | Requer: ffmpeg + PEXELS_API_KEY", Colors.DIM)
+    )
+    print()
+    print(
+        color("  🎨  Skill de Design  (skills/design)", Colors.GREEN)
+    )
+    print(
+        color("     Pensa como designer especialista ao criar UIs, slides e dashboards.", Colors.DIM)
+    )
+    print()
+    print(
+        color("  Use 'lucifex tools' para gerenciar os plugins acima.", Colors.DIM)
+    )
+    print()
+
     # Done banner
     print()
     print(
@@ -628,6 +691,7 @@ def _print_setup_summary(config: dict, lucifex_home):
         )
     )
     print()
+
 
     # Show file locations prominently
     from lucifex_constants import display_lucifex_home as _dhh

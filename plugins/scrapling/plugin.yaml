@@ -1,0 +1,5 @@
+name: scrapling
+version: 1.0.0
+description: "Web scraping stealth com bypass automático de anti-bot (Cloudflare, JS challenges). Usa fingerprint de navegador real e auto-adapta seletores CSS quando o site muda."
+author: "LucifexIA"
+hooks: []

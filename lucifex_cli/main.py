@@ -3069,12 +3069,29 @@ def select_provider_and_model(args=None):
         return
 
     # Step 2: Provider-specific setup + model selection
+    #
+    # Provedores em COMING_SOON_PROVIDERS estao temporariamente indisponiveis.
+    try:
+        from lucifex_cli.models import COMING_SOON_PROVIDERS as _coming_soon
+        if selected_provider in _coming_soon:
+            print()
+            print("  [Em Breve] Processamento local LUCIFEXIA (OLLAMA)")
+            print()
+            print("  Este provedor ainda nao esta disponivel para selecao.")
+            print("  Estamos desenvolvendo processamento 100% local, privado")
+            print("  e gratuito. Aguarde o proximo lancamento do Lucifex!")
+            print()
+            return
+    except ImportError:
+        pass
+
     if selected_provider == "openrouter":
         _model_flow_openrouter(config, current_model)
     elif selected_provider == "moa":
         _model_flow_moa(config, current_model)
     elif selected_provider == "nous":
         _model_flow_nous(config, current_model, args=args)
+
     elif selected_provider == "openai-codex":
         _model_flow_openai_codex(config, current_model)
     elif selected_provider == "xai-oauth":
