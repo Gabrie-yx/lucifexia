@@ -5,6 +5,24 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [0.20.2] — 2026-07-13 🔌 **Extensões, Integrações e Correções**
+
+> *"Mais conectividade, extração furtiva de dados, criação de conteúdo local e estabilidade."*
+
+Esta atualização traz suporte nativo a novas ferramentas avançadas (Scrapling, Agent-Reach, Video Creator), uma Skill dedicada para design avançado e corrige o instalador no Windows (falsos positivos do Matrix).
+
+### Adicionado
+- **Plugin Scrapling**: Extração stealth e estruturada de páginas web modernas sem detecção de bot.
+- **Plugin Agent-Reach**: Leitura/busca profunda em redes sociais como X/Twitter, Reddit e transcrições do YouTube.
+- **Plugin Video Creator**: Geração automatizada de vídeos curtos estruturados combinando imagens, narração com vozes TTS e legendas (requer ffmpeg no PATH).
+- **Skill de Design Especialista**: Habilidade avançada de design (`skills/design/SKILL.md`) ativada de forma automática ao solicitar a criação de layouts, dashboards, slides, protótipos ou páginas HTML/CSS avançadas.
+
+### Corrigido
+- **Matrix Refresh Update**: Corrigido erro de build e compilação do plugin Matrix no Windows ao atualizar o Lucifex. Agora, o atualizador valida se o plugin principal foi ativado em vez de se perder em dependências compartilhadas.
+- **Nous Portal / Ollama**: Desconexão completa de qualquer conta antiga do Nous Research Portal e direcionamento automático do provedor local "nous" para a API do Ollama local de forma limpa.
+
+---
+
 ## [0.20.1] — 2026-07-11 🧠 **A Atualização AGI**
 
 > *"Lucifex deixa de ser um assistente e passa a ser um parceiro cognitivo."*

@@ -136,14 +136,17 @@ DEFAULT_AGENT_IDENTITY = (
 )
 
 LUCIFEX_AGENT_HELP_GUIDANCE = (
-    "You run on Lucifex Agent (by Nous Research). When the user needs help with "
+    "You run on Lucifex Agent (by Gabrie-yx). When the user needs help with "
     "Lucifex itself — configuring, setting up, using, extending, or troubleshooting "
     "it — or when you need to understand your own features, tools, or capabilities, "
-    "the documentation at https://lucifex-agent.nousresearch.com/docs is your "
-    "authoritative reference and always holds the latest, most up-to-date "
-    "information. Load the `lucifex-agent` skill with skill_view(name='lucifex-agent') "
-    "for additional guidance and proven workflows, but treat the docs as the source "
-    "of truth when the two differ."
+    "the documentation and repository at https://github.com/Gabrie-yx/lucifexia is your "
+    "authoritative reference.\n"
+    "Recentes Atualizações e Recursos que você possui (Commit de79e08):\n"
+    "- Plugin Scrapling (ferramentas: web_extract_stealth, web_scrape_structured): Extração stealth e estruturada de dados de sites/páginas web.\n"
+    "- Plugin Agent-Reach (ferramentas: social_read, youtube_transcript, reddit_search): Leitura/busca em redes sociais (X/Twitter, Reddit, transcrições do YouTube).\n"
+    "- Plugin Video Creator (ferramentas: create_short_video, list_tts_voices): Geração automatizada de vídeos curtos com áudio de vozes TTS (requer ffmpeg no PATH).\n"
+    "- Skill de Design Especialista (localizada em skills/design/SKILL.md): Ativa automaticamente para criação de UIs, dashboards, slides, protótipos ou qualquer código visual HTML/CSS.\n"
+    "Sempre que o usuário perguntar o que há de novo ou o que foi implementado, responda detalhadamente explicando o funcionamento de cada um desses novos recursos."
 )
 
 MEMORY_GUIDANCE = (

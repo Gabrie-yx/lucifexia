@@ -10,12 +10,25 @@
 <p align="center">
   <a href="https://github.com/Gabrie-yx/lucifexia/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License: MIT"></a>
   <a href="https://github.com/Gabrie-yx/lucifexia"><img src="https://img.shields.io/badge/Built%20for-LUCIFEXIA-blueviolet?style=for-the-badge" alt="Built for LUCIFEXIA"></a>
-  <img src="https://img.shields.io/badge/version-0.20.1-ff6b6b?style=for-the-badge" alt="Version 0.20.1">
+  <img src="https://img.shields.io/badge/version-0.20.2-ff6b6b?style=for-the-badge" alt="Version 0.20.2">
 </p>
 
-**O agente de IA auto-melhorável projetado para ser executado de forma local e independente.** É o único agente com um loop de aprendizado integrado: ele cria habilidades a partir da experiência, melhora-as durante o uso, gerencia seu próprio conhecimento, busca em conversas passadas e constrói um perfil profundo de suas preferências entre as sessões. Pode ser executado em sua máquina local, em uma VPS de $5 ou em servidores na nuvem.
+**O agente de IA auto-melhorável projetado para ser executado de forma local e independente.** É o único agente com um loop de aprendizado integrado: ele cria habilidades a partir da experiência, melhora-as durante o uso, gerencia seu próprio conhecimento, busca em conversas passadas e constrói um perfil profundo de suas preferências entre as sesões. Pode ser executado em sua máquina local, em uma VPS de $5 ou em servidores na nuvem.
 
 Use qualquer modelo que desejar — **Ollama** (processamento 100% local e privado), OpenRouter, OpenAI, seu próprio endpoint personalizado e muitos outros. Mude facilmente usando o comando `lucifex model` — sem alterações de código, sem dependências de fornecedores.
+
+---
+
+## ✨ v0.20.2 — Extensões e Integrações (de79e08)
+
+> *Mais conectividade, extração furtiva de dados e criação de conteúdo local.*
+
+<table>
+<tr><td><b>🕷️ Scrapling</b></td><td>Extração stealth de páginas modernas com ferramentas como <code>web_extract_stealth</code> e <code>web_scrape_structured</code>. Instala automaticamente sob demanda.</td></tr>
+<tr><td><b>📡 Agent-Reach</b></td><td>Conectividade com redes sociais (X/Twitter, Reddit e transcrições completas do YouTube) via ferramentas como <code>social_read</code>, <code>youtube_transcript</code> e <code>reddit_search</code>.</td></tr>
+<tr><td><b>🎬 Video Creator</b></td><td>Geração autônoma de vídeos curtos estruturados (imagens, legendas, narração TTS) com <code>create_short_video</code> e <code>list_tts_voices</code> (requer ffmpeg no PATH).</td></tr>
+<tr><td><b>🎨 Skill de Design</b></td><td>Habilidade de design avançado (<code>skills/design/SKILL.md</code>) que ativa automaticamente ao solicitar UIs, dashboards, slides, protótipos ou layouts visuais complexos.</td></tr>
+</table>
 
 ---
 
