@@ -1,33 +1,37 @@
 import { useEffect, useState } from 'react'
 
 import { fetchBrowserLatest } from '@/lucifex'
-import { useI18n } from '@/i18n'
 import { Codicon } from '@/components/ui/codicon'
 import { cn } from '@/lib/utils'
 
 export function LiveBrowserPane() {
-  const { t } = useI18n()
   const [dataUrl, setDataUrl] = useState<string | null>(null)
   const [timestamp, setTimestamp] = useState<number>(0)
   const [active, setActive] = useState<boolean>(false)
 
   useEffect(() => {
-    let activeInterval = true
+    let cancelled = false
+    // Track last mtime so we skip re-rendering unchanged screenshots.
+    let lastMtime = 0
 
     const poll = async () => {
+      // Skip polling while the browser tab/window is hidden — saves CPU + disk I/O.
+      if (document.hidden) return
       try {
-        const res = await fetchBrowserLatest()
-        if (!activeInterval) return
-        if (res.data_url) {
+        // Pass the current ETag so the server can return 304 (null) if unchanged.
+        const etag = lastMtime > 0 ? `"${lastMtime}"` : undefined
+        const res = await fetchBrowserLatest(etag)
+        if (cancelled) return
+        // null = 304 Not Modified — image unchanged, keep current state
+        if (res === null) return
+        if (res.data_url && res.timestamp !== lastMtime) {
+          lastMtime = res.timestamp
           setDataUrl(res.data_url)
           setTimestamp(res.timestamp)
-          // Consider active if mtime is within the last 30 seconds
-          const diff = Date.now() / 1000 - res.timestamp
-          setActive(diff < 30)
-        } else {
-          setDataUrl(null)
-          setActive(false)
         }
+        // Active = screenshot taken within the last 30 seconds
+        const diff = Date.now() / 1000 - (res.timestamp || 0)
+        setActive(!!res.data_url && diff < 30)
       } catch (err) {
         console.error('Failed to poll latest browser screenshot:', err)
       }
@@ -36,13 +40,11 @@ export function LiveBrowserPane() {
     // Initial poll
     void poll()
 
-    // Poll every 1 second for near-real-time streaming
-    const timer = setInterval(() => {
-      void poll()
-    }, 1000)
+    // Poll every 1.2 s. Slightly offset from 1000ms to stagger with other timers.
+    const timer = setInterval(() => { void poll() }, 1200)
 
     return () => {
-      activeInterval = false
+      cancelled = true
       clearInterval(timer)
     }
   }, [])

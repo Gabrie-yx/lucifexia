@@ -2255,16 +2255,30 @@ def _extract_screenshot_path_from_text(text: str) -> Optional[str]:
 
 
 def _trigger_live_screenshot_async(task_id: str) -> None:
+    """Capture a background screenshot and write to the live-browser cache path.
+
+    Called after any browser navigation/interaction so the desktop Live Browser
+    pane can display a near-real-time view of what the agent sees.
+    Uses the same positional-arg convention as the real screenshot call path.
+    """
     import threading
+
     def _take_screenshot():
         try:
             from lucifex_constants import get_lucifex_dir
             screenshots_dir = get_lucifex_dir("cache/screenshots", "browser_screenshots")
             screenshots_dir.mkdir(parents=True, exist_ok=True)
             latest_path = screenshots_dir / "latest_browser.png"
-            _run_browser_command(task_id, "screenshot", ["--path", str(latest_path)])
+            # Path is a POSITIONAL argument, NOT --path (--path flag does not exist
+            # in agent-browser CLI).  Matches the real screenshot path at line 4039-4043.
+            _run_browser_command(task_id, "screenshot", ["--full", str(latest_path)])
         except Exception:
-            pass
+            # Non-fatal — live view degrades gracefully; log but don't crash.
+            import logging
+            logging.getLogger(__name__).debug(
+                "_trigger_live_screenshot_async: screenshot failed", exc_info=True
+            )
+
     threading.Thread(target=_take_screenshot, daemon=True).start()
 
 

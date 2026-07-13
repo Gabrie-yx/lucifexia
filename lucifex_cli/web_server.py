@@ -1494,11 +1494,15 @@ async def get_media(path: str):
 
 
 @app.get("/api/browser/latest")
-async def get_browser_latest():
+async def get_browser_latest(request: Request):
     """Return the latest screenshot taken by the browser as a base64 data URL.
 
     Used by the desktop app to stream the live view of browser actions.
+
+    Supports ``If-None-Match`` with the file mtime as ETag so the client can
+    skip re-decoding a screenshot that has not changed since the last poll.
     """
+    _require_token(request)
     home = get_lucifex_home()
     latest_path = home / "cache" / "screenshots" / "latest_browser.png"
 
@@ -1508,10 +1512,23 @@ async def get_browser_latest():
     try:
         stat = latest_path.stat()
         mtime = stat.st_mtime
+        etag = f'"{mtime}"'
+
+        # If client already has this version, return 304 without re-encoding.
+        if_none_match = request.headers.get("if-none-match", "")
+        if if_none_match and if_none_match == etag:
+            from starlette.responses import Response
+            return Response(status_code=304, headers={"ETag": etag})
+
         encoded = base64.b64encode(latest_path.read_bytes()).decode("ascii")
-        return {"data_url": f"data:image/png;base64,{encoded}", "timestamp": mtime}
+        from starlette.responses import JSONResponse as _JSONResponse
+        return _JSONResponse(
+            content={"data_url": f"data:image/png;base64,{encoded}", "timestamp": mtime},
+            headers={"ETag": etag},
+        )
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Failed to read screenshot: {exc}")
+
 
 
 def _canonical_path(path: Path, *, require_exists: bool = False) -> Path:

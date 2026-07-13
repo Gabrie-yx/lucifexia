@@ -20,6 +20,42 @@ import { normalizeOrLocalPreviewTarget } from '@/lib/local-preview'
 
 type EventHandler = (event: RpcEvent) => void
 
+// -----------------------------------------------------------------------
+// Dev-server URL detection patterns for Node.js and other ecosystems.
+// Scans terminal output and returns the first local URL found.
+// Covers: Vite, CRA, Next.js, Nuxt, Astro, SvelteKit, Express/Koa/Fastify,
+//         Deno, Bun serve, Django, FastAPI/uvicorn, Flask.
+// -----------------------------------------------------------------------
+const DEV_SERVER_PATTERNS: RegExp[] = [
+  // Vite: "Local: http://localhost:5173/"
+  /Local:\s+(https?:\/\/localhost:\d+\S*)/i,
+  // Vite alt: "➜  Local:   http://localhost:5173/"
+  /\u279c\s+Local:\s+(https?:\/\/localhost:\d+\S*)/i,
+  // CRA / webpack: "Local:            http://localhost:3000"
+  /(?:Local|On Your Network):\s+(https?:\/\/localhost:\d+\S*)/i,
+  // Next.js: "ready - started server on 0.0.0.0:3000, url: http://localhost:3000"
+  /url:\s+(https?:\/\/localhost:\d+\S*)/i,
+  // Next.js newer: "▲ Next.js ... Local: http://localhost:3000"
+  /Next\.js[^\n]*?Local:\s+(https?:\/\/localhost:\d+)/i,
+  // Nuxt/Astro: "Local:    http://localhost:3000/"
+  // SvelteKit: "Local: http://localhost:5173"
+  // Generic: anything that says "http://localhost:PORT"
+  /(?:listening|running|available|serving|started)[\s\S]{0,80}(https?:\/\/(?:localhost|127\.0\.0\.1):\d+)/i,
+  // Fallback: bare "http://localhost:PORT" in output
+  /(https?:\/\/(?:localhost|127\.0\.0\.1):\d{2,5}(?:\/\S*)?)/,
+]
+
+function extractDevServerUrl(terminalOutput: string): string | null {
+  for (const pattern of DEV_SERVER_PATTERNS) {
+    const m = pattern.exec(terminalOutput)
+    if (m?.[1]) {
+      // Strip trailing punctuation / ANSI artifacts
+      return m[1].replace(/[\x1B]\[[0-9;]*m/g, '').replace(/[,;\s]+$/, '')
+    }
+  }
+  return null
+}
+
 interface PreviewRoutingOptions {
   activeSessionIdRef: MutableRefObject<string | null>
   baseHandleGatewayEvent: EventHandler
@@ -124,7 +160,7 @@ export function usePreviewRouting({
 
       const payload = asRecord(event.payload)
 
-      // 1. Live Browser stream auto-open & tab activation on browser tools start
+      // 1. Live Browser stream auto-open & tab activation on browser tool start
       if (event.type === 'tool.start') {
         const toolName = typeof payload.name === 'string' ? payload.name : ''
         if (toolName.startsWith('browser_') || toolName === 'web_extract_stealth' || toolName === 'web_scrape_structured') {
@@ -133,12 +169,26 @@ export function usePreviewRouting({
         }
       }
 
-      // 2. Auto-Preview files (HTML, SVG, MD, images) on tool completion
+      // 2. Auto-Preview files (HTML, SVG, MD, images) on tool completion.
+      //    The path lives inside payload.args (tool.complete payload shape:
+      //    { tool_id, name, args: { TargetFile|path, ... }, result, summary }).
+      //    Reading it from the top-level payload is always undefined — Bug #2 fix.
       if (event.type === 'tool.complete') {
-        const filePath = typeof payload.path === 'string' ? payload.path : (typeof payload.TargetFile === 'string' ? payload.TargetFile : '')
+        const args = asRecord(payload.args)
+        const filePath =
+          typeof args.TargetFile === 'string' ? args.TargetFile
+          : typeof args.path === 'string' ? args.path
+          : typeof args.file_path === 'string' ? args.file_path
+          : ''
+
         if (filePath) {
           const lower = filePath.toLowerCase()
-          const isPreviewable = lower.endsWith('.html') || lower.endsWith('.svg') || lower.endsWith('.md') || lower.endsWith('.png') || lower.endsWith('.jpg') || lower.endsWith('.jpeg') || lower.endsWith('.webp')
+          const isPreviewable =
+            lower.endsWith('.html') || lower.endsWith('.htm') ||
+            lower.endsWith('.svg') || lower.endsWith('.md') ||
+            lower.endsWith('.png') || lower.endsWith('.jpg') ||
+            lower.endsWith('.jpeg') || lower.endsWith('.webp') ||
+            lower.endsWith('.gif')
           if (isPreviewable) {
             const cwd = $currentCwd.get() || currentCwd || ''
             normalizeOrLocalPreviewTarget(filePath, cwd).then(target => {
@@ -150,6 +200,29 @@ export function usePreviewRouting({
             }).catch(err => {
               console.error('Failed to auto-preview file:', err)
             })
+          }
+        }
+
+        // 3. Node.js / universal dev-server auto-detection.
+        //    When the agent runs npm/pnpm/deno/bun/python dev commands, the
+        //    terminal output includes a "Local: http://localhost:PORT" line.
+        //    Detect it and route the preview automatically — no manual copy-paste.
+        if (typeof payload.name === 'string' && payload.name === 'terminal') {
+          const result = asRecord(payload.result)
+          const termOut = typeof result.output === 'string' ? result.output : ''
+          if (termOut) {
+            const devUrl = extractDevServerUrl(termOut)
+            if (devUrl) {
+              normalizeOrLocalPreviewTarget(devUrl, $currentCwd.get() || currentCwd || '').then(target => {
+                if (target) {
+                  setPreviewTarget(target)
+                  setPaneOpen('preview', true)
+                  selectRightRailTab(RIGHT_RAIL_PREVIEW_TAB_ID)
+                }
+              }).catch(() => {
+                // non-fatal — preview is best-effort
+              })
+            }
           }
         }
       }

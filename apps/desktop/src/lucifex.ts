@@ -1194,8 +1194,15 @@ export interface BrowserLatestResponse {
   timestamp: number
 }
 
-export function fetchBrowserLatest(): Promise<BrowserLatestResponse> {
-  return window.lucifexDesktop.api<BrowserLatestResponse>({
-    path: '/api/browser/latest'
+/**
+ * Fetch the latest browser screenshot from the desktop backend.
+ * Pass `etag` (the mtime string from a previous successful response) to
+ * enable server-side deduplication: a 304 Not Modified means the screenshot
+ * has not changed and the caller should keep its current dataUrl.
+ */
+export function fetchBrowserLatest(etag?: string): Promise<BrowserLatestResponse | null> {
+  return window.lucifexDesktop.api<BrowserLatestResponse | null>({
+    path: '/api/browser/latest',
+    ...(etag ? { headers: { 'If-None-Match': etag } } : {})
   })
 }
