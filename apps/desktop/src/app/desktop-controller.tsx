@@ -25,12 +25,14 @@ import {
   $fileBrowserOpen,
   $panesFlipped,
   $pinnedSessionIds,
+  $rightRailActiveTabId,
   FILE_BROWSER_DEFAULT_WIDTH,
   FILE_BROWSER_MAX_WIDTH,
   FILE_BROWSER_MIN_WIDTH,
   pinSession,
   PREVIEW_PANE_ID,
   restoreWorktree,
+  RIGHT_RAIL_BROWSER_TAB_ID,
   setSidebarOverlayMounted,
   SIDEBAR_DEFAULT_WIDTH,
   SIDEBAR_MAX_WIDTH,
@@ -201,6 +203,7 @@ export function DesktopController() {
   const fileBrowserOpen = useStore($fileBrowserOpen)
   const previewPaneOpen = useStore($paneOpen(PREVIEW_PANE_ID))
   const panesFlipped = useStore($panesFlipped)
+  const rightRailActiveTabId = useStore($rightRailActiveTabId)
   const profileScope = useStore($profileScope)
   // Below SIDEBAR_COLLAPSE_BREAKPOINT_PX there's no room for a docked rail —
   // collapse both sidebars (without touching their stored open state) so the
@@ -1174,7 +1177,9 @@ export function DesktopController() {
   // Other sidebars docked as real columns on the terminal's rail. Force-collapsed
   // hover-reveal overlays (narrow window) don't take a column, so they don't count.
   const railColumnOpen =
-    (chatOpen && Boolean(previewTarget || filePreviewTarget) && previewPaneOpen) ||
+    (chatOpen &&
+      (Boolean(previewTarget || filePreviewTarget) || rightRailActiveTabId === RIGHT_RAIL_BROWSER_TAB_ID) &&
+      previewPaneOpen) ||
     (chatOpen && !narrowViewport && fileBrowserOpen) ||
     (chatOpen && Boolean(currentCwd.trim()) && !narrowViewport && reviewOpen)
 
@@ -1184,7 +1189,10 @@ export function DesktopController() {
 
   const previewPane = (
     <Pane
-      disabled={!chatOpen || (!previewTarget && !filePreviewTarget)}
+      disabled={
+        !chatOpen ||
+        (!previewTarget && !filePreviewTarget && rightRailActiveTabId !== RIGHT_RAIL_BROWSER_TAB_ID)
+      }
       id={PREVIEW_PANE_ID}
       key="preview"
       maxWidth={PREVIEW_RAIL_MAX_WIDTH}
