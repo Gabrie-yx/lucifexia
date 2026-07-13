@@ -38,7 +38,7 @@ _LUCIFEX_CORE_TOOLS = [
     # hidden outside the GUI).
     "read_terminal", "close_terminal",
     # File manipulation
-    "read_file", "write_file", "patch", "search_files",
+    "read_file", "write_file", "patch", "search_files", "open_preview",
     # Vision + image generation
     "vision_analyze", "image_generate",
     # Skills

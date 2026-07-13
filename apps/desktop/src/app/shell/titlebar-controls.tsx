@@ -14,10 +14,12 @@ import {
   $fileBrowserOpen,
   $panesFlipped,
   $sidebarOpen,
+  PREVIEW_PANE_ID,
   toggleFileBrowserOpen,
   togglePanesFlipped,
   toggleSidebarOpen
 } from '@/store/layout'
+import { $paneOpen, togglePane } from '@/store/panes'
 
 import { appViewForPath, isOverlayView } from '../routes'
 
@@ -75,6 +77,18 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
   const sessionsEdge = { open: sidebarOpen, toggle: toggleSidebarOpen }
   const leftEdge = panesFlipped ? fileBrowserEdge : sessionsEdge
   const rightEdge = panesFlipped ? sessionsEdge : fileBrowserEdge
+
+  const previewOpen = useStore($paneOpen(PREVIEW_PANE_ID))
+  const previewSidebarTool: TitlebarTool = {
+    icon: <Codicon name="browser" />,
+    id: 'preview-sidebar',
+    label: previewOpen ? t.titlebar.hideRightSidebar : t.titlebar.showRightSidebar, // We will use a custom label or i18n if needed
+    title: previewOpen ? 'Ocultar Preview/Navegador' : 'Mostrar Preview/Navegador',
+    onSelect: () => {
+      triggerHaptic('tap')
+      togglePane(PREVIEW_PANE_ID)
+    }
+  }
 
   const leftToolbarTools: TitlebarTool[] = [
     {
@@ -191,6 +205,7 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
           <TitlebarToolButton key={tool.id} navigate={navigate} tool={tool} />
         ))}
         {settingsTool && <TitlebarToolButton navigate={navigate} tool={settingsTool} />}
+        <TitlebarToolButton navigate={navigate} tool={previewSidebarTool} />
         <TitlebarToolButton navigate={navigate} tool={rightSidebarTool} />
       </div>
     </>
