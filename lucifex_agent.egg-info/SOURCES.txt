@@ -1020,6 +1020,8 @@ optional-skills/web-development/cloudflare-temporary-deploy/scripts/parse_deploy
 optional-skills/web-development/page-agent/SKILL.md
 plugins/__init__.py
 plugins/plugin_utils.py
+plugins/agent_reach/__init__.py
+plugins/agent_reach/plugin.yaml
 plugins/browser/browser_use/__init__.py
 plugins/browser/browser_use/plugin.yaml
 plugins/browser/browser_use/provider.py
@@ -1256,6 +1258,8 @@ plugins/platforms/wecom/wecom_crypto.py
 plugins/platforms/whatsapp/__init__.py
 plugins/platforms/whatsapp/adapter.py
 plugins/platforms/whatsapp/plugin.yaml
+plugins/scrapling/__init__.py
+plugins/scrapling/plugin.yaml
 plugins/security-guidance/README.md
 plugins/security-guidance/__init__.py
 plugins/security-guidance/patterns.py
@@ -1273,6 +1277,8 @@ plugins/teams_pipeline/plugin.yaml
 plugins/teams_pipeline/runtime.py
 plugins/teams_pipeline/store.py
 plugins/teams_pipeline/subscriptions.py
+plugins/video_creator/__init__.py
+plugins/video_creator/plugin.yaml
 plugins/video_gen/fal/__init__.py
 plugins/video_gen/fal/plugin.yaml
 plugins/video_gen/xai/__init__.py
@@ -1541,6 +1547,7 @@ skills/creative/touchdesigner-mcp/references/troubleshooting.md
 skills/creative/touchdesigner-mcp/scripts/setup.sh
 skills/data-science/DESCRIPTION.md
 skills/data-science/jupyter-live-kernel/SKILL.md
+skills/design/SKILL.md
 skills/dogfood/SKILL.md
 skills/dogfood/references/issue-taxonomy.md
 skills/dogfood/templates/dogfood-report-template.md
@@ -1918,6 +1925,7 @@ tools/osv_check.py
 tools/patch_parser.py
 tools/path_security.py
 tools/playbook_tool.py
+tools/preview_tool.py
 tools/process_registry.py
 tools/project_tools.py
 tools/read_extract.py

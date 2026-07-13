@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: lucifex-agent
-Version: 0.20.1
+Version: 0.20.3
 Summary: The self-improving AI agent — creates skills from experience, improves them during use, and runs anywhere
 Author: Nous Research
 License-Expression: MIT
@@ -183,12 +183,39 @@ Dynamic: license-file
 <p align="center">
   <a href="https://github.com/Gabrie-yx/lucifexia/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License: MIT"></a>
   <a href="https://github.com/Gabrie-yx/lucifexia"><img src="https://img.shields.io/badge/Built%20for-LUCIFEXIA-blueviolet?style=for-the-badge" alt="Built for LUCIFEXIA"></a>
-  <img src="https://img.shields.io/badge/version-0.20.1-ff6b6b?style=for-the-badge" alt="Version 0.20.1">
+  <img src="https://img.shields.io/badge/version-0.20.3-ff6b6b?style=for-the-badge" alt="Version 0.20.3">
 </p>
 
-**O agente de IA auto-melhorável projetado para ser executado de forma local e independente.** É o único agente com um loop de aprendizado integrado: ele cria habilidades a partir da experiência, melhora-as durante o uso, gerencia seu próprio conhecimento, busca em conversas passadas e constrói um perfil profundo de suas preferências entre as sessões. Pode ser executado em sua máquina local, em uma VPS de $5 ou em servidores na nuvem.
+**O agente de IA auto-melhorável projetado para ser executado de forma local e independente.** É o único agente com um loop de aprendizado integrado: ele cria habilidades a partir da experiência, melhora-as durante o uso, gerencia seu próprio conhecimento, busca em conversas passadas e constrói um perfil profundo de suas preferências entre as sesões. Pode ser executado em sua máquina local, em uma VPS de $5 ou em servidores na nuvem.
 
 Use qualquer modelo que desejar — **Ollama** (processamento 100% local e privado), OpenRouter, OpenAI, seu próprio endpoint personalizado e muitos outros. Mude facilmente usando o comando `lucifex model` — sem alterações de código, sem dependências de fornecedores.
+
+---
+
+## ✨ v0.20.3 — Live Preview & Correções Críticas (ad97ed6 / 22f98e4 / d3c85b2)
+
+> *Transmissão visual do navegador em tempo real, auto-preview de arquivos gerados, ferramenta de preview forçado e correções críticas.*
+
+<table>
+<tr><td><b>🖥️ Live Browser View</b></td><td>Transmissão de capturas de tela em tempo real no painel direito do Desktop durante ações do navegador (<code>browser_navigate</code>, <code>click</code>, etc.).</td></tr>
+<tr><td><b>⚡ Auto-Preview & Dev Server</b></td><td>Abertura automática de arquivos gerados (HTML, SVG, MD, imagens). Escaneamento inteligente de terminal para redirecionar o preview para servidores locais (Vite, Next.js, Django, etc.).</td></tr>
+<tr><td><b>🔍 Ferramenta open_preview</b></td><td>Permite ao agente comandar a abertura explícita de qualquer arquivo local ou URL web diretamente na aba Preview do Desktop (ferramenta: <code>open_preview</code>).</td></tr>
+<tr><td><b>🔋 Otimização de Performance</b></td><td>Implementação de cabeçalhos ETag/304 no endpoint de screenshots, reduzindo em 99% a re-encodificação base64 quando o navegador está inativo, e suspensão do polling quando a aba está oculta.</td></tr>
+<tr><td><b>🛠️ Correções de Plugins</b></td><td>Conserto de 5 bugs críticos nos plugins <code>scrapling</code> (bypass sem playwright obrigatório), <code>agent-reach</code> (busca de redes sociais nativa e YouTube Transcript) e <code>video-creator</code>.</td></tr>
+</table>
+
+---
+
+## ✨ v0.20.2 — Extensões e Integrações (de79e08)
+
+> *Mais conectividade, extração furtiva de dados e criação de conteúdo local.*
+
+<table>
+<tr><td><b>🕷️ Scrapling</b></td><td>Extração stealth de páginas modernas com ferramentas como <code>web_extract_stealth</code> e <code>web_scrape_structured</code>. Instala automaticamente sob demanda.</td></tr>
+<tr><td><b>📡 Agent-Reach</b></td><td>Conectividade com redes sociais (X/Twitter, Reddit e transcrições completas do YouTube) via ferramentas como <code>social_read</code>, <code>youtube_transcript</code> e <code>reddit_search</code>.</td></tr>
+<tr><td><b>🎬 Video Creator</b></td><td>Geração autônoma de vídeos curtos estruturados (imagens, legendas, narração TTS) com <code>create_short_video</code> e <code>list_tts_voices</code> (requer ffmpeg no PATH).</td></tr>
+<tr><td><b>🎨 Skill de Design</b></td><td>Habilidade de design avançado (<code>skills/design/SKILL.md</code>) que ativa automaticamente ao solicitar UIs, dashboards, slides, protótipos ou layouts visuais complexos.</td></tr>
+</table>
 
 ---
 

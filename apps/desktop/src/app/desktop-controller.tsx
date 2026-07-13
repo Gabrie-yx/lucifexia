@@ -1177,9 +1177,7 @@ export function DesktopController() {
   // Other sidebars docked as real columns on the terminal's rail. Force-collapsed
   // hover-reveal overlays (narrow window) don't take a column, so they don't count.
   const railColumnOpen =
-    (chatOpen &&
-      (Boolean(previewTarget || filePreviewTarget) || rightRailActiveTabId === RIGHT_RAIL_BROWSER_TAB_ID) &&
-      previewPaneOpen) ||
+    (chatOpen && previewPaneOpen) ||
     (chatOpen && !narrowViewport && fileBrowserOpen) ||
     (chatOpen && Boolean(currentCwd.trim()) && !narrowViewport && reviewOpen)
 
@@ -1189,10 +1187,7 @@ export function DesktopController() {
 
   const previewPane = (
     <Pane
-      disabled={
-        !chatOpen ||
-        (!previewTarget && !filePreviewTarget && rightRailActiveTabId !== RIGHT_RAIL_BROWSER_TAB_ID)
-      }
+      disabled={!chatOpen}
       id={PREVIEW_PANE_ID}
       key="preview"
       maxWidth={PREVIEW_RAIL_MAX_WIDTH}
