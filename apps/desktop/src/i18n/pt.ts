@@ -879,7 +879,7 @@ export const pt = defineLocale({
     connected: 'Conectado',
     connecting: 'Conectando',
     startChatting: 'Começar',
-    featuredPitch: 'LUCIFEXIA (Ollama) — Processamento 100% Local com Ollama e modelo ULTRON-V2',
+    featuredPitch: 'LUCIFEXIA (Ollama) — Processamento 100% Local (Em Breve)',
     openRouterPitch: 'Uma chave, centenas de modelos — boa opção padrão',
     apiKeyOptions: {
       openrouter: {

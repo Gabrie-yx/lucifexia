@@ -1439,7 +1439,18 @@ def get_provider_auth_state(provider_id: str) -> Optional[Dict[str, Any]]:
 def get_active_provider() -> Optional[str]:
     """Return the currently active provider ID from auth store."""
     auth_store = _load_auth_store()
-    return auth_store.get("active_provider")
+    active = auth_store.get("active_provider")
+    if active == "nous":
+        try:
+            with _auth_store_lock():
+                store = _load_auth_store()
+                if store.get("active_provider") == "nous":
+                    store["active_provider"] = None
+                    _save_auth_store(store)
+        except Exception:
+            pass
+        return None
+    return active
 
 
 def is_provider_explicitly_configured(provider_id: str) -> bool:

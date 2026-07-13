@@ -4,7 +4,7 @@ import { Check, ChevronRight, Terminal } from '@/lib/icons'
 import type { OAuthProvider } from '@/types/lucifex'
 
 const PROVIDER_DISPLAY: Record<string, { order: number; title: string }> = {
-  nous: { order: 0, title: 'LUCIFEXIA (Ollama)' },
+  nous: { order: 0, title: 'LUCIFEXIA (Ollama) — Em Breve' },
   'openai-codex': { order: 1, title: 'OpenAI OAuth (ChatGPT)' },
   'minimax-oauth': { order: 2, title: 'MiniMax' },
   'qwen-oauth': { order: 3, title: 'Qwen Code' },
@@ -32,21 +32,33 @@ export function FeaturedProviderRow({
 }) {
   const { t } = useI18n()
   const loggedIn = provider.status?.logged_in
+  const isNous = provider.id === 'nous'
 
   return (
     <button
-      className="group relative flex w-full items-center justify-between gap-4 rounded-[8px] bg-primary/[0.06] px-3 py-2.5 text-left transition-colors hover:bg-primary/10"
-      onClick={() => onSelect(provider)}
+      className={`group relative flex w-full items-center justify-between gap-4 rounded-[8px] bg-primary/[0.06] px-3 py-2.5 text-left transition-colors ${
+        isNous ? 'opacity-50 cursor-not-allowed' : 'hover:bg-primary/10'
+      }`}
+      onClick={() => {
+        if (!isNous) {
+          onSelect(provider)
+        }
+      }}
+      disabled={isNous}
       type="button"
     >
-      <span aria-hidden className="arc-border arc-reverse arc-nous" />
+      <span aria-hidden className={`arc-border arc-reverse arc-nous ${isNous ? 'opacity-20' : ''}`} />
       <div className="min-w-0">
         <div className="flex items-center gap-2">
           <img alt="" className="size-5 shrink-0 rounded" src={assetPath('apple-touch-icon.png')} />
           <span className="text-[length:var(--conversation-text-font-size)] font-semibold">
             {providerTitle(provider)}
           </span>
-          {loggedIn ? (
+          {isNous ? (
+            <span className="inline-flex items-center gap-1.5 bg-muted-foreground/30 px-2 py-0.5 text-[0.64rem] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+              Em Breve
+            </span>
+          ) : loggedIn ? (
             <ConnectedTag />
           ) : (
             <span className="inline-flex items-center gap-1.5 bg-primary px-2 py-0.5 text-[0.64rem] font-semibold uppercase tracking-[0.16em] text-primary-foreground">
@@ -57,7 +69,9 @@ export function FeaturedProviderRow({
         </div>
         <p className="mt-1 text-xs leading-5 text-muted-foreground">{t.onboarding.featuredPitch}</p>
       </div>
-      <ChevronRight className="size-4 shrink-0 text-primary transition group-hover:translate-x-0.5" />
+      {!isNous && (
+        <ChevronRight className="size-4 shrink-0 text-primary transition group-hover:translate-x-0.5" />
+      )}
     </button>
   )
 }
@@ -100,19 +114,34 @@ export function ProviderRow({
   const { t } = useI18n()
   const loggedIn = provider.status?.logged_in
   const Trail = provider.flow === 'external' ? Terminal : ChevronRight
+  const isNous = provider.id === 'nous'
 
   return (
-    <RowButton className={PROVIDER_ROW_CLASS} onClick={() => onSelect(provider)}>
+    <RowButton
+      className={`${PROVIDER_ROW_CLASS} ${isNous ? 'opacity-50 cursor-not-allowed' : ''}`}
+      onClick={() => {
+        if (!isNous) {
+          onSelect(provider)
+        }
+      }}
+      disabled={isNous}
+    >
       <div className="min-w-0">
         <div className="flex items-center gap-2">
           <span className="text-[length:var(--conversation-text-font-size)] font-semibold">
             {providerTitle(provider)}
           </span>
-          {loggedIn ? <ConnectedTag /> : null}
+          {isNous ? (
+            <span className="inline-flex items-center gap-1.5 bg-muted-foreground/30 px-2 py-0.5 text-[0.64rem] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+              Em Breve
+            </span>
+          ) : loggedIn ? (
+            <ConnectedTag />
+          ) : null}
         </div>
         <p className="mt-1 text-xs leading-5 text-muted-foreground">{t.onboarding.flowSubtitles[provider.flow]}</p>
       </div>
-      <Trail className="size-4 text-muted-foreground transition group-hover:text-foreground" />
+      {!isNous && <Trail className="size-4 text-muted-foreground transition group-hover:text-foreground" />}
     </RowButton>
   )
 }

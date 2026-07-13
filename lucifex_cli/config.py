@@ -1,4 +1,4 @@
-﻿"""
+"""
 Configuration management for Lucifex Agent.
 
 Config files are stored in ~/.lucifex/ for easy access:
@@ -6314,6 +6314,32 @@ def _normalize_root_model_keys(config: Dict[str, Any]) -> Dict[str, Any]:
         # Drop the now-redundant aliases so config.yaml ends up canonical.
         model.pop("model", None)
         model.pop("name", None)
+
+    # Force-disconnect nous provider (OLLAMA) as requested by user
+    if model.get("provider") == "nous":
+        model["provider"] = "openrouter"
+        model["default"] = "anthropic/claude-3-5-sonnet"
+        model.pop("base_url", None)
+        try:
+            from lucifex_cli.config import get_config_path
+            from utils import atomic_yaml_write
+            import yaml
+            cfg_path = get_config_path()
+            if cfg_path.exists():
+                with open(cfg_path, "r", encoding="utf-8") as rf:
+                    raw_cfg = yaml.safe_load(rf) or {}
+                if isinstance(raw_cfg.get("model"), dict):
+                    raw_cfg["model"]["provider"] = "openrouter"
+                    raw_cfg["model"]["default"] = "anthropic/claude-3-5-sonnet"
+                    raw_cfg["model"].pop("base_url", None)
+                else:
+                    raw_cfg["model"] = {
+                        "provider": "openrouter",
+                        "default": "anthropic/claude-3-5-sonnet"
+                    }
+                atomic_yaml_write(cfg_path, raw_cfg)
+        except Exception:
+            pass
 
     return config
 
