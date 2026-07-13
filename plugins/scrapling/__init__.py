@@ -1,52 +1,60 @@
 """Scrapling plugin — web scraping stealth com bypass de anti-bot.
 
-Expõe duas ferramentas gateadas pela presença do pacote ``scrapling``:
+Expõe duas ferramentas de scraping:
 
 - ``web_extract_stealth(url, selector?, wait_for?, js_enabled?)``
-  Faz scraping com fingerprint de navegador real. Passa em ~98% dos
-  anti-bots (Cloudflare, Datadome, PerimeterX) sem VPN. Auto-adapta
-  seletores CSS se o site mudar layout.
+  Extrai conteúdo com fingerprint de browser real. Auto-adapta seletores.
+  Usa renderização JS completa quando playwright estiver disponível.
 
 - ``web_scrape_structured(url, schema)``
-  Extrai JSON estruturado de qualquer página usando Scrapling +
-  extração baseada em esquema declarativo.
+  Extrai JSON estruturado usando esquema declarativo de seletores CSS.
 
-Instalação automática: o plugin instala ``scrapling`` via lazy_deps
-na primeira execução se ainda não estiver disponível.
+Instalação automática: instala ``scrapling`` via pip na primeira execução.
 """
 
 from __future__ import annotations
 
 import logging
+import subprocess
+import sys
 from typing import Any
 
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# Lazy install helper
+# Pip install helper — NÃO usa tools.lazy_deps (inacessível em plugins)
 # ---------------------------------------------------------------------------
 
+def _pip_install(package: str) -> bool:
+    """Instala um pacote via pip. Retorna True em caso de sucesso."""
+    try:
+        subprocess.check_call(
+            [sys.executable, "-m", "pip", "install", package, "--quiet",
+             "--disable-pip-version-check"],
+            timeout=120,
+        )
+        return True
+    except Exception as exc:
+        logger.warning("pip install %s falhou: %s", package, exc)
+        return False
+
+
 def _ensure_scrapling() -> bool:
-    """Garante que scrapling está instalado. Retorna True se disponível."""
+    """Garante que scrapling está instalado. Instala se necessário."""
     try:
         import scrapling  # noqa: F401
         return True
     except ImportError:
         pass
+    logger.info("Scrapling não encontrado — instalando...")
+    if _pip_install("scrapling"):
+        try:
+            import scrapling  # noqa: F401
+            return True
+        except ImportError:
+            pass
+    return False
 
-    try:
-        from tools import lazy_deps
-        lazy_deps.ensure_package("scrapling", "scrapling")
-        import scrapling  # noqa: F401
-        return True
-    except Exception as exc:
-        logger.warning("scrapling não disponível: %s", exc)
-        return False
-
-
-# ---------------------------------------------------------------------------
-# Verificação de disponibilidade (check_fn para ferramentas gateadas)
-# ---------------------------------------------------------------------------
 
 def _scrapling_available() -> bool:
     try:
@@ -54,6 +62,51 @@ def _scrapling_available() -> bool:
         return True
     except ImportError:
         return False
+
+
+# ---------------------------------------------------------------------------
+# Fetcher factory — usa JS rendering quando playwright disponível,
+# fallback para Fetcher httpx (sem browser) caso contrário.
+# ---------------------------------------------------------------------------
+
+def _make_fetcher(js_enabled: bool, wait_for: str = ""):
+    """Retorna o melhor fetcher disponível dado o contexto."""
+    import scrapling
+    from scrapling.fetchers import Fetcher
+
+    if not js_enabled:
+        return Fetcher(auto_match=True), "httpx"
+
+    # Tenta PlaywrightFetcher (scrapling ≥ 0.2)
+    try:
+        from scrapling.fetchers import PlaywrightFetcher
+        return PlaywrightFetcher(auto_match=True, headless=True), "playwright"
+    except (ImportError, AttributeError):
+        pass
+
+    # Tenta StealthyFetcher (scrapling < 0.2)
+    try:
+        from scrapling.fetchers import StealthyFetcher
+        return StealthyFetcher(auto_match=True), "stealth"
+    except (ImportError, AttributeError):
+        pass
+
+    # Último recurso: Fetcher simples
+    return Fetcher(auto_match=True), "httpx-fallback"
+
+
+def _page_text(page) -> str:
+    """Extrai texto de uma página Scrapling de forma compatível entre versões."""
+    # scrapling 0.2+: get_all_text()
+    if hasattr(page, "get_all_text"):
+        return page.get_all_text(separator="\n")
+    # Fallback: html attribute
+    if hasattr(page, "html"):
+        html = page.html or ""
+        # Remove tags simples para retornar texto limpo
+        import re
+        return re.sub(r"<[^>]+>", " ", html).strip()
+    return str(page)
 
 
 # ---------------------------------------------------------------------------
@@ -66,79 +119,91 @@ def web_extract_stealth(
     wait_for: str = "",
     js_enabled: bool = True,
 ) -> str:
-    """Extrai conteúdo de uma URL usando scraping stealth com bypass de anti-bot.
+    """Extrai conteúdo de uma URL usando scraping com bypass de anti-bot.
 
-    Usa fingerprint de navegador real para passar por Cloudflare, Datadome
-    e outros anti-bots. Auto-adapta seletores CSS se o site mudar layout.
+    Usa fingerprint de browser real. Tenta renderização JavaScript quando
+    playwright está instalado; usa httpx rápido como fallback.
+    Auto-adapta seletores CSS se o site mudar layout.
 
     Args:
         url: URL da página a extrair.
-        selector: Seletor CSS opcional para extrair elemento específico.
-                  Se vazio, retorna o texto completo da página.
-        wait_for: Seletor CSS a aguardar antes de extrair (útil para SPAs).
-        js_enabled: Se True (padrão), usa renderização JavaScript completa.
-                    Se False, usa fetch simples (mais rápido, sem JS).
+        selector: Seletor CSS opcional para elemento específico.
+                  Vazio = texto completo da página.
+        wait_for: Seletor CSS a aguardar (para SPAs com carregamento dinâmico).
+        js_enabled: True = renderização JS completa (quando disponível).
+                    False = fetch httpx rápido (sem JavaScript).
 
     Returns:
         Conteúdo textual extraído da página.
     """
     if not _ensure_scrapling():
         return (
-            "[ERRO] Scrapling não pôde ser instalado. "
-            "Execute: pip install scrapling"
+            "❌ Scrapling não pôde ser instalado.\n"
+            "Execute manualmente: pip install scrapling\n"
+            "Depois tente novamente."
         )
 
     try:
-        if js_enabled:
-            from scrapling.fetchers import StealthyFetcher
-            fetcher = StealthyFetcher()
-            page = fetcher.fetch(url, wait_for=wait_for or None)
-        else:
-            from scrapling.fetchers import Fetcher
-            fetcher = Fetcher()
+        fetcher, engine = _make_fetcher(js_enabled, wait_for)
+        logger.debug("web_extract_stealth: usando engine=%s para %s", engine, url)
+
+        # Busca a página
+        try:
+            if js_enabled and wait_for and engine != "httpx-fallback":
+                page = fetcher.fetch(url, wait_for=wait_for)
+            else:
+                page = fetcher.fetch(url)
+        except TypeError:
+            # Alguns fetchers não aceitam wait_for
             page = fetcher.fetch(url)
 
         if selector:
-            elements = page.find_all(selector)
+            try:
+                elements = page.find_all(selector)
+            except AttributeError:
+                # API alternativa
+                elements = page.css(selector) if hasattr(page, "css") else []
             if not elements:
-                return f"[Scrapling] Nenhum elemento encontrado com seletor: {selector}"
-            return "\n".join(el.text for el in elements)
+                return f"[Scrapling/{engine}] Nenhum elemento encontrado com seletor: {selector}"
+            return "\n".join(
+                getattr(el, "text", str(el)).strip() for el in elements
+            )
 
-        return page.get_all_text(separator="\n")
+        return _page_text(page)
 
     except Exception as exc:
         logger.error("web_extract_stealth falhou para %s: %s", url, exc)
-        return f"[ERRO] Falha no scraping stealth de {url}: {exc}"
+        return f"[ERRO] Falha no scraping de {url}: {exc}"
 
 
 def web_scrape_structured(
     url: str,
     schema: dict,
 ) -> str:
-    """Extrai dados estruturados de uma página usando um esquema declarativo.
-
-    Combina Scrapling com extração baseada em esquema: define quais campos
-    quer (seletor CSS + transformação) e obtém JSON estruturado.
+    """Extrai dados estruturados de uma página usando esquema declarativo CSS.
 
     Args:
         url: URL da página a extrair.
-        schema: Dicionário com definição dos campos a extrair.
+        schema: Dicionário {nome_campo: seletor_css}.
                 Exemplo: {"titulo": "h1", "preco": ".price", "descricao": ".desc"}
 
     Returns:
-        JSON com os campos extraídos.
+        JSON com os campos extraídos conforme o schema.
     """
     import json
 
     if not _ensure_scrapling():
         return (
-            "[ERRO] Scrapling não pôde ser instalado. "
-            "Execute: pip install scrapling"
+            "❌ Scrapling não pôde ser instalado.\n"
+            "Execute manualmente: pip install scrapling"
         )
 
+    if not isinstance(schema, dict) or not schema:
+        return "[ERRO] schema deve ser um dicionário {campo: seletor_css} não-vazio."
+
     try:
-        from scrapling.fetchers import StealthyFetcher
-        fetcher = StealthyFetcher()
+        fetcher, engine = _make_fetcher(js_enabled=False)
+        logger.debug("web_scrape_structured: engine=%s para %s", engine, url)
         page = fetcher.fetch(url)
 
         result: dict[str, Any] = {}
@@ -146,13 +211,19 @@ def web_scrape_structured(
             if not isinstance(css_selector, str):
                 result[field_name] = None
                 continue
-            elements = page.find_all(css_selector)
+            try:
+                elements = page.find_all(css_selector)
+            except AttributeError:
+                elements = page.css(css_selector) if hasattr(page, "css") else []
+
             if not elements:
                 result[field_name] = None
             elif len(elements) == 1:
-                result[field_name] = elements[0].text.strip()
+                result[field_name] = getattr(elements[0], "text", str(elements[0])).strip()
             else:
-                result[field_name] = [el.text.strip() for el in elements]
+                result[field_name] = [
+                    getattr(el, "text", str(el)).strip() for el in elements
+                ]
 
         return json.dumps(result, ensure_ascii=False, indent=2)
 
@@ -162,20 +233,22 @@ def web_scrape_structured(
 
 
 # ---------------------------------------------------------------------------
-# Registro das ferramentas
+# Registro das ferramentas — SEM check_fn para que apareçam sempre.
+# A instalação acontece na primeira chamada via _ensure_scrapling().
 # ---------------------------------------------------------------------------
 
 def register(registry: Any) -> None:
-    """Registra as ferramentas do plugin Scrapling no registry do Lucifex."""
+    """Registra as ferramentas do plugin Scrapling."""
 
     registry.register(
         name="web_extract_stealth",
         func=web_extract_stealth,
         description=(
-            "Extrai conteúdo de uma URL usando scraping stealth com bypass automático "
-            "de anti-bot (Cloudflare, Datadome, PerimeterX). Usa fingerprint de navegador "
-            "real. Prefira esta ferramenta quando web_extract falhar com 403/CAPTCHA. "
-            "Use js_enabled=false para sites simples (mais rápido)."
+            "Extrai conteúdo de uma URL com bypass automático de anti-bot "
+            "(Cloudflare, Datadome, PerimeterX). Usa fingerprint de browser real "
+            "e auto-adapta seletores CSS quando o site muda layout. "
+            "Prefira esta ferramenta quando web_extract falhar com 403/CAPTCHA. "
+            "Use js_enabled=false para sites simples (mais rápido, sem JS)."
         ),
         parameters={
             "type": "object",
@@ -186,29 +259,28 @@ def register(registry: Any) -> None:
                 },
                 "selector": {
                     "type": "string",
-                    "description": "Seletor CSS opcional para extrair elemento específico. Vazio = texto completo."
+                    "description": "Seletor CSS opcional. Vazio = texto completo da página."
                 },
                 "wait_for": {
                     "type": "string",
-                    "description": "Seletor CSS a aguardar antes de extrair (para SPAs com carregamento dinâmico)"
+                    "description": "Seletor CSS a aguardar (para SPAs com carregamento dinâmico)"
                 },
                 "js_enabled": {
                     "type": "boolean",
-                    "description": "Se true, renderiza JavaScript completo (padrão). Se false, fetch simples mais rápido."
+                    "description": "true = renderiza JavaScript (padrão). false = fetch rápido sem JS."
                 }
             },
             "required": ["url"]
         },
-        check_fn=_scrapling_available,
     )
 
     registry.register(
         name="web_scrape_structured",
         func=web_scrape_structured,
         description=(
-            "Extrai dados estruturados de uma página web usando um esquema declarativo. "
+            "Extrai dados estruturados de uma página web usando esquema declarativo CSS. "
             "Retorna JSON com os campos definidos no schema. "
-            "Ideal para extrair listas de produtos, preços, artigos, etc."
+            "Ideal para extrair listas de produtos, preços, artigos, tabelas, etc."
         ),
         parameters={
             "type": "object",
@@ -219,12 +291,14 @@ def register(registry: Any) -> None:
                 },
                 "schema": {
                     "type": "object",
-                    "description": "Mapa de {nome_campo: seletor_css}. Ex: {\"titulo\": \"h1\", \"preco\": \".price\"}"
+                    "description": (
+                        'Mapa de {nome_campo: seletor_css}. '
+                        'Exemplo: {"titulo": "h1", "preco": ".price", "descricao": ".desc"}'
+                    )
                 }
             },
             "required": ["url", "schema"]
         },
-        check_fn=_scrapling_available,
     )
 
-    logger.info("Plugin Scrapling: 2 ferramentas stealth registradas.")
+    logger.info("Plugin Scrapling: 2 ferramentas registradas (web_extract_stealth, web_scrape_structured).")

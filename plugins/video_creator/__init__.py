@@ -57,10 +57,22 @@ def _get_tts_engine() -> str:
         return "edge"
     except ImportError:
         pass
-    # Tenta instalar edge-tts
+    # Tenta instalar edge-tts usando a allowlist do lazy_deps (caminho preferido)
     try:
-        from tools import lazy_deps
-        lazy_deps.ensure_package("edge-tts", "edge_tts")
+        from tools.lazy_deps import ensure
+        ensure("tts.edge")
+        import edge_tts  # noqa: F401
+        return "edge"
+    except Exception:
+        pass
+    # Fallback: pip install direto (para quando tools.lazy_deps não estiver acessível)
+    try:
+        import subprocess, sys
+        subprocess.check_call(
+            [sys.executable, "-m", "pip", "install", "edge-tts", "--quiet",
+             "--disable-pip-version-check"],
+            timeout=120,
+        )
         import edge_tts  # noqa: F401
         return "edge"
     except Exception:
