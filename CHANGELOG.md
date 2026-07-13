@@ -5,6 +5,27 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [0.20.3] — 2026-07-13 🖥️ **Live Preview, Dev Server Auto-detection e Correções**
+
+> *"Transmissão visual do navegador em tempo real, auto-preview inteligente e estabilização de plugins de scraping, redes sociais e vídeo."*
+
+### Adicionado
+- **Live Browser View**: Transmissão em tempo real no Desktop das ações do navegador do agente (`browser_navigate`, `click`, etc.).
+- **Auto-Preview & Dev Server**: Detecção de servidores locais iniciados (Vite, CRA, Next.js, Django, FastAPI, Flask, etc.) e abertura automática de previews HTML, SVG, Markdown e imagens.
+- **Performance Caching (ETag/304)**: Suporte a cache por ETag/304 no endpoint de screenshots do navegador, evitando re-encodificação base64 quando a tela está ociosa.
+- **document.hidden Guard**: Pausa automática de polling no Live Browser quando a aba está oculta para reduzir consumo de bateria/CPU.
+
+### Corrigido
+- **Bug de Screenshot CLI**: Corrigido argumento `--path` inválido no CLI do agent-browser (substituído por argumento posicional com `--full`).
+- **Bug de Leitura de Payload**: Ajustado roteamento de preview no desktop para extrair caminhos de arquivos a partir de `payload.args.TargetFile` ao invés de buscar no topo do payload.
+- **Segurança da API**: Adicionado guard `_require_token` ao endpoint de captura do navegador.
+- **Falha de lazy_deps em Plugins**: Substituído uso de `lazy_deps.ensure_package` (inexistente em contexto de plugins) por instalação limpa via `pip` ou chamadas `ensure()` válidas no allowlist.
+- **YouTube Transcript API**: Compatibilidade garantida em versões antigas (<0.6) e novas (>=0.6, onde objetos `FetchedTranscriptSnippet` substituem dicionários).
+- **Reddit 403**: Headers de navegador reais adicionados às buscas JSON do Reddit para evitar bloqueios 403.
+- **Scrapling sem Playwright**: Removido bloqueio do plugin quando Playwright não está configurado; agora usa motor HTTPX robusto como fallback automático.
+
+---
+
 ## [0.20.2] — 2026-07-13 🔌 **Extensões, Integrações e Correções**
 
 > *"Mais conectividade, extração furtiva de dados, criação de conteúdo local e estabilidade."*

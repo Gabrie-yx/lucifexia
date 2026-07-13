@@ -10,12 +10,25 @@
 <p align="center">
   <a href="https://github.com/Gabrie-yx/lucifexia/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License: MIT"></a>
   <a href="https://github.com/Gabrie-yx/lucifexia"><img src="https://img.shields.io/badge/Built%20for-LUCIFEXIA-blueviolet?style=for-the-badge" alt="Built for LUCIFEXIA"></a>
-  <img src="https://img.shields.io/badge/version-0.20.2-ff6b6b?style=for-the-badge" alt="Version 0.20.2">
+  <img src="https://img.shields.io/badge/version-0.20.3-ff6b6b?style=for-the-badge" alt="Version 0.20.3">
 </p>
 
 **O agente de IA auto-melhorável projetado para ser executado de forma local e independente.** É o único agente com um loop de aprendizado integrado: ele cria habilidades a partir da experiência, melhora-as durante o uso, gerencia seu próprio conhecimento, busca em conversas passadas e constrói um perfil profundo de suas preferências entre as sesões. Pode ser executado em sua máquina local, em uma VPS de $5 ou em servidores na nuvem.
 
 Use qualquer modelo que desejar — **Ollama** (processamento 100% local e privado), OpenRouter, OpenAI, seu próprio endpoint personalizado e muitos outros. Mude facilmente usando o comando `lucifex model` — sem alterações de código, sem dependências de fornecedores.
+
+---
+
+## ✨ v0.20.3 — Live Preview & Correções Críticas (ad97ed6 / 22f98e4)
+
+> *Transmissão visual do navegador em tempo real, auto-preview de arquivos gerados e correções críticas em plugins.*
+
+<table>
+<tr><td><b>🖥️ Live Browser View</b></td><td>Transmissão de capturas de tela em tempo real no painel direito do Desktop durante ações do navegador (<code>browser_navigate</code>, <code>click</code>, etc.).</td></tr>
+<tr><td><b>⚡ Auto-Preview & Dev Server</b></td><td>Abertura automática de arquivos gerados (HTML, SVG, MD, imagens). Escaneamento inteligente de terminal para redirecionar o preview para servidores locais (Vite, Next.js, Django, etc.).</td></tr>
+<tr><td><b>🔋 Otimização de Performance</b></td><td>Implementação de cabeçalhos ETag/304 no endpoint de screenshots, reduzindo em 99% a re-encodificação base64 quando o navegador está inativo, e suspensão do polling quando a aba está oculta.</td></tr>
+<tr><td><b>🛠️ Correções de Plugins</b></td><td>Conserto de 5 bugs críticos nos plugins <code>scrapling</code> (bypass sem playwright obrigatório), <code>agent-reach</code> (busca de redes sociais nativa e YouTube Transcript) e <code>video-creator</code>.</td></tr>
+</table>
 
 ---
 
