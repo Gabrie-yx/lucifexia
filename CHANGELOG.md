@@ -12,6 +12,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 ### Adicionado
 - **Live Browser View**: Transmissão em tempo real no Desktop das ações do navegador do agente (`browser_navigate`, `click`, etc.).
 - **Auto-Preview & Dev Server**: Detecção de servidores locais iniciados (Vite, CRA, Next.js, Django, FastAPI, Flask, etc.) e abertura automática de previews HTML, SVG, Markdown e imagens.
+- **Ferramenta open_preview**: Adicionada ferramenta nativa `open_preview(path_or_url)` para o agente forçar a abertura manual de arquivos e sites no painel de Preview.
 - **Performance Caching (ETag/304)**: Suporte a cache por ETag/304 no endpoint de screenshots do navegador, evitando re-encodificação base64 quando a tela está ociosa.
 - **document.hidden Guard**: Pausa automática de polling no Live Browser quando a aba está oculta para reduzir consumo de bateria/CPU.
 

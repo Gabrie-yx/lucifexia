@@ -19,13 +19,14 @@ Use qualquer modelo que desejar — **Ollama** (processamento 100% local e priva
 
 ---
 
-## ✨ v0.20.3 — Live Preview & Correções Críticas (ad97ed6 / 22f98e4)
+## ✨ v0.20.3 — Live Preview & Correções Críticas (ad97ed6 / 22f98e4 / d3c85b2)
 
-> *Transmissão visual do navegador em tempo real, auto-preview de arquivos gerados e correções críticas em plugins.*
+> *Transmissão visual do navegador em tempo real, auto-preview de arquivos gerados, ferramenta de preview forçado e correções críticas.*
 
 <table>
 <tr><td><b>🖥️ Live Browser View</b></td><td>Transmissão de capturas de tela em tempo real no painel direito do Desktop durante ações do navegador (<code>browser_navigate</code>, <code>click</code>, etc.).</td></tr>
 <tr><td><b>⚡ Auto-Preview & Dev Server</b></td><td>Abertura automática de arquivos gerados (HTML, SVG, MD, imagens). Escaneamento inteligente de terminal para redirecionar o preview para servidores locais (Vite, Next.js, Django, etc.).</td></tr>
+<tr><td><b>🔍 Ferramenta open_preview</b></td><td>Permite ao agente comandar a abertura explícita de qualquer arquivo local ou URL web diretamente na aba Preview do Desktop (ferramenta: <code>open_preview</code>).</td></tr>
 <tr><td><b>🔋 Otimização de Performance</b></td><td>Implementação de cabeçalhos ETag/304 no endpoint de screenshots, reduzindo em 99% a re-encodificação base64 quando o navegador está inativo, e suspensão do polling quando a aba está oculta.</td></tr>
 <tr><td><b>🛠️ Correções de Plugins</b></td><td>Conserto de 5 bugs críticos nos plugins <code>scrapling</code> (bypass sem playwright obrigatório), <code>agent-reach</code> (busca de redes sociais nativa e YouTube Transcript) e <code>video-creator</code>.</td></tr>
 </table>

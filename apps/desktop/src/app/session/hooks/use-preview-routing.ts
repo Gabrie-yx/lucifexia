@@ -175,6 +175,25 @@ export function usePreviewRouting({
       //    Reading it from the top-level payload is always undefined — Bug #2 fix.
       if (event.type === 'tool.complete') {
         const args = asRecord(payload.args)
+        const toolName = typeof payload.name === 'string' ? payload.name : ''
+
+        // Explicit open_preview tool handler
+        if (toolName === 'open_preview') {
+          const pathOrUrl = typeof args.path_or_url === 'string' ? args.path_or_url : ''
+          if (pathOrUrl) {
+            const cwd = $currentCwd.get() || currentCwd || ''
+            normalizeOrLocalPreviewTarget(pathOrUrl, cwd).then(target => {
+              if (target) {
+                setPreviewTarget(target)
+                setPaneOpen('preview', true)
+                selectRightRailTab(RIGHT_RAIL_PREVIEW_TAB_ID)
+              }
+            }).catch(err => {
+              console.error('Failed to open preview:', err)
+            })
+          }
+        }
+
         const filePath =
           typeof args.TargetFile === 'string' ? args.TargetFile
           : typeof args.path === 'string' ? args.path
