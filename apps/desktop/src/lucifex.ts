@@ -1192,6 +1192,7 @@ export function runDebugShare(): Promise<DebugShareResponse> {
 export interface BrowserLatestResponse {
   data_url: string | null
   timestamp: number
+  url?: string
 }
 
 /**

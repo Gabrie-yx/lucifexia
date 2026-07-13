@@ -1520,10 +1520,22 @@ async def get_browser_latest(request: Request):
             from starlette.responses import Response
             return Response(status_code=304, headers={"ETag": etag})
 
+        url_path = home / "cache" / "screenshots" / "latest_url.txt"
+        current_url = ""
+        if url_path.exists():
+            try:
+                current_url = url_path.read_text(encoding="utf-8").strip()
+            except Exception:
+                pass
+
         encoded = base64.b64encode(latest_path.read_bytes()).decode("ascii")
         from starlette.responses import JSONResponse as _JSONResponse
         return _JSONResponse(
-            content={"data_url": f"data:image/png;base64,{encoded}", "timestamp": mtime},
+            content={
+                "data_url": f"data:image/png;base64,{encoded}",
+                "timestamp": mtime,
+                "url": current_url
+            },
             headers={"ETag": etag},
         )
     except Exception as exc:

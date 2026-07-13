@@ -1,4 +1,11 @@
 import { useEffect, useState } from 'react'
+import {
+  IconArrowLeft,
+  IconArrowRight,
+  IconRefresh,
+  IconLock,
+  IconExternalLink
+} from '@tabler/icons-react'
 
 import { fetchBrowserLatest } from '@/lucifex'
 import { Codicon } from '@/components/ui/codicon'
@@ -8,6 +15,7 @@ export function LiveBrowserPane() {
   const [dataUrl, setDataUrl] = useState<string | null>(null)
   const [timestamp, setTimestamp] = useState<number>(0)
   const [active, setActive] = useState<boolean>(false)
+  const [currentUrl, setCurrentUrl] = useState<string>('about:blank')
 
   useEffect(() => {
     let cancelled = false
@@ -28,6 +36,9 @@ export function LiveBrowserPane() {
           lastMtime = res.timestamp
           setDataUrl(res.data_url)
           setTimestamp(res.timestamp)
+          if (res.url) {
+            setCurrentUrl(res.url)
+          }
         }
         // Active = screenshot taken within the last 30 seconds
         const diff = Date.now() / 1000 - (res.timestamp || 0)
@@ -51,36 +62,71 @@ export function LiveBrowserPane() {
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden bg-(--ui-editor-surface-background)">
-      {/* Pane Header */}
-      <div className="flex h-9 shrink-0 items-center justify-between border-b border-(--ui-stroke-tertiary) px-3 bg-(--ui-sidebar-surface-background)">
-        <span className="text-[0.6875rem] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-          <span className={cn("size-2 rounded-full", active ? "bg-emerald-500 animate-pulse" : "bg-muted-foreground/30")} />
-          {active ? 'Navegador Ativo' : 'Navegador Inativo'}
+      {/* Active/Inactive Browser Banner */}
+      <div className="flex h-8 shrink-0 items-center justify-between border-b border-(--ui-stroke-tertiary) px-3 bg-(--ui-sidebar-surface-background)">
+        <span className="text-[0.625rem] font-bold uppercase tracking-wider text-muted-foreground/80 flex items-center gap-1.5">
+          <span className={cn("size-2 rounded-full", active ? "bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-muted-foreground/30")} />
+          {active ? 'Navegador Ativo' : 'Navegador Ocioso'}
         </span>
         {timestamp > 0 && (
-          <span className="text-[0.6rem] text-muted-foreground/60 font-mono">
-            Atualizado: {new Date(timestamp * 1000).toLocaleTimeString()}
+          <span className="text-[0.5625rem] text-muted-foreground/50 font-mono">
+            Sincronizado: {new Date(timestamp * 1000).toLocaleTimeString()}
           </span>
         )}
       </div>
 
-      {/* Pane Body / Screenshot Viewer */}
-      <div className="min-h-0 flex-1 overflow-auto p-4 flex flex-col items-center justify-center relative">
+      {/* Premium Browser Header Mockup */}
+      <div className="flex h-11 shrink-0 items-center justify-start gap-2 border-b border-(--ui-stroke-tertiary) px-3 bg-(--ui-sidebar-surface-background)/50 backdrop-blur-sm">
+        {/* Navigation Controls */}
+        <div className="flex items-center gap-1">
+          <button className="p-1 rounded text-muted-foreground/40 hover:bg-(--chrome-action-hover) cursor-not-allowed transition-colors" disabled>
+            <IconArrowLeft className="size-3.5" />
+          </button>
+          <button className="p-1 rounded text-muted-foreground/40 hover:bg-(--chrome-action-hover) cursor-not-allowed transition-colors" disabled>
+            <IconArrowRight className="size-3.5" />
+          </button>
+          <button className="p-1 rounded text-muted-foreground/60 hover:text-foreground hover:bg-(--chrome-action-hover) transition-colors" title="Recarregar captura">
+            <IconRefresh className={cn("size-3.5", active && "animate-spin [animation-duration:3s]")} />
+          </button>
+        </div>
+
+        {/* Address Bar */}
+        <div className="flex-1 flex items-center gap-1.5 px-3 py-1 rounded-md bg-zinc-950/20 border border-(--ui-stroke-tertiary) h-7 min-w-0 select-all group">
+          <IconLock className="size-3 text-emerald-500 shrink-0" />
+          <span className="text-[0.6875rem] text-muted-foreground/80 font-mono truncate select-all flex-1">
+            {currentUrl}
+          </span>
+        </div>
+
+        {/* External Link */}
+        <button
+          className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-(--chrome-action-hover) transition-colors"
+          onClick={() => {
+            if (currentUrl && currentUrl !== 'about:blank') {
+              void window.lucifexDesktop?.openExternal(currentUrl)
+            }
+          }}
+          title="Abrir no navegador do sistema"
+        >
+          <IconExternalLink className="size-3.5" />
+        </button>
+      </div>
+
+      {/* Viewport Area */}
+      <div className="min-h-0 flex-1 overflow-y-auto w-full bg-zinc-950/10 relative scrollbar-thin">
         {dataUrl ? (
-          <div className="relative border border-(--ui-stroke-secondary) rounded-md overflow-hidden bg-zinc-950/40 shadow-lg max-w-full max-h-full flex items-center justify-center">
-            <img
-              alt="Browser View"
-              className="max-h-full max-w-full object-contain pointer-events-none select-none transition-opacity duration-300"
-              src={dataUrl}
-            />
-          </div>
+          <img
+            alt="Browser View"
+            className="w-full h-auto block select-none pointer-events-none transition-opacity duration-300"
+            src={dataUrl}
+          />
         ) : (
-          <div className="flex flex-col items-center justify-center p-8 text-center max-w-md animate-fade-in">
+          <div className="flex flex-col items-center justify-center p-8 absolute inset-0 text-center animate-fade-in">
             <div className="grid size-12 place-items-center rounded-full bg-primary/5 text-primary border border-primary/10 shadow-[0_0_15px_rgba(var(--primary-rgb),0.05)]">
               <Codicon name="browser" size="1.25rem" />
             </div>
             <h3 className="mt-4 text-xs font-semibold text-foreground/80">Navegador em Standby</h3>
-            <p className="mt-2 text-[0.7rem] leading-normal text-muted-foreground/60">
+            <p className="mt-2 text-[0.7rem] leading-normal text-muted-foreground/60 max-w-xs">
               O feed ao vivo iniciará automaticamente quando o agente abrir uma página ou navegar pela web.
             </p>
           </div>

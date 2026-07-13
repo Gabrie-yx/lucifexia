@@ -2853,6 +2853,16 @@ def browser_navigate(url: str, task_id: Optional[str] = None) -> str:
         data = result.get("data", {})
         title = data.get("title", "")
         final_url = data.get("url", url)
+        
+        # Write to latest_url.txt for live view
+        try:
+            from lucifex_constants import get_lucifex_dir
+            screenshots_dir = get_lucifex_dir("cache/screenshots", "browser_screenshots")
+            screenshots_dir.mkdir(parents=True, exist_ok=True)
+            url_path = screenshots_dir / "latest_url.txt"
+            url_path.write_text(final_url, encoding="utf-8")
+        except Exception:
+            pass
 
         # Post-redirect SSRF check — if the browser followed a redirect to a
         # private/internal address, block the result so the model can't read
@@ -3237,9 +3247,19 @@ def browser_back(task_id: Optional[str] = None) -> str:
                     ),
                 }, ensure_ascii=False)
         data = result.get("data", {})
+        final_url = data.get("url", "")
+        if final_url:
+            try:
+                from lucifex_constants import get_lucifex_dir
+                screenshots_dir = get_lucifex_dir("cache/screenshots", "browser_screenshots")
+                screenshots_dir.mkdir(parents=True, exist_ok=True)
+                url_path = screenshots_dir / "latest_url.txt"
+                url_path.write_text(final_url, encoding="utf-8")
+            except Exception:
+                pass
         response = {
             "success": True,
-            "url": data.get("url", "")
+            "url": final_url
         }
         return json.dumps(_copy_fallback_warning(response, result), ensure_ascii=False)
     else:
