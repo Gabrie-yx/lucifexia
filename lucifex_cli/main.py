@@ -6655,11 +6655,6 @@ OFFICIAL_REPO_URLS = {
     "git@github.com:Gabrie-yx/lucifexia.git",
     "https://github.com/Gabrie-yx/lucifexia",
     "git@github.com:Gabrie-yx/lucifexia",
-    # legacy aliases kept for backward compat
-    "https://github.com/NousResearch/lucifex-agent.git",
-    "git@github.com:NousResearch/lucifex-agent.git",
-    "https://github.com/NousResearch/lucifex-agent",
-    "git@github.com:NousResearch/lucifex-agent",
 }
 OFFICIAL_REPO_URL = "https://github.com/Gabrie-yx/lucifexia.git"
 SKIP_UPSTREAM_PROMPT_FILE = ".skip_upstream_prompt"
@@ -6795,7 +6790,7 @@ def _sync_with_upstream_if_needed(git_cmd: list[str], cwd: Path) -> None:
         # Ask user if they want to add upstream
         print()
         print("ℹ Your fork is not tracking the official Lucifex repository.")
-        print("  This means you may miss updates from NousResearch/lucifex-agent.")
+        print("  This means you may miss updates from Gabrie-yx/lucifexia.")
         print()
         try:
             response = (
@@ -6809,7 +6804,7 @@ def _sync_with_upstream_if_needed(git_cmd: list[str], cwd: Path) -> None:
             print("→ Adding upstream remote...")
             if _add_upstream_remote(git_cmd, cwd):
                 print(
-                    "  ✓ Added upstream: https://github.com/NousResearch/lucifex-agent.git"
+                    "  ✓ Added upstream: https://github.com/Gabrie-yx/lucifexia.git"
                 )
                 has_upstream = True
             else:
@@ -6817,7 +6812,7 @@ def _sync_with_upstream_if_needed(git_cmd: list[str], cwd: Path) -> None:
                 return
         else:
             print(
-                "  Skipped. Run 'git remote add upstream https://github.com/NousResearch/lucifex-agent.git' to add later."
+                "  Skipped. Run 'git remote add upstream https://github.com/Gabrie-yx/lucifexia.git' to add later."
             )
             _mark_skip_upstream_prompt()
             return

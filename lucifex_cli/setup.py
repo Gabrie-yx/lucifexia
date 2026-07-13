@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 
-_DOCS_BASE = "https://lucifex-agent.nousresearch.com/docs"
+_DOCS_BASE = "https://github.com/Gabrie-yx/lucifexia"
 
 
 def _model_config_dict(config: Dict[str, Any]) -> Dict[str, Any]:
@@ -2694,22 +2694,7 @@ SETUP_SECTIONS = [
 
 
 def _run_portal_one_shot(config: dict) -> None:
-    """One-shot Ollama setup — OAuth + model pick + provider + Tool Gateway.
-
-    Wired into ``lucifex setup --portal`` and ``lucifex portal``. This is the
-    Nous-Portal slice of the first-time quick setup, collapsed into a single
-    shareable command so a brand-new user goes from zero to a fully working
-    Lucifex session — model selected, provider set, and web/image/tts/browser
-    tools routed via their Portal sub — without being told to run
-    ``lucifex setup`` and hunt for the quick-setup option.
-
-    The login + model selection + provider switch + Tool Gateway opt-in are all
-    delegated to ``_model_flow_nous`` — the exact same flow quick setup uses
-    (``_run_first_time_quick_setup``) and the same one ``lucifex model`` runs
-    when you pick Nous. Routing through it (instead of hand-rolling the auth +
-    provider write here) means ``lucifex portal`` always offers a model picker,
-    and there is a single source of truth for the Nous onboarding steps.
-    """
+    """One-shot Ollama setup — pick model + provider."""
     from lucifex_cli.config import load_config
 
     print()
@@ -2727,37 +2712,26 @@ def _run_portal_one_shot(config: dict) -> None:
         )
     )
     print()
-    print_info("  One subscription, 300+ models, plus the Tool Gateway:")
-    print_info("    web search, image generation, TTS, browser automation")
-    print_info("    — all routed through your Ollama sub.")
+    print_info("  Configure o provedor OLLAMA local para processar seus modelos.")
+    print_info("  Certifique-se de que o Ollama esta rodando em sua maquina.")
     print()
-    print_info("  Sign up: https://portal.nousresearch.com/manage-subscription")
+    print_info("  Download do Ollama: https://ollama.com")
     print()
 
-    # _model_flow_nous handles BOTH the logged-out path (device-code OAuth,
-    # which selects a model internally) and the already-logged-in path (curated
-    # Nous model picker), then offers the Tool Gateway opt-in and sets
-    # provider=nous via the login/model save. This is the same routine quick
-    # setup calls, so `lucifex portal` == quick setup's Nous step.
     try:
         from lucifex_cli.main import _model_flow_nous
 
         _model_flow_nous(config)
     except (KeyboardInterrupt, EOFError, SystemExit):
-        # _login_nous raises SystemExit(130)/(1) on cancel/failure; the
-        # logged-out path inside _model_flow_nous catches it, but the
-        # expired-session re-login path only catches Exception, so a
-        # SystemExit there would otherwise escape and kill the whole CLI.
-        # Treat all of these as a graceful cancel/abort for the portal flow.
         print()
-        print_info("  Setup cancelled.")
-        print_info("  You can retry later with `lucifex portal`.")
+        print_info("  Setup cancelado.")
+        print_info("  Voce pode tentar novamente com `lucifex portal`.")
         return
     except Exception as exc:
         logger.debug("_model_flow_nous error during `lucifex portal`: %s", exc)
         print()
-        print_error(f"  Ollama setup encountered an error: {exc}")
-        print_info("  You can retry later with `lucifex portal`.")
+        print_error(f"  Ocorreu um erro no setup do Ollama: {exc}")
+        print_info("  Voce pode tentar novamente com `lucifex portal`.")
         return
 
     # Re-sync the in-memory config from disk — _model_flow_nous (and the

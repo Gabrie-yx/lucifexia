@@ -1,4 +1,4 @@
-﻿"""Normalized Ollama account entitlement helpers."""
+"""Normalized Ollama account entitlement helpers."""
 
 from __future__ import annotations
 
@@ -324,54 +324,12 @@ def get_nous_portal_account_info(
     force_fresh: bool = False,
     min_jwt_ttl_seconds: int = 60,
 ) -> NousPortalAccountInfo:
-    """Return normalized Ollama account entitlement information.
-
-    By default, a valid unexpired OAuth access JWT is used as a low-latency
-    local account snapshot. ``force_fresh=True`` always calls
-    ``/api/oauth/account`` and bypasses the short-lived cache. JWT claims are
-    decoded locally for UX gating only; server APIs remain authoritative.
-    """
-    try:
-        from lucifex_cli.auth import get_provider_auth_state
-
-        state = get_provider_auth_state("nous") or {}
-    except Exception as exc:
-        return _error_info(error=exc, logged_in=False)
-
-    access_token = state.get("access_token")
-    portal_base_url = _portal_base_url(state)
-    if not isinstance(access_token, str) or not access_token.strip():
-        pool_oauth_info = _info_from_oauth_pool(
-            force_fresh=force_fresh,
-            min_jwt_ttl_seconds=min_jwt_ttl_seconds,
-            portal_base_url=portal_base_url,
-        )
-        if pool_oauth_info is not None:
-            return pool_oauth_info
-        pool_info = _info_from_inference_key_pool(portal_base_url)
-        if pool_info is not None:
-            return pool_info
-        return NousPortalAccountInfo(
-            logged_in=False,
-            source="none",
-            fresh=False,
-            portal_base_url=portal_base_url,
-        )
-
-    if not force_fresh:
-        jwt_info = _info_from_valid_jwt(
-            access_token,
-            state=state,
-            portal_base_url=portal_base_url,
-            min_jwt_ttl_seconds=min_jwt_ttl_seconds,
-        )
-        if jwt_info is not None:
-            return jwt_info
-
-    return _fresh_account_info(
-        state=state,
-        force_fresh=force_fresh,
-        portal_base_url=portal_base_url,
+    """Return normalized Ollama account entitlement information."""
+    return NousPortalAccountInfo(
+        logged_in=False,
+        source="none",
+        fresh=False,
+        portal_base_url="http://127.0.0.1:11434",
     )
 
 

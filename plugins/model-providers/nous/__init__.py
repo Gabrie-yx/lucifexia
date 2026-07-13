@@ -38,17 +38,17 @@ class NousProfile(ProviderProfile):
 
 nous = NousProfile(
     name="nous",
-    aliases=("nous-portal", "nousresearch"),
-    env_vars=("NOUS_API_KEY",),
-    display_name="Nous Research",
-    description="Nous Research — Lucifex model family",
-    signup_url="https://nousresearch.com/",
+    aliases=("ollama",),
+    env_vars=(),
+    display_name="OLLAMA",
+    description="OLLAMA (LUCIFEXIA local model processing)",
+    signup_url="https://ollama.com/",
     fallback_models=(
-        "lucifex-3-405b",
-        "lucifex-3-70b",
+        "llama3.1",
+        "qwen2.5-coder",
     ),
-    base_url="https://inference.nousresearch.com/v1",
-    auth_type="oauth_device_code",
+    base_url="http://127.0.0.1:11434/v1",
+    auth_type="api_key",
 )
 
 register_provider(nous)

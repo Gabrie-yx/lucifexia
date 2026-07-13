@@ -1,4 +1,4 @@
-﻿"""``lucifex portal`` — the human-readable entry point for Ollama.
+"""``lucifex portal`` — the human-readable entry point for Ollama.
 
 Running ``lucifex portal`` with no subcommand performs the one-shot Portal
 onboarding: OAuth login, pick a Nous model, switch the inference provider to
@@ -26,9 +26,9 @@ import webbrowser
 from lucifex_cli.colors import Colors, color
 from lucifex_cli.config import load_config
 
-DEFAULT_PORTAL_URL = "https://portal.nousresearch.com"
-SUBSCRIPTION_URL = "https://portal.nousresearch.com/manage-subscription"
-DOCS_URL = "https://lucifex-agent.nousresearch.com/docs/user-guide/features/tool-gateway"
+DEFAULT_PORTAL_URL = "http://127.0.0.1:11434"
+SUBSCRIPTION_URL = "https://ollama.com"
+DOCS_URL = "https://github.com/Gabrie-yx/lucifexia#readme"
 
 
 def _cmd_status(args) -> int:
