@@ -278,12 +278,14 @@ def _read_bilibili(query_or_url: str, limit: int) -> str:
             video_list = []
         if not video_list:
             return f"Nenhum vídeo encontrado no Bilibili para: {query_or_url}"
-        lines = [
-            f"🎬 {v.get('title', '?').replace('<em class=\"keyword\">', '').replace('</em>', '')}\n"
-            f"   UP: {v.get('author', '?')} | 👁️ {v.get('play', 0)}\n"
-            f"   https://bilibili.com/video/{v.get('bvid', '')}"
-            for v in video_list[:limit]
-        ]
+        lines = []
+        for v in video_list[:limit]:
+            title = v.get('title', '?').replace('<em class="keyword">', '').replace('</em>', '')
+            lines.append(
+                f"🎬 {title}\n"
+                f"   UP: {v.get('author', '?')} | 👁️ {v.get('play', 0)}\n"
+                f"   https://bilibili.com/video/{v.get('bvid', '')}"
+            )
         return f"Bilibili — '{query_or_url}':\n\n" + "\n\n".join(lines)
     except Exception as exc:
         return f"[ERRO] Falha ao ler Bilibili: {exc}"

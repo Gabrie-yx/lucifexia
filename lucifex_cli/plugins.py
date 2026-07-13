@@ -443,6 +443,37 @@ class PluginContext:
             self.manifest.name, name, " (override)" if override else "",
         )
 
+    def register(
+        self,
+        name: str,
+        func: Callable,
+        description: str = "",
+        parameters: dict | None = None,
+        check_fn: Callable | None = None,
+        requires_env: list | None = None,
+        is_async: bool = False,
+        emoji: str = "",
+        override: bool = False,
+    ) -> None:
+        """Compatibilidade legado: mapeia chamadas diretas de register() para register_tool()."""
+        schema = {
+            "name": name,
+            "description": description,
+            "parameters": parameters or {"type": "object", "properties": {}}
+        }
+        self.register_tool(
+            name=name,
+            toolset=self.manifest.key or self.manifest.name,
+            schema=schema,
+            handler=func,
+            check_fn=check_fn,
+            requires_env=requires_env,
+            is_async=is_async,
+            description=description,
+            emoji=emoji,
+            override=override,
+        )
+
     # -- override trust gate ------------------------------------------------
 
     def _tool_override_allowed(self, tool_name: str) -> bool:
