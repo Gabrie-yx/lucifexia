@@ -845,7 +845,10 @@ def active_features() -> list[str]:
     """
     active = []
     for feature, specs in LAZY_DEPS.items():
-        if any(_is_present(s) for s in specs):
+        # A feature counts as active if its primary package (the first one)
+        # is installed. Gating on any package causes false positives for features
+        # sharing core dependencies like aiohttp or aiosqlite (e.g. platform.matrix).
+        if specs and _is_present(specs[0]):
             active.append(feature)
     return active
 
