@@ -1,5 +1,5 @@
 import { useStore } from '@nanostores/react'
-import { useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 
 import type { SetTitlebarToolGroup } from '@/app/shell/titlebar-controls'
 import { Codicon } from '@/components/ui/codicon'
@@ -96,6 +96,19 @@ export function ChatPreviewRail({ onRestartServer, setTitlebarToolGroup }: ChatP
       selectRightRailTab(activeTab.id)
     }
   }, [activeTab, activeTabId])
+
+  // ESC exits fullscreen — matches VS Code / browser fullscreen conventions.
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.key === 'Escape' && isMaximized) {
+      togglePreviewMaximized()
+    }
+  }, [isMaximized])
+
+  useEffect(() => {
+    if (!isMaximized) return
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [isMaximized, handleKeyDown])
 
   if (!activeTab) {
     return null
@@ -213,10 +226,13 @@ export function ChatPreviewRail({ onRestartServer, setTitlebarToolGroup }: ChatP
             )
           })}
         </div>
-        <Tip label={isMaximized ? 'Restore preview' : 'Maximize preview'}>
+        <Tip label={isMaximized ? 'Restaurar preview (ESC)' : 'Expandir preview'}>
           <button
-            aria-label={isMaximized ? 'Restore preview' : 'Maximize preview'}
-            className="mr-0.5 grid size-6 shrink-0 self-center place-items-center rounded-md text-(--ui-text-tertiary) opacity-0 transition-opacity hover:bg-(--ui-control-hover-background) hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring group-hover/rail-tabs:opacity-100 [-webkit-app-region:no-drag]"
+            aria-label={isMaximized ? 'Restaurar preview' : 'Expandir preview'}
+            className={cn(
+              'mr-0.5 grid size-6 shrink-0 self-center place-items-center rounded-md text-(--ui-text-tertiary) transition-opacity hover:bg-(--ui-control-hover-background) hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring [-webkit-app-region:no-drag]',
+              isMaximized ? 'opacity-100' : 'opacity-0 group-hover/rail-tabs:opacity-100'
+            )}
             onClick={togglePreviewMaximized}
             type="button"
           >
@@ -225,7 +241,10 @@ export function ChatPreviewRail({ onRestartServer, setTitlebarToolGroup }: ChatP
         </Tip>
         <button
           aria-label={t.preview.closePane}
-          className="mr-1.5 grid size-6 shrink-0 self-center place-items-center rounded-md text-(--ui-text-tertiary) opacity-0 transition-opacity hover:bg-(--ui-control-hover-background) hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring group-hover/rail-tabs:opacity-100 [-webkit-app-region:no-drag]"
+          className={cn(
+            'mr-1.5 grid size-6 shrink-0 self-center place-items-center rounded-md text-(--ui-text-tertiary) transition-opacity hover:bg-(--ui-control-hover-background) hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring [-webkit-app-region:no-drag]',
+            isMaximized ? 'opacity-100' : 'opacity-0 group-hover/rail-tabs:opacity-100'
+          )}
           onClick={closeRightRail}
           type="button"
         >

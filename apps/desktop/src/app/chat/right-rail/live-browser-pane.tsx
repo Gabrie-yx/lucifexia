@@ -20,9 +20,14 @@ export function LiveBrowserPane() {
   const [currentUrl, setCurrentUrl] = useState<string>('about:blank')
   const sessionId = useStore($activeSessionId)
 
+  // sessionStartedAt: records the unix seconds when the current session became
+  // active. Screenshots with timestamps older than this are stale leftovers from
+  // a previous session and are silently discarded even if they pass the ETag check.
+  const sessionStartedAtRef = useRef<number>(Date.now() / 1000)
+  const prevSessionRef = useRef<string | null | undefined>(undefined)
+
   // Reset all screenshot state when the active session changes so we never
   // show a stale screenshot from a previous session/project.
-  const prevSessionRef = useRef<string | null | undefined>(undefined)
   useEffect(() => {
     if (prevSessionRef.current === undefined) {
       // First render — just record the initial session, no reset needed.
@@ -31,6 +36,9 @@ export function LiveBrowserPane() {
     }
     if (prevSessionRef.current !== sessionId) {
       prevSessionRef.current = sessionId
+      // Record the wall-clock time the new session started so we can
+      // filter out stale screenshots from the previous session.
+      sessionStartedAtRef.current = Date.now() / 1000
       setDataUrl(null)
       setTimestamp(0)
       setActive(false)
@@ -54,6 +62,15 @@ export function LiveBrowserPane() {
         // null = 304 Not Modified — image unchanged, keep current state
         if (res === null) return
         if (res.data_url && res.timestamp !== lastMtime) {
+          // Reject screenshots that predate the current session start.
+          // This prevents a leftover latest_browser.png from a previous session
+          // from appearing as a valid "current" screenshot when a new session opens.
+          if (res.timestamp < sessionStartedAtRef.current) {
+            // Stale screenshot from a previous session — silently skip.
+            // Update lastMtime so we don't keep re-fetching the same stale file.
+            lastMtime = res.timestamp
+            return
+          }
           lastMtime = res.timestamp
           setDataUrl(res.data_url)
           setTimestamp(res.timestamp)
