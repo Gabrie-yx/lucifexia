@@ -4,6 +4,30 @@
 
 # Lucifex Agent ☤
 
+```text
+              ⢰⡆⠀⠀⠀⠀⢰⡆
+              ⢸⣿⡄⠀⠀⢠⣿⡇
+      ⢰⡆⠀⠀⢸⣿⣧⠀⠀⣼⣿⡇⠀⠀⢰⡆
+      ⢸⣿⡄⠀⠸⣿⣿⣆⣰⣿⣿⠇⠀⢠⣿⡇
+      ⠸⣿⣷⣄⠀⢻⣿⣿⣿⣿⡟⠀⣠⣿⣿⠇
+       ⠙⢿⣿⣦⣄⣻⣿⣿⣿⣏⣠⣴⣿⡿⠋
+         ⠈⠻⢿⣿⣿⣿⣿⣿⣿⡿⠟⠁
+              ⢹⣿⣿⣿⡏
+              ⢸⣿⣿⣿⡇
+              ⢸⣿⣿⣿⡇
+              ⢸⣿⣿⣿⡇
+              ⠘⣿⣿⣿⠃
+               ⠙⠿⠋
+
+██╗     ██╗  ██╗ ██████╗████████╗███████╗███████╗██╗  ██╗      █████╗  ██████╗ ███████╗███╗   ██╗████████╗
+██║     ██║  ██║██╔════╝╚══██╔══╝██╔════╝██╔════╝╚██╗██╔╝     ██╔══██╗██╔════╝ ██╔════╝████╗  ██║╚══██╔══╝
+██║     ██║  ██║██║        ██║   █████╗  █████╗   ╚███╔╝ █████╗███████║██║  ███╗█████╗  ██╔██╗ ██║   ██║   
+██║     ██║  ██║██║        ██║   ██╔══╝  ██╔══╝   ██╔██╗ ╚════╝██╔══██║██║   ██║██╔══╝  ██║╚██╗██║   ██║   
+███████╗╚██████╔╝╚██████╗  ██║   ██║     ███████╗██╔╝ ██╗     ██║  ██║╚██████╔╝███████╗██║ ╚████║   ██║   
+╚══════╝ ╚═════╝  ╚═════╝  ╚═╝   ╚═╝     ╚══════╝╚═╝  ╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═══╝   ╚═╝   
+```
+
+
 <p align="center">
   <a href="https://github.com/Gabrie-yx/lucifexia">Lucifex Agent</a> | <a href="https://github.com/Gabrie-yx/lucifexia">Lucifex Desktop</a>
 </p>
@@ -73,28 +97,57 @@ Use qualquer modelo que desejar — **Ollama** (processamento 100% local e priva
 
 ---
 
-## Instalação Rápida
+## 🚀 Como Baixar e Instalar
 
-### Linux, macOS, WSL2, Termux
+O Lucifex suporta três formas flexíveis de download e instalação:
 
+### 1. Instalação Direta via Terminal (Recomendado)
+Ideal para iniciar rapidamente sem precisar configurar nada manualmente. O instalador gerencia de forma isolada todas as dependências do sistema (uv, Python 3.11, Node.js, ripgrep, ffmpeg e um Git Bash portátil).
+
+*   **Linux, macOS, WSL2, Termux:**
+    ```bash
+    curl -fsSL https://raw.githubusercontent.com/Gabrie-yx/lucifexia/main/scripts/install.sh | bash
+    ```
+*   **Windows (PowerShell):**
+    ```powershell
+    iex (irm https://raw.githubusercontent.com/Gabrie-yx/lucifexia/main/scripts/install.ps1)
+    ```
+
+---
+
+### 2. Clonando o Repositório (Para Desenvolvedores / Customização)
+Se você deseja modificar o código-fonte do agente, estender habilidades ou rodar diretamente da branch principal:
+
+*   **Passo 1: Clonar o repositório**
+    ```bash
+    git clone https://github.com/Gabrie-yx/lucifexia.git
+    cd lucifexia
+    ```
+*   **Passo 2: Executar o instalador local**
+    *   **Windows (PowerShell):**
+        ```powershell
+        ./scripts/install.ps1
+        ```
+    *   **Linux / macOS (Bash):**
+        ```bash
+        ./scripts/install.sh
+        ```
+
+---
+
+### 3. Interface Gráfica (Desktop App)
+Se você prefere a interface visual completa do Lucifex (com transmissão de tela em tempo real, visualização de navegador e auto-preview de arquivos gerados):
+*   Faça o download do executável oficial `Lucifex-0.20.3-win-x64.exe` (localizado em sua Área de Trabalho ou nas Releases do repositório).
+*   Abra e execute o instalador no Windows para iniciar a interface desktop.
+
+---
+
+### Após a Instalação:
+Basta digitar o comando abaixo no terminal para abrir o console interativo:
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Gabrie-yx/lucifexia/main/scripts/install.sh | bash
+lucifex
 ```
 
-### Windows (Nativo via PowerShell)
-
-Execute este comando no seu PowerShell:
-
-```powershell
-iex (irm https://raw.githubusercontent.com/Gabrie-yx/lucifexia/main/scripts/install.ps1)
-```
-
-O instalador cuida de tudo: uv, Python 3.11, Node.js, ripgrep, ffmpeg e um **Git Bash portátil** isolado do sistema para executar comandos de terminal com segurança.
-
-Após a instalação:
-```bash
-lucifex              # Inicia o chat no terminal!
-```
 
 ---
 
