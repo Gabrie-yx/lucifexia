@@ -37,7 +37,7 @@
   <img src="https://img.shields.io/badge/version-0.20.3-ff6b6b?style=for-the-badge" alt="Version 0.20.3">
 </p>
 
-> ⚠️ **Fork & Credits Notice:** Este projeto é um fork de desenvolvimento derivado do [Lucifex Agent](https://github.com/NousResearch/lucifex-agent) original criado pela **Nous Research**. Esta versão foi estendida e otimizada utilizando as capacidades de alinhamento e raciocínio avançado do modelo **Hermes**, com o objetivo de aprimorar a autonomia cognitiva em rotinas locais.
+> ⚠️ **Fork & Credits Notice:** Este projeto é um fork de desenvolvimento derivado do HERMES AGENT criado pela Nous Research. Esta versão foi estendida e otimizada utilizando as capacidades de alinhamento e raciocínio avançado do modelo Hermes, com o objetivo de aprimorar a autonomia cognitiva em rotinas locais.
 
 **O agente de IA auto-melhorável projetado para ser executado de forma local e independente.** É o único agente com um loop de aprendizado integrado: ele cria habilidades a partir da experiência, melhora-as durante o uso, gerencia seu próprio conhecimento, busca em conversas passadas e constrói um perfil profundo de suas preferências entre as sessões. Pode ser executado em sua máquina local, em uma VPS de $5 ou em servidores na nuvem.
 
