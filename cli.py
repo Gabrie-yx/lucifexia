@@ -8629,6 +8629,8 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
             from lucifex_cli.config import reload_env
             count = reload_env()
             print(f"  Reloaded .env ({count} var(s) updated)")
+        elif canonical in ("setkey", "apikey"):
+            self._handle_setkey_command(cmd_original)
         elif canonical == "reload-mcp":
             # Interactive reload: confirm first (unless the user has opted out).
             # The auto-reload path (file watcher) calls _reload_mcp directly

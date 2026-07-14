@@ -1788,6 +1788,135 @@ class CLICommandsMixin:
             f"Manage with `lucifex bundles`.{_RST}"
         )
 
+    def _handle_setkey_command(self, cmd: str) -> None:  # noqa: C901
+        """Handle /setkey [KEY_NAME [value]] — set or list API keys in ~/.lucifex/.env.
+
+        Examples:
+          /setkey                         — list all keys in .env (masked)
+          /setkey list                    — same as above
+          /setkey OPENROUTER_API_KEY      — prompt for and save a new value
+          /setkey video_creator           — prompt for FAL_KEY (used by Video Creator plugin)
+          /setkey FAL_KEY sk-abc123       — set inline without prompt
+        """
+        from lucifex_cli.config import (
+            get_env_path,
+            load_env,
+            reload_env,
+            save_env_value,
+            redact_key,
+        )
+        from cli import _BOLD, _DIM, _RST, _cprint, ChatConsole, _accent_hex
+
+        _BLD = _BOLD
+        _DM = _DIM
+
+        # Parse command: /setkey [subcommand/key] [value]
+        parts = cmd.strip().split(None, 2)
+        sub = parts[1].strip() if len(parts) > 1 else "list"
+        inline_value = parts[2].strip() if len(parts) > 2 else None
+
+        # ── alias: video_creator → FAL_KEY ─────────────────────────────────
+        _ALIASES: dict[str, str] = {
+            "video_creator": "FAL_KEY",
+            "fal":           "FAL_KEY",
+            "openrouter":    "OPENROUTER_API_KEY",
+            "google":        "GOOGLE_API_KEY",
+            "gemini":        "GOOGLE_API_KEY",
+            "openai":        "OPENAI_API_KEY",
+            "anthropic":     "ANTHROPIC_API_KEY",
+            "nvidia":        "NVIDIA_API_KEY",
+            "mistral":       "MISTRAL_API_KEY",
+            "glm":           "GLM_API_KEY",
+            "xai":           "XAI_API_KEY",
+        }
+
+        # ── LIST ────────────────────────────────────────────────────────────
+        if sub.lower() in ("list", "ls", "show"):
+            env_path = get_env_path()
+            env_vars = load_env()
+            if not env_vars:
+                _cprint(f"\n  {_DM}No API keys configured in {env_path}{_RST}")
+                _cprint(
+                    f"  {_DM}Use /setkey KEY_NAME to add one.{_RST}\n"
+                )
+                return
+            _cprint(f"\n  {_BLD}🔑 API Keys in {env_path}{_RST}\n")
+            for key, value in sorted(env_vars.items()):
+                masked = redact_key(value) if value else f"{_DM}(empty){_RST}"
+                ChatConsole().print(
+                    f"    [bold {_accent_hex()}]{key:<30}[/] [dim]{masked}[/]"
+                )
+            _cprint(
+                f"\n  {_DM}Use /setkey KEY_NAME to update a key. "
+                f"Use /reload to activate changes in this session.{_RST}\n"
+            )
+            return
+
+        # ── SET KEY ─────────────────────────────────────────────────────────
+        key_name = _ALIASES.get(sub.lower(), sub.upper())
+
+        # Validate key name (basic sanity check)
+        import re as _re
+        if not _re.match(r'^[A-Z][A-Z0-9_]*$', key_name):
+            _cprint(
+                f"\n  ⚠ Invalid key name: {key_name!r}\n"
+                f"  {_DM}Use only uppercase letters, digits, and underscores "
+                f"(e.g. OPENROUTER_API_KEY).{_RST}\n"
+            )
+            return
+
+        # Friendly label for user-facing prompts
+        _LABELS: dict[str, str] = {
+            "FAL_KEY":            "Video Creator (fal.ai)",
+            "OPENROUTER_API_KEY": "OpenRouter",
+            "GOOGLE_API_KEY":     "Google AI Studio / Gemini",
+            "OPENAI_API_KEY":     "OpenAI",
+            "ANTHROPIC_API_KEY":  "Anthropic",
+            "NVIDIA_API_KEY":     "NVIDIA NIM",
+            "MISTRAL_API_KEY":    "Mistral AI",
+            "GLM_API_KEY":        "GLM / Zhipu AI",
+            "XAI_API_KEY":        "xAI / Grok",
+        }
+        label = _LABELS.get(key_name, key_name)
+
+        # If value passed inline, use it directly
+        if inline_value:
+            new_value = inline_value
+        else:
+            # Interactive prompt
+            current_vars = load_env()
+            current = current_vars.get(key_name, "")
+            masked_current = redact_key(current) if current else f"{_DM}(not set){_RST}"
+            _cprint(f"\n  {_BLD}🔑 Set API Key: {label}{_RST}")
+            _cprint(f"  Current value: {masked_current}")
+            _cprint(f"  {_DM}Leave blank to cancel.{_RST}")
+            print()
+            try:
+                import getpass as _getpass
+                new_value = _getpass.getpass(f"  New value for {key_name}: ").strip()
+            except (KeyboardInterrupt, EOFError):
+                _cprint(f"\n  {_DM}Cancelled.{_RST}\n")
+                return
+
+        if not new_value:
+            _cprint(f"\n  {_DM}Cancelled — no value entered.{_RST}\n")
+            return
+
+        # Save to .env
+        try:
+            save_env_value(key_name, new_value)
+            # Reload into current session immediately
+            count = reload_env()
+            masked_new = redact_key(new_value)
+            _cprint(
+                f"\n  ✅ {_BLD}{key_name}{_RST} saved to .env ({masked_new})\n"
+                f"  {_DM}Reloaded {count} var(s) into this session.{_RST}\n"
+            )
+        except ValueError as exc:
+            _cprint(f"\n  ⚠ {exc}\n")
+        except Exception as exc:
+            _cprint(f"\n  ⚠ Failed to save key: {exc}\n")
+
     def _handle_browser_command(self, cmd: str):
         """Handle /browser connect|disconnect|status — manage live Chromium-family CDP connection."""
         import platform as _plat
