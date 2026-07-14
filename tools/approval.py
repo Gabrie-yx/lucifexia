@@ -398,6 +398,10 @@ HARDLINE_PATTERNS = [
     (_CMDPOS + r'init\s+[06]\b', "init 0/6 (shutdown/reboot)"),
     (_CMDPOS + r'systemctl\s+(poweroff|reboot|halt|kexec)\b', "systemctl poweroff/reboot"),
     (_CMDPOS + r'telinit\s+[06]\b', "telinit 0/6 (shutdown/reboot)"),
+    # Block recursive execution of the agent itself (lucifex, run_agent.py, cli.py)
+    (_CMDPOS + r'(?:\./)?(?:lucifex|luci)(?:\.exe)?\b', "recursive execution of the agent CLI"),
+    (_CMDPOS + r'(?:python\d*|py|pypy\d*)\s+(?:-[^\s]+\s+)*(?:run_agent\.py|cli\.py|lucifex_cli|lucifex_dev_mcp\.py|mcp_serve\.py)\b', "recursive execution of the agent script"),
+    (_CMDPOS + r'(?:\./)(?:run_agent\.py|cli\.py|lucifex_dev_mcp\.py|mcp_serve\.py)\b', "recursive execution of the agent script"),
 ]
 
 # Pre-compiled variant used by the hot-path matcher. Building these at module
@@ -444,6 +448,29 @@ def _check_sudo_stdin_guard(command: str) -> tuple:
     normalized = _normalize_command_for_detection(command).lower()
     if _SUDO_STDIN_RE.search(normalized):
         return (True, "sudo password guessing via stdin (sudo -S)")
+    return (False, None)
+
+
+def detect_recursive_execution(code: str) -> tuple[bool, str | None]:
+    """Detect recursive execution of the agent inside an execute_code script.
+
+    Scans the Python code for execution calls combined with agent/CLI names.
+    Returns:
+        (is_recursive, description)
+    """
+    code_lower = code.lower()
+    
+    # 1. Check if the script contains keywords for executing processes/commands
+    exec_keywords = {"subprocess", "os.system", "os.popen", "os.exec", "pty.spawn", "create_subprocess"}
+    has_exec = any(kw in code_lower for kw in exec_keywords)
+    
+    # 2. Check if the script references the agent's executable/script names
+    agent_names = {"lucifex", "luci", "run_agent.py", "cli.py", "lucifex_cli"}
+    has_agent_name = any(name in code_lower for name in agent_names)
+    
+    if has_exec and has_agent_name:
+        return (True, "recursive execution of the agent via subprocess/system call")
+        
     return (False, None)
 
 
@@ -2627,6 +2654,19 @@ def check_execute_code_guard(code: str, env_type: str,
     trusted-by-config (set a gateway/ask surface or ``approvals.cron_mode`` to
     require approval).
     """
+    is_recursive, recursion_desc = detect_recursive_execution(code)
+    if is_recursive:
+        logger.warning("Hardline block (execute_code): %s", recursion_desc)
+        return {
+            "approved": False,
+            "hardline": True,
+            "message": (
+                f"BLOCKED (recursive execution): {recursion_desc}. "
+                "Running the agent recursively inside itself is not permitted "
+                "to prevent infinite loops and resource exhaustion."
+            ),
+        }
+
     pattern_key = "execute_code"
     description = (
         "execute_code script execution. The script can spawn subprocesses or "

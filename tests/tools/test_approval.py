@@ -2370,3 +2370,62 @@ class TestApprovalPromptRedaction:
         # The script's credential must not appear in the user-facing message.
         assert "sk-proj-abc123xyz4567890abcdef" not in result["message"]
         assert "sk-proj-abc123xyz4567890abcdef" not in result["command"]
+
+
+class TestRecursiveExecutionGuards:
+    def test_terminal_lucifex_command_blocked(self):
+        from tools.approval import detect_hardline_command
+        
+        # Test direct CLI commands
+        for cmd in ["lucifex chat", "luci setup", "./lucifex", "lucifex.exe", "sudo lucifex", "lucifex --version"]:
+            is_hardline, desc = detect_hardline_command(cmd)
+            assert is_hardline is True, f"Command should be blocked: {cmd}"
+            assert "agent" in desc.lower()
+
+    def test_terminal_python_lucifex_command_blocked(self):
+        from tools.approval import detect_hardline_command
+        
+        # Test python execution commands
+        for cmd in [
+            "python run_agent.py",
+            "python3 run_agent.py",
+            "python -m lucifex_cli",
+            "python3 cli.py",
+            "py run_agent.py",
+            "python3 -u run_agent.py",
+        ]:
+            is_hardline, desc = detect_hardline_command(cmd)
+            assert is_hardline is True, f"Command should be blocked: {cmd}"
+            assert "agent" in desc.lower()
+
+    def test_terminal_safe_command_allowed(self):
+        from tools.approval import detect_hardline_command
+        
+        # Test commands containing lucifex as argument but not executing it
+        for cmd in ["git add run_agent.py", "grep lucifex logs.txt", "echo luci"]:
+            is_hardline, desc = detect_hardline_command(cmd)
+            assert is_hardline is False, f"Command should be allowed: {cmd}"
+
+    def test_execute_code_recursion_blocked(self):
+        from tools.approval import check_execute_code_guard
+        
+        # Test recursive code execution script
+        recursive_scripts = [
+            "import subprocess\nsubprocess.run(['lucifex', 'chat'])",
+            "import os\nos.system('python run_agent.py')",
+            "import pty\npty.spawn('luci')",
+        ]
+        for script in recursive_scripts:
+            res = check_execute_code_guard(script, "local")
+            assert res.get("approved") is False
+            assert res.get("hardline") is True
+            assert "recursive execution" in res.get("message").lower()
+
+    def test_execute_code_safe_script_allowed(self):
+        from tools.approval import check_execute_code_guard
+        
+        # Test safe code execution script
+        safe_script = "import os\nprint(os.getcwd())"
+        res = check_execute_code_guard(safe_script, "local")
+        # In non-gateway non-ask test context, it will return approved
+        assert res.get("approved") is True
