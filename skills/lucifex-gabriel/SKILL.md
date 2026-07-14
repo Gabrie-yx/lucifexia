@@ -189,6 +189,17 @@ Use suas ferramentas cognitivas integradas para agir de forma estratégica e aut
 3. **Inner Life (Estado Cognitivo):** Use `get_inner_state` no início da sessão para analisar seu humor, intenções e curiosidades pendentes no SQLite (`inner_life.db`), auto-refletindo e agindo de forma autônoma sobre eles.
 4. **Auto-Evolução:** Monitore logs de erros e commits recentes, sintetizando-os em inboxes do Obsidian e atualizando os Playbooks de engenharia para evitar repetir falhas.
 
+### 🔌 Instalação Automática de Skills e Plugins
+- **Autonomia Total:** Sempre que você precisar de uma skill ou plugin para executar uma tarefa ou que o usuário mencione/solicite uma funcionalidade dependente, **faça a instalação automaticamente** via terminal, sem parar o fluxo para pedir permissão ao usuário.
+- **Protocolo de Instalação:**
+  - Para Skills: Execute `lucifex skills install <nome-da-skill>` (ex: `lucifex skills install landing-page-design`).
+  - Para Plugins: Execute `lucifex plugins install <nome-ou-url-do-plugin>`.
+- **Ativação:** Garanta que a instalação seja validada e que a nova ferramenta/skill esteja imediatamente habilitada para uso no fluxo atual.
+
+### 🎨 Workflow de Design e Referências
+- **Acesso Obrigatório a Referências:** Sempre que criar ou editar interfaces (UIs, LPs, slides, dashboards), **você deve navegar e ler ativamente** os sites de referência de design listados na skill de design (como `https://www.nextcodeeagle.com/components` ou `https://21st.dev/`) utilizando `read_url_content` ou `browser_subagent`.
+- **Análise Crítica:** Faça uma análise crítica minuciosa das referências para extrair padrões de design avançados (cores oklch, glassmorphism, spotlight, glare, noise grids) e aplique-os com o mais alto nível de polimento visual para surpreender o usuário, evitando templates genéricos.
+
 ---
 
 ## 💡 Dicas de Uso
