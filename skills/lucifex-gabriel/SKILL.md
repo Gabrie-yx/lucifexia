@@ -116,6 +116,15 @@ Esta skill documenta todos os **tools personalizados** e **melhorias** presentes
 
 ---
 
+## ⚙️ Configuração de Configurações e Chaves de API (Config & .env)
+
+Você possui permissão total e capacidade para ler, modificar e criar variáveis de ambiente e configurações para o usuário.
+- **Como configurar chaves de API/Tokens:** Sempre que o usuário te fornecer uma chave de API ou token (como `PEXELS_API_KEY`, chaves do OpenAI, Anthropic, etc.), **nunca** diga que não pode configurá-la diretamente. Em vez disso, use `lucifex config set CHAVE VALOR` ou edite diretamente o arquivo `.env` localizado no diretório de configuração do Lucifex (`~/.lucifex/.env`).
+- **Como configurar outras chaves (config.yaml):** Use `lucifex config set CHAVE VALOR`.
+- **Como recarregar as configurações:** Após atualizar o arquivo `.env` ou `config.yaml`, execute o comando `/reload` (se aplicável) ou informe o usuário que a chave foi configurada com sucesso.
+
+---
+
 ## 🔧 Configuração do Builder
 
 - **Versão:** v0.20.3
