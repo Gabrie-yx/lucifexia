@@ -70,8 +70,8 @@ async function stampExeIdentity(exe, desktopRoot = path.resolve(__dirname, '..')
     'version-string': {
       ProductName: 'LUCIFEX',
       FileDescription: 'LUCIFEX',
-      CompanyName: 'Nous Research',
-      LegalCopyright: 'Copyright (c) 2026 Nous Research'
+      CompanyName: 'Gabriel',
+      LegalCopyright: 'Copyright (c) 2026 Gabriel'
     }
   })
 

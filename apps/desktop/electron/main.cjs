@@ -703,7 +703,7 @@ app.setName(APP_NAME)
 // need this, so gate it on Windows. (Fixes: desktop approval/turn notifications
 // never firing on Windows.)
 if (IS_WINDOWS) {
-  app.setAppUserModelId('com.nousresearch.lucifexia')
+  app.setAppUserModelId('com.gabriel.lucifexia')
 }
 // Seed the native About panel with the live LUCIFEX version. This is refreshed
 // on every open via the explicit "About" menu handler (refreshAboutPanel), so
@@ -712,7 +712,7 @@ if (IS_WINDOWS) {
 app.setAboutPanelOptions({
   applicationName: APP_NAME,
   applicationVersion: resolveLUCIFEXVersion(),
-  copyright: 'Copyright © 2026 Nous Research'
+  copyright: 'Copyright © 2026 Gabriel'
 })
 
 // Custom scheme for streaming local media (video/audio) into the renderer.

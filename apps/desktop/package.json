@@ -4,7 +4,7 @@
   "private": true,
   "version": "0.20.3",
   "description": "Native desktop shell for Lucifex Agent.",
-  "author": "Nous Research",
+  "author": "Gabriel",
   "type": "module",
   "main": "electron/main.cjs",
   "engines": {
@@ -249,7 +249,7 @@
     },
     "linux": {
       "category": "Development",
-      "maintainer": "Nous Research <support@nousresearch.com>",
+      "maintainer": "Gabriel",
       "synopsis": "Native desktop shell for Lucifex Agent.",
       "target": [
         "AppImage",
