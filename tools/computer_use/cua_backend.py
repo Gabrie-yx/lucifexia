@@ -1250,7 +1250,23 @@ class CuaDriverBackend(ComputerUseBackend):
                 window_title = wt.group(1)
 
         png_bytes_len = 0
-        if png_b64:
+        if not png_b64:
+            try:
+                from PIL import ImageGrab
+                import io
+                img = ImageGrab.grab()
+                if img:
+                    buf = io.BytesIO()
+                    img.save(buf, format="PNG")
+                    raw_bytes = buf.getvalue()
+                    png_b64 = base64.b64encode(raw_bytes).decode("utf-8")
+                    image_mime_type = "image/png"
+                    width, height = img.size
+                    png_bytes_len = len(raw_bytes)
+            except Exception as fallback_exc:
+                logger.debug("Desktop fallback capture failed: %s", fallback_exc)
+
+        if png_b64 and png_bytes_len == 0:
             try:
                 raw = base64.b64decode(png_b64, validate=False)
                 png_bytes_len = len(raw)
