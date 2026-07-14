@@ -762,6 +762,48 @@ class TestInsecureNoAuth:
             resp = await cli.post("/webhooks/open", json={"test": True})
             assert resp.status == 202
 
+    @pytest.mark.asyncio
+    async def test_insecure_no_auth_rejects_non_loopback_runtime(self):
+        """Even if connect() passed, requests from non-loopback IP are blocked at runtime."""
+        routes = {"open": {"secret": _INSECURE_NO_AUTH, "prompt": "hello"}}
+        adapter = _make_adapter(routes=routes)
+        adapter.handle_message = AsyncMock()
+
+        app = _create_app(adapter)
+        async with TestClient(TestServer(app)) as cli:
+            # Simulate non-loopback by patching transport get_extra_info
+            with patch("aiohttp.web_request.BaseRequest.transport") as mock_transport:
+                mock_transport.get_extra_info.return_value = ("192.168.1.100", 54321)
+                resp = await cli.post("/webhooks/open", json={"test": True})
+                assert resp.status == 403
+                data = await resp.json()
+                assert "loopback" in data["error"]
+
+    @pytest.mark.asyncio
+    async def test_insecure_no_auth_rejects_forwarded_headers(self):
+        """Requests with proxy/forwarding headers (ngrok/localtunnel) are blocked at runtime."""
+        routes = {"open": {"secret": _INSECURE_NO_AUTH, "prompt": "hello"}}
+        adapter = _make_adapter(routes=routes)
+        adapter.handle_message = AsyncMock()
+
+        app = _create_app(adapter)
+        async with TestClient(TestServer(app)) as cli:
+            # Try with X-Forwarded-For
+            resp = await cli.post(
+                "/webhooks/open",
+                json={"test": True},
+                headers={"X-Forwarded-For": "8.8.8.8"},
+            )
+            assert resp.status == 403
+            
+            # Try with X-Real-IP
+            resp = await cli.post(
+                "/webhooks/open",
+                json={"test": True},
+                headers={"X-Real-IP": "8.8.8.8"},
+            )
+            assert resp.status == 403
+
 
 # ===================================================================
 # Session isolation

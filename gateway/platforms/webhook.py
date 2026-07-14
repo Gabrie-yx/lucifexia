@@ -497,7 +497,43 @@ class WebhookAdapter(BasePlatformAdapter):
                 {"error": "Webhook route is missing an HMAC secret"},
                 status=403,
             )
-        if secret != _INSECURE_NO_AUTH:
+        if secret == _INSECURE_NO_AUTH:
+            # Runtime protection for INSECURE_NO_AUTH:
+            # Refuse the request if it is forwarded/proxied or originates from a non-loopback IP.
+            # This prevents RCE if the local loopback port is exposed publicly via ngrok,
+            # localtunnel, or SSH port forwarding without signature check.
+            peername = request.transport.get_extra_info('peername')
+            remote_ip = peername[0] if peername else ""
+            
+            has_forwarding = any(
+                h.lower() in {
+                    "x-forwarded-for",
+                    "x-forwarded-host",
+                    "x-forwarded-proto",
+                    "x-real-ip",
+                    "forwarded",
+                }
+                for h in request.headers
+            )
+            
+            if remote_ip not in {"127.0.0.1", "::1", "localhost"} or has_forwarding:
+                logger.error(
+                    "[webhook] Refusing unauthenticated request to INSECURE_NO_AUTH route '%s' "
+                    "from non-loopback or forwarded client (IP: %s, Forwarded: %s)",
+                    route_name,
+                    remote_ip,
+                    has_forwarding,
+                )
+                return web.json_response(
+                    {
+                        "error": (
+                            "INSECURE_NO_AUTH route is restricted to local loopback "
+                            "requests only. Proxying/forwarding is not permitted."
+                        )
+                    },
+                    status=403,
+                )
+        else:
             if not self._validate_signature(request, raw_body, secret):
                 logger.warning(
                     "[webhook] Invalid signature for route %s", route_name
