@@ -305,15 +305,26 @@ def _build_gemini_contents(messages: List[Dict[str, Any]]) -> tuple[List[Dict[st
             continue
 
         if role in {"tool", "function"}:
+            parts = [
+                _translate_tool_result_to_gemini(
+                    msg,
+                    tool_name_by_call_id=tool_name_by_call_id,
+                )
+            ]
+            content = msg.get("content")
+            if isinstance(content, dict) and content.get("_multimodal"):
+                raw_parts = _extract_multimodal_parts(content.get("content"))
+                image_parts = [p for p in raw_parts if "inlineData" in p]
+                parts.extend(image_parts)
+            elif isinstance(content, list):
+                raw_parts = _extract_multimodal_parts(content)
+                image_parts = [p for p in raw_parts if "inlineData" in p]
+                parts.extend(image_parts)
+
             contents.append(
                 {
                     "role": "user",
-                    "parts": [
-                        _translate_tool_result_to_gemini(
-                            msg,
-                            tool_name_by_call_id=tool_name_by_call_id,
-                        )
-                    ],
+                    "parts": parts,
                 }
             )
             continue
