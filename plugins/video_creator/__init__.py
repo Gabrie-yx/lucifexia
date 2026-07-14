@@ -122,7 +122,11 @@ def _fetch_pexels_videos(keywords: list[str], count: int = 3) -> list[str]:
     for kw in keywords[:2]:  # Máximo 2 termos de busca
         query = urllib.parse.quote(kw)
         url = f"https://api.pexels.com/videos/search?query={query}&per_page={count}&orientation=portrait"
-        req = urllib.request.Request(url, headers={"Authorization": api_key})
+        headers = {
+            "Authorization": api_key,
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        }
+        req = urllib.request.Request(url, headers=headers)
         try:
             with urllib.request.urlopen(req, timeout=15) as resp:
                 data = json.loads(resp.read())
@@ -148,7 +152,11 @@ def _download_video(url: str, dest: Path) -> bool:
     """Faz download de um vídeo para o destino."""
     import urllib.request
     try:
-        with urllib.request.urlopen(url, timeout=30) as resp:
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        }
+        req = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(req, timeout=30) as resp:
             dest.write_bytes(resp.read())
         return dest.exists() and dest.stat().st_size > 0
     except Exception as exc:
@@ -189,7 +197,11 @@ def _create_tts_narration(text: str, output_path: Path, voice: str = "pt-BR-Fran
             }).encode()
             req = urllib.request.Request(
                 url, data=payload,
-                headers={"xi-api-key": api_key, "Content-Type": "application/json"}
+                headers={
+                    "xi-api-key": api_key,
+                    "Content-Type": "application/json",
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                }
             )
             with urllib.request.urlopen(req, timeout=30) as resp:
                 output_path.write_bytes(resp.read())
