@@ -39,7 +39,7 @@
 
 > ⚠️ **Fork & Credits Notice:** Este projeto é um fork de desenvolvimento derivado do [Lucifex Agent](https://github.com/NousResearch/lucifex-agent) original criado pela **Nous Research**. Esta versão foi estendida e otimizada utilizando as capacidades de alinhamento e raciocínio avançado do modelo **Hermes**, com o objetivo de aprimorar a autonomia cognitiva em rotinas locais.
 
-**O Lucifex é um agente de IA auto-melhorável, construído pela Nous Research sobre a base do modelo Hermes, e projetado para ser executado de forma local e independente.** É o único agente com um loop de aprendizado integrado: ele cria habilidades a partir da experiência, melhora-as durante o uso, gerencia seu próprio conhecimento, busca em conversas passadas e constrói um perfil profundo de suas preferências entre as sessões. Pode ser executado em sua máquina local, em uma VPS de $5 ou em servidores na nuvem.
+**O agente de IA auto-melhorável projetado para ser executado de forma local e independente.** É o único agente com um loop de aprendizado integrado: ele cria habilidades a partir da experiência, melhora-as durante o uso, gerencia seu próprio conhecimento, busca em conversas passadas e constrói um perfil profundo de suas preferências entre as sessões. Pode ser executado em sua máquina local, em uma VPS de $5 ou em servidores na nuvem.
 
 Use qualquer modelo que desejar — **Ollama** (processamento 100% local e privado), OpenRouter, OpenAI, seu próprio endpoint personalizado e muitos outros. Mude facilmente usando o comando `lucifex model` — sem alterações de código, sem dependências de fornecedores.
 
