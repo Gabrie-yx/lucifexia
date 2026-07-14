@@ -1607,6 +1607,23 @@ PY
         log_info "PyPI/network issue, re-run: $UV_CMD pip install -e '.[all]'"
     fi
 
+    # Pre-install dependencies for bundled skills (Google Workspace, YouTube transcript, etc.)
+    log_info "Pre-installing Python dependencies for skills..."
+    local _skills_deps=("google-api-python-client==2.194.0" "google-auth-oauthlib==1.3.1" "google-auth-httplib2==0.3.1" "youtube-transcript-api==1.2.4")
+    if [ "$DISTRO" = "termux" ]; then
+        if "$PIP_PYTHON" -m pip install "${_skills_deps[@]}"; then
+            log_success "Skills dependencies pre-installed successfully"
+        else
+            log_warn "Failed to pre-install skills dependencies on Termux. They will be resolved lazily at runtime."
+        fi
+    else
+        if $UV_CMD pip install "${_skills_deps[@]}"; then
+            log_success "Skills dependencies pre-installed successfully"
+        else
+            log_warn "Failed to pre-install skills dependencies. They will be resolved lazily at runtime."
+        fi
+    fi
+
     log_success "Main package installed"
 
     log_success "All dependencies installed"

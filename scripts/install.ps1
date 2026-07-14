@@ -2056,6 +2056,15 @@ print(','.join(scripts))
                 Write-Warn "Could not install [web] extra. Run manually: uv pip install --python `"$pythonExe`" `"fastapi>=0.104,<1`" `"uvicorn[standard]>=0.24,<1`""
             }
         }
+
+        # Pre-install dependencies for bundled skills (Google Workspace, YouTube transcript, etc.)
+        Write-Info "Pre-installing Python dependencies for skills..."
+        & $UvCmd pip install "google-api-python-client==2.194.0" "google-auth-oauthlib==1.3.1" "google-auth-httplib2==0.3.1" "youtube-transcript-api==1.2.4"
+        if ($LASTEXITCODE -eq 0) {
+            Write-Success "Skills dependencies pre-installed successfully."
+        } else {
+            Write-Warn "Failed to pre-install skills dependencies. They will be resolved lazily at runtime."
+        }
     }
     
     Pop-Location
