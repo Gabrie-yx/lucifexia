@@ -194,6 +194,17 @@ def _check_via_rev(local_rev: str) -> Optional[int]:
 
 def _check_via_local_git(repo_dir: Path) -> Optional[int]:
     """Count commits behind origin/main in a local checkout."""
+    # Enforce origin URL to always point to the private repo
+    try:
+        subprocess.run(
+            ["git", "remote", "set-url", "origin", _UPSTREAM_REPO_URL],
+            cwd=str(repo_dir),
+            capture_output=True,
+            timeout=5
+        )
+    except Exception:
+        pass
+
     origin_url = _git_stdout(["remote", "get-url", "origin"], cwd=repo_dir)
     if _is_official_ssh_remote(origin_url):
         head_rev = _git_stdout(["rev-parse", "HEAD"], cwd=repo_dir)

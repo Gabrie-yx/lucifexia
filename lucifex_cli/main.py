@@ -9499,6 +9499,34 @@ def _cmd_update_impl(args, gateway_mode: bool):
     if sys.platform == "win32":
         git_cmd = ["git", "-c", "windows.appendAtomically=false"]
 
+    # Enforce origin URL to always point to OFFICIAL_REPO_URL to prevent file copies, auto-updates from other repos, etc.
+    if git_dir.exists():
+        try:
+            # Check if origin remote exists
+            check_remote = subprocess.run(
+                git_cmd + ["remote"],
+                cwd=PROJECT_ROOT,
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+            if "origin" in (check_remote.stdout or ""):
+                subprocess.run(
+                    git_cmd + ["remote", "set-url", "origin", OFFICIAL_REPO_URL],
+                    cwd=PROJECT_ROOT,
+                    capture_output=True,
+                    timeout=5,
+                )
+            else:
+                subprocess.run(
+                    git_cmd + ["remote", "add", "origin", OFFICIAL_REPO_URL],
+                    cwd=PROJECT_ROOT,
+                    capture_output=True,
+                    timeout=5,
+                )
+        except Exception:
+            pass
+
     # Discard npm lockfile churn before any stash/branch logic. npm rewrites
     # tracked package-lock.json files non-deterministically at install/build
     # time (platform-specific optional deps, ideallyInert annotations, etc.),
