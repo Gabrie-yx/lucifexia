@@ -1497,12 +1497,10 @@ function Install-Repository {
 
         if (-not $cloneSuccess) {
             if (Test-Path $InstallDir) { Remove-Item -Recurse -Force $InstallDir -ErrorAction SilentlyContinue }
-            Write-Warn "HTTPS clone from $RepoUrlHttps failed, trying fallback to hermes-agent..."
-            $FallbackRepoUrlHttps = "https://github.com/NousResearch/hermes-agent.git"
-            $FallbackBranch = $Branch
-            if ($Branch -eq "master" -or $Branch -eq "HEAD" -or -not $Branch) { $FallbackBranch = "main" }
+            Write-Warn "HTTPS clone from $RepoUrlHttps failed, retrying..."
             try {
-                Invoke-NativeWithRelaxedErrorAction { git -c windows.appendAtomically=false clone --depth 1 --branch $FallbackBranch $FallbackRepoUrlHttps $InstallDir }
+                Start-Sleep -Seconds 3
+                Invoke-NativeWithRelaxedErrorAction { git -c windows.appendAtomically=false clone --depth 1 --branch $Branch $RepoUrlHttps $InstallDir }
                 if ($LASTEXITCODE -eq 0) { $cloneSuccess = $true }
             } catch { }
         }
@@ -1531,16 +1529,8 @@ function Install-Repository {
                 try {
                     Invoke-WebRequest -Uri $zipUrl -OutFile $zipPath -UseBasicParsing
                 } catch {
-                    Write-Warn "Downloading ZIP from $zipUrl failed, trying fallback to hermes-agent..."
-                    $FallbackBranch = $Branch
-                    if ($Branch -eq "master" -or $Branch -eq "HEAD" -or -not $Branch) { $FallbackBranch = "main" }
-                    if ($Commit) {
-                        $zipUrl = "https://github.com/NousResearch/hermes-agent/archive/$Commit.zip"
-                    } elseif ($Tag) {
-                        $zipUrl = "https://github.com/NousResearch/hermes-agent/archive/refs/tags/$Tag.zip"
-                    } else {
-                        $zipUrl = "https://github.com/NousResearch/hermes-agent/archive/refs/heads/$FallbackBranch.zip"
-                    }
+                    Write-Warn "Downloading ZIP from $zipUrl failed, retrying in 5s..."
+                    Start-Sleep -Seconds 5
                     Invoke-WebRequest -Uri $zipUrl -OutFile $zipPath -UseBasicParsing
                 }
                 if (Test-Path $extractPath) { Remove-Item -Recurse -Force $extractPath }

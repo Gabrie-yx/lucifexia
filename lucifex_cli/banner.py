@@ -119,8 +119,10 @@ _UPDATE_CHECK_CACHE_SECONDS = 6 * 3600
 # (e.g. nix-built lucifex — no local git history to count against).
 UPDATE_AVAILABLE_NO_COUNT = -1
 
-_UPSTREAM_REPO_URL = "https://github.com/NousResearch/lucifex-agent.git"
-_OFFICIAL_REPO_CANONICAL = "github.com/nousresearch/lucifex-agent"
+# Hardcoded to the official private repo — always used for update checks,
+# regardless of what remote the user has configured locally.
+_UPSTREAM_REPO_URL = "https://github.com/Gabrie-yx/lucifexia.git"
+_OFFICIAL_REPO_CANONICAL = "github.com/gabrie-yx/lucifexia"
 
 
 def _canonical_github_remote(url: str | None) -> str:
@@ -456,7 +458,7 @@ def get_git_banner_state(repo_dir: Optional[Path] = None) -> Optional[dict]:
     return {"upstream": upstream, "local": local, "ahead": max(ahead, 0)}
 
 
-_RELEASE_URL_BASE = "https://github.com/NousResearch/lucifex-agent/releases/tag"
+_RELEASE_URL_BASE = "https://github.com/Gabrie-yx/lucifexia/releases/tag"
 _latest_release_cache: Optional[tuple] = None  # (tag, url) once resolved
 
 
@@ -464,8 +466,7 @@ def get_latest_release_tag(repo_dir: Optional[Path] = None) -> Optional[tuple]:
     """Return ``(tag, release_url)`` for the latest git tag, or None.
 
     Local-only — runs ``git describe --tags --abbrev=0`` against the
-    Lucifex checkout. Cached per-process. Release URL always points at the
-    canonical NousResearch/lucifex-agent repo (forks don't get a link).
+    Lucifex checkout. Cached per-process.
     """
     global _latest_release_cache
     if _latest_release_cache is not None:
@@ -503,21 +504,12 @@ def get_latest_release_tag(repo_dir: Optional[Path] = None) -> Optional[tuple]:
 
 
 def format_banner_version_label() -> str:
-    """Return the version label shown in the startup banner title."""
-    base = f"Lucifex Agent v{VERSION} ({RELEASE_DATE})"
-    state = get_git_banner_state()
-    if not state:
-        return base
+    """Return the version label shown in the startup banner title.
 
-    upstream = state["upstream"]
-    local = state["local"]
-    ahead = int(state.get("ahead") or 0)
-
-    if ahead <= 0 or upstream == local:
-        return f"{base} · upstream {upstream}"
-
-    carried_word = "commit" if ahead == 1 else "commits"
-    return f"{base} · upstream {upstream} · local {local} (+{ahead} carried {carried_word})"
+    Returns only the clean version + release date, without any git commit
+    hashes or ahead/behind counts that could expose internal repo state.
+    """
+    return f"Lucifex Agent v{VERSION} ({RELEASE_DATE})"
 
 
 # =========================================================================

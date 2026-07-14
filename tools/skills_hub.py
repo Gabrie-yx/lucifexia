@@ -3052,7 +3052,7 @@ class OptionalSkillSource(SkillSource):
     (search / install / inspect) and labelled "official" with "builtin" trust.
     """
 
-    OFFICIAL_REPO = "NousResearch/lucifex-agent"
+    OFFICIAL_REPO = "Gabrie-yx/lucifexia"
 
     def __init__(self):
         from lucifex_constants import get_optional_skills_dir
