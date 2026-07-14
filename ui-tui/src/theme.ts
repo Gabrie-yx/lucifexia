@@ -253,40 +253,40 @@ const cleanPromptSymbol = (s: string | undefined, fallback: string) => {
 
 export const DARK_THEME: Theme = {
   color: {
-    primary: '#FFD700',
-    accent: '#FFBF00',
-    border: '#CD7F32',
-    text: '#FFF8DC',
-    muted: '#CC9B1F',
+    primary: '#FF3333',
+    accent: '#FF5C5C',
+    border: '#990000',
+    text: '#FFF0F0',
+    muted: '#B32424',
     // Bumped from the old `#B8860B` darkgoldenrod (~53% luminance) which
     // read as barely-visible on dark terminals for long body text.  The
     // new value sits ~60% luminance — readable without losing the "muted /
     // secondary" semantic.  Field labels still use `label` (65%) which
     // stays brighter so hierarchy holds.
-    completionBg: '#1a1a2e',
-    completionCurrentBg: '#333355',
-    completionMetaBg: '#1a1a2e',
-    completionMetaCurrentBg: '#333355',
+    completionBg: '#1e0a0a',
+    completionCurrentBg: '#4a1515',
+    completionMetaBg: '#1e0a0a',
+    completionMetaCurrentBg: '#4a1515',
 
-    label: '#DAA520',
+    label: '#D93636',
     ok: '#4caf50',
     error: '#ef5350',
     warn: '#ffa726',
 
-    prompt: '#FFF8DC',
+    prompt: '#FFF0F0',
     // sessionLabel/sessionBorder intentionally track the `dim` value — they
     // are "same role, same colour" by design.  fromSkin's banner_dim fallback
     // relies on this pairing (#11300).
-    sessionLabel: '#CC9B1F',
-    sessionBorder: '#CC9B1F',
+    sessionLabel: '#B32424',
+    sessionBorder: '#B32424',
 
-    statusBg: '#1a1a2e',
+    statusBg: '#1e0a0a',
     statusFg: '#C0C0C0',
     statusGood: '#8FBC8F',
-    statusWarn: '#FFD700',
+    statusWarn: '#FFA726',
     statusBad: '#FF8C00',
     statusCritical: '#FF6B6B',
-    selectionBg: '#3a3a55',
+    selectionBg: '#4a1515',
 
     diffAdded: 'rgb(220,255,220)',
     diffRemoved: 'rgb(255,220,220)',
@@ -306,32 +306,32 @@ export const DARK_THEME: Theme = {
 // cleanly (#11300).
 export const LIGHT_THEME: Theme = {
   color: {
-    primary: '#8B6914',
-    accent: '#A0651C',
-    border: '#7A4F1F',
-    text: '#3D2F13',
-    muted: '#7A5A0F',
-    completionBg: '#F5F5F5',
-    completionCurrentBg: mix('#F5F5F5', '#A0651C', 0.25),
-    completionMetaBg: '#F5F5F5',
-    completionMetaCurrentBg: mix('#F5F5F5', '#A0651C', 0.25),
+    primary: '#990000',
+    accent: '#B31A1A',
+    border: '#800000',
+    text: '#330000',
+    muted: '#801A1A',
+    completionBg: '#FFF0F0',
+    completionCurrentBg: mix('#FFF0F0', '#B31A1A', 0.25),
+    completionMetaBg: '#FFF0F0',
+    completionMetaCurrentBg: mix('#FFF0F0', '#B31A1A', 0.25),
 
-    label: '#7A5A0F',
+    label: '#801A1A',
     ok: '#2E7D32',
     error: '#C62828',
     warn: '#E65100',
 
-    prompt: '#2B2014',
-    sessionLabel: '#7A5A0F',
-    sessionBorder: '#7A5A0F',
+    prompt: '#330000',
+    sessionLabel: '#801A1A',
+    sessionBorder: '#801A1A',
 
-    statusBg: '#F5F5F5',
+    statusBg: '#FFF0F0',
     statusFg: '#333333',
     statusGood: '#2E7D32',
-    statusWarn: '#8B6914',
+    statusWarn: '#B26A00',
     statusBad: '#D84315',
     statusCritical: '#B71C1C',
-    selectionBg: '#D4E4F7',
+    selectionBg: '#FFD1D1',
 
     diffAdded: 'rgb(200,240,200)',
     diffRemoved: 'rgb(240,200,200)',
