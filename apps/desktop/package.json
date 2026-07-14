@@ -242,9 +242,9 @@
     "win": {
       "legalTrademarks": "Lucifex",
       "target": [
-        "nsis",
-        "portable"
+        "nsis"
       ],
+      "publish": null,
       "signExecutable": false
     },
     "linux": {
