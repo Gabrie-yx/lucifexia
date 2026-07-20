@@ -129,7 +129,7 @@ done
 在同一个 kanban.db 上处理三个专家 profile 的任务：
 
 ```bash
-hermes gateway start
+lucifex gateway start
 ```
 
 现在将看板筛选到 `content-ops`（或直接搜索"Transcribe"），你会看到：

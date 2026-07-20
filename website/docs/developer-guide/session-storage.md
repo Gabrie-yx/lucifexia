@@ -4,7 +4,7 @@ Hermes Agent uses a SQLite database (`~/.hermes/state.db`) to persist session
 metadata, full message history, and model configuration across CLI and gateway
 sessions. This replaces the earlier per-session JSONL file approach.
 
-Source file: `hermes_state.py`
+Source file: `lucifex_state.py`
 
 
 ## Architecture Overview
@@ -185,7 +185,7 @@ _CHECKPOINT_EVERY_N_WRITES = 50
 ### Initialize
 
 ```python
-from hermes_state import SessionDB
+from lucifex_state import SessionDB
 
 db = SessionDB()                           # Default: ~/.hermes/state.db
 db = SessionDB(db_path=Path("/tmp/test.db"))  # Custom path
@@ -393,8 +393,8 @@ db.delete_session("sess_abc123")
 
 Default path: `~/.hermes/state.db`
 
-This is derived from `hermes_constants.get_hermes_home()` which resolves to
-`~/.hermes/` by default, or the value of `HERMES_HOME` environment variable.
+This is derived from `lucifex_constants.get_lucifex_home()` which resolves to
+`~/.hermes/` by default, or the value of `LUCIFEX_HOME` environment variable.
 
 The database file, WAL file (`state.db-wal`), and shared-memory file
 (`state.db-shm`) are all created in the same directory.

@@ -1,4 +1,4 @@
-"""Gateway typed ``/model <name>`` must route through the expensive-model
+﻿"""Gateway typed ``/model <name>`` must route through the expensive-model
 confirmation gate.
 
 The pickers (Telegram/Discord inline keyboards, TUI, dashboard) confirm
@@ -42,7 +42,7 @@ def _make_event(text):
 
 
 def _fake_switch_result():
-    from hermes_cli.model_switch import ModelSwitchResult
+    from lucifex_cli.model_switch import ModelSwitchResult
 
     return ModelSwitchResult(
         success=True,
@@ -69,24 +69,24 @@ def _fake_warning():
 def _setup_isolated_home(tmp_path, monkeypatch, *, warn):
     import gateway.run as gateway_run
 
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    cfg_path = hermes_home / "config.yaml"
+    LUCIFEX_HOME = tmp_path / ".hermes"
+    LUCIFEX_HOME.mkdir()
+    cfg_path = LUCIFEX_HOME / "config.yaml"
     cfg_path.write_text(
         yaml.safe_dump({"model": {"default": "old-model", "provider": "openrouter"}, "providers": {}}),
         encoding="utf-8",
     )
 
-    monkeypatch.setattr(gateway_run, "_hermes_home", hermes_home)
+    monkeypatch.setattr(gateway_run, "_LUCIFEX_HOME", LUCIFEX_HOME)
     monkeypatch.setattr("agent.models_dev.fetch_models_dev", lambda: {})
     monkeypatch.setattr(
-        "hermes_cli.model_switch.switch_model",
+        "lucifex_cli.model_switch.switch_model",
         lambda **kw: _fake_switch_result(),
     )
-    monkeypatch.setattr("hermes_constants.get_hermes_home", lambda: hermes_home)
-    monkeypatch.setattr("hermes_cli.config.get_hermes_home", lambda: hermes_home)
+    monkeypatch.setattr("lucifex_constants.get_lucifex_home", lambda: LUCIFEX_HOME)
+    monkeypatch.setattr("lucifex_cli.config.get_lucifex_home", lambda: LUCIFEX_HOME)
     monkeypatch.setattr(
-        "hermes_cli.model_cost_guard.expensive_model_warning",
+        "lucifex_cli.model_cost_guard.expensive_model_warning",
         (lambda *a, **kw: _fake_warning()) if warn else (lambda *a, **kw: None),
     )
     return cfg_path

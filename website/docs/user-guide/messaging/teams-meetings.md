@@ -173,7 +173,7 @@ platforms:
 Start Hermes normally after updating config:
 
 ```bash
-hermes gateway run
+lucifex gateway run
 ```
 
 Or, if you run Hermes in Docker, start the gateway the same way you already do for your deployment.

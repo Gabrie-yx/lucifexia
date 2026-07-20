@@ -21,7 +21,7 @@ Configure and use Honcho memory with Hermes -- cross-session user modeling, mult
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `Honcho`, `Memory`, `Profiles`, `Observation`, `Dialectic`, `User-Modeling`, `Session-Summary` |
-| Related skills | [`hermes-agent`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-hermes-agent) |
+| Related skills | [`lucifex-agent`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-lucifex-agent) |
 
 ## Reference: full SKILL.md
 
@@ -352,7 +352,7 @@ In `hybrid` and `context` modes, base context (user representation + card + sess
 
 ## Config Reference
 
-Config file: `$HERMES_HOME/honcho.json` (profile-local) or `~/.honcho/config.json` (global).
+Config file: `$LUCIFEX_HOME/honcho.json` (profile-local) or `~/.honcho/config.json` (global).
 
 ### Key settings
 

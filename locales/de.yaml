@@ -1,4 +1,4 @@
-# Hermes-Katalog für statische Meldungen -- Deutsch
+﻿# Hermes-Katalog für statische Meldungen -- Deutsch
 # See locales/en.yaml for the source of truth; keep keys in sync.
 
 approval:
@@ -283,7 +283,7 @@ Future messages in this room will use that transcript until `/reset` or another 
     success:               "✅ Home-Kanal auf **{name}** (ID: {chat_id}) gesetzt.\nCron-Jobs und plattformübergreifende Nachrichten werden hierher geliefert."
 
   status:
-    header:                "📊 **Hermes-Gateway-Status**"
+    header:                "📊 **lucifex-gateway-Status**"
     matrix_scope_header:   "**Matrix scope:**"
     matrix_scope_room:     "  room: {room}"
     matrix_scope_room_id:  "  room_id: {room_id}"

@@ -1,4 +1,4 @@
-"""Container-boot reconciliation of per-profile gateway s6 services.
+﻿"""Container-boot reconciliation of per-profile gateway s6 services.
 
 Service directories under /run/service/ live on **tmpfs** and are wiped
 on every container restart. Profile directories under
@@ -9,7 +9,7 @@ persistent profiles, recreate the s6 service slots, and auto-start
 only those whose last recorded state was ``running``.
 
 Wired into the image as /etc/cont-init.d/02-reconcile-profiles by the
-Dockerfile (Phase 4 Task 4.0). Runs as root after 01-lucifex-setup
+Dockerfile (Phase 4 Task 4.0). Runs as root after 01-hermes-setup
 (the stage2 hook) has chowned the volume and seeded $LUCIFEX_HOME, but
 before s6-rc starts user services.
 
@@ -87,7 +87,7 @@ class ReconcileAction:
 
 def reconcile_profile_gateways(
     *,
-    lucifex_home: Path,
+    LUCIFEX_HOME: Path,
     scandir: Path,
     dry_run: bool = False,
     container_argv: Sequence[str] | None = None,
@@ -109,9 +109,9 @@ def reconcile_profile_gateways(
     same way as for named profiles.
 
     Args:
-        lucifex_home: The container's LUCIFEX_HOME (typically /opt/data).
-            Profiles live under ``<lucifex_home>/profiles/<name>/``;
-            the default profile lives at ``<lucifex_home>`` itself.
+        LUCIFEX_HOME: The container's LUCIFEX_HOME (typically /opt/data).
+            Profiles live under ``<LUCIFEX_HOME>/profiles/<name>/``;
+            the default profile lives at ``<LUCIFEX_HOME>`` itself.
         scandir: The s6 dynamic scandir (typically /run/service). Service
             directories are created at ``<scandir>/gateway-<profile>/``.
         dry_run: When True, walk and return the action list without
@@ -125,6 +125,16 @@ def reconcile_profile_gateways(
     """
     actions: list[ReconcileAction] = []
 
+    # A multiplexing root/default gateway owns inbound platform connections
+    # for every profile. Named slots must still be registered (so explicit
+    # lifecycle management remains available), but booting them from their
+    # persisted run intent would create additional multiplex owners.
+    from utils import is_truthy_value
+
+    multiplex_profiles = is_truthy_value(
+        os.environ.get("GATEWAY_MULTIPLEX_PROFILES"),
+    )
+
     # Default profile — always register, even if nothing has ever
     # populated the root profile dir. The slot exists so
     # ``lucifex gateway start`` (no ``-p``) has somewhere to land;
@@ -133,14 +143,14 @@ def reconcile_profile_gateways(
     # `gateway run` command and no state exists yet, seed that intent
     # as `running` so the s6 reconciler preserves the pre-s6 behavior.
     legacy_default_state = _maybe_migrate_legacy_gateway_run_state(
-        lucifex_home,
+        LUCIFEX_HOME,
         container_argv=container_argv,
         dry_run=dry_run,
     )
-    default_prior_state = legacy_default_state or _read_desired_state(lucifex_home)
+    default_prior_state = legacy_default_state or _read_desired_state(LUCIFEX_HOME)
     default_should_start = default_prior_state in _AUTOSTART_STATES
     if not dry_run:
-        _cleanup_stale_runtime_files(lucifex_home)
+        _cleanup_stale_runtime_files(LUCIFEX_HOME)
         _register_service(scandir, "default", start=default_should_start)
     actions.append(ReconcileAction(
         profile="default",
@@ -148,13 +158,13 @@ def reconcile_profile_gateways(
         action="started" if default_should_start else "registered",
     ))
 
-    profiles_root = lucifex_home / "profiles"
+    profiles_root = LUCIFEX_HOME / "profiles"
     if profiles_root.is_dir():
         for entry in sorted(profiles_root.iterdir()):
             if not entry.is_dir():
                 continue
-            # SOUL.md is always seeded by `lucifex profile create` (config.yaml
-            # is not — that comes later via `lucifex setup`). Use it as the
+            # SOUL.md is always seeded by `hermes profile create` (config.yaml
+            # is not — that comes later via `hermes setup`). Use it as the
             # "real profile" marker so stray dirs (backups, manual mkdir)
             # aren't picked up.
             if not (entry / "SOUL.md").exists():
@@ -163,7 +173,7 @@ def reconcile_profile_gateways(
             # profile (above) — if a user has somehow created a
             # ``profiles/default/`` directory, skip it to avoid the
             # slot collision. Their gateway would still be reachable
-            # via ``lucifex -p default-named gateway start`` if they
+            # via ``hermes -p default-named gateway start`` if they
             # rename the directory; we don't try to disambiguate here.
             if entry.name == "default":
                 log.warning(
@@ -173,7 +183,9 @@ def reconcile_profile_gateways(
                 continue
 
             prior_state = _read_desired_state(entry)
-            should_start = prior_state in _AUTOSTART_STATES
+            should_start = (
+                not multiplex_profiles and prior_state in _AUTOSTART_STATES
+            )
 
             if not dry_run:
                 _cleanup_stale_runtime_files(entry)
@@ -186,12 +198,12 @@ def reconcile_profile_gateways(
             ))
 
     if not dry_run:
-        _write_reconcile_log(lucifex_home, actions)
+        _write_reconcile_log(LUCIFEX_HOME, actions)
     return actions
 
 
 def _maybe_migrate_legacy_gateway_run_state(
-    lucifex_home: Path,
+    LUCIFEX_HOME: Path,
     *,
     container_argv: Sequence[str] | None,
     dry_run: bool,
@@ -206,11 +218,11 @@ def _maybe_migrate_legacy_gateway_run_state(
     root gateway_state.json exists so explicit stopped/failed states keep
     winning across restarts.
     """
-    state_file = lucifex_home / "gateway_state.json"
+    state_file = LUCIFEX_HOME / "gateway_state.json"
     if state_file.exists():
         return None
 
-    if os.environ.get("LUCIFEX_GATEWAY_NO_SUPERVISE", "").lower() in ("1", "true", "yes"):
+    if os.environ.get("HERMES_GATEWAY_NO_SUPERVISE", "").lower() in ("1", "true", "yes"):
         return None
 
     argv = tuple(container_argv) if container_argv is not None else _read_container_argv()
@@ -275,15 +287,15 @@ def _read_container_argv() -> tuple[str, ...]:
 
 
 def _strip_container_argv_prefix(argv: Sequence[str]) -> list[str]:
-    """Strip the s6/wrapper prefix off the container argv, leaving the lucifex args.
+    """Strip the s6/wrapper prefix off the container argv, leaving the hermes args.
 
     Two container-command argv shapes are handled:
 
     * **s6-overlay v2 / tini:** PID 1 argv is
-      ``/init /opt/lucifex/docker/main-wrapper.sh <subcommand> [args...]``.
+      ``/init /opt/hermes/docker/main-wrapper.sh <subcommand> [args...]``.
     * **s6-overlay v3:** PID 1 is ``s6-svscan`` and the command lives on the
       rc.init-launched process as ``/bin/sh -e
-      /run/s6/basedir/scripts/rc.init top /opt/lucifex/docker/main-wrapper.sh
+      /run/s6/basedir/scripts/rc.init top /opt/hermes/docker/main-wrapper.sh
       <subcommand> [args...]`` (see :func:`_read_container_argv`).
 
     Rather than peel each leading token positionally (which silently breaks
@@ -291,9 +303,9 @@ def _strip_container_argv_prefix(argv: Sequence[str]) -> list[str]:
     in the v2→v3 bump), drop everything up to and including the
     ``main-wrapper.sh`` token: that wrapper path is the stable boundary the
     image owns, and the subcommand always follows it. Pre-s6 / direct
-    ``lucifex`` invocations carry no wrapper, so fall back to peeling a bare
-    ``init`` prefix. The wrapper re-execs ``lucifex <subcommand>``, so an
-    explicit leading ``lucifex`` is peeled too. Shared by the legacy-gateway
+    ``hermes`` invocations carry no wrapper, so fall back to peeling a bare
+    ``init`` prefix. The wrapper re-execs ``hermes <subcommand>``, so an
+    explicit leading ``hermes`` is peeled too. Shared by the legacy-gateway
     and dashboard role detectors.
     """
     args = list(argv)
@@ -311,8 +323,8 @@ def _strip_container_argv_prefix(argv: Sequence[str]) -> list[str]:
         # Defensive: an `init` prefix with no wrapper token in argv.
         args = args[1:]
 
-    # The wrapper re-execs `lucifex <subcommand>`; peel an explicit lucifex.
-    if args and Path(args[0]).name == "lucifex":
+    # The wrapper re-execs `hermes <subcommand>`; peel an explicit hermes.
+    if args and Path(args[0]).name == "hermes":
         args = args[1:]
     return args
 
@@ -328,7 +340,7 @@ def _is_legacy_gateway_run_request(argv: Sequence[str]) -> bool:
 def _is_dashboard_container(argv: Sequence[str]) -> bool:
     """Return True when the container's command is the dashboard.
 
-    A dashboard-only container (``lucifex dashboard ...``) never spawns or
+    A dashboard-only container (``hermes dashboard ...``) never spawns or
     supervises per-profile gateways — that is the gateway container's job.
     Reconciling profile gateway s6 slots there is not just wasted work: when
     the gateway and dashboard containers share a bind-mounted LUCIFEX_HOME,
@@ -462,19 +474,19 @@ def _register_service(scandir: Path, profile: str, *, start: bool) -> None:
 
         # The presence of a `down` file tells s6-supervise to NOT
         # start the service when s6-svscan picks it up. User brings
-        # it up explicitly with `lucifex -p <profile> gateway start`
+        # it up explicitly with `hermes -p <profile> gateway start`
         # (which routes through the Phase 4
         # _dispatch_via_service_manager_if_s6 helper to `s6-svc -u`).
         if not start:
             (tmp_dir / "down").touch()
 
-        # Pre-create the supervise/ skeleton with lucifex ownership
+        # Pre-create the supervise/ skeleton with hermes ownership
         # BEFORE we publish the slot. Mirrors the same pre-creation
         # step in S6ServiceManager.register_profile_gateway — when
         # s6-svscan picks the published slot up, the s6-supervise it
-        # spawns will EEXIST our dirs/FIFOs and inherit lucifex
+        # spawns will EEXIST our dirs/FIFOs and inherit hermes
         # ownership, so runtime s6-svc / s6-svstat / s6-svwait calls
-        # (all dispatched as the lucifex user) won't hit EACCES. See
+        # (all dispatched as the hermes user) won't hit EACCES. See
         # ``_seed_supervise_skeleton`` in service_manager.py for the
         # full rationale.
         _seed_supervise_skeleton(tmp_dir)
@@ -492,7 +504,7 @@ def _register_service(scandir: Path, profile: str, *, start: bool) -> None:
 
 
 def _write_reconcile_log(
-    lucifex_home: Path, actions: list[ReconcileAction],
+    LUCIFEX_HOME: Path, actions: list[ReconcileAction],
 ) -> None:
     """Append one line per profile to $LUCIFEX_HOME/logs/container-boot.log.
 
@@ -510,7 +522,7 @@ def _write_reconcile_log(
     one append-only file (PR #30136 review item O3).
     """
     import time
-    log_dir = lucifex_home / "logs"
+    log_dir = LUCIFEX_HOME / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)
     log_path = log_dir / "container-boot.log"
 
@@ -559,10 +571,10 @@ def main() -> int:
         )
         return 0
 
-    lucifex_home = Path(os.environ.get("LUCIFEX_HOME", "/opt/data"))
+    LUCIFEX_HOME = Path(os.environ.get("LUCIFEX_HOME", "/opt/data"))
     scandir = Path(os.environ.get("S6_PROFILE_GATEWAY_SCANDIR", "/run/service"))
     actions = reconcile_profile_gateways(
-        lucifex_home=lucifex_home, scandir=scandir,
+        LUCIFEX_HOME=LUCIFEX_HOME, scandir=scandir,
     )
     for a in actions:
         print(

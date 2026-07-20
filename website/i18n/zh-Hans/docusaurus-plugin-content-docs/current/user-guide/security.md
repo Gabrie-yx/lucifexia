@@ -397,7 +397,7 @@ terminal:
 
 ### 凭据文件透传（OAuth token 等） {#credential-file-passthrough}
 
-某些技能需要在沙箱中访问**文件**（而非仅环境变量）——例如，Google Workspace 将 OAuth token 存储为活跃 profile 的 `HERMES_HOME` 下的 `google_token.json`。技能在 frontmatter 中声明这些文件：
+某些技能需要在沙箱中访问**文件**（而非仅环境变量）——例如，Google Workspace 将 OAuth token 存储为活跃 profile 的 `LUCIFEX_HOME` 下的 `google_token.json`。技能在 frontmatter 中声明这些文件：
 
 ```yaml
 required_credential_files:
@@ -407,7 +407,7 @@ required_credential_files:
     description: Google OAuth2 client credentials
 ```
 
-加载后，Hermes 会检查这些文件是否存在于活跃 profile 的 `HERMES_HOME` 中，并将其注册为挂载：
+加载后，Hermes 会检查这些文件是否存在于活跃 profile 的 `LUCIFEX_HOME` 中，并将其注册为挂载：
 
 - **Docker**：只读绑定挂载（`-v host:container:ro`）
 - **Modal**：在沙箱创建时挂载，并在每次命令前同步（处理会话中途的 OAuth 配置）
@@ -609,7 +609,7 @@ SSH 连接详情保存在 `.env`（而非 `config.yaml`）中，以避免随 pro
 
 ## 供应链安全公告检查
 
-Hermes 内置了一个公告扫描器，用于标记活跃 venv 中与已知受损版本目录匹配的 Python 包（例如 2026 年 5 月的 `mistralai 2.4.6` 供应链投毒事件）。实现位于 `hermes_cli/security_advisories.py`。
+Hermes 内置了一个公告扫描器，用于标记活跃 venv 中与已知受损版本目录匹配的 Python 包（例如 2026 年 5 月的 `mistralai 2.4.6` 供应链投毒事件）。实现位于 `lucifex_cli/security_advisories.py`。
 
 运行方式：
 
@@ -629,7 +629,7 @@ hermes doctor --ack <advisory-id>
 
 ### 可选依赖的懒加载安装
 
-许多功能（Mistral TTS、ElevenLabs、Honcho 记忆、Bedrock、Slack、Matrix 等）依赖并非每个用户都需要的 Python 包。Hermes 在首次使用时**懒加载**安装这些包，而非在 `hermes-agent[all]` 下急切安装。实现位于 `tools/lazy_deps.py`。
+许多功能（Mistral TTS、ElevenLabs、Honcho 记忆、Bedrock、Slack、Matrix 等）依赖并非每个用户都需要的 Python 包。Hermes 在首次使用时**懒加载**安装这些包，而非在 `lucifex-agent[all]` 下急切安装。实现位于 `tools/lazy_deps.py`。
 
 此方案解决的权衡问题：
 

@@ -232,7 +232,7 @@ def rewrite_relative_links(body: str, meta: dict[str, Any]) -> str:
     pointing to the file in the repo.
     """
     source_dir = "skills" if meta["source_kind"] == "bundled" else "optional-skills"
-    base = f"https://github.com/NousResearch/hermes-agent/blob/main/{source_dir}/{meta['rel_path']}"
+    base = f"https://github.com/NousResearch/lucifex-agent/blob/main/{source_dir}/{meta['rel_path']}"
 
     def sub_link(m: re.Match) -> str:
         text = m.group(1)
@@ -518,12 +518,12 @@ def build_catalog_md_optional(entries: list[tuple[dict[str, Any], dict[str, Any]
         "---",
         "sidebar_position: 9",
         'title: "Optional Skills Catalog"',
-        'description: "Official optional skills shipped with hermes-agent — install via hermes skills install official/<category>/<skill>"',
+        'description: "Official optional skills shipped with lucifex-agent — install via hermes skills install official/<category>/<skill>"',
         "---",
         "",
         "# Optional Skills Catalog",
         "",
-        "Optional skills ship with hermes-agent under `optional-skills/` but are **not active by default**. Install them explicitly:",
+        "Optional skills ship with lucifex-agent under `optional-skills/` but are **not active by default**. Install them explicitly:",
         "",
         "```bash",
         "hermes skills install official/<category>/<skill>",

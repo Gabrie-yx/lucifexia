@@ -28,7 +28,7 @@ Hermes 刻意将以下内容分离：
 
 已缓存的系统 prompt 大致按以下顺序组装：
 
-1. agent 身份 — 优先使用 `HERMES_HOME` 中的 `SOUL.md`，否则回退到 `prompt_builder.py` 中的 `DEFAULT_AGENT_IDENTITY`
+1. agent 身份 — 优先使用 `LUCIFEX_HOME` 中的 `SOUL.md`，否则回退到 `prompt_builder.py` 中的 `DEFAULT_AGENT_IDENTITY`
 2. 工具感知行为指导
 3. Honcho 静态块（激活时）
 4. 可选系统消息
@@ -123,7 +123,7 @@ renderable inside a terminal.
 ```python
 # From agent/prompt_builder.py (simplified)
 def load_soul_md() -> Optional[str]:
-    soul_path = get_hermes_home() / "SOUL.md"
+    soul_path = get_lucifex_home() / "SOUL.md"
     if not soul_path.exists():
         return None
     content = soul_path.read_text(encoding="utf-8").strip()
@@ -167,7 +167,7 @@ def build_context_files_prompt(cwd=None, skip_soul=False):
     if project_context:
         sections.append(project_context)
 
-    # SOUL.md from HERMES_HOME (independent of project context)
+    # SOUL.md from LUCIFEX_HOME (independent of project context)
     if not skip_soul:
         soul_content = load_soul_md()
         if soul_content:

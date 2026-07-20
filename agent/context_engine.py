@@ -1,4 +1,4 @@
-"""Abstract base class for pluggable context engines.
+﻿"""Abstract base class for pluggable context engines.
 
 A context engine controls how conversation context is managed when
 approaching the model's token limit. The built-in ContextCompressor
@@ -177,7 +177,7 @@ class ContextEngine(ABC):
         """Called when a new conversation session begins.
 
         Use this to load persisted state (DAG, store) for the session.
-        kwargs may include hermes_home, platform, model, etc.
+        kwargs may include LUCIFEX_HOME, platform, model, etc.
         """
 
     def on_session_end(self, session_id: str, messages: List[Dict[str, Any]]) -> None:

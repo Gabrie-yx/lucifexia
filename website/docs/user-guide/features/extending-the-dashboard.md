@@ -751,12 +751,12 @@ Plugin API routes bypass session-token authentication since the dashboard server
 
 #### Accessing Hermes internals
 
-Backend routes run inside the dashboard process, so they can import from the hermes-agent codebase directly:
+Backend routes run inside the dashboard process, so they can import from the lucifex-agent codebase directly:
 
 ```python
 from fastapi import APIRouter
-from hermes_state import SessionDB
-from hermes_cli.config import load_config
+from lucifex_state import SessionDB
+from lucifex_cli.config import load_config
 
 router = APIRouter()
 

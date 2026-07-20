@@ -1,4 +1,4 @@
-"""Tests for user-configured ``model.default_headers`` in the auxiliary client.
+﻿"""Tests for user-configured ``model.default_headers`` in the auxiliary client.
 
 Companion to ``tests/run_agent/test_provider_attribution_headers.py`` (which
 covers the main agent client). The main agent turn and the auxiliary client
@@ -16,11 +16,11 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def _isolate(tmp_path, monkeypatch):
-    """Redirect HERMES_HOME so load_config() reads our test config.yaml."""
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-    (hermes_home / "config.yaml").write_text("model:\n  default: test-model\n")
+    """Redirect LUCIFEX_HOME so load_config() reads our test config.yaml."""
+    LUCIFEX_HOME = tmp_path / ".hermes"
+    LUCIFEX_HOME.mkdir()
+    monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
+    (LUCIFEX_HOME / "config.yaml").write_text("model:\n  default: test-model\n")
 
 
 def _write_config(tmp_path, config_dict):

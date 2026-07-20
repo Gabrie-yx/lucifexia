@@ -2,12 +2,12 @@ import os
 
 replacements = [
     # Order from most specific to least specific
-    ("HERMES_HOME", "LUCIFEX_HOME"),
+    ("LUCIFEX_HOME", "LUCIFEX_HOME"),
     ("HermesHome", "LucifexHome"),
-    ("hermes-agent", "lucifex-agent"),
+    ("lucifex-agent", "lucifex-agent"),
     ("hermes-setup", "lucifex-setup"),
     ("Hermes-Setup", "Lucifex-Setup"),
-    ("hermes_cli", "lucifex_cli"),
+    ("lucifex_cli", "lucifex_cli"),
     ("com.nousresearch.hermes", "com.nousresearch.lucifex"),
     ("com.nousresearch.LUCIFEX", "com.nousresearch.lucifex"),
     ("com.lucifex.agent", "com.nousresearch.lucifex"),

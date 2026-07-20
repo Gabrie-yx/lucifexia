@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run a Hermes instance in an isolated sandbox — separate HERMES_HOME,
+# Run a Hermes instance in an isolated sandbox — separate LUCIFEX_HOME,
 # separate Electron userData, and a distinct Desktop app name so it doesn't compete
 # with your main desktop instance's single-instance lock.
 #
@@ -8,14 +8,14 @@
 # .hermes-sandbox/ in the worktree git root).
 #
 # Usage:
-#   scripts/dev-sandbox.sh python -m hermes_cli.main
+#   scripts/dev-sandbox.sh python -m lucifex_cli.main
 #   scripts/dev-sandbox.sh hermes desktop
 #   scripts/dev-sandbox.sh electron .
 #   scripts/dev-sandbox.sh -- npm run dev   # from apps/desktop/
 #   scripts/dev-sandbox.sh --persistent hermes desktop
 #   scripts/dev-sandbox.sh --persistent -- npm run dev
 #
-# Seed the sandbox HERMES_HOME from an existing directory (e.g. your main
+# Seed the sandbox LUCIFEX_HOME from an existing directory (e.g. your main
 # ~/.hermes) so config, sessions, skills, etc. are pre-populated:
 #   scripts/dev-sandbox.sh --from ~/.hermes hermes desktop
 #
@@ -39,9 +39,9 @@ Options:
   --persistent    Keep the sandbox dir across restarts (under the worktree
                   git root, in .hermes-sandbox/). Without this flag the
                   sandbox is a temp dir that is removed on exit.
-  --from DIR      Copy DIR into the sandbox HERMES_HOME as the starting
+  --from DIR      Copy DIR into the sandbox LUCIFEX_HOME as the starting
                   point (config, sessions, skills, etc.).
-                  Ignored if the sandbox HERMES_HOME already has content
+                  Ignored if the sandbox LUCIFEX_HOME already has content
                   (e.g. reusing a --persistent sandbox) to avoid clobbering.
   --delete        Delete the existing persistent sandbox in .hermes-sandbox.
   -h, --help      Show this help message.
@@ -158,24 +158,24 @@ else
   SANDBOX_ROOT="$(mktemp -d -t hermes-sandbox.XXXXXX)"
 fi
 
-export HERMES_HOME="$SANDBOX_ROOT/hermes-home"
+export LUCIFEX_HOME="$SANDBOX_ROOT/hermes-home"
 export HERMES_DESKTOP_USER_DATA_DIR="$SANDBOX_ROOT/user-data"
 export HERMES_DESKTOP_APP_NAME="$SANDBOX_NAME"
 
-mkdir -p "$HERMES_HOME" "$HERMES_DESKTOP_USER_DATA_DIR"
+mkdir -p "$LUCIFEX_HOME" "$HERMES_DESKTOP_USER_DATA_DIR"
 
 if [ -n "$SEED_DIR" ]; then
-  # Only seed when the sandbox HERMES_HOME is empty — avoids clobbering an
+  # Only seed when the sandbox LUCIFEX_HOME is empty — avoids clobbering an
   # existing persistent sandbox on re-run.
-  if [ -z "$(ls -A "$HERMES_HOME" 2>/dev/null)" ]; then
-    echo "[sandbox] seeding HERMES_HOME from $SEED_DIR" >&2
-    cp -a "$SEED_DIR/." "$HERMES_HOME/"
+  if [ -z "$(ls -A "$LUCIFEX_HOME" 2>/dev/null)" ]; then
+    echo "[sandbox] seeding LUCIFEX_HOME from $SEED_DIR" >&2
+    cp -a "$SEED_DIR/." "$LUCIFEX_HOME/"
   else
-    echo "[sandbox] --from ignored: $HERMES_HOME already has content" >&2
+    echo "[sandbox] --from ignored: $LUCIFEX_HOME already has content" >&2
   fi
 fi
 
-echo "[sandbox] HERMES_HOME=$HERMES_HOME" >&2
+echo "[sandbox] LUCIFEX_HOME=$LUCIFEX_HOME" >&2
 echo "[sandbox] userData=$HERMES_DESKTOP_USER_DATA_DIR" >&2
 echo "[sandbox] appName=$HERMES_DESKTOP_APP_NAME" >&2
 if [ "$PERSISTENT" = true ]; then

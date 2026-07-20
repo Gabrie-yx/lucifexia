@@ -138,7 +138,7 @@ auth.json
 state.db
 state.db-shm
 state.db-wal
-hermes_state.db
+lucifex_state.db
 response_store.db
 response_store.db-shm
 response_store.db-wal
@@ -165,7 +165,7 @@ browser_screenshots/
 cache/
 
 # Infrastructure (should not be in profile dir, but safe to exclude)
-hermes-agent/
+lucifex-agent/
 .worktrees/
 profiles/
 bin/

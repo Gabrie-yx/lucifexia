@@ -1,12 +1,12 @@
 """Helpers for X-Forwarded-Prefix support.
 
 Mission-control style deploys reverse-proxy the dashboard at a path
-prefix (e.g. ``mission-control.tilos.com/lucifex/*`` -> dashboard on
-:9119), injecting ``X-Forwarded-Prefix: /lucifex`` so the backend can
+prefix (e.g. ``mission-control.tilos.com/hermes/*`` -> dashboard on
+:9119), injecting ``X-Forwarded-Prefix: /hermes`` so the backend can
 reconstruct prefixed URLs (Location: headers, OAuth redirect_uri,
 cookie Path attributes, SPA asset URLs).
 
-This module is also the home of the ``LUCIFEX_DASHBOARD_PUBLIC_URL`` /
+This module is also the home of the ``HERMES_DASHBOARD_PUBLIC_URL`` /
 ``dashboard.public_url`` resolution — when the operator declares a
 complete public URL (scheme + host + optional path prefix), we use
 that directly for the OAuth ``redirect_uri`` and skip the
@@ -26,6 +26,11 @@ from typing import Optional
 
 _log = logging.getLogger(__name__)
 
+# Home Assistant Supervisor ingress prefixes are already 63 chars before
+# deployments add their own sub-path. Keep a bounded header budget, but leave
+# room for mainstream reverse-proxy path mounts.
+_MAX_PREFIX_LENGTH = 256
+
 # Characters that, if present in a public_url or prefix value, indicate
 # either a typo or a header-injection attempt. Reject the whole value
 # rather than try to sanitise — the operator can fix their config.
@@ -37,6 +42,7 @@ _REJECT_CHARS = frozenset(('"', "'", "<", ">", " ", "\n", "\r", "\t"))
 # misconfigured deploy. Keyed on the raw value too, so changing the
 # config and reloading surfaces a fresh warning.
 _warned_malformed_public_urls: set = set()
+_warned_malformed_prefixes: set = set()
 
 
 def _warn_if_malformed(source: str, raw: str) -> None:
@@ -44,9 +50,9 @@ def _warn_if_malformed(source: str, raw: str) -> None:
     was rejected by :func:`_normalise_public_url`.
 
     A non-empty value that normalises to ``""`` is almost always a
-    missing scheme (``lucifex.example.com`` instead of
-    ``https://lucifex.example.com``) — the single most common cause of
-    "I set LUCIFEX_DASHBOARD_PUBLIC_URL but the OAuth callback is still
+    missing scheme (``hermes.example.com`` instead of
+    ``https://hermes.example.com``) — the single most common cause of
+    "I set HERMES_DASHBOARD_PUBLIC_URL but the OAuth callback is still
     http://". Without this warning the value is silently discarded and
     the dashboard falls back to reconstructing the redirect URI from
     request headers, which behind a reverse proxy can yield the wrong
@@ -68,14 +74,31 @@ def _warn_if_malformed(source: str, raw: str) -> None:
         "scheme behind a reverse proxy.",
         source,
         cleaned,
-        cleaned.split("://")[-1] or "lucifex.example.com",
+        cleaned.split("://")[-1] or "hermes.example.com",
+    )
+
+
+def _warn_if_malformed_prefix(raw: Optional[str], reason: str) -> None:
+    """Warn once when a non-empty X-Forwarded-Prefix value is rejected."""
+    cleaned = raw.strip() if raw else ""
+    if not cleaned:
+        return
+    key = (cleaned, reason)
+    if key in _warned_malformed_prefixes:
+        return
+    _warned_malformed_prefixes.add(key)
+    _log.warning(
+        "X-Forwarded-Prefix header %r was ignored because %s. "
+        "Dashboard URLs will be generated without a reverse-proxy path prefix.",
+        cleaned,
+        reason,
     )
 
 
 def normalise_prefix(raw: Optional[str]) -> str:
     """Normalise an X-Forwarded-Prefix header value.
 
-    Returns a string like ``"/lucifex"`` (no trailing slash) or ``""``
+    Returns a string like ``"/hermes"`` (no trailing slash) or ``""``
     when no prefix is set / the header is malformed. We deliberately
     reject anything containing ``..`` or non-printable bytes so a
     hostile proxy can't inject HTML or path-traversal sequences via the
@@ -94,8 +117,16 @@ def normalise_prefix(raw: Optional[str]) -> str:
         or ".." in p
         or any(c in p for c in _REJECT_CHARS)
     ):
+        _warn_if_malformed_prefix(
+            raw,
+            "it contains a disallowed character or path sequence",
+        )
         return ""
-    if len(p) > 64:
+    if len(p) > _MAX_PREFIX_LENGTH:
+        _warn_if_malformed_prefix(
+            raw,
+            f"it is longer than {_MAX_PREFIX_LENGTH} characters",
+        )
         return ""
     return p
 
@@ -108,7 +139,7 @@ def prefix_from_request(request) -> str:
 
 
 # ---------------------------------------------------------------------------
-# LUCIFEX_DASHBOARD_PUBLIC_URL / dashboard.public_url
+# HERMES_DASHBOARD_PUBLIC_URL / dashboard.public_url
 # ---------------------------------------------------------------------------
 
 
@@ -177,7 +208,7 @@ def resolve_public_url() -> str:
 
     Precedence (mirrors ``dashboard.oauth.client_id``):
 
-      1. ``LUCIFEX_DASHBOARD_PUBLIC_URL`` env var (when non-empty after
+      1. ``HERMES_DASHBOARD_PUBLIC_URL`` env var (when non-empty after
          strip — empty values are treated as unset so a provisioned-but-
          not-populated Fly secret can't shadow a valid config.yaml entry).
       2. ``dashboard.public_url`` in ``config.yaml``.
@@ -189,11 +220,11 @@ def resolve_public_url() -> str:
     malformed config entry falls through to ``""``. This means a typo
     in one surface doesn't prevent the other from working.
     """
-    env_raw = os.environ.get("LUCIFEX_DASHBOARD_PUBLIC_URL", "")
+    env_raw = os.environ.get("HERMES_DASHBOARD_PUBLIC_URL", "")
     env_clean = _normalise_public_url(env_raw)
     if env_clean:
         return env_clean
-    _warn_if_malformed("LUCIFEX_DASHBOARD_PUBLIC_URL env var", env_raw)
+    _warn_if_malformed("HERMES_DASHBOARD_PUBLIC_URL env var", env_raw)
     cfg_raw = str(_load_dashboard_section().get("public_url", ""))
     cfg_clean = _normalise_public_url(cfg_raw)
     if not cfg_clean:

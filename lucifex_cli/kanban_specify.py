@@ -1,6 +1,6 @@
 """Kanban triage specifier — flesh out a one-liner into a real spec.
 
-Used by ``lucifex kanban specify [task_id | --all]``. Takes a task that
+Used by ``hermes kanban specify [task_id | --all]``. Takes a task that
 lives in the Triage column (a rough idea, typically only a title), calls
 the auxiliary LLM to produce:
 
@@ -42,15 +42,15 @@ from lucifex_cli import kanban_db as kb
 
 from utils import env_int
 
-LUCIFEX_KANBAN_SPECIFY_MAX_TOKENS = max(
+HERMES_KANBAN_SPECIFY_MAX_TOKENS = max(
     1500,
-    env_int("LUCIFEX_KANBAN_SPECIFY_MAX_TOKENS", 6000),
+    env_int("HERMES_KANBAN_SPECIFY_MAX_TOKENS", 6000),
 )
 
 logger = logging.getLogger(__name__)
 
 
-_SYSTEM_PROMPT = """You are the Kanban triage specifier for the Lucifex Agent board.
+_SYSTEM_PROMPT = """You are the Kanban triage specifier for the Hermes Agent board.
 A user dropped a rough idea into the Triage column. Your job is to turn it
 into a concrete, actionable task spec that an autonomous worker can pick up
 and execute without further clarification.
@@ -133,7 +133,7 @@ def _profile_author() -> str:
     """Mirror of ``lucifex_cli.kanban._profile_author``. Kept local to
     avoid a circular import when kanban.py imports this module."""
     return (
-        os.environ.get("LUCIFEX_PROFILE")
+        os.environ.get("HERMES_PROFILE")
         or os.environ.get("USER")
         or "specifier"
     )
@@ -162,21 +162,10 @@ def specify_task(
         )
 
     try:
-        from agent.auxiliary_client import get_auxiliary_extra_body, get_text_auxiliary_client
+        from agent.auxiliary_client import call_llm
     except Exception as exc:  # pragma: no cover — import smoke test
         logger.debug("specify: auxiliary client import failed: %s", exc)
         return SpecifyOutcome(task_id, False, "auxiliary client unavailable")
-
-    try:
-        client, model = get_text_auxiliary_client("triage_specifier")
-    except Exception as exc:
-        logger.debug("specify: get_text_auxiliary_client failed: %s", exc)
-        return SpecifyOutcome(task_id, False, "auxiliary client unavailable")
-
-    if client is None or not model:
-        return SpecifyOutcome(
-            task_id, False, "no auxiliary client configured"
-        )
 
     user_msg = _USER_TEMPLATE.format(
         task_id=task.id,
@@ -185,16 +174,18 @@ def specify_task(
     )
 
     try:
-        resp = client.chat.completions.create(
-            model=model,
+        # Route through call_llm so auxiliary.triage_specifier.* config
+        # (provider/model/base_url, extra_body, reasoning_effort, retries)
+        # all apply — the direct-create path dropped extra_body (#35566).
+        resp = call_llm(
+            task="triage_specifier",
             messages=[
                 {"role": "system", "content": _SYSTEM_PROMPT},
                 {"role": "user", "content": user_msg},
             ],
             temperature=0.3,
-            max_tokens=LUCIFEX_KANBAN_SPECIFY_MAX_TOKENS,
+            max_tokens=HERMES_KANBAN_SPECIFY_MAX_TOKENS,
             timeout=timeout or 120,
-            extra_body=get_auxiliary_extra_body() or None,
         )
     except Exception as exc:
         logger.info(

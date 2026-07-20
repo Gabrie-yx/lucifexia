@@ -1,4 +1,4 @@
-"""Slash command definitions and autocomplete for the Lucifex CLI.
+"""Slash command definitions and autocomplete for the Hermes CLI.
 
 Central registry for all slash commands. Every consumer -- CLI help, gateway
 dispatch, Telegram BotCommands, Slack subcommand mapping, autocomplete --
@@ -92,13 +92,13 @@ COMMAND_REGISTRY: list[CommandDef] = [
                aliases=("compact",), args_hint="[here [N] | focus topic | --preview|--dry-run]"),
     CommandDef("rollback", "List or restore filesystem checkpoints", "Session",
                args_hint="[number]"),
-    CommandDef("snapshot", "Create or restore state snapshots of Lucifex config/state", "Session",
+    CommandDef("snapshot", "Create or restore state snapshots of Hermes config/state", "Session",
                cli_only=True, aliases=("snap",), args_hint="[create|restore <id>|prune]"),
     CommandDef("stop", "Kill all running background processes", "Session"),
     CommandDef("approve", "Approve a pending dangerous command", "Session",
                gateway_only=True, args_hint="[session|always]"),
-    CommandDef("deny", "Deny a pending dangerous command", "Session",
-               gateway_only=True),
+    CommandDef("deny", "Deny a pending dangerous command (optionally with a reason)", "Session",
+               gateway_only=True, args_hint="[all] [reason]"),
     CommandDef("background", "Run a prompt in the background", "Session",
                aliases=("bg", "btw"), args_hint="<prompt>"),
     CommandDef("agents", "Show active agents and running tasks", "Session",
@@ -111,7 +111,7 @@ COMMAND_REGISTRY: list[CommandDef] = [
                aliases=("q",), args_hint="<prompt>"),
     CommandDef("steer", "Inject a message after the next tool call without interrupting", "Session",
                args_hint="<prompt>"),
-    CommandDef("goal", "Set a standing goal Lucifex works on across turns until achieved", "Session",
+    CommandDef("goal", "Set a standing goal Hermes works on across turns until achieved", "Session",
                args_hint="[text | draft <text> | show | pause | resume | clear | status | wait <pid> | unwait]"),
     CommandDef("moa", "Run one prompt through the default Mixture of Agents preset, then restore your model", "Session",
                args_hint="<prompt>"),
@@ -131,7 +131,7 @@ COMMAND_REGISTRY: list[CommandDef] = [
     # Configuration
     CommandDef("config", "Show current configuration", "Configuration",
                cli_only=True),
-    CommandDef("model", "Switch model (persists by default)", "Configuration",
+    CommandDef("model", "Switch model (session-scoped; --global to persist)", "Configuration",
                args_hint="[model] [--provider name] [--global|--session] [--refresh]"),
     CommandDef("codex-runtime", "Toggle codex app-server runtime for OpenAI/Codex models",
                "Configuration", aliases=("codex_runtime",),
@@ -153,11 +153,11 @@ COMMAND_REGISTRY: list[CommandDef] = [
     CommandDef("yolo", "Toggle YOLO mode (skip all dangerous command approvals)",
                "Configuration"),
     CommandDef("reasoning", "Manage reasoning effort and display", "Configuration",
-               args_hint="[level|show|hide|full|clamp]",
-               subcommands=("none", "minimal", "low", "medium", "high", "xhigh", "show", "hide", "on", "off", "full", "clamp")),
+               args_hint="[level|show|hide|full|clamp] [--global]",
+               subcommands=("none", "minimal", "low", "medium", "high", "xhigh", "max", "ultra", "show", "hide", "on", "off", "full", "clamp", "--global")),
     CommandDef("fast", "Toggle fast mode — OpenAI Priority Processing / Anthropic Fast Mode (Normal/Fast)", "Configuration",
-               args_hint="[normal|fast|status]",
-               subcommands=("normal", "fast", "status", "on", "off")),
+               args_hint="[normal|fast|status] [--global]",
+               subcommands=("normal", "fast", "status", "on", "off", "--global")),
     CommandDef("skin", "Show or change the display skin/theme", "Configuration",
                cli_only=True, args_hint="[name]"),
     CommandDef("indicator", "Pick the TUI busy-indicator style", "Configuration",
@@ -165,7 +165,7 @@ COMMAND_REGISTRY: list[CommandDef] = [
                subcommands=("kaomoji", "emoji", "unicode", "ascii")),
     CommandDef("voice", "Toggle voice mode", "Configuration",
                args_hint="[on|off|tts|status]", subcommands=("on", "off", "tts", "status")),
-    CommandDef("busy", "Control what Enter does while Lucifex is working", "Configuration",
+    CommandDef("busy", "Control what Enter does while Hermes is working", "Configuration",
                cli_only=True, args_hint="[queue|steer|interrupt|status]",
                subcommands=("queue", "steer", "interrupt", "status")),
 
@@ -212,15 +212,9 @@ COMMAND_REGISTRY: list[CommandDef] = [
                             "heartbeat", "assignees", "context", "specify", "gc")),
     CommandDef("reload", "Reload .env variables into the running session", "Tools & Skills",
                cli_only=True),
-    CommandDef("setkey", "Set or list API keys stored in ~/.lucifex/.env", "Configuration",
-               aliases=("apikey",), args_hint="[KEY_NAME [value]] | list | video_creator",
-               subcommands=("list", "video_creator", "OPENROUTER_API_KEY", "GOOGLE_API_KEY",
-                            "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "FAL_KEY", "NVIDIA_API_KEY",
-                            "MISTRAL_API_KEY", "GLM_API_KEY"),
-               cli_only=True),
     CommandDef("reload-mcp", "Reload MCP servers from config", "Tools & Skills",
                aliases=("reload_mcp",)),
-    CommandDef("reload-skills", "Re-scan ~/.lucifex/skills/ for newly installed or removed skills",
+    CommandDef("reload-skills", "Re-scan ~/.hermes/skills/ for newly installed or removed skills",
                "Tools & Skills", aliases=("reload_skills",)),
     CommandDef("browser", "Connect browser tools to your live Chromium-family browser via CDP", "Tools & Skills",
                cli_only=True, args_hint="[connect|disconnect|status]",
@@ -234,10 +228,11 @@ COMMAND_REGISTRY: list[CommandDef] = [
     CommandDef("help", "Show available commands", "Info"),
     CommandDef("restart", "Gracefully restart the gateway after draining active runs", "Session",
                gateway_only=True),
-    CommandDef("usage", "Show token usage and rate limits for the current session", "Info"),
-    CommandDef("credits", "Show Nous credit balance and top up", "Info"),
-    CommandDef("billing", "Manage Nous terminal billing — buy credits, auto-reload, limits", "Info",
-               cli_only=True),
+    CommandDef("usage", "Show token usage and rate limits; `reset` redeems a banked Codex limit reset", "Info",
+               args_hint="[reset [--force]]"),
+    CommandDef("subscription", "View your Nous plan and change it in the browser", "Info",
+               cli_only=True, aliases=("upgrade",)),
+    CommandDef("topup", "Show your Nous balance and manage billing on the portal", "Info"),
     CommandDef("insights", "Show usage insights and analytics", "Info",
                args_hint="[days]"),
     CommandDef("platforms", "Show gateway/messaging platform status", "Info",
@@ -250,8 +245,8 @@ COMMAND_REGISTRY: list[CommandDef] = [
                cli_only=True),
     CommandDef("image", "Attach a local image file for your next prompt", "Info",
                cli_only=True, args_hint="<path>"),
-    CommandDef("update", "Update Lucifex Agent to the latest version", "Info"),
-    CommandDef("version", "Show Lucifex Agent version", "Info", aliases=("v",)),
+    CommandDef("update", "Update Hermes Agent to the latest version", "Info"),
+    CommandDef("version", "Show Hermes Agent version", "Info", aliases=("v",)),
     CommandDef("debug", "Upload debug report (system info + logs) and get shareable links", "Info",
                args_hint="[nous|local]"),
 
@@ -489,7 +484,7 @@ def _iter_plugin_command_entries() -> list[tuple[str, str, str]]:
     Plugin commands are registered via
     :func:`lucifex_cli.plugins.PluginContext.register_command`. They behave
     like ``CommandDef`` entries for gateway surfacing: they appear in the
-    Telegram command menu, in Slack's ``/lucifex`` subcommand mapping, and
+    Telegram command menu, in Slack's ``/hermes`` subcommand mapping, and
     (via :func:`plugins.platforms.discord.adapter._register_slash_commands`) in
     Discord's native slash command picker.
 
@@ -549,7 +544,7 @@ def telegram_bot_commands() -> list[tuple[str, str]]:
     return result
 
 
-# Telegram allows up to 100 BotCommands. Lucifex ships ~50 built-in commands;
+# Telegram allows up to 100 BotCommands. Hermes ships ~50 built-in commands;
 # a 60-slot default keeps every built-in plus common skill commands visible in
 # the `/` menu while staying comfortably under Telegram's ~4KB payload limit.
 # Users can tune this via platforms.telegram.extra.command_menu.max_commands.
@@ -588,7 +583,7 @@ _TELEGRAM_MENU_PRIORITY = (
 )
 """Built-in commands that should stay visible in Telegram's capped menu.
 
-Telegram only displays a small BotCommand menu in practice.  The full Lucifex
+Telegram only displays a small BotCommand menu in practice.  The full Hermes
 registry is still dispatchable when typed manually, but operational commands
 need to survive the visible menu cap ahead of lower-priority built-ins.
 """
@@ -850,7 +845,7 @@ def _collect_gateway_skill_entries(
         # user-configured ``skills.external_dirs``. Ensure each prefix ends
         # with ``/`` so ``/my-skills`` does not also match ``/my-skills-extra``.
         # Without this widening, external skills are visible in
-        # ``lucifex skills list`` and the agent's ``/skill-name`` dispatch but
+        # ``hermes skills list`` and the agent's ``/skill-name`` dispatch but
         # silently excluded from gateway slash menus (#8110).
         _allowed_prefixes = [_skills_dir.rstrip("/") + "/"]
         _allowed_prefixes.extend(
@@ -907,7 +902,7 @@ def telegram_menu_commands(max_commands: int = 100) -> tuple[list[tuple[str, str
 
     Skills are the only tier that gets trimmed when the cap is hit.
     User-installed hub skills are excluded — accessible via /skills.
-    Skills disabled for the ``"telegram"`` platform (via ``lucifex skills
+    Skills disabled for the ``"telegram"`` platform (via ``hermes skills
     config``) are excluded from the menu entirely.
 
     Returns:
@@ -975,7 +970,7 @@ def discord_skill_commands_by_category(
     Scan roots include the local ``SKILLS_DIR`` **and** any configured
     ``skills.external_dirs`` — matching the widened filter applied to the
     flat ``discord_skill_commands()`` collector in #18741. Without this
-    parity, external-dir skills are visible via ``lucifex skills list`` and
+    parity, external-dir skills are visible via ``hermes skills list`` and
     the agent's ``/skill-name`` dispatch but silently absent from Discord's
     ``/skill`` autocomplete.
 
@@ -1147,29 +1142,29 @@ _SLACK_RESERVED_COMMANDS = frozenset({
 # registry fills up. Without this, adding a new canonical command silently
 # clamps off low-priority aliases (they're added in the second pass), so a
 # long-standing native slash like /btw could disappear just because an
-# unrelated command landed. These claim their slots right after /lucifex,
+# unrelated command landed. These claim their slots right after /hermes,
 # ahead of both canonical names and the rest of the aliases. Anything not
-# listed here still degrades gracefully (reachable via /lucifex <command>).
+# listed here still degrades gracefully (reachable via /hermes <command>).
 # Keep this list TIGHT: every pinned alias takes a slot a canonical command
 # would otherwise get, and the Telegram-parity test fails when a canonical
 # gets clamped ("reset" was unpinned for exactly that — /new keeps its
-# native slot, the alias spelling stays reachable via /lucifex reset).
+# native slot, the alias spelling stays reachable via /hermes reset).
 _SLACK_PRIORITY_ALIASES = ("btw", "bg")
 
 # Canonical commands intentionally NOT given a native Slack slash slot. Slack
 # caps apps at 50 slash commands and the registry is at that ceiling; rather
 # than let the clamp silently drop whichever command sorts last (and break
 # Telegram parity), we explicitly route a few low-frequency commands through
-# ``/lucifex <command>`` on Slack only. They remain native on every other
+# ``/hermes <command>`` on Slack only. They remain native on every other
 # surface (CLI, TUI, Telegram, Discord). Keep this list TIGHT and intentional —
 # the telegram-parity test reads it so an entry here is a deliberate
-# "Slack-via-/lucifex" decision, not a silent clamp.
-#   - credits: the billing/top-up surface; reached via /lucifex credits on Slack.
-#   - billing: the terminal-billing surface (buy/auto-reload/limit); /lucifex billing.
-#   - moa: high-cost slash mode, available through /lucifex moa to avoid
+# "Slack-via-/hermes" decision, not a silent clamp.
+#   - topup: the billing/balance surface; reached via /hermes topup on Slack.
+#     (the rehaul folded the old /credits + /billing surfaces into /topup.)
+#   - moa: high-cost slash mode, available through /hermes moa to avoid
 #     displacing existing native Slack slash commands at the 50-command cap.
-#   - debug: the log/report upload surface; reached via /lucifex debug on Slack.
-_SLACK_VIA_LUCIFEX_ONLY = frozenset({"credits", "billing", "moa", "debug"})
+#   - debug: the log/report upload surface; reached via /hermes debug on Slack.
+_SLACK_VIA_HERMES_ONLY = frozenset({"topup", "moa", "debug"})
 
 
 def _sanitize_slack_name(raw: str) -> str:
@@ -1190,7 +1185,7 @@ def slack_native_slashes() -> list[tuple[str, str, str]]:
     Every gateway-available command in ``COMMAND_REGISTRY`` is surfaced as
     a standalone Slack slash command (e.g. ``/btw``, ``/stop``, ``/model``),
     matching Discord's and Telegram's model where every command is a
-    first-class slash and not a ``/lucifex <verb>`` subcommand.
+    first-class slash and not a ``/hermes <verb>`` subcommand.
 
     Both canonical names and aliases are included so users can type any
     documented form (e.g. ``/background``, ``/bg``, and ``/btw`` all work).
@@ -1198,20 +1193,20 @@ def slack_native_slashes() -> list[tuple[str, str, str]]:
 
     Commands whose sanitized name collides with a Slack built-in
     (e.g. ``/status``, ``/me``, ``/join``) are silently skipped.  Users
-    can still reach them via ``/lucifex <command>``.
+    can still reach them via ``/hermes <command>``.
 
     Results are clamped to Slack's 50-command limit with duplicate-name
-    avoidance. ``/lucifex`` is always reserved as the first entry so the
-    legacy ``/lucifex <subcommand>`` form keeps working for anything that
+    avoidance. ``/hermes`` is always reserved as the first entry so the
+    legacy ``/hermes <subcommand>`` form keeps working for anything that
     gets dropped by the clamp or for free-form questions.
     """
     overrides = _resolve_config_gates()
     entries: list[tuple[str, str, str]] = []
     seen: set[str] = set()
 
-    # Reserve /lucifex as the catch-all top-level command.
-    entries.append(("lucifex", "Talk to Lucifex or run a subcommand", "[subcommand] [args]"))
-    seen.add("lucifex")
+    # Reserve /hermes as the catch-all top-level command.
+    entries.append(("hermes", "Talk to Hermes or run a subcommand", "[subcommand] [args]"))
+    seen.add("hermes")
 
     def _add(name: str, desc: str, hint: str) -> None:
         slack_name = _sanitize_slack_name(name)
@@ -1219,8 +1214,8 @@ def slack_native_slashes() -> list[tuple[str, str, str]]:
             return
         if slack_name in _SLACK_RESERVED_COMMANDS:
             return
-        if slack_name in _SLACK_VIA_LUCIFEX_ONLY:
-            # Intentionally Slack-via-/lucifex only (see _SLACK_VIA_LUCIFEX_ONLY).
+        if slack_name in _SLACK_VIA_HERMES_ONLY:
+            # Intentionally Slack-via-/hermes only (see _SLACK_VIA_HERMES_ONLY).
             return
         if len(entries) >= _SLACK_MAX_SLASH_COMMANDS:
             return
@@ -1229,7 +1224,7 @@ def slack_native_slashes() -> list[tuple[str, str, str]]:
         seen.add(slack_name)
 
     # Priority pass: pin high-value aliases (e.g. /btw, /bg, /reset) ahead of
-    # everything except /lucifex, so a new canonical command can never silently
+    # everything except /hermes, so a new canonical command can never silently
     # clamp them off the 50-slash cap. Each alias borrows its parent command's
     # description and hint.
     _alias_to_cmd = {
@@ -1293,12 +1288,12 @@ def slack_app_manifest(request_url: str = "https://lucifex-agent.local/slack/com
 
 
 def slack_subcommand_map() -> dict[str, str]:
-    """Return subcommand -> /command mapping for Slack /lucifex handler.
+    """Return subcommand -> /command mapping for Slack /hermes handler.
 
-    Maps both canonical names and aliases so /lucifex bg do stuff works
-    the same as /lucifex background do stuff.
+    Maps both canonical names and aliases so /hermes bg do stuff works
+    the same as /hermes background do stuff.
 
-    Plugin-registered slash commands are included so ``/lucifex <plugin-cmd>``
+    Plugin-registered slash commands are included so ``/hermes <plugin-cmd>``
     routes through the plugin handler.
     """
     overrides = _resolve_config_gates()
@@ -1360,6 +1355,77 @@ class SlashCommandCompleter(Completer):
             return self._skill_bundles_provider() or {}
         except Exception:
             return {}
+
+    # -- stacked slash-skill completion helpers ---------------------------
+
+    @staticmethod
+    def _normalize_skill_token(token: str) -> str:
+        """Canonicalize a typed skill token to its hyphenated /slug form.
+
+        Mirrors resolve_skill_command_key() in agent/skill_commands.py:
+        underscores (Telegram bot-command form) are interchangeable with
+        hyphens.
+        """
+        return "/" + token.lstrip("/").replace("_", "-").lower()
+
+    def _is_skill_command(self, token: str) -> bool:
+        return self._normalize_skill_token(token) in self._iter_skill_commands()
+
+    def _stacked_skill_completions(self, text: str):
+        """Offer skill-command completions for stacked invocations.
+
+        After ``/skill-a `` the user may chain more leading skills
+        (``/skill-a /skill-b do XYZ``). While every whitespace-delimited
+        token so far resolves to a distinct skill command and the current
+        word under the cursor starts with ``/``, keep offering the remaining
+        skill commands. The moment the chain is broken (a non-skill token
+        appears, the cap is reached, or the user is typing plain instruction
+        text) we offer nothing — instruction text must never be polluted
+        with skill suggestions.
+        """
+        try:
+            from agent.skill_commands import _MAX_STACKED_SKILLS as _cap
+        except Exception:
+            _cap = 5
+
+        tokens = text.split()
+        if text.endswith(" "):
+            completed, current_word = tokens, ""
+        else:
+            completed, current_word = tokens[:-1], tokens[-1]
+
+        # The chain must be unbroken: every completed token is a distinct
+        # skill command, and there's room left under the cap.
+        seen: set[str] = set()
+        for token in completed:
+            key = self._normalize_skill_token(token)
+            if key not in self._iter_skill_commands() or key in seen:
+                return
+            seen.add(key)
+        if len(seen) >= _cap:
+            return
+
+        # Only suggest while the user is typing another /token — a bare
+        # space after the chain means they may be starting the instruction.
+        if not current_word.startswith("/"):
+            return
+
+        word_key = self._normalize_skill_token(current_word)
+        for cmd, info in self._iter_skill_commands().items():
+            if cmd in seen or not cmd.startswith(word_key):
+                continue
+            description = str(info.get("description", "Skill command"))
+            short_desc = description[:50] + ("..." if len(description) > 50 else "")
+            # Exact match: append a trailing space so the dropdown stays
+            # visible and the next stacked token can be typed immediately
+            # (mirrors _completion_text semantics).
+            replacement = f"{cmd} " if cmd == word_key else cmd
+            yield Completion(
+                replacement,
+                start_position=-len(current_word),
+                display=cmd,
+                display_meta=f"⚡ {short_desc}",
+            )
 
     # Commands that open pickers when run without arguments.
     # These should NOT receive a trailing space in completions because:
@@ -1895,6 +1961,15 @@ class SlashCommandCompleter(Completer):
             sub_text = parts[1] if len(parts) > 1 else ""
             sub_lower = sub_text.lower()
 
+            # Stacked slash-skill invocations: after `/skill-a ` the user may
+            # chain more skills (`/skill-a /skill-b …`), so keep offering
+            # skill-command completions while the leading-skill chain is
+            # unbroken (see split_stacked_skill_commands in
+            # agent/skill_commands.py).
+            if self._is_skill_command(base_cmd):
+                yield from self._stacked_skill_completions(text)
+                return
+
             # Dynamic completions for commands with runtime lists
             if " " not in sub_text:
                 if base_cmd == "/skin":
@@ -2028,6 +2103,20 @@ class SlashCommandAutoSuggest(AutoSuggest):
         # Command is complete — suggest subcommands
         sub_text = parts[1] if len(parts) > 1 else ""
         sub_lower = sub_text.lower()
+
+        # Stacked slash-skill invocations: while the leading tokens form an
+        # unbroken skill chain and the user is typing another /token,
+        # ghost-suggest the rest of the next skill name. Otherwise fall
+        # through to the history fallback for instruction text.
+        if (
+            self._completer is not None
+            and self._completer._is_skill_command(base_cmd)
+        ):
+            for completion in self._completer._stacked_skill_completions(text):
+                remainder = completion.text[-completion.start_position:] \
+                    if completion.start_position else completion.text
+                if remainder.strip():
+                    return Suggestion(remainder)
 
         # Static subcommands
         if self._completer is not None and not self._completer._command_allowed(base_cmd):

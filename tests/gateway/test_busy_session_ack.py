@@ -1,4 +1,4 @@
-"""Tests for busy-session acknowledgment when user sends messages during active agent runs.
+﻿"""Tests for busy-session acknowledgment when user sends messages during active agent runs.
 
 Verifies that users get an immediate status response instead of total silence
 when the agent is working on a task. See PR fix for the @Lonely__MH report.
@@ -702,9 +702,9 @@ class TestBusySessionOnboardingHint:
         """First busy-while-running message gets an extra hint about /busy."""
         import gateway.run as _gr
 
-        monkeypatch.setattr(_gr, "_hermes_home", tmp_path)
+        monkeypatch.setattr(_gr, "_LUCIFEX_HOME", tmp_path)
         # mark_seen imports utils.atomic_yaml_write; make sure it resolves
-        # against a writable dir by pointing _hermes_home at tmp_path.
+        # against a writable dir by pointing _LUCIFEX_HOME at tmp_path.
         monkeypatch.setattr(_gr, "_load_gateway_config", lambda: {})
 
         runner, _sentinel = _make_runner()
@@ -746,7 +746,7 @@ class TestBusySessionOnboardingHint:
         import gateway.run as _gr
         import yaml
 
-        monkeypatch.setattr(_gr, "_hermes_home", tmp_path)
+        monkeypatch.setattr(_gr, "_LUCIFEX_HOME", tmp_path)
         # Pre-populate the config so is_seen() returns True from the start.
         (tmp_path / "config.yaml").write_text(yaml.safe_dump({
             "onboarding": {"seen": {"busy_input_prompt": True}},
@@ -787,7 +787,7 @@ class TestBusySessionOnboardingHint:
         """In queue mode the hint should suggest /busy interrupt, not /busy queue."""
         import gateway.run as _gr
 
-        monkeypatch.setattr(_gr, "_hermes_home", tmp_path)
+        monkeypatch.setattr(_gr, "_LUCIFEX_HOME", tmp_path)
         monkeypatch.setattr(_gr, "_load_gateway_config", lambda: {})
 
         runner, _sentinel = _make_runner()

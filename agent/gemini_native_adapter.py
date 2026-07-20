@@ -1,4 +1,4 @@
-"""OpenAI-compatible facade over Google AI Studio's native Gemini API.
+﻿"""OpenAI-compatible facade over Google AI Studio's native Gemini API.
 
 Hermes keeps ``api_mode='chat_completions'`` for the ``gemini`` provider so the
 main agent loop can keep using its existing OpenAI-shaped message flow.
@@ -33,9 +33,9 @@ from agent.gemini_schema import sanitize_gemini_tool_parameters
 logger = logging.getLogger(__name__)
 
 try:
-    import hermes_cli as _hermes_cli
+    import lucifex_cli as _lucifex_cli
 
-    _HERMES_VERSION = str(_hermes_cli.__version__)
+    _HERMES_VERSION = str(_lucifex_cli.__version__)
 except Exception:
     _HERMES_VERSION = "0.0.0"
 
@@ -108,7 +108,7 @@ def probe_gemini_tier(
                 json=payload,
                 headers={
                     "Content-Type": "application/json",
-                    "X-Goog-Api-Client": f"hermes-agent/{_HERMES_VERSION}",
+                    "X-Goog-Api-Client": f"lucifex-agent/{_HERMES_VERSION}",
                 },
             )
     except Exception as exc:
@@ -914,8 +914,8 @@ class GeminiNativeClient:
             # Include Hermes client context following Gemini's partner
             # integration guidance.
             # See https://ai.google.dev/gemini-api/docs/partner-integration
-            "User-Agent": f"hermes-agent/{_HERMES_VERSION} (gemini-native)",
-            "X-Goog-Api-Client": f"hermes-agent/{_HERMES_VERSION}",
+            "User-Agent": f"lucifex-agent/{_HERMES_VERSION} (gemini-native)",
+            "X-Goog-Api-Client": f"lucifex-agent/{_HERMES_VERSION}",
         }
         headers.update(self._default_headers)
         return headers

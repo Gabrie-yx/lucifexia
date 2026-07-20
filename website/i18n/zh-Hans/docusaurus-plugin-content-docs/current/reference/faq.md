@@ -33,7 +33,7 @@ Hermes Agent 可与任何兼容 OpenAI 的 API 配合使用。支持的提供商
 **原生不支持。** Hermes Agent 需要类 Unix 环境。在 Windows 上，请安装 [WSL2](https://learn.microsoft.com/en-us/windows/wsl/install) 并在其中运行 Hermes。标准安装命令在 WSL2 中可完美运行：
 
 ```bash
-curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
+curl -fsSL https://lucifex-agent.nousresearch.com/install.sh | bash
 ```
 
 ### 我在 WSL2 中运行 Hermes，如何控制 Windows 上的普通 Chrome？
@@ -61,7 +61,7 @@ curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
 快速安装：
 
 ```bash
-curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
+curl -fsSL https://lucifex-agent.nousresearch.com/install.sh | bash
 ```
 
 完整的手动步骤、支持的扩展及当前限制，请参阅 [Termux 指南](../getting-started/termux.md)。
@@ -225,7 +225,7 @@ source ~/.bashrc
 # 如果之前使用 sudo 安装，请先清理：
 sudo rm /usr/local/bin/hermes
 # 然后重新运行标准安装程序
-curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
+curl -fsSL https://lucifex-agent.nousresearch.com/install.sh | bash
 ```
 
 ---
@@ -401,7 +401,7 @@ docker run hello-world
 hermes gateway status
 
 # 启动网关
-hermes gateway start
+lucifex gateway start
 
 # 查看错误日志
 cat ~/.hermes/logs/gateway.log | tail -50
@@ -437,7 +437,7 @@ cat ~/.hermes/logs/gateway.log | tail -50
 **解决方案：**
 ```bash
 # 安装核心消息网关依赖项
-cd ~/.hermes/hermes-agent && uv pip install -e ".[messaging]"  # Telegram、Discord、Slack 及共享网关依赖
+cd ~/.hermes/lucifex-agent && uv pip install -e ".[messaging]"  # Telegram、Discord、Slack 及共享网关依赖
 
 # 检查端口冲突
 lsof -i :8080
@@ -446,7 +446,7 @@ lsof -i :8080
 hermes config show
 ```
 
-#### WSL：网关持续断开连接或 `hermes gateway start` 失败
+#### WSL：网关持续断开连接或 `lucifex gateway start` 失败
 
 **原因：** WSL 的 systemd 支持不稳定。许多 WSL2 安装未启用 systemd，即使启用，服务也可能在 WSL 重启或 Windows 空闲关机后无法存活。
 
@@ -454,14 +454,14 @@ hermes config show
 
 ```bash
 # 方案一：直接前台运行（最简单）
-hermes gateway run
+lucifex gateway run
 
 # 方案二：通过 tmux 持久运行（关闭终端后仍存活）
-tmux new -s hermes 'hermes gateway run'
+tmux new -s hermes 'lucifex gateway run'
 # 稍后重新连接：tmux attach -t hermes
 
 # 方案三：通过 nohup 后台运行
-nohup hermes gateway run > ~/.hermes/logs/gateway.log 2>&1 &
+nohup lucifex gateway run > ~/.hermes/logs/gateway.log 2>&1 &
 ```
 
 如果仍想尝试 systemd，请确保已启用：
@@ -478,7 +478,7 @@ nohup hermes gateway run > ~/.hermes/logs/gateway.log 2>&1 &
 
 :::tip Windows 开机自启
 如需可靠的自启动，使用 Windows 任务计划程序在登录时启动 WSL + 网关：
-1. 创建一个任务，运行 `wsl -d Ubuntu -- bash -lc 'hermes gateway run'`
+1. 创建一个任务，运行 `wsl -d Ubuntu -- bash -lc 'lucifex gateway run'`
 2. 设置在用户登录时触发
 :::
 
@@ -490,7 +490,7 @@ nohup hermes gateway run > ~/.hermes/logs/gateway.log 2>&1 &
 
 ```bash
 hermes gateway install    # 重新快照当前 PATH
-hermes gateway start      # 检测到更新的 plist 并重新加载
+lucifex gateway start      # 检测到更新的 plist 并重新加载
 ```
 
 您可以验证 plist 中的 PATH 是否正确：
@@ -557,7 +557,7 @@ hermes chat --continue
 **解决方案：**
 ```bash
 # 确保 MCP 依赖项已安装（标准安装中已包含）
-cd ~/.hermes/hermes-agent && uv pip install -e ".[mcp]"
+cd ~/.hermes/lucifex-agent && uv pip install -e ".[mcp]"
 
 # 对于基于 npm 的服务器，确保 Node.js 可用
 node --version
@@ -616,9 +616,9 @@ hermes chat
 
 ## Profiles（配置文件）
 
-### Profiles 与直接设置 HERMES_HOME 有何不同？
+### Profiles 与直接设置 LUCIFEX_HOME 有何不同？
 
-Profiles 是构建在 `HERMES_HOME` 之上的托管层。您*可以*在每次命令前手动设置 `HERMES_HOME=/some/path`，但 profiles 会为您处理所有底层工作：创建目录结构、生成 shell 别名（`hermes-work`）、在 `~/.hermes/active_profile` 中跟踪活动 profile，以及自动跨所有 profiles 同步技能更新。它们还与 tab 补全集成，让您无需记忆路径。
+Profiles 是构建在 `LUCIFEX_HOME` 之上的托管层。您*可以*在每次命令前手动设置 `LUCIFEX_HOME=/some/path`，但 profiles 会为您处理所有底层工作：创建目录结构、生成 shell 别名（`hermes-work`）、在 `~/.hermes/active_profile` 中跟踪活动 profile，以及自动跨所有 profiles 同步技能更新。它们还与 tab 补全集成，让您无需记忆路径。
 
 ### 两个 profiles 可以共享同一个 bot token 吗？
 
@@ -750,7 +750,7 @@ skills:
 
 1. 在新机器上安装 Hermes Agent：
    ```bash
-   curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
+   curl -fsSL https://lucifex-agent.nousresearch.com/install.sh | bash
    ```
 
 2. 在**源机器**上创建完整备份：
@@ -796,7 +796,7 @@ hermes profile import ./work-backup.tar.gz work
 
 **手动备选方案（rsync）：** 如果您倾向于直接复制文件，请排除代码仓库：
 ```bash
-rsync -av --exclude='hermes-agent' ~/.hermes/ newmachine:~/.hermes/
+rsync -av --exclude='lucifex-agent' ~/.hermes/ newmachine:~/.hermes/
 ```
 
 :::tip
@@ -854,6 +854,6 @@ hermes chat -q "hello" --model anthropic/claude-opus-4.7
 
 如果您的问题未在此处涵盖：
 
-1. **搜索现有 issue：** [GitHub Issues](https://github.com/NousResearch/hermes-agent/issues)
+1. **搜索现有 issue：** [GitHub Issues](https://github.com/NousResearch/lucifex-agent/issues)
 2. **向社区提问：** [Nous Research Discord](https://discord.gg/nousresearch)
 3. **提交 bug 报告：** 请包含您的操作系统、Python 版本（`python3 --version`）、Hermes 版本（`hermes --version`）以及完整的错误信息

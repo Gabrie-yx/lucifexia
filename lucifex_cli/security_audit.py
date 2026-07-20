@@ -1,10 +1,10 @@
-"""On-demand supply-chain audit for Lucifex Agent installs.
+﻿"""On-demand supply-chain audit for Hermes Agent installs.
 
-Scans three surfaces a Lucifex user actually controls and we can map to
+Scans three surfaces a Hermes user actually controls and we can map to
 upstream advisories without auth or extra binaries:
 
-1. The Lucifex venv (every PyPI dist via ``importlib.metadata``).
-2. Python deps declared by user-installed plugins under ``~/.lucifex/plugins``
+1. The Hermes venv (every PyPI dist via ``importlib.metadata``).
+2. Python deps declared by user-installed plugins under ``~/.hermes/plugins``
    (``requirements.txt`` + ``pyproject.toml`` best-effort pin extraction).
 3. MCP servers wired in ``config.yaml`` whose ``command/args`` look like
    ``npx -y <pkg>@<ver>`` or ``uvx <pkg>==<ver>``.
@@ -164,14 +164,14 @@ def _parse_pyproject_pins(text: str) -> list[tuple[str, str]]:
     return pins
 
 
-def _discover_plugins(lucifex_home: Path) -> list[Component]:
-    """Python deps declared by plugins under ``~/.lucifex/plugins``.
+def _discover_plugins(LUCIFEX_HOME: Path) -> list[Component]:
+    """Python deps declared by plugins under ``~/.hermes/plugins``.
 
     Plugins typically don't install into the venv (they're directory-based
     with relative imports), so their stated requirements are useful audit
     surface even when the venv scan misses them.
     """
-    plugins_dir = lucifex_home / "plugins"
+    plugins_dir = LUCIFEX_HOME / "plugins"
     if not plugins_dir.is_dir():
         return []
 
@@ -416,10 +416,10 @@ def run_audit(
     skip_venv: bool = False,
     skip_plugins: bool = False,
     skip_mcp: bool = False,
-    lucifex_home: Optional[Path] = None,
+    LUCIFEX_HOME: Optional[Path] = None,
 ) -> list[Finding]:
     """Discover components, query OSV, return findings sorted by severity desc."""
-    home = lucifex_home or Path(get_lucifex_home())
+    home = LUCIFEX_HOME or Path(get_lucifex_home())
     components: list[Component] = []
     if not skip_venv:
         components.extend(_discover_venv())
@@ -510,13 +510,13 @@ def _render_json(findings: list[Finding], total_components: int) -> str:
 
 
 def _count_components(
-    *, skip_venv: bool, skip_plugins: bool, skip_mcp: bool, lucifex_home: Path
+    *, skip_venv: bool, skip_plugins: bool, skip_mcp: bool, LUCIFEX_HOME: Path
 ) -> int:
     total = 0
     if not skip_venv:
         total += len(_discover_venv())
     if not skip_plugins:
-        total += len(_discover_plugins(lucifex_home))
+        total += len(_discover_plugins(LUCIFEX_HOME))
     if not skip_mcp:
         total += len(_discover_mcp())
     return total
@@ -526,7 +526,7 @@ def _count_components(
 
 
 def cmd_security_audit(args: argparse.Namespace) -> int:
-    """Implementation of `lucifex security audit`."""
+    """Implementation of `hermes security audit`."""
     home = Path(get_lucifex_home())
     skip_venv = bool(getattr(args, "skip_venv", False))
     skip_plugins = bool(getattr(args, "skip_plugins", False))
@@ -542,7 +542,7 @@ def cmd_security_audit(args: argparse.Namespace) -> int:
         return 2
 
     total = _count_components(
-        skip_venv=skip_venv, skip_plugins=skip_plugins, skip_mcp=skip_mcp, lucifex_home=home
+        skip_venv=skip_venv, skip_plugins=skip_plugins, skip_mcp=skip_mcp, LUCIFEX_HOME=home
     )
     if total == 0:
         msg = "No components discovered (everything skipped, or empty environment)."
@@ -557,7 +557,7 @@ def cmd_security_audit(args: argparse.Namespace) -> int:
             skip_venv=skip_venv,
             skip_plugins=skip_plugins,
             skip_mcp=skip_mcp,
-            lucifex_home=home,
+            LUCIFEX_HOME=home,
         )
     except RuntimeError as exc:
         print(f"audit failed: {exc}", file=sys.stderr)

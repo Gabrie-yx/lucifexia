@@ -67,7 +67,7 @@ Cron jobs and notifications are delivered to the **home channel** — `IRC_HOME_
 ## Run the gateway
 
 ```bash
-hermes gateway start
+lucifex gateway start
 ```
 
 Check status with `hermes gateway status` — IRC connection state is reported there, including for env-only setups.

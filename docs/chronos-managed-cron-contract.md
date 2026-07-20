@@ -127,7 +127,7 @@ Arm (or re-arm, idempotently) exactly one one-shot for a job.
 ## Inbound `POST /api/cron/fire`  (NAS → agent) — agent side, already implemented
 
 This is the agent endpoint NAS calls in Endpoint 3 step 3. Served by the
-**dashboard app** (`hermes_cli/web_server.py`) — the agent's always-reachable
+**dashboard app** (`lucifex_cli/web_server.py`) — the agent's always-reachable
 public HTTP surface on hosted deployments (the gateway may be idle/scaled down);
 it is in `PUBLIC_API_PATHS` so the dashboard cookie gate lets the bearer-JWT
 callback through to the verifier. (Also registered on the optional
@@ -169,7 +169,7 @@ callback through to the verifier. (Also registered on the optional
   `get_job` returns `None` after the final fire → the agent does **not** re-arm
   → the schedule stops cleanly with no orphaned one-shot.
 - **Multi-replica agents:** the store CAS makes the fire at-most-once across N
-  gateway replicas sharing one `HERMES_HOME` — exactly one replica runs each
+  gateway replicas sharing one `LUCIFEX_HOME` — exactly one replica runs each
   fire.
 
 ## Reconcile (self-healing)

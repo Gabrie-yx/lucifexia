@@ -1,4 +1,4 @@
-"""Tests for MoA trace aggregator-output capture across streaming modes.
+﻿"""Tests for MoA trace aggregator-output capture across streaming modes.
 
 The MoA full-turn trace (opt-in ``moa.save_traces``) must record the
 aggregator's acting output whether the aggregator ran non-streaming (inline
@@ -10,7 +10,7 @@ path via ``hermes chat --query``) couldn't see what the aggregator actually
 produced without joining to the session DB by hand.
 
 These exercise the real ``consume_and_save_trace`` → ``save_moa_turn`` path
-with real file I/O against a temp HERMES_HOME — no mocks on the write path.
+with real file I/O against a temp LUCIFEX_HOME — no mocks on the write path.
 """
 
 from __future__ import annotations
@@ -23,12 +23,12 @@ from agent.moa_loop import MoAChatCompletions
 
 
 def _enable_traces(tmp_path, monkeypatch):
-    """Point HERMES_HOME at a temp dir and turn moa.save_traces on."""
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    """Point LUCIFEX_HOME at a temp dir and turn moa.save_traces on."""
+    LUCIFEX_HOME = tmp_path / ".hermes"
+    LUCIFEX_HOME.mkdir()
+    monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
 
-    # save_moa_turn reads config via hermes_cli.config.load_config; stub it to
+    # save_moa_turn reads config via lucifex_cli.config.load_config; stub it to
     # return traces-on so the test doesn't depend on a real config file.
     import agent.moa_trace as moa_trace
 
@@ -40,12 +40,12 @@ def _enable_traces(tmp_path, monkeypatch):
     )
     # load_config is imported lazily inside _traces_enabled_and_dir; patch the
     # source module attribute it imports from as well.
-    import hermes_cli.config as cfg
+    import lucifex_cli.config as cfg
 
     monkeypatch.setattr(
         cfg, "load_config", lambda: {"moa": {"save_traces": True}}, raising=False
     )
-    return hermes_home / "moa-traces"
+    return LUCIFEX_HOME / "moa-traces"
 
 
 def _make_completions_with_pending(streamed: bool, inline_output):

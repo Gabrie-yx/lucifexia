@@ -1,4 +1,4 @@
-"""``lucifex uninstall`` subcommand parser.
+"""``hermes uninstall`` subcommand parser.
 
 Extracted verbatim from ``lucifex_cli/main.py:main()`` (god-file Phase 2).
 Handler injected to avoid importing ``main``.
@@ -16,8 +16,8 @@ def build_uninstall_parser(subparsers, *, cmd_uninstall: Callable) -> None:
     # =========================================================================
     uninstall_parser = subparsers.add_parser(
         "uninstall",
-        help="Uninstall Lucifex Agent",
-        description="Remove Lucifex Agent from your system. Can keep configs/data for reinstall.",
+        help="Uninstall Hermes Agent",
+        description="Remove Hermes Agent from your system. Can keep configs/data for reinstall.",
     )
     uninstall_parser.add_argument(
         "--full",
@@ -37,5 +37,10 @@ def build_uninstall_parser(subparsers, *, cmd_uninstall: Callable) -> None:
     )
     uninstall_parser.add_argument(
         "--yes", "-y", action="store_true", help="Skip confirmation prompts"
+    )
+    uninstall_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print what uninstall would remove without changing anything",
     )
     uninstall_parser.set_defaults(func=cmd_uninstall)

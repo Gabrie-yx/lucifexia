@@ -21,7 +21,7 @@ Docker 与 Hermes Agent 的交集有两种截然不同的方式：
 mkdir -p ~/.hermes
 docker run -it --rm \
   -v ~/.hermes:/opt/data \
-  nousresearch/hermes-agent setup
+  nousresearch/lucifex-agent setup
 ```
 
 这将进入设置向导，向导会提示你输入 API 密钥并将其写入 `~/.hermes/.env`。你只需执行一次。强烈建议此时为 gateway 配置一个聊天系统。
@@ -36,7 +36,7 @@ docker run -d \
   --restart unless-stopped \
   -v ~/.hermes:/opt/data \
   -p 8642:8642 \
-  nousresearch/hermes-agent gateway run
+  nousresearch/lucifex-agent gateway run
 ```
 
 端口 8642 暴露 gateway 的 [OpenAI 兼容 API 服务器](./features/api-server.md)和健康检查端点。如果你只使用聊天平台（Telegram、Discord 等），该端口是可选的；但如果你希望 dashboard 或外部工具访问 gateway，则必须开放。
@@ -53,7 +53,7 @@ docker run -d \
   -e API_SERVER_HOST=0.0.0.0 \
   -e API_SERVER_KEY="$(openssl rand -hex 32)" \
   -e API_SERVER_CORS_ORIGINS='*' \
-  nousresearch/hermes-agent gateway run
+  nousresearch/lucifex-agent gateway run
 ```
 
 在面向互联网的机器上开放任何端口都存在安全风险。除非你了解相关风险，否则不应这样做。
@@ -70,7 +70,7 @@ docker run -d \
   -p 8642:8642 \
   -p 9119:9119 \
   -e HERMES_DASHBOARD=1 \
-  nousresearch/hermes-agent gateway run
+  nousresearch/lucifex-agent gateway run
 ```
 
 Dashboard 由 s6 监管：若进程崩溃，`s6-supervise` 会在短暂退避后自动重启。Dashboard 的 stdout/stderr 会直接转发到 `docker logs <container>`；gateway 的主输出现在写入每个 profile 的 s6 日志文件，见下方的 per-profile 日志说明。
@@ -117,7 +117,7 @@ Dashboard 由 s6 监管：若进程崩溃，`s6-supervise` 会在短暂退避后
 ```sh
 docker run -it --rm \
   -v ~/.hermes:/opt/data \
-  nousresearch/hermes-agent
+  nousresearch/lucifex-agent
 ```
 
 或者，如果你已通过 Docker Desktop 等方式在运行中的容器内打开了终端，直接运行：
@@ -166,7 +166,7 @@ Hermes 支持[多个 profile](../reference/profile-commands.md)——独立的 `
 
 - 一个专用的 s6 服务槽位 `/run/service/gateway-<name>/`，运行时动态注册，无需重建镜像。
 - 崩溃后的自动重启，由 `s6-supervise` 管理退避。
-- 每个 profile 独立的轮转日志：`${HERMES_HOME}/logs/gateways/<name>/current`。
+- 每个 profile 独立的轮转日志：`${LUCIFEX_HOME}/logs/gateways/<name>/current`。
 - 跨容器重启的状态持久化：启动协调器会读取该 profile 的 `gateway_state.json`，仅在上次记录状态为 `running` 时自动拉起。
 
 容器内生命周期命令与宿主机上一致：
@@ -195,7 +195,7 @@ docker run -it --rm \
   -v ~/.hermes:/opt/data \
   -e ANTHROPIC_API_KEY="sk-ant-..." \
   -e OPENAI_API_KEY="sk-..." \
-  nousresearch/hermes-agent
+  nousresearch/lucifex-agent
 ```
 
 直接传入的 `-e` 标志会覆盖 `.env` 中的值。这对于不希望将密钥写入磁盘的 CI/CD 或密钥管理器集成非常有用。
@@ -211,7 +211,7 @@ docker run -it --rm \
 ```yaml
 services:
   hermes:
-    image: nousresearch/hermes-agent:latest
+    image: nousresearch/lucifex-agent:latest
     container_name: hermes
     restart: unless-stopped
     command: gateway run
@@ -255,7 +255,7 @@ docker run -d \
   --restart unless-stopped \
   --memory=4g --cpus=2 \
   -v ~/.hermes:/opt/data \
-  nousresearch/hermes-agent gateway run
+  nousresearch/lucifex-agent gateway run
 ```
 
 ## Dockerfile 说明
@@ -273,7 +273,7 @@ docker run -d \
 
 容器的 `ENTRYPOINT` 是 s6-overlay 的 `/init`。启动时：
 1. 以 root 身份运行 `/etc/cont-init.d/01-hermes-setup`（即 `docker/stage2-hook.sh`）：可选的 UID/GID 重映射、修复卷所有权、首次启动时初始化 `.env` / `config.yaml` / `SOUL.md`、同步内置技能。
-2. 运行 `/etc/cont-init.d/02-reconcile-profiles`（即 `hermes_cli.container_boot`）：遍历 `$HERMES_HOME/profiles/<name>/`，在 `/run/service/gateway-<profile>/` 下重建各 profile 的 gateway s6 服务槽，并仅自动启动上次记录状态为 `running` 的 profile（参见 [Per-profile gateway 监管](#per-profile-gateway-supervision)）。
+2. 运行 `/etc/cont-init.d/02-reconcile-profiles`（即 `lucifex_cli.container_boot`）：遍历 `$LUCIFEX_HOME/profiles/<name>/`，在 `/run/service/gateway-<profile>/` 下重建各 profile 的 gateway s6 服务槽，并仅自动启动上次记录状态为 `running` 的 profile（参见 [Per-profile gateway 监管](#per-profile-gateway-supervision)）。
 3. 启动静态的 `main-hermes` 和 `dashboard` s6-rc 服务。
 4. 将容器的 CMD 作为主程序 exec（`/opt/hermes/docker/main-wrapper.sh`），根据用户传给 `docker run` 的参数进行路由：
    - 无参数 → `hermes`（默认）
@@ -286,7 +286,7 @@ docker run -d \
 :::
 
 :::warning 权限模型
-除非你在命令链中保留 `/init`（或等效的旧版 `docker/entrypoint.sh` shim，它会转发到 stage2 hook），否则不要覆盖镜像入口点。s6-overlay 的 `/init` 以 root 运行，以便在首次启动时对卷执行 chown，然后通过 `s6-setuidgid` 为每个受监管的服务**以及**主程序降权至 `hermes` 用户。在官方镜像内以 root 启动 `hermes gateway run` 默认会被拒绝，因为这可能在 `/opt/data` 中留下 root 所有的文件，导致后续 dashboard 或 gateway 启动失败。仅在你有意接受该风险时才设置 `HERMES_ALLOW_ROOT_GATEWAY=1`。
+除非你在命令链中保留 `/init`（或等效的旧版 `docker/entrypoint.sh` shim，它会转发到 stage2 hook），否则不要覆盖镜像入口点。s6-overlay 的 `/init` 以 root 运行，以便在首次启动时对卷执行 chown，然后通过 `s6-setuidgid` 为每个受监管的服务**以及**主程序降权至 `hermes` 用户。在官方镜像内以 root 启动 `lucifex gateway run` 默认会被拒绝，因为这可能在 `/opt/data` 中留下 root 所有的文件，导致后续 dashboard 或 gateway 启动失败。仅在你有意接受该风险时才设置 `HERMES_ALLOW_ROOT_GATEWAY=1`。
 :::
 
 ### Per-profile gateway 监管
@@ -305,8 +305,8 @@ hermes profile delete coder            # 拆除 s6 槽
 
 - Gateway 崩溃后由 `s6-supervise` 在约 1 秒退避后自动重启。
 - Dashboard 崩溃后自动重启（设置 `HERMES_DASHBOARD=1` 以启动）。
-- `docker restart` 保留运行中的 gateway：cont-init 协调器读取 `$HERMES_HOME/profiles/<name>/gateway_state.json`，若上次记录状态为 `running` 则恢复该槽。已停止的 gateway 保持停止状态。
-- 各 profile 的 gateway 日志持久化于 `$HERMES_HOME/logs/gateways/<profile>/current`（由 `s6-log` 轮转），协调器的操作记录在每次启动时追加到 `$HERMES_HOME/logs/container-boot.log`。
+- `docker restart` 保留运行中的 gateway：cont-init 协调器读取 `$LUCIFEX_HOME/profiles/<name>/gateway_state.json`，若上次记录状态为 `running` 则恢复该槽。已停止的 gateway 保持停止状态。
+- 各 profile 的 gateway 日志持久化于 `$LUCIFEX_HOME/logs/gateways/<profile>/current`（由 `s6-log` 轮转），协调器的操作记录在每次启动时追加到 `$LUCIFEX_HOME/logs/container-boot.log`。
 
 在容器内执行 `hermes status` 会显示 `Manager: s6 (container supervisor)`。使用 `/command/s6-svstat /run/service/gateway-<name>` 查看原始 supervisor 状态（注意 `/command/` 仅在监管树进程的 PATH 中；从 `docker exec` 调用时请传入绝对路径）。
 
@@ -315,13 +315,13 @@ hermes profile delete coder            # 拆除 s6 槽
 拉取最新镜像并重建容器。你的数据目录不受影响。
 
 ```sh
-docker pull nousresearch/hermes-agent:latest
+docker pull nousresearch/lucifex-agent:latest
 docker rm -f hermes
 docker run -d \
   --name hermes \
   --restart unless-stopped \
   -v ~/.hermes:/opt/data \
-  nousresearch/hermes-agent gateway run
+  nousresearch/lucifex-agent gateway run
 ```
 
 或使用 Docker Compose：
@@ -355,10 +355,10 @@ SSH 和 Modal 后端也会进行相同的同步——技能和凭据文件在每
 
 ### 持久安装——构建派生镜像
 
-当工具必须在每次容器启动时立即可用且无需重新安装延迟时，构建一个继承自 `nousresearch/hermes-agent` 并在层中安装该工具的新镜像：
+当工具必须在每次容器启动时立即可用且无需重新安装延迟时，构建一个继承自 `nousresearch/lucifex-agent` 并在层中安装该工具的新镜像：
 
 ```dockerfile
-FROM nousresearch/hermes-agent:latest
+FROM nousresearch/lucifex-agent:latest
 
 USER root
 RUN apt-get update \
@@ -379,7 +379,7 @@ docker run -d \
   my-hermes:latest gateway run
 ```
 
-入口点脚本和 `/opt/data` 语义原样继承，本页其余内容仍然适用。拉取更新的上游 `nousresearch/hermes-agent` 时记得重新构建镜像。
+入口点脚本和 `/opt/data` 语义原样继承，本页其余内容仍然适用。拉取更新的上游 `nousresearch/lucifex-agent` 时记得重新构建镜像。
 
 ### 复杂工具或多服务栈——运行 sidecar 容器
 
@@ -388,7 +388,7 @@ docker run -d \
 ```yaml
 services:
   hermes:
-    image: nousresearch/hermes-agent:latest
+    image: nousresearch/lucifex-agent:latest
     container_name: hermes
     restart: unless-stopped
     command: gateway run
@@ -415,7 +415,7 @@ networks:
 
 ### 广泛有用的工具——提交 issue 或 pull request
 
-如果某个工具可能对大多数 Hermes Agent 用户有用，考虑将其贡献到上游，而不是在私有派生镜像中维护。在 [hermes-agent 仓库](https://github.com/NousResearch/hermes-agent)提交 issue 或 pull request，描述该工具及其使用场景。被纳入官方镜像的工具惠及所有用户，并避免了维护下游 fork 的开销。
+如果某个工具可能对大多数 Hermes Agent 用户有用，考虑将其贡献到上游，而不是在私有派生镜像中维护。在 [lucifex-agent 仓库](https://github.com/NousResearch/lucifex-agent)提交 issue 或 pull request，描述该工具及其使用场景。被纳入官方镜像的工具惠及所有用户，并避免了维护下游 fork 的开销。
 
 ## 连接本地推理服务器（vLLM、Ollama 等）
 
@@ -446,7 +446,7 @@ services:
             - capabilities: [gpu]
 
   hermes:
-    image: nousresearch/hermes-agent:latest
+    image: nousresearch/lucifex-agent:latest
     container_name: hermes
     restart: unless-stopped
     command: gateway run
@@ -490,7 +490,7 @@ docker run -d \
   --name hermes \
   -v ~/.hermes:/opt/data \
   -p 8642:8642 \
-  nousresearch/hermes-agent gateway run
+  nousresearch/lucifex-agent gateway run
 ```
 
 ```yaml
@@ -509,7 +509,7 @@ docker run -d \
   --name hermes \
   --network host \
   -v ~/.hermes:/opt/data \
-  nousresearch/hermes-agent gateway run
+  nousresearch/lucifex-agent gateway run
 ```
 
 ```yaml
@@ -575,7 +575,7 @@ docker run -d \
   --name hermes \
   --shm-size=1g \
   -v ~/.hermes:/opt/data \
-  nousresearch/hermes-agent gateway run
+  nousresearch/lucifex-agent gateway run
 ```
 
 ### 网络问题后 gateway 无法重连
@@ -590,6 +590,6 @@ docker restart hermes
 
 ```sh
 docker logs --tail 50 hermes          # 最近日志
-docker run -it --rm nousresearch/hermes-agent:latest version     # 验证版本
+docker run -it --rm nousresearch/lucifex-agent:latest version     # 验证版本
 docker stats hermes                    # 资源使用情况
 ```

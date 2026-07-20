@@ -44,7 +44,7 @@ group_sessions_per_user: false
 安装所需的 Python 包：
 
 ```bash
-cd ~/.hermes/hermes-agent && uv pip install -e ".[dingtalk]"
+cd ~/.hermes/lucifex-agent && uv pip install -e ".[dingtalk]"
 ```
 
 或单独安装：

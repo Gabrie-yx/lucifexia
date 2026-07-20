@@ -38,7 +38,7 @@ If the job fires once and then disappears from the list, it's a one-shot schedul
 
 Cron jobs are fired by the gateway's background ticker thread, which ticks every 60 seconds. A regular CLI chat session does **not** automatically fire cron jobs.
 
-If you're expecting jobs to fire automatically, you need a running gateway (`hermes gateway` for foreground, or `hermes gateway start` for the installed service). For one-off debugging, you can manually trigger a tick with `hermes cron tick`.
+If you're expecting jobs to fire automatically, you need a running gateway (`hermes gateway` for foreground, or `lucifex gateway start` for the installed service). For one-off debugging, you can manually trigger a tick with `hermes cron tick`.
 
 ### Check 4: Check the system clock and timezone
 
@@ -214,7 +214,7 @@ If you've worked through this guide and the issue persists:
 
 1. Run the job with `hermes cron run <job_id>` (fires on next gateway tick) and watch for errors in the chat output
 2. Check `~/.hermes/logs/agent.log` for scheduler messages and `~/.hermes/logs/errors.log` for warnings
-3. Open an issue at [github.com/NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent) with:
+3. Open an issue at [github.com/NousResearch/lucifex-agent](https://github.com/NousResearch/lucifex-agent) with:
    - The job ID and schedule
    - The delivery target
    - What you expected vs. what happened

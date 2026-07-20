@@ -1,4 +1,4 @@
-"""``lucifex gateway enroll`` — enroll a self-hosted gateway with a relay connector.
+"""``hermes gateway enroll`` — enroll a self-hosted gateway with a relay connector.
 
 The connector⇄gateway channel is authenticated (the gateway may be
 customer-managed and internet-exposed). This command is the gateway half of the
@@ -6,7 +6,7 @@ zero-touch enrollment in the connector repo's
 ``docs/connector-gateway-auth-design.md``:
 
   1. Resolve a fresh Nous Portal access token from the existing login
-     (``~/.lucifex/auth.json``) — the same path ``lucifex dashboard register``
+     (``~/.hermes/auth.json``) — the same path ``hermes dashboard register``
      uses (``resolve_nous_access_token``). This proves *which Nous org (tenant)*
      the caller owns; the connector derives the authoritative tenant from it via
      ``GET /api/oauth/account`` (never from anything the gateway asserts).
@@ -17,7 +17,7 @@ zero-touch enrollment in the connector repo's
      delivery key, and returns both ONCE.
   4. Persist ``GATEWAY_RELAY_ID`` / ``GATEWAY_RELAY_SECRET`` /
      ``GATEWAY_RELAY_DELIVERY_KEY`` (+ ``GATEWAY_RELAY_URL`` if supplied) into
-     ``~/.lucifex/.env``. The per-gateway secret authenticates the WS upgrade;
+     ``~/.hermes/.env``. The per-gateway secret authenticates the WS upgrade;
      the per-tenant delivery key verifies signed inbound deliveries.
 
 Managed/hosted installs do NOT self-enroll: the orchestrator (NAS) mints the
@@ -35,6 +35,7 @@ import os
 import socket
 import sys
 import urllib.error
+import urllib.parse
 import urllib.request
 from typing import Optional
 
@@ -51,7 +52,7 @@ def _default_gateway_id() -> str:
         host = socket.gethostname().strip()
     except Exception:
         host = ""
-    return f"gw-{host or 'lucifex'}"
+    return f"gw-{host or 'hermes'}"
 
 
 def _resolve_connector_url(override: Optional[str]) -> Optional[str]:
@@ -83,6 +84,20 @@ def _resolve_connector_url(override: Optional[str]) -> Optional[str]:
     if raw.endswith("/relay"):
         raw = raw[: -len("/relay")]
     return raw
+
+
+def _resolve_identity_token() -> str:
+    """Resolve the caller-identity bearer token (generic-OIDC or Nous Portal).
+
+    Delegates to the canonical resolver in ``gateway.relay`` so the enroll CLI and
+    the runtime self-provision path share ONE implementation (generic OAuth2
+    client-credentials when ``gateway.idp.token_url`` is set — the air-gapped /
+    self-hosted-IdP path; otherwise Nous Portal). Raises RuntimeError on failure.
+    """
+    from gateway.relay import _resolve_relay_identity_token
+
+    return _resolve_relay_identity_token()
+
 
 
 def _post_enroll(
@@ -123,7 +138,7 @@ def _post_enroll(
         if exc.code == 401:
             raise RuntimeError(
                 "Connector rejected the caller identity (401). Your Nous Portal "
-                "token could not be verified — try `lucifex auth add nous` and retry."
+                "token could not be verified — try `hermes auth add nous` and retry."
             ) from exc
         if exc.code == 403:
             raise RuntimeError(
@@ -154,7 +169,7 @@ def cmd_gateway_enroll(args) -> None:
     # write anyway.
     if is_managed():
         print(
-            "✗ `lucifex gateway enroll` is not available in a managed/hosted install.\n"
+            "✗ `hermes gateway enroll` is not available in a managed/hosted install.\n"
             "  The relay gateway secret is provisioned by the hosting platform."
         )
         sys.exit(1)
@@ -179,18 +194,20 @@ def cmd_gateway_enroll(args) -> None:
 
     gateway_id = (getattr(args, "gateway_id", None) or _default_gateway_id()).strip()
 
-    # 1. Resolve a fresh Nous access token (the tenant-proving identity).
+    # 1. Resolve the caller-identity token (the tenant-proving identity). Generic
+    #    OIDC client-credentials when an IdP token endpoint is configured (air-
+    #    gapped / self-hosted-IdP, NO Nous Portal); otherwise the Nous Portal token.
     try:
-        access_token = resolve_nous_access_token()
+        access_token = _resolve_identity_token()
     except AuthError as exc:
         if getattr(exc, "relogin_required", False):
             print("✗ You're not logged into Nous Portal.")
-            print("  Run `lucifex setup` (or `lucifex auth add nous`) first, then retry.")
+            print("  Run `hermes setup` (or `hermes auth add nous`) first, then retry.")
         else:
             print(f"✗ Could not resolve a Nous Portal access token: {exc}")
         sys.exit(1)
     except Exception as exc:
-        print(f"✗ Could not resolve a Nous Portal access token: {exc}")
+        print(f"✗ Could not resolve a caller-identity token: {exc}")
         sys.exit(1)
 
     # 2-3. Redeem the enrollment token at the connector.
@@ -211,7 +228,7 @@ def cmd_gateway_enroll(args) -> None:
     resolved_gateway_id = str(result.get("gatewayId") or gateway_id)
 
     # 4. Persist the creds idempotently. The secret + delivery key are sensitive;
-    #    save_env_value writes them to ~/.lucifex/.env (0600 dir) and never logs.
+    #    save_env_value writes them to ~/.hermes/.env (0600 dir) and never logs.
     to_write = {
         "GATEWAY_RELAY_ID": resolved_gateway_id,
         "GATEWAY_RELAY_SECRET": secret,

@@ -227,7 +227,7 @@ The migration resolves all three formats. For env templates and SecretRef object
 
 4. **Verify API keys** — run `hermes status` to check provider authentication.
 
-5. **Test messaging** — if you migrated platform tokens, restart the gateway: `systemctl --user restart hermes-gateway`
+5. **Test messaging** — if you migrated platform tokens, restart the gateway: `systemctl --user restart lucifex-gateway`
 
 6. **Check session policies** — run `hermes config show` and verify the `session_reset` value matches your expectations.
 

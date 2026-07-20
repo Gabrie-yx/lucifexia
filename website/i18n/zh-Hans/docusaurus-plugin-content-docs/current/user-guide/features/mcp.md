@@ -23,7 +23,7 @@ MCP 让 Hermes Agent 连接到外部工具服务器，使 agent 能够使用 Her
 1. 安装 MCP 支持（如果你使用了标准安装脚本，已包含在内）：
 
 ```bash
-cd ~/.hermes/hermes-agent
+cd ~/.hermes/lucifex-agent
 uv pip install -e ".[mcp]"
 ```
 
@@ -407,7 +407,7 @@ Inspect the project root and explain the directory layout.
 
 ```bash
 # 验证 MCP 依赖已安装（标准安装已包含）
-cd ~/.hermes/hermes-agent && uv pip install -e ".[mcp]"
+cd ~/.hermes/lucifex-agent && uv pip install -e ".[mcp]"
 
 node --version
 npx --version
@@ -523,7 +523,7 @@ hermes mcp serve
 {
   "mcpServers": {
     "hermes": {
-      "command": "/home/user/.hermes/hermes-agent/venv/bin/hermes",
+      "command": "/home/user/.hermes/lucifex-agent/venv/bin/hermes",
       "args": ["mcp", "serve"]
     }
   }

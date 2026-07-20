@@ -1,4 +1,4 @@
-"""Tests for the sandbox-mirror write guard in agent/file_safety.
+﻿"""Tests for the sandbox-mirror write guard in agent/file_safety.
 
 The guard fires when a tool tries to write into the per-task mirror
 directory created by a non-local terminal backend (Docker, Daytona, etc.).
@@ -205,7 +205,7 @@ class TestSandboxMirrorIsOrthogonalToCrossProfile:
     def test_same_profile_mirror_still_flagged(self, tmp_path, monkeypatch):
         import agent.file_safety as fs
         monkeypatch.setattr(fs, "_hermes_root_path", lambda: tmp_path)
-        monkeypatch.setattr(fs, "_hermes_home_path", lambda: tmp_path / "profiles" / "group1")
+        monkeypatch.setattr(fs, "_LUCIFEX_HOME_path", lambda: tmp_path / "profiles" / "group1")
 
         target = (
             tmp_path

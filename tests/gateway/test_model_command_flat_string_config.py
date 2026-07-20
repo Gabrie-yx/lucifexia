@@ -1,4 +1,4 @@
-"""Regression tests for gateway /model --global persistence when config.yaml
+﻿"""Regression tests for gateway /model --global persistence when config.yaml
 has a flat-string ``model:`` value instead of a nested dict.
 
 Before fix: ``cfg.setdefault("model", {})`` returned the existing string and
@@ -39,7 +39,7 @@ def _make_event(text):
 
 def _fake_switch_result():
     """Build a successful ModelSwitchResult that bypasses real provider resolution."""
-    from hermes_cli.model_switch import ModelSwitchResult
+    from lucifex_cli.model_switch import ModelSwitchResult
 
     return ModelSwitchResult(
         success=True,
@@ -58,23 +58,23 @@ def _setup_isolated_home(tmp_path, monkeypatch, model_yaml_value):
     """Write a config.yaml with the given ``model:`` value and stub the heavy bits."""
     import gateway.run as gateway_run
 
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    cfg_path = hermes_home / "config.yaml"
+    LUCIFEX_HOME = tmp_path / ".hermes"
+    LUCIFEX_HOME.mkdir()
+    cfg_path = LUCIFEX_HOME / "config.yaml"
     cfg_path.write_text(
         yaml.safe_dump({"model": model_yaml_value, "providers": {}}),
         encoding="utf-8",
     )
 
-    monkeypatch.setattr(gateway_run, "_hermes_home", hermes_home)
+    monkeypatch.setattr(gateway_run, "_LUCIFEX_HOME", LUCIFEX_HOME)
     monkeypatch.setattr("agent.models_dev.fetch_models_dev", lambda: {})
     monkeypatch.setattr(
-        "hermes_cli.model_switch.switch_model",
+        "lucifex_cli.model_switch.switch_model",
         lambda **kw: _fake_switch_result(),
     )
-    # save_config writes to ``get_hermes_home() / config.yaml`` — point it here.
-    monkeypatch.setattr("hermes_constants.get_hermes_home", lambda: hermes_home)
-    monkeypatch.setattr("hermes_cli.config.get_hermes_home", lambda: hermes_home)
+    # save_config writes to ``get_lucifex_home() / config.yaml`` — point it here.
+    monkeypatch.setattr("lucifex_constants.get_lucifex_home", lambda: LUCIFEX_HOME)
+    monkeypatch.setattr("lucifex_cli.config.get_lucifex_home", lambda: LUCIFEX_HOME)
     return cfg_path
 
 
@@ -112,19 +112,19 @@ async def test_model_global_persists_when_config_has_missing_model(tmp_path, mon
     """
     import gateway.run as gateway_run
 
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    cfg_path = hermes_home / "config.yaml"
+    LUCIFEX_HOME = tmp_path / ".hermes"
+    LUCIFEX_HOME.mkdir()
+    cfg_path = LUCIFEX_HOME / "config.yaml"
     cfg_path.write_text(yaml.safe_dump({"providers": {}}), encoding="utf-8")
 
-    monkeypatch.setattr(gateway_run, "_hermes_home", hermes_home)
+    monkeypatch.setattr(gateway_run, "_LUCIFEX_HOME", LUCIFEX_HOME)
     monkeypatch.setattr("agent.models_dev.fetch_models_dev", lambda: {})
     monkeypatch.setattr(
-        "hermes_cli.model_switch.switch_model",
+        "lucifex_cli.model_switch.switch_model",
         lambda **kw: _fake_switch_result(),
     )
-    monkeypatch.setattr("hermes_constants.get_hermes_home", lambda: hermes_home)
-    monkeypatch.setattr("hermes_cli.config.get_hermes_home", lambda: hermes_home)
+    monkeypatch.setattr("lucifex_constants.get_lucifex_home", lambda: LUCIFEX_HOME)
+    monkeypatch.setattr("lucifex_cli.config.get_lucifex_home", lambda: LUCIFEX_HOME)
 
     result = await _make_runner()._handle_model_command(
         _make_event("/model gpt-5.5 --global")

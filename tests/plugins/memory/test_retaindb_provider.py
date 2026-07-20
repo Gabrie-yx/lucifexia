@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from unittest.mock import MagicMock
 
@@ -8,11 +8,11 @@ from plugins.memory.retaindb import RetainDBMemoryProvider
 
 
 def test_upload_file_rejects_hermes_credential_store(tmp_path, monkeypatch):
-    hermes_home = tmp_path / "hermes_home"
-    hermes_home.mkdir()
-    auth_json = hermes_home / "auth.json"
+    LUCIFEX_HOME = tmp_path / "LUCIFEX_HOME"
+    LUCIFEX_HOME.mkdir()
+    auth_json = LUCIFEX_HOME / "auth.json"
     auth_json.write_text('{"OPENAI_API_KEY":"sk-test-secret"}', encoding="utf-8")
-    monkeypatch.setattr(fs, "_hermes_home_path", lambda: hermes_home)
+    monkeypatch.setattr(fs, "_LUCIFEX_HOME_path", lambda: LUCIFEX_HOME)
 
     provider = RetainDBMemoryProvider()
     provider._client = MagicMock()

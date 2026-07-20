@@ -1,4 +1,4 @@
-"""Durable state for Discord reconnect message recovery."""
+﻿"""Durable state for Discord reconnect message recovery."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from contextlib import suppress
 from pathlib import Path
 from typing import Any, Callable
 
-from hermes_constants import get_hermes_home
+from lucifex_constants import get_lucifex_home
 
 logger = logging.getLogger(__name__)
 
@@ -22,13 +22,13 @@ _RETENTION_DAYS = 30
 class DiscordRecoveryStore:
     """Small profile-scoped SQLite ledger for completed Discord messages."""
 
-    def __init__(self, hermes_home: Path | None = None) -> None:
+    def __init__(self, LUCIFEX_HOME: Path | None = None) -> None:
         self._lock = threading.Lock()
         self._initialized = False
-        self._hermes_home = Path(hermes_home or get_hermes_home())
+        self._LUCIFEX_HOME = Path(LUCIFEX_HOME or get_lucifex_home())
 
     def path(self) -> Path:
-        directory = self._hermes_home / "gateway"
+        directory = self._LUCIFEX_HOME / "gateway"
         directory.mkdir(parents=True, exist_ok=True)
         return directory / _DB_FILENAME
 

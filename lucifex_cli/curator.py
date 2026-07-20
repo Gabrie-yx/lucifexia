@@ -1,4 +1,4 @@
-"""CLI subcommand: `lucifex curator <subcommand>`.
+"""CLI subcommand: `hermes curator <subcommand>`.
 
 Thin shell around agent/curator.py and tools/skill_usage.py. Renders a status
 table, triggers a run, pauses/resumes, and pins/unpins skills.
@@ -217,17 +217,17 @@ def _cmd_run(args) -> int:
                 f"reactivated={auto.get('reactivated', 0)}"
             )
     if not synchronous:
-        print("llm pass running in background — check `lucifex curator status` later")
+        print("llm pass running in background — check `hermes curator status` later")
     if dry:
         if synchronous:
             print(
                 "dry-run: no changes applied. Read the report with "
-                "`lucifex curator status` and run `lucifex curator run` (no flag) to apply."
+                "`hermes curator status` and run `hermes curator run` (no flag) to apply."
             )
         else:
             print(
                 "dry-run: no changes applied. When the report lands, read it with "
-                "`lucifex curator status` and run `lucifex curator run` (no flag) to apply."
+                "`hermes curator status` and run `hermes curator run` (no flag) to apply."
             )
     return 0
 
@@ -289,7 +289,7 @@ def _cmd_archive(args) -> int:
     if skill_usage.get_record(args.skill).get("pinned"):
         print(
             f"curator: '{args.skill}' is pinned — unpin first with "
-            f"`lucifex curator unpin {args.skill}`"
+            f"`hermes curator unpin {args.skill}`"
         )
         return 1
     ok, msg = skill_usage.archive_skill(args.skill)
@@ -399,7 +399,7 @@ def _cmd_backup(args) -> int:
     if snap is None:
         print("curator: snapshot failed — check logs (backup disabled or IO error)")
         return 1
-    print(f"curator: snapshot created at ~/.lucifex/skills/.curator_backups/{snap.name}")
+    print(f"curator: snapshot created at ~/.hermes/skills/.curator_backups/{snap.name}")
     return 0
 
 
@@ -424,7 +424,7 @@ def _cmd_rollback(args) -> int:
         if not rows:
             print(
                 "curator: no snapshots exist yet. Take one with "
-                "`lucifex curator backup` or wait for the next curator run."
+                "`hermes curator backup` or wait for the next curator run."
             )
         else:
             print(
@@ -452,7 +452,7 @@ def _cmd_rollback(args) -> int:
                 reason = cron.get("reason", "not captured")
                 print(f"  cron jobs:   not in snapshot ({reason})")
     print(
-        "\nThis will replace the current ~/.lucifex/skills/ tree (a safety "
+        "\nThis will replace the current ~/.hermes/skills/ tree (a safety "
         "snapshot of the current state is taken first so this is undoable). "
         "Cron jobs that still exist will have their skills/skill fields "
         "restored from the snapshot; all other cron fields are left alone."
@@ -488,6 +488,66 @@ def _cmd_list_archived(args) -> int:
     return 0
 
 
+def _cmd_usage(args) -> int:
+    """Show usage telemetry for ALL skills, with provenance.
+
+    Unlike `status` (curator-scoped to agent-created candidates), this lists
+    every skill on disk — bundled built-ins and hub-installed included — so you
+    can see how often each is actually used regardless of curation.
+    """
+    import json as _json
+    from tools import skill_usage
+
+    rows = skill_usage.usage_report()
+
+    prov_filter = getattr(args, "provenance", None)
+    if prov_filter:
+        rows = [r for r in rows if r.get("provenance") == prov_filter]
+
+    sort_key = getattr(args, "sort", "activity")
+    if sort_key == "name":
+        rows.sort(key=lambda r: r["name"])
+    elif sort_key == "recent":
+        # Most-recently-active first; never-active sinks to the bottom.
+        rows.sort(key=lambda r: r.get("last_activity_at") or "", reverse=True)
+    else:  # "activity" (default): most-used first
+        rows.sort(key=lambda r: r.get("activity_count", 0), reverse=True)
+
+    if getattr(args, "json", False):
+        print(_json.dumps(rows, indent=2, ensure_ascii=False))
+        return 0
+
+    if not rows:
+        print("curator: no skills found")
+        return 0
+
+    # Provenance tallies for a quick header.
+    counts = {"agent": 0, "bundled": 0, "hub": 0}
+    for r in rows:
+        counts[r.get("provenance", "agent")] = counts.get(r.get("provenance", "agent"), 0) + 1
+    print(
+        f"skills: {len(rows)} total  "
+        f"(agent={counts['agent']}  bundled={counts['bundled']}  hub={counts['hub']})"
+    )
+    print()
+    print(
+        f"  {'skill':40s}  {'origin':8s}  "
+        f"{'use':>4s}  {'view':>4s}  {'patch':>5s}  {'act':>4s}  last_activity"
+    )
+    for r in rows:
+        last = _fmt_ts(r.get("last_activity_at"))
+        print(
+            f"  {r['name'][:40]:40s}  "
+            f"{r.get('provenance', 'agent'):8s}  "
+            f"{r.get('use_count', 0):>4d}  "
+            f"{r.get('view_count', 0):>4d}  "
+            f"{r.get('patch_count', 0):>5d}  "
+            f"{r.get('activity_count', 0):>4d}  "
+            f"{last}"
+        )
+    return 0
+
+
 # ---------------------------------------------------------------------------
 # argparse wiring (called from lucifex_cli.main)
 # ---------------------------------------------------------------------------
@@ -503,6 +563,25 @@ def register_cli(parent: argparse.ArgumentParser) -> None:
 
     p_status = subs.add_parser("status", help="Show curator status and skill stats")
     p_status.set_defaults(func=_cmd_status)
+
+    p_usage = subs.add_parser(
+        "usage",
+        help="Show usage telemetry for ALL skills (built-in, hub, agent) with provenance",
+    )
+    p_usage.add_argument(
+        "--sort", choices=("activity", "recent", "name"), default="activity",
+        help="Sort order: activity (most-used first, default), recent "
+             "(most-recently-active first), or name (alphabetical)",
+    )
+    p_usage.add_argument(
+        "--provenance", choices=("agent", "bundled", "hub"), default=None,
+        help="Only show skills of this origin",
+    )
+    p_usage.add_argument(
+        "--json", action="store_true",
+        help="Emit the full report as JSON instead of a table",
+    )
+    p_usage.set_defaults(func=_cmd_usage)
 
     p_run = subs.add_parser("run", help="Trigger a curator review now")
     p_run.add_argument(
@@ -574,7 +653,7 @@ def register_cli(parent: argparse.ArgumentParser) -> None:
 
     p_backup = subs.add_parser(
         "backup",
-        help="Take a manual tar.gz snapshot of ~/.lucifex/skills/ "
+        help="Take a manual tar.gz snapshot of ~/.hermes/skills/ "
              "(curator also does this automatically before every real run)",
     )
     p_backup.add_argument(
@@ -585,7 +664,7 @@ def register_cli(parent: argparse.ArgumentParser) -> None:
 
     p_rollback = subs.add_parser(
         "rollback",
-        help="Restore ~/.lucifex/skills/ from a curator snapshot "
+        help="Restore ~/.hermes/skills/ from a curator snapshot "
              "(defaults to the newest)",
     )
     p_rollback.add_argument(
@@ -605,7 +684,7 @@ def register_cli(parent: argparse.ArgumentParser) -> None:
 
 def cli_main(argv=None) -> int:
     """Standalone entry (also usable by lucifex_cli.main fallthrough)."""
-    parser = argparse.ArgumentParser(prog="lucifex curator")
+    parser = argparse.ArgumentParser(prog="hermes curator")
     register_cli(parser)
     args = parser.parse_args(argv)
     fn = getattr(args, "func", None)

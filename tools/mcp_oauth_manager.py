@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """Central manager for per-server MCP OAuth state.
 
 One instance shared across the process. Holds per-server OAuth provider
@@ -16,7 +16,7 @@ instances and coordinates:
   is warranted.
 
 Replaces what used to be scattered across eight call sites in `mcp_oauth.py`,
-`mcp_tool.py`, and `hermes_cli/mcp_config.py`. This module is the ONLY place
+`mcp_tool.py`, and `lucifex_cli/mcp_config.py`. This module is the ONLY place
 that instantiates the MCP SDK's `OAuthClientProvider` — all other code paths
 go through `get_manager()`.
 
@@ -138,7 +138,7 @@ def _make_hermes_provider_class() -> Optional[type]:
         ):
             super().__init__(*args, **kwargs)
             self._hermes_server_name = server_name
-            self._hermes_home = ""
+            self._LUCIFEX_HOME = ""
             # When the client_id comes from config.yaml (pre-registered), an
             # invalid_client rejection means the *config* is wrong — deleting
             # client.json would just be re-seeded from config and re-running
@@ -174,7 +174,7 @@ def _make_hermes_provider_class() -> Optional[type]:
             ``async_auth_flow`` takes the ``can_refresh_token()`` branch,
             and the SDK quietly refreshes before the first real request.
 
-            Paired with :class:`HermesTokenStorage` persisting an absolute
+            Paired with :class:`LucifexTokenStorage` persisting an absolute
             ``expires_at`` timestamp (``mcp_oauth.py:set_tokens``) so the
             remaining TTL we compute here reflects real wall-clock age.
             """
@@ -189,9 +189,9 @@ def _make_hermes_provider_class() -> Optional[type]:
             # guessed ``{server_url}/token`` path (returns 404 on most real
             # providers) and require a full browser re-authorization.
             storage = self.context.storage
-            from tools.mcp_oauth import HermesTokenStorage
+            from tools.mcp_oauth import LucifexTokenStorage
             if (
-                isinstance(storage, HermesTokenStorage)
+                isinstance(storage, LucifexTokenStorage)
                 and self.context.oauth_metadata is None
             ):
                 meta = storage.load_oauth_metadata()
@@ -288,8 +288,8 @@ def _make_hermes_provider_class() -> Optional[type]:
                         # Persist immediately so a subsequent cold-load can
                         # skip discovery entirely.
                         storage = self.context.storage
-                        from tools.mcp_oauth import HermesTokenStorage
-                        if isinstance(storage, HermesTokenStorage):
+                        from tools.mcp_oauth import LucifexTokenStorage
+                        if isinstance(storage, LucifexTokenStorage):
                             storage.save_oauth_metadata(asm)
                         logger.debug(
                             "MCP OAuth '%s': pre-flight ASM discovered "
@@ -309,8 +309,8 @@ def _make_hermes_provider_class() -> Optional[type]:
             if meta is None:
                 return
             storage = self.context.storage
-            from tools.mcp_oauth import HermesTokenStorage
-            if not isinstance(storage, HermesTokenStorage):
+            from tools.mcp_oauth import LucifexTokenStorage
+            if not isinstance(storage, LucifexTokenStorage):
                 return
             existing = storage.load_oauth_metadata()
             if (
@@ -375,8 +375,8 @@ def _make_hermes_provider_class() -> Optional[type]:
                     return
 
                 storage = self.context.storage
-                from tools.mcp_oauth import HermesTokenStorage
-                if isinstance(storage, HermesTokenStorage):
+                from tools.mcp_oauth import LucifexTokenStorage
+                if isinstance(storage, LucifexTokenStorage):
                     storage.poison_client_registration()
                 # Drop the in-memory client so the SDK re-registers next flow.
                 self.context.client_info = None
@@ -394,7 +394,7 @@ def _make_hermes_provider_class() -> Optional[type]:
             try:
                 await get_manager().invalidate_if_disk_changed(
                     self._hermes_server_name,
-                    hermes_home=self._hermes_home,
+                    LUCIFEX_HOME=self._LUCIFEX_HOME,
                 )
             except Exception as exc:  # pragma: no cover — defensive
                 logger.debug(
@@ -495,18 +495,18 @@ class MCPOAuthManager:
             if entry.provider is None:
                 entry.provider = self._build_provider(server_name, entry)
                 if entry.provider is not None:
-                    entry.provider._hermes_home = key[0]
+                    entry.provider._LUCIFEX_HOME = key[0]
 
             return entry.provider
 
     @staticmethod
     def _key(
         server_name: str,
-        hermes_home: str | Path | None = None,
+        LUCIFEX_HOME: str | Path | None = None,
     ) -> tuple[str, str]:
-        from hermes_constants import get_hermes_home
+        from lucifex_constants import get_lucifex_home
 
-        home = Path(hermes_home) if hermes_home is not None else get_hermes_home()
+        home = Path(LUCIFEX_HOME) if LUCIFEX_HOME is not None else get_lucifex_home()
         return (str(home.expanduser().resolve(strict=False)), server_name)
 
     def _build_provider(
@@ -531,7 +531,7 @@ class MCPOAuthManager:
 
         # Local imports avoid circular deps at module import time.
         from tools.mcp_oauth import (
-            HermesTokenStorage,
+            LucifexTokenStorage,
             OAuthNonInteractiveError,
             _OAUTH_AVAILABLE,
             _build_client_metadata,
@@ -546,7 +546,7 @@ class MCPOAuthManager:
             return None
 
         cfg = dict(entry.oauth_config or {})
-        storage = HermesTokenStorage(server_name)
+        storage = LucifexTokenStorage(server_name)
 
         from tools.mcp_dashboard_oauth import get_dashboard_oauth_flow
 
@@ -586,7 +586,7 @@ class MCPOAuthManager:
         self,
         server_name: str,
         *,
-        hermes_home: str | Path | None = None,
+        LUCIFEX_HOME: str | Path | None = None,
     ) -> _ProviderEntry | None:
         """Evict the provider from cache AND delete tokens from disk.
 
@@ -594,10 +594,10 @@ class MCPOAuthManager:
         ``hermes mcp login <name>`` during forced re-auth.
         """
         with self._entries_lock:
-            entry = self._entries.pop(self._key(server_name, hermes_home), None)
+            entry = self._entries.pop(self._key(server_name, LUCIFEX_HOME), None)
 
         from tools.mcp_oauth import remove_oauth_tokens
-        remove_oauth_tokens(server_name, hermes_home=hermes_home)
+        remove_oauth_tokens(server_name, LUCIFEX_HOME=LUCIFEX_HOME)
         logger.info(
             "MCP OAuth '%s': evicted from cache and removed from disk",
             server_name,
@@ -609,23 +609,23 @@ class MCPOAuthManager:
         server_name: str,
         entry: _ProviderEntry | None,
         *,
-        hermes_home: str | Path | None = None,
+        LUCIFEX_HOME: str | Path | None = None,
     ) -> None:
         """Restore a provider entry removed for a failed reauthorization."""
         if entry is None:
             return
         with self._entries_lock:
-            self._entries.setdefault(self._key(server_name, hermes_home), entry)
+            self._entries.setdefault(self._key(server_name, LUCIFEX_HOME), entry)
 
     def evict(
         self,
         server_name: str,
         *,
-        hermes_home: str | Path | None = None,
+        LUCIFEX_HOME: str | Path | None = None,
     ) -> None:
         """Drop only the in-process provider, preserving persisted OAuth state."""
         with self._entries_lock:
-            self._entries.pop(self._key(server_name, hermes_home), None)
+            self._entries.pop(self._key(server_name, LUCIFEX_HOME), None)
 
     # -- Disk watch ----------------------------------------------------------
 
@@ -633,7 +633,7 @@ class MCPOAuthManager:
         self,
         server_name: str,
         *,
-        hermes_home: str | Path | None = None,
+        LUCIFEX_HOME: str | Path | None = None,
     ) -> bool:
         """If the tokens file on disk has a newer mtime than last-seen, force
         the MCP SDK provider to reload its in-memory state.
@@ -645,12 +645,12 @@ class MCPOAuthManager:
         """
         from tools.mcp_oauth import _get_token_dir, _safe_filename
 
-        entry = self._entries.get(self._key(server_name, hermes_home))
+        entry = self._entries.get(self._key(server_name, LUCIFEX_HOME))
         if entry is None or entry.provider is None:
             return False
 
         async with entry.lock:
-            tokens_path = _get_token_dir(hermes_home) / f"{_safe_filename(server_name)}.json"
+            tokens_path = _get_token_dir(LUCIFEX_HOME) / f"{_safe_filename(server_name)}.json"
             try:
                 mtime_ns = tokens_path.stat().st_mtime_ns
             except (FileNotFoundError, OSError):

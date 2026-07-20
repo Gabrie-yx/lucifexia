@@ -1,4 +1,4 @@
-"""Regression test for a hung SessionDB() init permanently wedging a cron job.
+﻿"""Regression test for a hung SessionDB() init permanently wedging a cron job.
 
 Real-world incident: a cron job's ``SessionDB()`` construction inside
 ``run_job`` blocked forever (a wedged sqlite3.connect against state.db, no
@@ -32,7 +32,7 @@ from cron.scheduler import run_job
 
 
 def _hanging_session_db(never_set: threading.Event):
-    """Stand-in for hermes_state.SessionDB() that blocks until released —
+    """Stand-in for lucifex_state.SessionDB() that blocks until released —
     like the real incident's wedged sqlite3.connect, but bounded so the test
     process can still exit cleanly once the assertions are done."""
     never_set.wait(timeout=30)
@@ -47,13 +47,13 @@ class TestSessionDbInitTimeout:
         job = {"id": "wedged-sessiondb", "name": "test", "prompt": "hello"}
 
         try:
-            with patch("cron.scheduler._hermes_home", tmp_path), \
+            with patch("cron.scheduler._LUCIFEX_HOME", tmp_path), \
                  patch("cron.scheduler._resolve_origin", return_value=None), \
-                 patch("hermes_cli.env_loader.load_hermes_dotenv"), \
-                 patch("hermes_cli.env_loader.reset_secret_source_cache"), \
-                 patch("hermes_state.SessionDB", side_effect=lambda: _hanging_session_db(never_set)), \
+                 patch("lucifex_cli.env_loader.load_lucifex_dotenv"), \
+                 patch("lucifex_cli.env_loader.reset_secret_source_cache"), \
+                 patch("lucifex_state.SessionDB", side_effect=lambda: _hanging_session_db(never_set)), \
                  patch(
-                     "hermes_cli.runtime_provider.resolve_runtime_provider",
+                     "lucifex_cli.runtime_provider.resolve_runtime_provider",
                      return_value={
                          "api_key": "test-key",
                          "base_url": "https://example.invalid/v1",
@@ -88,13 +88,13 @@ class TestSessionDbInitTimeout:
         fake_db = MagicMock()
         job = {"id": "bad-timeout-env", "name": "test", "prompt": "hello"}
 
-        with patch("cron.scheduler._hermes_home", tmp_path), \
+        with patch("cron.scheduler._LUCIFEX_HOME", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("hermes_cli.env_loader.load_hermes_dotenv"), \
-             patch("hermes_cli.env_loader.reset_secret_source_cache"), \
-             patch("hermes_state.SessionDB", return_value=fake_db), \
+             patch("lucifex_cli.env_loader.load_lucifex_dotenv"), \
+             patch("lucifex_cli.env_loader.reset_secret_source_cache"), \
+             patch("lucifex_state.SessionDB", return_value=fake_db), \
              patch(
-                 "hermes_cli.runtime_provider.resolve_runtime_provider",
+                 "lucifex_cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "test-key",
                      "base_url": "https://example.invalid/v1",
@@ -127,7 +127,7 @@ class TestSessionDbInitTimeout:
         import yaml
 
         monkeypatch.delenv("HERMES_CRON_SESSION_DB_TIMEOUT", raising=False)
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("LUCIFEX_HOME", str(tmp_path))
         (tmp_path / "config.yaml").write_text(
             yaml.safe_dump({"cron": {"session_db_timeout_seconds": 0.2}})
         )
@@ -135,13 +135,13 @@ class TestSessionDbInitTimeout:
         job = {"id": "config-timeout", "name": "test", "prompt": "hello"}
 
         try:
-            with patch("cron.scheduler._hermes_home", tmp_path), \
+            with patch("cron.scheduler._LUCIFEX_HOME", tmp_path), \
                  patch("cron.scheduler._resolve_origin", return_value=None), \
-                 patch("hermes_cli.env_loader.load_hermes_dotenv"), \
-                 patch("hermes_cli.env_loader.reset_secret_source_cache"), \
-                 patch("hermes_state.SessionDB", side_effect=lambda: _hanging_session_db(never_set)), \
+                 patch("lucifex_cli.env_loader.load_lucifex_dotenv"), \
+                 patch("lucifex_cli.env_loader.reset_secret_source_cache"), \
+                 patch("lucifex_state.SessionDB", side_effect=lambda: _hanging_session_db(never_set)), \
                  patch(
-                     "hermes_cli.runtime_provider.resolve_runtime_provider",
+                     "lucifex_cli.runtime_provider.resolve_runtime_provider",
                      return_value={
                          "api_key": "test-key",
                          "base_url": "https://example.invalid/v1",
@@ -190,13 +190,13 @@ class TestDispatchGuardReleasedAfterHang:
         }
 
         try:
-            with patch("cron.scheduler._hermes_home", tmp_path), \
+            with patch("cron.scheduler._LUCIFEX_HOME", tmp_path), \
                  patch("cron.scheduler._resolve_origin", return_value=None), \
-                 patch("hermes_cli.env_loader.load_hermes_dotenv"), \
-                 patch("hermes_cli.env_loader.reset_secret_source_cache"), \
-                 patch("hermes_state.SessionDB", side_effect=lambda: _hanging_session_db(never_set)), \
+                 patch("lucifex_cli.env_loader.load_lucifex_dotenv"), \
+                 patch("lucifex_cli.env_loader.reset_secret_source_cache"), \
+                 patch("lucifex_state.SessionDB", side_effect=lambda: _hanging_session_db(never_set)), \
                  patch(
-                     "hermes_cli.runtime_provider.resolve_runtime_provider",
+                     "lucifex_cli.runtime_provider.resolve_runtime_provider",
                      return_value={
                          "api_key": "test-key",
                          "base_url": "https://example.invalid/v1",

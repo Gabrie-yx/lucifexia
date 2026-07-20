@@ -1,4 +1,4 @@
-"""Dashboard-mediated callback bridge for MCP OAuth.
+﻿"""Dashboard-mediated callback bridge for MCP OAuth.
 
 The MCP SDK remains responsible for discovery, DCR, PKCE, state validation and
 token exchange. This module only moves the two human/browser callbacks from a
@@ -23,7 +23,7 @@ class DashboardOAuthFlow:
     flow_id: str
     server_name: str
     profile: str | None
-    hermes_home: str
+    LUCIFEX_HOME: str
     redirect_uri: str
     reconnect_live: bool = False
     created_at: float = field(default_factory=time.time)

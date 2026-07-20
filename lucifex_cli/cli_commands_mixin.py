@@ -28,10 +28,14 @@ from rich.markup import escape as _escape
 from rich.panel import Panel
 
 from lucifex_constants import display_lucifex_home, is_termux as _is_termux_environment
+from agent.turn_context import extract_api_content_sidecar
 from lucifex_cli.browser_connect import (
     DEFAULT_BROWSER_CDP_URL,
+    discover_local_cdp_url,
+    find_free_debug_port,
     is_browser_debug_ready,
     launch_chrome_debug,
+    local_port_in_use,
     manual_chrome_debug_command,
 )
 
@@ -62,7 +66,7 @@ class CLICommandsMixin:
         mgr = self.agent._checkpoint_mgr
         if not mgr.enabled:
             print("  Checkpoints are not enabled.")
-            print("  Enable with: lucifex --checkpoints")
+            print("  Enable with: hermes --checkpoints")
             print("  Or in config.yaml: checkpoints: { enabled: true }")
             return
 
@@ -139,7 +143,7 @@ class CLICommandsMixin:
             print(f"  ❌ {result['error']}")
 
     def _handle_snapshot_command(self, command: str):
-        """Handle /snapshot — lightweight state snapshots for Lucifex config/state.
+        """Handle /snapshot — lightweight state snapshots for Hermes config/state.
 
         Syntax:
             /snapshot                  — list recent snapshots
@@ -296,7 +300,7 @@ class CLICommandsMixin:
         _cprint(f"  Agent: {'running' if agent_running else 'idle'}")
 
     def _handle_journey_command(self, cmd_original: str) -> None:
-        """Handle /journey — the learning timeline (see `lucifex journey`).
+        """Handle /journey — the learning timeline (see `hermes journey`).
 
         The read-only views (default + ``list``) render Rich color, which
         patch_stdout would swallow as raw escapes; capture with forced ANSI and
@@ -420,7 +424,7 @@ class CLICommandsMixin:
         if _remainder:
             _cprint(f"  {_DIM}Now type your prompt (or use --image in single-query mode): {_remainder}{_RST}")
         elif _is_termux_environment():
-            _cprint(f"  {_DIM}Tip: type your next message, or run lucifex chat -q --image {_termux_example_image_path(image_path.name)} \"What do you see?\"{_RST}")
+            _cprint(f"  {_DIM}Tip: type your next message, or run hermes chat -q --image {_termux_example_image_path(image_path.name)} \"What do you see?\"{_RST}")
 
     def _handle_tools_command(self, cmd: str):
         """Handle /tools [list|disable|enable] slash commands.
@@ -571,7 +575,7 @@ class CLICommandsMixin:
         home = gw_config.get_home_channel(platform)
         if not home or not home.chat_id:
             _cprint(f"  No home channel configured for {platform_name}.")
-            _cprint(f"  Set one with /sethome on the destination chat first.")
+            _cprint("  Set one with /sethome on the destination chat first.")
             return True
 
         # Refuse mid-turn: an in-flight agent run would race with the
@@ -626,7 +630,7 @@ class CLICommandsMixin:
             return True
 
         _cprint(f"  Queued handoff of '{session_title}' → {platform_name} (home: {home.name}).")
-        _cprint(f"  Waiting for the gateway to pick it up...")
+        _cprint("  Waiting for the gateway to pick it up...")
 
         # Poll-block on terminal state. Tick every 0.5s; bail at ~60s.
         import time as _time
@@ -662,7 +666,7 @@ class CLICommandsMixin:
             self._session_db.fail_handoff(self.session_id, "timed out waiting for gateway")
         except Exception:
             pass
-        _cprint("  Timed out waiting for the gateway. Is `lucifex gateway` running?")
+        _cprint("  Timed out waiting for the gateway. Is `hermes gateway` running?")
         _cprint("  Your CLI session is intact.")
         return True
 
@@ -696,7 +700,7 @@ class CLICommandsMixin:
                 # #34584.
                 self._pending_resume_sessions = self._list_recent_sessions(limit=10)
                 return
-            _cprint("  Tip:   Use /history or `lucifex sessions list` to find sessions.")
+            _cprint("  Tip:   Use /history or `hermes sessions list` to find sessions.")
             return
 
         # Any explicit /resume <target> supersedes a previously-armed bare
@@ -726,7 +730,7 @@ class CLICommandsMixin:
         session_meta = self._session_db.get_session(target_id)
         if not session_meta:
             _cprint(f"  Session not found: {target}")
-            _cprint("  Use /history or `lucifex sessions list` to see available sessions.")
+            _cprint("  Use /history or `hermes sessions list` to see available sessions.")
             return
 
         # If the target is the empty head of a compression chain, redirect to
@@ -770,8 +774,14 @@ class CLICommandsMixin:
         self._pending_title = None
         _sync_process_session_id(target_id)
 
-        # Load conversation history (strip transcript-only metadata entries)
-        restored = self._session_db.get_messages_as_conversation(target_id)
+        # Load conversation history (strip transcript-only metadata entries).
+        # repair_alternation: this /resume feeds LIVE REPLAY — ``restored``
+        # becomes ``self.conversation_history`` for subsequent turns. Heal a
+        # durable ``user;user`` violation once here instead of re-firing the
+        # pre-request repair on every request for the rest of the session.
+        restored = self._session_db.get_messages_as_conversation(
+            target_id, repair_alternation=True
+        )
         restored = [m for m in (restored or []) if m.get("role") != "session_meta"]
         self.conversation_history = restored
 
@@ -823,6 +833,14 @@ class CLICommandsMixin:
             self._display_resumed_history()
         else:
             _cprint(f"  ↻ Resumed session {target_id}{title_part} — no messages, starting fresh.")
+
+        # Retarget the process + tool cwd to where the session was started, so a
+        # mid-chat /resume (and /sessions <id>, which delegates here) lands in the
+        # same directory as a startup `hermes -c`/`--resume`. The startup resume
+        # paths already call this; without it, the terminal/code-exec tools and
+        # relative-path resolution keep operating in the wrong repo. Idempotent
+        # and a no-op when the session recorded no cwd. See #38562.
+        self._restore_session_cwd(session_meta)
 
     def _handle_sessions_command(self, cmd_original: str) -> None:
         """Handle /sessions [list|<id_or_title>] — browse or resume previous sessions.
@@ -920,7 +938,7 @@ class CLICommandsMixin:
         try:
             self._session_db.create_session(
                 session_id=new_session_id,
-                source=os.environ.get("LUCIFEX_SESSION_SOURCE", "cli"),
+                source=os.environ.get("HERMES_SESSION_SOURCE", "cli"),
                 model=self.model,
                 model_config={
                     "max_iterations": self.max_turns,
@@ -944,6 +962,10 @@ class CLICommandsMixin:
                     tool_calls=msg.get("tool_calls"),
                     tool_call_id=msg.get("tool_call_id"),
                     reasoning=msg.get("reasoning"),
+                    # Keep the api_content sidecar so the branch's first turn
+                    # replays the parent's exact wire bytes (warm provider
+                    # prompt cache) instead of a full cold prefill.
+                    api_content=extract_api_content_sidecar(msg),
                 )
             except Exception:
                 pass  # Best-effort copy
@@ -1474,7 +1496,7 @@ class CLICommandsMixin:
     def _handle_curator_command(self, cmd: str):
         """Handle /curator slash command.
 
-        Delegates to lucifex_cli.curator so the CLI and the `lucifex curator`
+        Delegates to lucifex_cli.curator so the CLI and the `hermes curator`
         subcommand share the same handler set.
         """
         import shlex
@@ -1697,11 +1719,11 @@ class CLICommandsMixin:
                     try:
                         from lucifex_cli.skin_engine import get_active_skin
                         _skin = get_active_skin()
-                        label = _skin.get_branding("response_label", "⚕ Lucifex")
+                        label = _skin.get_branding("response_label", "⚕ Hermes")
                         _resp_color = _maybe_remap_for_light_mode(_skin.get_color("response_border", "#CD7F32"))
                         _resp_text = _maybe_remap_for_light_mode(_skin.get_color("banner_text", "#FFF8DC"))
                     except Exception:
-                        label = "⚕ Lucifex"
+                        label = "⚕ Hermes"
                         _resp_color = "#CD7F32"
                         _resp_text = "#FFF8DC"
 
@@ -1752,7 +1774,7 @@ class CLICommandsMixin:
     def _handle_bundles_command(self, cmd: str) -> None:
         """In-session ``/bundles`` — show installed skill bundles.
 
-        Mirrors ``lucifex bundles list`` but renders inside the running
+        Mirrors ``hermes bundles list`` but renders inside the running
         CLI so users can discover what's available without dropping out
         of their session. Bundles are loaded via ``/<bundle-name>``.
         """
@@ -1767,7 +1789,7 @@ class CLICommandsMixin:
         if not bundles:
             _cprint("  No skill bundles installed.")
             _cprint(
-                f"  {_DIM}Create one with: lucifex bundles create "
+                f"  {_DIM}Create one with: hermes bundles create "
                 f"<name> --skill <s1> --skill <s2>{_RST}"
             )
             _cprint(f"  {_DIM}Directory: {_bundles_dir()}{_RST}")
@@ -1785,137 +1807,8 @@ class CLICommandsMixin:
                 ChatConsole().print(f"        [dim]· {_escape(s)}[/]")
         _cprint(
             f"\n  {_DIM}Invoke a bundle with /<slug>. "
-            f"Manage with `lucifex bundles`.{_RST}"
+            f"Manage with `hermes bundles`.{_RST}"
         )
-
-    def _handle_setkey_command(self, cmd: str) -> None:  # noqa: C901
-        """Handle /setkey [KEY_NAME [value]] — set or list API keys in ~/.lucifex/.env.
-
-        Examples:
-          /setkey                         — list all keys in .env (masked)
-          /setkey list                    — same as above
-          /setkey OPENROUTER_API_KEY      — prompt for and save a new value
-          /setkey video_creator           — prompt for FAL_KEY (used by Video Creator plugin)
-          /setkey FAL_KEY sk-abc123       — set inline without prompt
-        """
-        from lucifex_cli.config import (
-            get_env_path,
-            load_env,
-            reload_env,
-            save_env_value,
-            redact_key,
-        )
-        from cli import _BOLD, _DIM, _RST, _cprint, ChatConsole, _accent_hex
-
-        _BLD = _BOLD
-        _DM = _DIM
-
-        # Parse command: /setkey [subcommand/key] [value]
-        parts = cmd.strip().split(None, 2)
-        sub = parts[1].strip() if len(parts) > 1 else "list"
-        inline_value = parts[2].strip() if len(parts) > 2 else None
-
-        # ── alias: video_creator → FAL_KEY ─────────────────────────────────
-        _ALIASES: dict[str, str] = {
-            "video_creator": "FAL_KEY",
-            "fal":           "FAL_KEY",
-            "openrouter":    "OPENROUTER_API_KEY",
-            "google":        "GOOGLE_API_KEY",
-            "gemini":        "GOOGLE_API_KEY",
-            "openai":        "OPENAI_API_KEY",
-            "anthropic":     "ANTHROPIC_API_KEY",
-            "nvidia":        "NVIDIA_API_KEY",
-            "mistral":       "MISTRAL_API_KEY",
-            "glm":           "GLM_API_KEY",
-            "xai":           "XAI_API_KEY",
-        }
-
-        # ── LIST ────────────────────────────────────────────────────────────
-        if sub.lower() in ("list", "ls", "show"):
-            env_path = get_env_path()
-            env_vars = load_env()
-            if not env_vars:
-                _cprint(f"\n  {_DM}No API keys configured in {env_path}{_RST}")
-                _cprint(
-                    f"  {_DM}Use /setkey KEY_NAME to add one.{_RST}\n"
-                )
-                return
-            _cprint(f"\n  {_BLD}🔑 API Keys in {env_path}{_RST}\n")
-            for key, value in sorted(env_vars.items()):
-                masked = redact_key(value) if value else f"{_DM}(empty){_RST}"
-                ChatConsole().print(
-                    f"    [bold {_accent_hex()}]{key:<30}[/] [dim]{masked}[/]"
-                )
-            _cprint(
-                f"\n  {_DM}Use /setkey KEY_NAME to update a key. "
-                f"Use /reload to activate changes in this session.{_RST}\n"
-            )
-            return
-
-        # ── SET KEY ─────────────────────────────────────────────────────────
-        key_name = _ALIASES.get(sub.lower(), sub.upper())
-
-        # Validate key name (basic sanity check)
-        import re as _re
-        if not _re.match(r'^[A-Z][A-Z0-9_]*$', key_name):
-            _cprint(
-                f"\n  ⚠ Invalid key name: {key_name!r}\n"
-                f"  {_DM}Use only uppercase letters, digits, and underscores "
-                f"(e.g. OPENROUTER_API_KEY).{_RST}\n"
-            )
-            return
-
-        # Friendly label for user-facing prompts
-        _LABELS: dict[str, str] = {
-            "FAL_KEY":            "Video Creator (fal.ai)",
-            "OPENROUTER_API_KEY": "OpenRouter",
-            "GOOGLE_API_KEY":     "Google AI Studio / Gemini",
-            "OPENAI_API_KEY":     "OpenAI",
-            "ANTHROPIC_API_KEY":  "Anthropic",
-            "NVIDIA_API_KEY":     "NVIDIA NIM",
-            "MISTRAL_API_KEY":    "Mistral AI",
-            "GLM_API_KEY":        "GLM / Zhipu AI",
-            "XAI_API_KEY":        "xAI / Grok",
-        }
-        label = _LABELS.get(key_name, key_name)
-
-        # If value passed inline, use it directly
-        if inline_value:
-            new_value = inline_value
-        else:
-            # Interactive prompt
-            current_vars = load_env()
-            current = current_vars.get(key_name, "")
-            masked_current = redact_key(current) if current else f"{_DM}(not set){_RST}"
-            _cprint(f"\n  {_BLD}🔑 Set API Key: {label}{_RST}")
-            _cprint(f"  Current value: {masked_current}")
-            _cprint(f"  {_DM}Leave blank to cancel.{_RST}")
-            print()
-            try:
-                import getpass as _getpass
-                new_value = _getpass.getpass(f"  New value for {key_name}: ").strip()
-            except (KeyboardInterrupt, EOFError):
-                _cprint(f"\n  {_DM}Cancelled.{_RST}\n")
-                return
-
-        if not new_value:
-            _cprint(f"\n  {_DM}Cancelled — no value entered.{_RST}\n")
-            return
-
-        # Save to .env
-        try:
-            save_env_value(key_name, new_value)
-            # Reload into current session immediately
-            count = reload_env()
-            masked_new = redact_key(new_value)
-            _cprint(
-                f"\n  ✅ {_BLD}{key_name}{_RST} saved to .env ({masked_new})\n"
-                f"  {_DM}Reloaded {count} var(s) into this session.{_RST}\n"
-            )
-        except ValueError as exc:
-            _cprint(f"\n  ⚠ {exc}\n")
-        except Exception as exc:
-            _cprint(f"\n  ⚠ Failed to save key: {exc}\n")
 
     def _handle_browser_command(self, cmd: str):
         """Handle /browser connect|disconnect|status — manage live Chromium-family CDP connection."""
@@ -1972,26 +1865,48 @@ class CLICommandsMixin:
 
             print()
 
-            # Check if a Chromium-family browser is already serving CDP on the debug port
-            _already_open = is_browser_debug_ready(cdp_url, timeout=1.0)
+            # Check if a Chromium-family browser is already serving CDP on the debug port.
+            # For the default-local URL, probe both loopbacks (IPv4 + IPv6): a
+            # squatter on 127.0.0.1:<port> (e.g. an IDE's JS debugger) can push
+            # the debug browser to bind [::1] only.
+            _is_default = cdp_url == _DEFAULT_CDP
+            if _is_default:
+                _found = discover_local_cdp_url(_port, timeout=1.0)
+                _already_open = _found is not None
+                if _found:
+                    cdp_url = _found
+            else:
+                _already_open = is_browser_debug_ready(cdp_url, timeout=1.0)
 
             if _already_open:
-                print(f"   ✓ Chromium-family browser is already listening on port {_port}")
-            elif cdp_url == _DEFAULT_CDP:
-                # Try to auto-launch a Chromium-family browser with remote debugging
-                print("   Chromium-family browser isn't running with remote debugging — attempting to launch...")
-                _launch = launch_chrome_debug(_port, _plat.system())
+                print(f"   ✓ Chromium-family browser is already listening at {cdp_url}")
+            elif _is_default:
+                _launch_port = _port
+                if local_port_in_use(_port):
+                    _launch_port = find_free_debug_port(_port)
+                    print(
+                        f"   ⚠ Port {_port} is occupied by another application that isn't a CDP browser"
+                    )
+                    print(
+                        f"     (an IDE debugger or dev server may be using it) — launching on port {_launch_port} instead..."
+                    )
+                else:
+                    # Try to auto-launch a Chromium-family browser with remote debugging
+                    print("   Chromium-family browser isn't running with remote debugging — attempting to launch...")
+                _launch = launch_chrome_debug(_launch_port, _plat.system())
                 if _launch.launched:
                     # Wait for the DevTools discovery endpoint to come up
                     for _wait in range(10):
-                        if is_browser_debug_ready(cdp_url, timeout=1.0):
+                        _found = discover_local_cdp_url(_launch_port, timeout=1.0)
+                        if _found:
+                            cdp_url = _found
                             _already_open = True
                             break
                         time.sleep(0.5)
                     if _already_open:
-                        print(f"   ✓ Chromium-family browser launched and listening on port {_port}")
+                        print(f"   ✓ Chromium-family browser launched and listening on port {_launch_port}")
                     else:
-                        print(f"   ⚠ Browser launched but port {_port} isn't responding yet")
+                        print(f"   ⚠ Browser launched but port {_launch_port} isn't responding yet")
                         print("     Try again in a few seconds — the debug instance may still be starting")
                 else:
                     print("   ⚠ Could not auto-launch a Chromium-family browser")
@@ -1999,9 +1914,9 @@ class CLICommandsMixin:
                     if _hint:
                         print(f"     {_hint}")
                     sys_name = _plat.system()
-                    chrome_cmd = manual_chrome_debug_command(_port, sys_name)
+                    chrome_cmd = manual_chrome_debug_command(_launch_port, sys_name)
                     if chrome_cmd:
-                        print(f"     Launch a Chromium-family browser manually:")
+                        print("     Launch a Chromium-family browser manually:")
                         print(f"     {chrome_cmd}")
                     else:
                         print("     No supported Chromium-family browser executable found in this environment")
@@ -2036,7 +1951,7 @@ class CLICommandsMixin:
                     "Your browser_navigate, browser_snapshot, browser_click, and other browser tools now "
                     "control that CDP browser. The command itself is a signal that using browser tools for "
                     "their current browser-related request is expected; do not wait for separate permission "
-                    "just because CDP is connected. This is typically a Lucifex-managed isolated debug "
+                    "just because CDP is connected. This is typically a Hermes-managed isolated debug "
                     "profile, not the user's main everyday browser. It is still user-visible and may contain "
                     "pages, logged-in sessions, or cookies in that debug profile, so avoid destructive actions, "
                     "closing tabs, or navigating away unless the user's task calls for it.]"
@@ -2244,7 +2159,7 @@ class CLICommandsMixin:
         _cprint(
             f"  {_DIM}After each turn, a judge model checks if the goal is done"
             f"{' against the contract above' if state.has_contract() else ''}. "
-            f"Lucifex keeps working until it is, you pause/clear it, or the budget is "
+            f"Hermes keeps working until it is, you pause/clear it, or the budget is "
             f"exhausted. Use /goal status, /goal show, /goal pause, /goal resume, /goal clear.{_RST}"
         )
         # Kick the loop off immediately so the user doesn't have to send a
@@ -2440,7 +2355,7 @@ class CLICommandsMixin:
             "#! Compose your prompt below. Lines starting with '#!' are ignored.\n"
             "#! Save and quit to send; leave empty to cancel.\n\n"
         )
-        fd, path = tempfile.mkstemp(suffix=".md", prefix="lucifex_prompt_")
+        fd, path = tempfile.mkstemp(suffix=".md", prefix="hermes_prompt_")
         try:
             with os.fdopen(fd, "w", encoding="utf-8") as fh:
                 fh.write(header)
@@ -2600,13 +2515,14 @@ class CLICommandsMixin:
 
         Usage:
             /reasoning              Show current effort level and display state
-            /reasoning <level>      Set reasoning effort (none, minimal, low, medium, high, xhigh)
+            /reasoning <level>      Set effort for this session only (none, minimal, low, medium, high, xhigh, max, ultra)
+            /reasoning <level> --global  Persist reasoning effort to config.yaml
             /reasoning show|on      Show model thinking/reasoning in output
             /reasoning hide|off     Hide model thinking/reasoning from output
             /reasoning full         Show complete thinking (no 10-line clamp)
             /reasoning clamp        Collapse long thinking to the first 10 lines
         """
-        from cli import _ACCENT, _DIM, _RST, _cprint, _parse_reasoning_config, save_config_value
+        from cli import CLI_CONFIG, _ACCENT, _DIM, _RST, _cprint, _parse_reasoning_config, save_config_value
         parts = cmd.strip().split(maxsplit=1)
 
         if len(parts) < 2:
@@ -2622,10 +2538,20 @@ class CLICommandsMixin:
             full_state = "full" if getattr(self, "reasoning_full", False) else "clamped to 10 lines"
             _cprint(f"  {_ACCENT}Reasoning effort:  {level}{_RST}")
             _cprint(f"  {_ACCENT}Reasoning display: {display_state} ({full_state}){_RST}")
-            _cprint(f"  {_DIM}Usage: /reasoning <none|minimal|low|medium|high|xhigh|show|hide|full|clamp>{_RST}")
+            _cprint(f"  {_DIM}Usage: /reasoning <none|minimal|low|medium|high|xhigh|max|ultra|show|hide|full|clamp> [--global]{_RST}")
             return
 
         arg = parts[1].strip().lower()
+        arg_tokens = arg.split()
+        # Session scope is the default; --global opts into persisting to
+        # config.yaml. --session is accepted as an explicit no-op for parity
+        # with /model and the gateway /reasoning handler.
+        explicit_global = "--global" in arg_tokens
+        if explicit_global or "--session" in arg_tokens:
+            arg = " ".join(
+                token for token in arg_tokens
+                if token not in ("--global", "--session")
+            )
 
         # Display toggle
         if arg in {"show", "on"}:
@@ -2663,20 +2589,28 @@ class CLICommandsMixin:
         parsed = _parse_reasoning_config(arg)
         if parsed is None:
             _cprint(f"  {_DIM}(._.) Unknown argument: {arg}{_RST}")
-            _cprint(f"  {_DIM}Valid levels: none, minimal, low, medium, high, xhigh{_RST}")
+            _cprint(f"  {_DIM}Valid levels: none, minimal, low, medium, high, xhigh, max, ultra{_RST}")
             _cprint(f"  {_DIM}Display:      show, hide{_RST}")
+            _cprint(f"  {_DIM}Scope:        session-scoped by default, --global to persist{_RST}")
             return
 
         self.reasoning_config = parsed
         self.agent = None  # Force agent re-init with new reasoning config
 
-        if save_config_value("agent.reasoning_effort", arg):
+        if explicit_global and save_config_value("agent.reasoning_effort", arg):
+            agent_cfg = CLI_CONFIG.get("agent")
+            if not isinstance(agent_cfg, dict):
+                agent_cfg = {}
+                CLI_CONFIG["agent"] = agent_cfg
+            agent_cfg["reasoning_effort"] = arg
             _cprint(f"  {_ACCENT}✓ Reasoning effort set to '{arg}' (saved to config){_RST}")
+        elif explicit_global:
+            _cprint(f"  {_ACCENT}✓ Reasoning effort set to '{arg}' (session only; config save failed){_RST}")
         else:
-            _cprint(f"  {_ACCENT}✓ Reasoning effort set to '{arg}' (session only){_RST}")
+            _cprint(f"  {_ACCENT}✓ Reasoning effort set to '{arg}' (this session — use --global to persist){_RST}")
 
     def _handle_busy_command(self, cmd: str):
-        """Handle /busy — control what Enter does while Lucifex is working.
+        """Handle /busy — control what Enter does while Hermes is working.
 
         Usage:
             /busy               Show current busy input mode
@@ -2708,18 +2642,22 @@ class CLICommandsMixin:
         self.busy_input_mode = arg
         if save_config_value("display.busy_input_mode", arg):
             if arg == "queue":
-                behavior = "Enter will queue follow-up input while Lucifex is busy."
+                behavior = "Enter will queue follow-up input while Hermes is busy."
             elif arg == "steer":
                 behavior = "Enter will steer your message into the current run (after the next tool call)."
             else:
-                behavior = "Enter will interrupt the current run while Lucifex is busy."
+                behavior = "Enter will interrupt the current run while Hermes is busy."
             _cprint(f"  {_ACCENT}✓ Busy input mode set to '{arg}' (saved to config){_RST}")
             _cprint(f"  {_DIM}{behavior}{_RST}")
         else:
             _cprint(f"  {_ACCENT}✓ Busy input mode set to '{arg}' (session only){_RST}")
 
     def _handle_fast_command(self, cmd: str):
-        """Handle /fast — toggle fast mode (OpenAI Priority Processing / Anthropic Fast Mode)."""
+        """Handle /fast — toggle fast mode (OpenAI Priority Processing / Anthropic Fast Mode).
+
+        Session-scoped by default; ``--global`` persists agent.service_tier
+        to config.yaml (parity with /model and /reasoning).
+        """
         from cli import _ACCENT, _DIM, _RST, _cprint, save_config_value
         if not self._fast_command_available():
             _cprint("  (._.) /fast is only available for models that support fast mode (OpenAI Priority Processing or Anthropic Fast Mode).")
@@ -2738,10 +2676,15 @@ class CLICommandsMixin:
         if len(parts) < 2 or parts[1].strip().lower() == "status":
             status = "fast" if self.service_tier == "priority" else "normal"
             _cprint(f"  {_ACCENT}{feature_name}: {status}{_RST}")
-            _cprint(f"  {_DIM}Usage: /fast [normal|fast|status]{_RST}")
+            _cprint(f"  {_DIM}Usage: /fast [normal|fast|status] [--global]{_RST}")
             return
 
-        arg = parts[1].strip().lower()
+        arg_tokens = parts[1].strip().lower().split()
+        explicit_global = "--global" in arg_tokens
+        arg = " ".join(
+            token for token in arg_tokens
+            if token not in ("--global", "--session")
+        )
 
         if arg in {"fast", "on"}:
             self.service_tier = "priority"
@@ -2753,14 +2696,16 @@ class CLICommandsMixin:
             label = "NORMAL"
         else:
             _cprint(f"  {_DIM}(._.) Unknown argument: {arg}{_RST}")
-            _cprint(f"  {_DIM}Usage: /fast [normal|fast|status]{_RST}")
+            _cprint(f"  {_DIM}Usage: /fast [normal|fast|status] [--global]{_RST}")
             return
 
         self.agent = None  # Force agent re-init with new service-tier config
-        if save_config_value("agent.service_tier", saved_value):
+        if explicit_global and save_config_value("agent.service_tier", saved_value):
             _cprint(f"  {_ACCENT}✓ {feature_name} set to {label} (saved to config){_RST}")
+        elif explicit_global:
+            _cprint(f"  {_ACCENT}✓ {feature_name} set to {label} (session only; config save failed){_RST}")
         else:
-            _cprint(f"  {_ACCENT}✓ {feature_name} set to {label} (session only){_RST}")
+            _cprint(f"  {_ACCENT}✓ {feature_name} set to {label} (this session — use --global to persist){_RST}")
 
     def _handle_debug_command(self, cmd_original: str = ""):
         """Handle /debug — upload debug report + logs and print share URLs.
@@ -2792,7 +2737,7 @@ class CLICommandsMixin:
         """Handle /update — update Lucifex Agent to the latest version.
 
         In the classic CLI this exits the session and relaunches as
-        ``lucifex update`` so the user sees update output directly and gets
+        ``hermes update`` so the user sees update output directly and gets
         the new version on next launch.
 
         Returns ``True`` when the update was confirmed (caller should trigger
@@ -2815,8 +2760,8 @@ class CLICommandsMixin:
             ("cancel", "Cancel", "keep the current session"),
         ]
         raw = self._prompt_text_input_modal(
-            title="⚕  Update Lucifex Agent",
-            detail="This will exit the current session and run `lucifex update`.",
+            title="⚕  Update Hermes Agent",
+            detail="This will exit the current session and run `hermes update`.",
             choices=choices,
         )
         if raw is None:

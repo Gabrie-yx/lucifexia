@@ -165,7 +165,7 @@ platforms:
 更新配置后正常启动 Hermes：
 
 ```bash
-hermes gateway run
+lucifex gateway run
 ```
 
 若你在 Docker 中运行 Hermes，按现有部署方式启动 gateway 即可。

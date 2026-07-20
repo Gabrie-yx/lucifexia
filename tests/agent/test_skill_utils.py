@@ -1,4 +1,4 @@
-"""Tests for agent/skill_utils.py."""
+﻿"""Tests for agent/skill_utils.py."""
 
 from unittest.mock import patch
 
@@ -115,11 +115,11 @@ def test_skill_config_helpers_share_raw_config_parse_cache(tmp_path, monkeypatch
     """Repeated skill config helpers should parse config.yaml only once."""
     from agent import skill_utils
 
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
+    LUCIFEX_HOME = tmp_path / ".hermes"
+    LUCIFEX_HOME.mkdir()
     external = tmp_path / "external-skills"
     external.mkdir()
-    config_path = hermes_home / "config.yaml"
+    config_path = LUCIFEX_HOME / "config.yaml"
     config_path.write_text(
         f"""
 skills:
@@ -141,7 +141,7 @@ skills:
         parse_count += 1
         return real_yaml_load(text)
 
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
     skill_utils._external_dirs_cache_clear()
     getattr(skill_utils, "_raw_config_cache_clear", lambda: None)()
     monkeypatch.setattr(skill_utils, "yaml_load", counting_yaml_load)
@@ -158,12 +158,12 @@ def test_skill_config_raw_cache_invalidates_on_config_edit(tmp_path, monkeypatch
     """Editing config.yaml should invalidate the shared raw config cache."""
     from agent import skill_utils
 
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    config_path = hermes_home / "config.yaml"
+    LUCIFEX_HOME = tmp_path / ".hermes"
+    LUCIFEX_HOME.mkdir()
+    config_path = LUCIFEX_HOME / "config.yaml"
     config_path.write_text("skills:\n  disabled: [old-skill]\n", encoding="utf-8")
 
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
     skill_utils._external_dirs_cache_clear()
     assert get_disabled_skill_names() == {"old-skill"}
 
@@ -177,17 +177,17 @@ def test_skill_config_raw_cache_invalidates_on_config_edit(tmp_path, monkeypatch
 def test_is_external_skill_path_matches_configured_external_dir(tmp_path, monkeypatch):
     from agent import skill_utils
 
-    hermes_home = tmp_path / ".hermes"
-    local_skills = hermes_home / "skills"
+    LUCIFEX_HOME = tmp_path / ".hermes"
+    local_skills = LUCIFEX_HOME / "skills"
     external = tmp_path / "external-skills"
     local_skills.mkdir(parents=True)
     external.mkdir()
-    (hermes_home / "config.yaml").write_text(
+    (LUCIFEX_HOME / "config.yaml").write_text(
         f"skills:\n  external_dirs:\n    - {external}\n",
         encoding="utf-8",
     )
 
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
     skill_utils._external_dirs_cache_clear()
 
     assert is_external_skill_path(external / "team-skill" / "SKILL.md") is True

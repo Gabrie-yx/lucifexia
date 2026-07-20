@@ -1,4 +1,4 @@
-"""Tests for cron job inactivity-based timeout.
+﻿"""Tests for cron job inactivity-based timeout.
 
 Tests cover:
 - Active agent runs indefinitely (no inactivity timeout)
@@ -301,13 +301,13 @@ class TestInactivityTimeout:
 class TestSysPathOrdering:
     """Test that sys.path is set before repo-level imports."""
 
-    def test_hermes_time_importable(self):
-        """hermes_time should be importable when cron.scheduler loads."""
+    def test_lucifex_time_importable(self):
+        """lucifex_time should be importable when cron.scheduler loads."""
         # This import would fail if sys.path.insert comes after the import
         from cron.scheduler import _hermes_now
         assert callable(_hermes_now)
 
-    def test_hermes_constants_importable(self):
-        """hermes_constants should be importable from cron context."""
-        from hermes_constants import get_hermes_home
-        assert callable(get_hermes_home)
+    def test_lucifex_constants_importable(self):
+        """lucifex_constants should be importable from cron context."""
+        from lucifex_constants import get_lucifex_home
+        assert callable(get_lucifex_home)

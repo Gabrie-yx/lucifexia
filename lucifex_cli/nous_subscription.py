@@ -1,4 +1,4 @@
-﻿"""Helpers for Nous subscription managed-tool capabilities."""
+"""Helpers for Nous subscription managed-tool capabilities."""
 
 from __future__ import annotations
 
@@ -26,12 +26,12 @@ from tools.tool_backend_helpers import (
 
 
 _DEFAULT_PLATFORM_TOOLSETS = {
-    "cli": "lucifex-cli",
+    "cli": "hermes-cli",
 }
 
 # Maps a tools_config provider's ``managed_nous_feature`` to the tool-pool
 # coverage category (lucifex_cli.nous_account.TOOL_COVERAGE_CATEGORIES). Lets the
-# `lucifex tools` picker scope its entitlement gate to the selected backend, so a
+# `hermes tools` picker scope its entitlement gate to the selected backend, so a
 # free-tool-pool user is allowed image gen but denied video gen at select time —
 # consistent with the per-category feature gates in get_nous_subscription_features.
 MANAGED_FEATURE_COVERAGE_CATEGORY: Dict[str, str] = {
@@ -240,7 +240,7 @@ def _local_stt_backend_available() -> bool:
     ``apply_nous_managed_defaults`` from flipping a working local setup
     to the managed gateway.
     """
-    if get_env_value("LUCIFEX_LOCAL_STT_COMMAND"):
+    if get_env_value("HERMES_LOCAL_STT_COMMAND"):
         return True
     try:
         from tools.transcription_tools import _HAS_FASTER_WHISPER
@@ -395,7 +395,7 @@ def get_nous_subscription_features(
     )
 
     # use_gateway flags — when True, the user explicitly opted into the
-    # Tool Gateway via `lucifex model`, so direct credentials should NOT
+    # Tool Gateway via `hermes model`, so direct credentials should NOT
     # prevent gateway routing.
     web_use_gateway = _uses_gateway(web_cfg)
     tts_use_gateway = _uses_gateway(tts_cfg)
@@ -431,10 +431,10 @@ def get_nous_subscription_features(
     try:
         from tools.transcription_tools import _HAS_FASTER_WHISPER
         local_stt_available = bool(_HAS_FASTER_WHISPER) or bool(
-            get_env_value("LUCIFEX_LOCAL_STT_COMMAND")
+            get_env_value("HERMES_LOCAL_STT_COMMAND")
         )
     except Exception:
-        local_stt_available = bool(get_env_value("LUCIFEX_LOCAL_STT_COMMAND"))
+        local_stt_available = bool(get_env_value("HERMES_LOCAL_STT_COMMAND"))
 
     # When use_gateway is set, suppress direct credentials for managed detection
     if web_use_gateway:
@@ -1131,7 +1131,7 @@ def prompt_enable_tool_gateway(
 
 
 # ---------------------------------------------------------------------------
-# Inline Ollama login for the Tool Gateway picker (`lucifex tools`)
+# Inline Nous Portal login for the Tool Gateway picker (`hermes tools`)
 # ---------------------------------------------------------------------------
 
 
@@ -1143,15 +1143,15 @@ def ensure_nous_portal_access(
     """Make sure the user is entitled to the Nous Tool Gateway, logging in if
     needed.
 
-    Used by ``lucifex tools`` when a user selects a Nous-managed Tool Gateway
-    backend (e.g. "Firecrawl (Ollama)").  Unlike ``lucifex model``'s Nous
+    Used by ``hermes tools`` when a user selects a Nous-managed Tool Gateway
+    backend (e.g. "Firecrawl (Nous Portal)").  Unlike ``hermes model``'s Nous
     login, this:
 
     - does NOT change the inference provider (``model.provider`` is untouched),
     - does NOT run model selection, and
     - does NOT offer the bulk "enable for all tools" Tool Gateway prompt.
 
-    It only performs the Ollama device-code OAuth (when the user isn't
+    It only performs the Nous Portal device-code OAuth (when the user isn't
     already logged in) and refreshes entitlement, so the caller can enable the
     single tool the user picked.
 
@@ -1204,7 +1204,7 @@ def ensure_nous_portal_access(
 
 
 def _run_nous_portal_login_only(*, capability: str) -> bool:
-    """Run the Ollama device-code OAuth and persist credentials only.
+    """Run the Nous Portal device-code OAuth and persist credentials only.
 
     No model selection, no provider switch, no Tool Gateway bulk prompt.
     Returns ``True`` on a successful login, ``False`` if the user declined or
@@ -1223,18 +1223,18 @@ def _run_nous_portal_login_only(*, capability: str) -> bool:
             _write_shared_nous_state,
         )
     except Exception as exc:  # pragma: no cover - defensive
-        print(f"  Could not start Ollama login: {exc}")
+        print(f"  Could not start Nous Portal login: {exc}")
         return False
 
     print()
-    print(f"  {capability} requires a Ollama login.")
+    print(f"  {capability} requires a Nous Portal login.")
     try:
-        proceed = input("  Log in to Ollama now? [Y/n]: ").strip().lower()
+        proceed = input("  Log in to Nous Portal now? [Y/n]: ").strip().lower()
     except (EOFError, KeyboardInterrupt):
         print()
         return False
     if proceed not in {"", "y", "yes"}:
-        print("  Skipped Ollama login.")
+        print("  Skipped Nous Portal login.")
         return False
 
     try:
@@ -1271,7 +1271,7 @@ def _run_nous_portal_login_only(*, capability: str) -> bool:
 
         _write_shared_nous_state(auth_state)
         _sync_nous_pool_from_auth_store()
-        print("  Ollama login successful.")
+        print("  Nous Portal login successful.")
         return True
     except KeyboardInterrupt:
         print("\n  Login cancelled.")
@@ -1281,5 +1281,5 @@ def _run_nous_portal_login_only(*, capability: str) -> bool:
         # it already printed billing guidance.
         return False
     except Exception as exc:
-        print(f"  Ollama login failed: {exc}")
+        print(f"  Nous Portal login failed: {exc}")
         return False

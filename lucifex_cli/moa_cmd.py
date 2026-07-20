@@ -43,7 +43,7 @@ def _model_options() -> list[dict[str, Any]]:
 def _pick_slot(current: dict[str, str] | None = None) -> dict[str, str]:
     providers = _model_options()
     if not providers:
-        raise RuntimeError("No configured model providers found. Run `lucifex model` first.")
+        raise RuntimeError("No configured model providers found. Run `hermes model` first.")
     current_provider = (current or {}).get("provider", "")
     provider_default = next(
         (idx for idx, p in enumerate(providers) if p.get("slug") == current_provider),
@@ -60,6 +60,12 @@ def _pick_slot(current: dict[str, str] | None = None) -> dict[str, str]:
     return {"provider": str(provider.get("slug") or ""), "model": str(model)}
 
 
+def _format_slot(slot: dict[str, Any]) -> str:
+    label = f"{slot['provider']}:{slot['model']}"
+    effort = str(slot.get("reasoning_effort") or "").strip()
+    return f"{label} [reasoning={effort}]" if effort else label
+
+
 def _print_config(config: dict[str, Any]) -> None:
     cfg = normalize_moa_config(config.get("moa") if isinstance(config, dict) else {})
     print("Mixture of Agents presets")
@@ -71,9 +77,9 @@ def _print_config(config: dict[str, Any]) -> None:
         print(f"\n{marker} {name}")
         print("  Reference models:")
         for idx, slot in enumerate(preset["reference_models"], start=1):
-            print(f"    {idx}. {slot['provider']}:{slot['model']}")
+            print(f"    {idx}. {_format_slot(slot)}")
         agg = preset["aggregator"]
-        print(f"  Aggregator: {agg['provider']}:{agg['model']}")
+        print(f"  Aggregator: {_format_slot(agg)}")
 
 
 def cmd_moa(args) -> None:
@@ -117,7 +123,7 @@ def cmd_moa(args) -> None:
         moa = normalize_moa_config(cfg.get("moa") if isinstance(cfg, dict) else {})
         preset_name = (getattr(args, "name", None) or "").strip()
         if not preset_name:
-            raise SystemExit("Usage: lucifex moa delete <name>")
+            raise SystemExit("Usage: hermes moa delete <name>")
         if preset_name not in moa["presets"]:
             raise SystemExit(f"Unknown MoA preset: {preset_name}")
         if len(moa["presets"]) <= 1:

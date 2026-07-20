@@ -1,4 +1,4 @@
-"""Persistent dashboard compute-host process.
+﻿"""Persistent dashboard compute-host process.
 
 Phase 0 used this module as a deterministic line-JSON spike.  Phase 1 keeps the
 same transport and turns it into the long-lived child that owns live AIAgent
@@ -366,9 +366,9 @@ class ComputeHost:
             except Exception:
                 pass
             try:
-                import hermes_undo
+                import lucifex_undo
 
-                hermes_undo.on_user_message_appended(session["session_key"])
+                lucifex_undo.on_user_message_appended(session["session_key"])
             except Exception:
                 pass
             try:
@@ -436,10 +436,10 @@ class ComputeHost:
         home_token = None
         try:
             if profile_home:
-                from hermes_constants import set_hermes_home_override
-                from hermes_state import SessionDB
+                from lucifex_constants import set_lucifex_home_override
+                from lucifex_state import SessionDB
 
-                home_token = set_hermes_home_override(profile_home)
+                home_token = set_lucifex_home_override(profile_home)
                 session_db = SessionDB(db_path=Path(profile_home) / "state.db")
             agent = server._make_agent(
                 sid,
@@ -454,9 +454,9 @@ class ComputeHost:
         finally:
             if home_token is not None:
                 try:
-                    from hermes_constants import reset_hermes_home_override
+                    from lucifex_constants import reset_lucifex_home_override
 
-                    reset_hermes_home_override(home_token)
+                    reset_lucifex_home_override(home_token)
                 except Exception:
                     pass
         try:
@@ -638,7 +638,7 @@ def run_host(stdin: Any = None, stdout: Any = None) -> None:
             "boot_id": host._boot_id,
             "build_sha": _build_sha(),
             "cwd": os.getcwd(),
-            "hermes_home": os.environ.get("HERMES_HOME", ""),
+            "LUCIFEX_HOME": os.environ.get("LUCIFEX_HOME", ""),
         }
     )
 

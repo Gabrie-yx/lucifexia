@@ -526,7 +526,7 @@ Webhook payload 包含攻击者可控的数据——PR 标题、commit 消息、
 
 ### Agent 未响应
 
-- 在前台运行 gateway 以查看日志：`hermes gateway run`
+- 在前台运行 gateway 以查看日志：`lucifex gateway run`
 - 检查 prompt 模板是否正确渲染
 - 验证投递目标已配置并连接
 

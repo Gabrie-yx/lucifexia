@@ -1,4 +1,4 @@
-"""Behavior contracts for incremental tool-call persistence (#49045).
+﻿"""Behavior contracts for incremental tool-call persistence (#49045).
 
 A destructive or process-terminating tool that runs during tool execution
 must not lose the just-executed assistant(tool_calls) block or the tool
@@ -47,8 +47,8 @@ def _make_tool_defs(*names: str) -> list:
 
 
 def _make_agent():
-    hermes_home = Path(tempfile.mkdtemp(prefix="hermes-test-home-"))
-    (hermes_home / "logs").mkdir(parents=True, exist_ok=True)
+    LUCIFEX_HOME = Path(tempfile.mkdtemp(prefix="hermes-test-home-"))
+    (LUCIFEX_HOME / "logs").mkdir(parents=True, exist_ok=True)
     with (
         patch(
             "run_agent.get_tool_definitions",
@@ -56,7 +56,7 @@ def _make_agent():
         ),
         patch("run_agent.check_toolset_requirements", return_value={}),
         patch("run_agent.OpenAI"),
-        patch("run_agent._hermes_home", hermes_home),
+        patch("run_agent._LUCIFEX_HOME", LUCIFEX_HOME),
         patch("agent.model_metadata.fetch_model_metadata", return_value={}),
     ):
         agent = AIAgent(

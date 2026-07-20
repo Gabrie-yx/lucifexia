@@ -36,7 +36,7 @@ from agent.image_gen_provider import (
 )
 from tools.xai_http import (
     build_xai_storage_options,
-    hermes_xai_user_agent,
+    lucifex_xai_user_agent,
     maybe_mark_xai_storage_notice_seen,
     read_xai_imagine_storage_config,
     resolve_xai_http_credentials,
@@ -89,7 +89,7 @@ DEFAULT_RESOLUTION = "1k"
 def _load_xai_config() -> Dict[str, Any]:
     """Read ``image_gen.xai`` from config.yaml."""
     try:
-        from hermes_cli.config import load_config
+        from lucifex_cli.config import load_config
 
         cfg = load_config()
         section = cfg.get("image_gen") if isinstance(cfg, dict) else None
@@ -184,7 +184,7 @@ class XAIImageGenProvider(ImageGenProvider):
 
     def get_setup_schema(self) -> Dict[str, Any]:
         # Auth resolution is delegated to the shared ``xai_grok`` post_setup
-        # hook (``hermes_cli/tools_config.py``); identical to the TTS / video
+        # hook (``lucifex_cli/tools_config.py``); identical to the TTS / video
         # gen entries so users see the same OAuth-or-API-key choice for every
         # xAI service.
         storage_notice = xai_storage_notice_text("image_gen")
@@ -283,7 +283,7 @@ class XAIImageGenProvider(ImageGenProvider):
         headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
-            "User-Agent": hermes_xai_user_agent(),
+            "User-Agent": lucifex_xai_user_agent(),
         }
 
         base_url = str(creds.get("base_url") or "https://api.x.ai/v1").strip().rstrip("/")

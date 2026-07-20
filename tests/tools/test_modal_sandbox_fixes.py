@@ -23,7 +23,7 @@ try:
     import tools.terminal_tool  # noqa: F401
     _tt_mod = sys.modules["tools.terminal_tool"]
 except ImportError:
-    pytest.skip("hermes-agent tools not importable (missing deps)", allow_module_level=True)
+    pytest.skip("lucifex-agent tools not importable (missing deps)", allow_module_level=True)
 
 
 # =========================================================================
@@ -65,7 +65,7 @@ class TestCwdHandling:
     def test_home_path_replaced_for_modal(self, monkeypatch):
         """TERMINAL_CWD=/home/user/... should be replaced with /root for modal."""
         monkeypatch.setenv("TERMINAL_ENV", "modal")
-        monkeypatch.setenv("TERMINAL_CWD", "/home/dakota/github/hermes-agent")
+        monkeypatch.setenv("TERMINAL_CWD", "/home/dakota/github/lucifex-agent")
         config = _tt_mod._get_env_config()
         assert config["cwd"] == "/root", (
             f"Expected /root, got {config['cwd']}. "
@@ -366,7 +366,7 @@ class TestDockerHostBindApproval:
         ``tools.approval`` loads ``command_allowlist`` into module-level
         ``_permanent_approved`` at import time. This file imports
         ``tools.terminal_tool`` at module level (collection time — BEFORE the
-        hermetic HERMES_HOME fixture runs), so on a dev machine whose real
+        hermetic LUCIFEX_HOME fixture runs), so on a dev machine whose real
         config permanently allowlists e.g. "delete in root path" the guard
         under test silently approves and the assertions flip. CI never has
         such an allowlist, making this a local-only flake.

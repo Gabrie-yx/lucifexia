@@ -1,4 +1,4 @@
-"""Normalized Ollama account entitlement helpers."""
+"""Normalized Nous Portal account entitlement helpers."""
 
 from __future__ import annotations
 
@@ -197,7 +197,7 @@ def format_nous_portal_entitlement_message(
                 # specific capability isn't covered. Surface a neutral billing
                 # nudge without exposing pool-vs-paid internals to the user.
                 return (
-                    f"{capability} isn't included with your current Ollama "
+                    f"{capability} isn't included with your current Nous Portal "
                     f"access. Add credits or a subscription to enable it at {billing_url}."
                 )
         elif account_info.tool_gateway_entitled:
@@ -205,33 +205,33 @@ def format_nous_portal_entitlement_message(
 
     if account_info is None:
         return (
-            f"Lucifex could not verify your Ollama entitlement, so {capability} "
-            f"is unavailable. Run `lucifex model` to refresh your login, or check "
+            f"Hermes could not verify your Nous Portal entitlement, so {capability} "
+            f"is unavailable. Run `hermes model` to refresh your login, or check "
             f"billing at {billing_url}."
         )
 
     if not account_info.logged_in:
         if account_info.inference_credential_present:
             return (
-                f"Nous inference credentials are configured, but Lucifex cannot verify "
-                f"your Ollama paid access for {capability}. Log in with "
-                f"`lucifex model` to enable Portal-managed features. Billing and "
+                f"Nous inference credentials are configured, but Hermes cannot verify "
+                f"your Nous Portal paid access for {capability}. Log in with "
+                f"`hermes model` to enable Portal-managed features. Billing and "
                 f"credits are managed at {billing_url}."
             )
         return (
-            f"Log in to Ollama to use {capability}: run `lucifex model`. "
+            f"Log in to Nous Portal to use {capability}: run `hermes model`. "
             f"Billing and credits are managed at {billing_url}."
         )
 
     if account_info.paid_service_access is None:
         detail = (
-            f"Lucifex could not verify your Ollama paid access, so {capability} "
+            f"Hermes could not verify your Nous Portal paid access, so {capability} "
             f"is unavailable."
         )
         if account_info.error:
             detail += f" Account lookup failed: {account_info.error}."
         if include_refresh_hint:
-            detail += " Run `lucifex model` to refresh your session."
+            detail += " Run `hermes model` to refresh your session."
         detail += f" Check billing at {billing_url}."
         return detail
 
@@ -239,19 +239,19 @@ def format_nous_portal_entitlement_message(
     reason = access.reason if access else None
     if reason == "account_missing":
         return (
-            f"Lucifex could not find a Ollama account or organisation for this "
-            f"login, so {capability} is unavailable. Run `lucifex model` to "
+            f"Hermes could not find a Nous Portal account or organisation for this "
+            f"login, so {capability} is unavailable. Run `hermes model` to "
             f"authenticate again; if the problem persists, contact Nous support."
         )
 
     if reason == "no_usable_credits" or account_info.paid_service_access is False:
         message = _no_paid_access_message(account_info, capability, billing_url)
         if include_refresh_hint and not account_info.fresh:
-            message += " If you recently bought credits, run `lucifex model` to refresh Lucifex."
+            message += " If you recently bought credits, run `hermes model` to refresh Hermes."
         return message
 
     return (
-        f"Your Ollama account does not currently have paid service access, "
+        f"Your Nous Portal account does not currently have paid service access, "
         f"so {capability} is unavailable. Add credits or update billing at {billing_url}."
     )
 
@@ -271,27 +271,27 @@ def _no_paid_access_message(
     if has_active_subscription and active_subscription_is_paid:
         credit_detail = _credit_detail(total_usable, subscription_credits, purchased_credits)
         return (
-            f"Your Ollama credits are exhausted{credit_detail}, so {capability} "
+            f"Your Nous Portal credits are exhausted{credit_detail}, so {capability} "
             f"is unavailable. Top up or renew credits at {billing_url}."
         )
 
     if has_active_subscription and active_subscription_is_paid is False:
         return (
-            f"Your current Ollama plan does not include paid service access, "
+            f"Your current Nous Portal plan does not include paid service access, "
             f"so {capability} is unavailable. Upgrade or add credits at {billing_url}."
         )
 
     if has_active_subscription is False:
         credit_detail = _credit_detail(total_usable, subscription_credits, purchased_credits)
         return (
-            f"Your Ollama account has no active subscription or usable credits"
+            f"Your Nous Portal account has no active subscription or usable credits"
             f"{credit_detail}, so {capability} is unavailable. Subscribe or add credits "
             f"at {billing_url}."
         )
 
     credit_detail = _credit_detail(total_usable, subscription_credits, purchased_credits)
     return (
-        f"Your Ollama account has no usable paid credits{credit_detail}, so "
+        f"Your Nous Portal account has no usable paid credits{credit_detail}, so "
         f"{capability} is unavailable. Add credits or update billing at {billing_url}."
     )
 
@@ -324,12 +324,54 @@ def get_nous_portal_account_info(
     force_fresh: bool = False,
     min_jwt_ttl_seconds: int = 60,
 ) -> NousPortalAccountInfo:
-    """Return normalized Ollama account entitlement information."""
-    return NousPortalAccountInfo(
-        logged_in=False,
-        source="none",
-        fresh=False,
-        portal_base_url="http://127.0.0.1:11434",
+    """Return normalized Nous Portal account entitlement information.
+
+    By default, a valid unexpired OAuth access JWT is used as a low-latency
+    local account snapshot. ``force_fresh=True`` always calls
+    ``/api/oauth/account`` and bypasses the short-lived cache. JWT claims are
+    decoded locally for UX gating only; server APIs remain authoritative.
+    """
+    try:
+        from lucifex_cli.auth import get_provider_auth_state
+
+        state = get_provider_auth_state("nous") or {}
+    except Exception as exc:
+        return _error_info(error=exc, logged_in=False)
+
+    access_token = state.get("access_token")
+    portal_base_url = _portal_base_url(state)
+    if not isinstance(access_token, str) or not access_token.strip():
+        pool_oauth_info = _info_from_oauth_pool(
+            force_fresh=force_fresh,
+            min_jwt_ttl_seconds=min_jwt_ttl_seconds,
+            portal_base_url=portal_base_url,
+        )
+        if pool_oauth_info is not None:
+            return pool_oauth_info
+        pool_info = _info_from_inference_key_pool(portal_base_url)
+        if pool_info is not None:
+            return pool_info
+        return NousPortalAccountInfo(
+            logged_in=False,
+            source="none",
+            fresh=False,
+            portal_base_url=portal_base_url,
+        )
+
+    if not force_fresh:
+        jwt_info = _info_from_valid_jwt(
+            access_token,
+            state=state,
+            portal_base_url=portal_base_url,
+            min_jwt_ttl_seconds=min_jwt_ttl_seconds,
+        )
+        if jwt_info is not None:
+            return jwt_info
+
+    return _fresh_account_info(
+        state=state,
+        force_fresh=force_fresh,
+        portal_base_url=portal_base_url,
     )
 
 

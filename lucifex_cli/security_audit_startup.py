@@ -1,4 +1,4 @@
-"""Startup security posture audit (warn-on-load, never blocks).
+﻿"""Startup security posture audit (warn-on-load, never blocks).
 
 Surfaces dangerous host / deployment posture at process start so operators
 get an at-a-glance "you're exposed" signal. Motivated by the June 2026
@@ -28,7 +28,7 @@ import re
 from pathlib import Path
 from typing import Any, Optional
 
-logger = logging.getLogger("lucifex.security_audit")
+logger = logging.getLogger("hermes.security_audit")
 
 # Sentinel so the audit only runs once per process even if both the CLI and
 # gateway startup paths call it.
@@ -52,7 +52,7 @@ def _running_as_root() -> Optional[str]:
     return (
         "Running as ROOT. The agent's terminal/file tools execute with full "
         "root privileges — a single prompt-injection or exposed endpoint is a "
-        "full host compromise. Run Lucifex as an unprivileged user (or in a "
+        "full host compromise. Run Hermes as an unprivileged user (or in a "
         "sandboxed terminal backend / container with a non-root user)."
     )
 
@@ -116,7 +116,7 @@ def _in_container() -> bool:
     """Best-effort container detection (Docker / Podman / generic OCI)."""
     if os.path.exists("/.dockerenv"):
         return True
-    if os.environ.get("LUCIFEX_DESKTOP_CHILD_PID"):
+    if os.environ.get("HERMES_DESKTOP_CHILD_PID"):
         return False  # desktop child, not a server container
     try:
         cgroup = Path("/proc/1/cgroup").read_text(encoding="utf-8", errors="replace")
@@ -165,11 +165,11 @@ def _path_is_mounted(path: Path) -> bool:
     return best_fstype not in ("overlay", "tmpfs", "aufs")
 
 
-def _container_no_volume_mount(lucifex_home: Optional[Path]) -> Optional[str]:
+def _container_no_volume_mount(LUCIFEX_HOME: Optional[Path]) -> Optional[str]:
     if not _in_container():
         return None
-    home = lucifex_home or Path(
-        os.environ.get("LUCIFEX_HOME", os.path.expanduser("~/.lucifex"))
+    home = LUCIFEX_HOME or Path(
+        os.environ.get("LUCIFEX_HOME", os.path.expanduser("~/.hermes"))
     )
     try:
         if _path_is_mounted(home):
@@ -221,7 +221,7 @@ def _network_listener_without_auth(config: Optional[dict]) -> list[str]:
 
 
 def run_security_audit(
-    *, lucifex_home: Optional[Path] = None, config: Optional[dict] = None
+    *, LUCIFEX_HOME: Optional[Path] = None, config: Optional[dict] = None
 ) -> list[str]:
     """Run all checks and return a list of human-readable warning strings.
 
@@ -241,7 +241,7 @@ def run_security_audit(
         except Exception:
             continue
     try:
-        r = _container_no_volume_mount(lucifex_home)
+        r = _container_no_volume_mount(LUCIFEX_HOME)
         if r:
             findings.append(r)
     except Exception:
@@ -255,7 +255,7 @@ def run_security_audit(
 
 def log_startup_security_warnings(
     *,
-    lucifex_home: Optional[Path] = None,
+    LUCIFEX_HOME: Optional[Path] = None,
     config: Optional[dict] = None,
     force: bool = False,
 ) -> list[str]:
@@ -269,7 +269,7 @@ def log_startup_security_warnings(
         return []
     _AUDIT_RAN = True
     try:
-        findings = run_security_audit(lucifex_home=lucifex_home, config=config)
+        findings = run_security_audit(LUCIFEX_HOME=LUCIFEX_HOME, config=config)
     except Exception:
         return []
     if findings:

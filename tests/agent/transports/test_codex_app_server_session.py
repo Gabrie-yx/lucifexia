@@ -1,4 +1,4 @@
-"""Tests for CodexAppServerSession — drive turns through a mock client.
+﻿"""Tests for CodexAppServerSession — drive turns through a mock client.
 
 The session adapter has the most complex behavior of the three new modules:
 notification draining, server-request handling (approvals), interrupt,
@@ -698,7 +698,7 @@ class TestServerRequestRouting:
             "around approvals"
         )
 
-    def test_mcp_elicitation_for_hermes_tools_auto_accepts(self):
+    def test_mcp_elicitation_for_lucifex_tools_auto_accepts(self):
         """When codex elicits on behalf of hermes-tools (our own callback),
         accept automatically — the user already opted in by enabling the
         runtime."""

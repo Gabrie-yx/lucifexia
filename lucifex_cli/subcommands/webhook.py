@@ -1,4 +1,4 @@
-"""``lucifex webhook`` subcommand parser.
+"""``hermes webhook`` subcommand parser.
 
 Extracted verbatim from ``lucifex_cli/main.py:main()`` (god-file Phase 2).
 Handler injected to avoid importing ``main``.
@@ -54,6 +54,13 @@ def build_webhook_parser(subparsers, *, cmd_webhook: Callable) -> None:
         help="Skip the agent — deliver the rendered prompt directly as the "
         "message. Zero LLM cost. Requires --deliver to be a real target "
         "(not 'log').",
+    )
+    wh_sub.add_argument(
+        "--script",
+        default="",
+        help="Filter/transform script under ~/.hermes/scripts/. The route "
+        "payload is passed as JSON on stdin; empty stdout, [SILENT], or a "
+        "nonzero exit code ignores the webhook.",
     )
 
     webhook_subparsers.add_parser(

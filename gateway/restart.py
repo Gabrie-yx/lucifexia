@@ -3,7 +3,7 @@
 import os
 from collections.abc import Mapping
 
-from hermes_cli.config import DEFAULT_CONFIG
+from lucifex_cli.config import DEFAULT_CONFIG
 
 # EX_TEMPFAIL from sysexits.h — used to ask the service manager to restart
 # the gateway after a graceful drain/reload path completes.
@@ -15,7 +15,7 @@ GATEWAY_SERVICE_RESTART_EXIT_CODE = 75
 # restarting the gateway.  See #51228.
 GATEWAY_FATAL_CONFIG_EXIT_CODE = 78
 
-# Set by ``hermes gateway run --external-supervisor``. Unlike systemd's
+# Set by ``lucifex gateway run --external-supervisor``. Unlike systemd's
 # INVOCATION_ID and launchd's XPC_SERVICE_NAME, this survives wrappers that
 # intentionally replace the child environment (for example ``sudo env -i``).
 EXTERNAL_GATEWAY_SUPERVISOR_ENV = "HERMES_GATEWAY_EXTERNAL_SUPERVISOR"

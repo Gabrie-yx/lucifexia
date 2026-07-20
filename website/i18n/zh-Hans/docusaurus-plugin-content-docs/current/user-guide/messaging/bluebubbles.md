@@ -62,7 +62,7 @@ BLUEBUBBLES_ALLOW_ALL_USERS=true
 ### 5. 启动 Gateway
 
 ```bash
-hermes gateway run
+lucifex gateway run
 ```
 
 Hermes 将连接至你的 BlueBubbles 服务端，注册 webhook，并开始监听 iMessage 消息。

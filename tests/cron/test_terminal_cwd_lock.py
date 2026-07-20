@@ -1,4 +1,4 @@
-"""Tests for the TERMINAL_CWD readers-writer lock in cron/scheduler.py.
+﻿"""Tests for the TERMINAL_CWD readers-writer lock in cron/scheduler.py.
 
 Workdir cron jobs override the process-global ``os.environ["TERMINAL_CWD"]``
 for their whole agent run.  Workdir-less jobs run concurrently on a separate
@@ -162,12 +162,12 @@ def test_run_job_releases_cwd_lock_when_body_raises(tmp_path):
             raise RuntimeError("boom")
         return real_info(msg, *args, **kwargs)
 
-    with patch("cron.scheduler._hermes_home", tmp_path), \
+    with patch("cron.scheduler._LUCIFEX_HOME", tmp_path), \
          patch("cron.scheduler._resolve_origin", return_value=None), \
-         patch("hermes_cli.env_loader.load_hermes_dotenv"), \
-         patch("hermes_cli.env_loader.reset_secret_source_cache"), \
+         patch("lucifex_cli.env_loader.load_lucifex_dotenv"), \
+         patch("lucifex_cli.env_loader.reset_secret_source_cache"), \
          patch.object(sched.logger, "info", side_effect=_raise_on_workdir_log), \
-         patch("hermes_state.SessionDB", return_value=MagicMock()):
+         patch("lucifex_state.SessionDB", return_value=MagicMock()):
         # run_job catches its own body exceptions and returns (False, ...);
         # it must not propagate, and it must release the lock either way.
         success, _out, _final, _err = sched.run_job(job)

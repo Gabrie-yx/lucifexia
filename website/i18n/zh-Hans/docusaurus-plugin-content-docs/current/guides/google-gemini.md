@@ -187,7 +187,7 @@ Gemini 可与所有 Hermes gateway 平台配合使用（Telegram、Discord、Sla
 
 ```bash
 hermes gateway setup
-hermes gateway start
+lucifex gateway start
 ```
 
 gateway 读取 `config.yaml` 并使用相同的 Gemini provider 配置。

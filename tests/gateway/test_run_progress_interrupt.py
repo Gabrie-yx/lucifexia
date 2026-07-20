@@ -1,4 +1,4 @@
-"""Tests for interrupt-aware tool-progress suppression in gateway.
+﻿"""Tests for interrupt-aware tool-progress suppression in gateway.
 
 When a user sends `stop` while the agent is executing a batch of parallel
 tool calls, the gateway's progress_callback should stop queuing 🔍 bubbles
@@ -167,7 +167,7 @@ async def _run_once(monkeypatch, tmp_path, agent_cls, session_id):
     adapter = ProgressCaptureAdapter()
     runner = _make_runner(adapter)
     gateway_run = importlib.import_module("gateway.run")
-    monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
+    monkeypatch.setattr(gateway_run, "_LUCIFEX_HOME", tmp_path)
     monkeypatch.setattr(
         gateway_run,
         "_resolve_runtime_agent_kwargs",

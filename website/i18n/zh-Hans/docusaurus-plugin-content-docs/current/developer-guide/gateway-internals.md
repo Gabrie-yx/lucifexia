@@ -112,7 +112,7 @@ Gateway: "Paired! You're now authorized."
 
 Gateway 中所有斜杠命令均经过相同的解析流程：
 
-1. `hermes_cli/commands.py` 中的 `resolve_command()` 将输入映射为规范名称（处理别名、前缀匹配）
+1. `lucifex_cli/commands.py` 中的 `resolve_command()` 将输入映射为规范名称（处理别名、前缀匹配）
 2. 规范名称与 `GATEWAY_KNOWN_COMMANDS` 进行比对
 3. `_handle_message()` 中的处理器根据规范名称进行分发
 4. 部分命令受配置门控（`CommandDef` 上的 `gateway_config_gate`）
@@ -252,11 +252,11 @@ Gateway 在处理消息的同时运行周期性维护任务：
 
 Gateway 作为长期运行进程运行，管理方式如下：
 
-- `hermes gateway start` / `hermes gateway stop` — 手动控制
+- `lucifex gateway start` / `lucifex gateway stop` — 手动控制
 - `systemctl`（Linux）或 `launchctl`（macOS）— 服务管理
 - PID 文件位于 `~/.hermes/gateway.pid` — 面向 profile 的进程追踪
 
-**Profile 范围 vs 全局**：`start_gateway()` 使用 profile 范围的 PID 文件。`hermes gateway stop` 仅停止当前 profile 的 gateway。`hermes gateway stop --all` 使用全局 `ps aux` 扫描来终止所有 gateway 进程（用于更新时）。
+**Profile 范围 vs 全局**：`start_gateway()` 使用 profile 范围的 PID 文件。`lucifex gateway stop` 仅停止当前 profile 的 gateway。`lucifex gateway stop --all` 使用全局 `ps aux` 扫描来终止所有 gateway 进程（用于更新时）。
 
 ## 相关文档
 

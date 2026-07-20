@@ -1,5 +1,5 @@
-"""
-Interactive setup wizard for Lucifex Agent.
+﻿"""
+Interactive setup wizard for Hermes Agent.
 
 Modular wizard with independently-runnable sections:
   1. Model & Provider — choose your AI provider and model
@@ -8,7 +8,7 @@ Modular wizard with independently-runnable sections:
   4. Messaging Platforms — connect Telegram, Discord, etc.
   5. Tools — configure TTS, web search, image generation, etc.
 
-Config files are stored in ~/.lucifex/ for easy access.
+Config files are stored in ~/.hermes/ for easy access.
 """
 
 import importlib.util
@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 
-_DOCS_BASE = "https://github.com/Gabrie-yx/lucifexia"
+_DOCS_BASE = "https://lucifex-agent.nousresearch.com/docs"
 
 
 def _model_config_dict(config: Dict[str, Any]) -> Dict[str, Any]:
@@ -84,6 +84,7 @@ _DEFAULT_PROVIDER_MODELS = {
         "gpt-4o",
         "gpt-4o-mini",
         "claude-opus-4.6",
+        "claude-sonnet-5",
         "claude-sonnet-4.6",
         "claude-sonnet-4.5",
         "claude-haiku-4.5",
@@ -105,8 +106,8 @@ _DEFAULT_PROVIDER_MODELS = {
     "arcee": ["trinity-large-thinking", "trinity-large-preview", "trinity-mini"],
     "minimax": ["MiniMax-M2.7", "MiniMax-M2.5", "MiniMax-M2.1", "MiniMax-M2"],
     "minimax-cn": ["MiniMax-M2.7", "MiniMax-M2.5", "MiniMax-M2.1", "MiniMax-M2"],
-    "kilocode": ["anthropic/claude-opus-4.6", "anthropic/claude-sonnet-4.6", "openai/gpt-5.4", "google/gemini-3-pro-preview", "google/gemini-3-flash-preview"],
-    "opencode-zen": ["gpt-5.4", "gpt-5.3-codex", "claude-sonnet-4-6", "gemini-3-flash", "glm-5", "kimi-k2.5", "minimax-m2.7"],
+    "kilocode": ["anthropic/claude-sonnet-5", "anthropic/claude-opus-4.6", "anthropic/claude-sonnet-4.6", "openai/gpt-5.4", "google/gemini-3-pro-preview", "google/gemini-3-flash-preview"],
+    "opencode-zen": ["gpt-5.4", "gpt-5.3-codex", "claude-sonnet-5", "claude-sonnet-4-6", "gemini-3-flash", "glm-5", "kimi-k2.5", "minimax-m2.7"],
     "opencode-go": ["kimi-k2.6", "kimi-k2.5", "glm-5.1", "glm-5", "mimo-v2.5-pro", "mimo-v2.5", "mimo-v2-pro", "mimo-v2-omni", "minimax-m2.7", "minimax-m2.5", "qwen3.7-max", "qwen3.6-plus", "qwen3.5-plus"],
     "huggingface": [
         "Qwen/Qwen3.5-397B-A17B", "Qwen/Qwen3-235B-A22B-Thinking-2507",
@@ -145,9 +146,9 @@ from lucifex_cli.config import (
     save_env_value,
     remove_env_value,
     get_env_value,
-    ensure_lucifex_home,
+    ensure_LUCIFEX_HOME,
 )
-# display_lucifex_home imported lazily at call sites (stale-module safety during lucifex update)
+# display_lucifex_home imported lazily at call sites (stale-module safety during hermes update)
 
 from lucifex_cli.colors import Colors, color
 
@@ -181,19 +182,19 @@ def is_interactive_stdin() -> bool:
 def print_noninteractive_setup_guidance(reason: str | None = None) -> None:
     """Print guidance for headless/non-interactive setup flows."""
     print()
-    print(color("⚕ Lucifex Setup — Non-interactive mode", Colors.CYAN, Colors.BOLD))
+    print(color("⚕ Hermes Setup — Non-interactive mode", Colors.CYAN, Colors.BOLD))
     print()
     if reason:
         print_info(reason)
     print_info("The interactive wizard cannot be used here.")
     print()
-    print_info("Configure Lucifex using environment variables or config commands:")
-    print_info("  lucifex config set model.provider custom")
-    print_info("  lucifex config set model.base_url http://localhost:8080/v1")
-    print_info("  lucifex config set model.default your-model-name")
+    print_info("Configure Hermes using environment variables or config commands:")
+    print_info("  hermes config set model.provider custom")
+    print_info("  hermes config set model.base_url http://localhost:8080/v1")
+    print_info("  hermes config set model.default your-model-name")
     print()
     print_info("Or set OPENROUTER_API_KEY / OPENAI_API_KEY in your environment.")
-    print_info("Run 'lucifex setup' in an interactive terminal to use the full wizard.")
+    print_info("Run 'hermes setup' in an interactive terminal to use the full wizard.")
     print()
 
 
@@ -281,14 +282,14 @@ def is_noninteractive() -> bool:
     """True when no human is available to answer a prompt.
 
     The dashboard/desktop spawn CLI actions with ``stdin=DEVNULL`` and
-    ``LUCIFEX_NONINTERACTIVE=1`` (see ``lucifex_cli/web_server.py``). In that
+    ``HERMES_NONINTERACTIVE=1`` (see ``lucifex_cli/web_server.py``). In that
     context an ``input()`` raises ``EOFError`` immediately, so a prompt that
     aborts on EOF kills the spawned action — this is what made the desktop
     "restart gateway" fail when the Windows gateway service was not yet
     installed (the start path asks "Install it now?" with no one to answer).
     Honour the explicit env flag here so callers fall back to their default.
     """
-    return os.environ.get("LUCIFEX_NONINTERACTIVE", "").strip().lower() in {
+    return os.environ.get("HERMES_NONINTERACTIVE", "").strip().lower() in {
         "1",
         "true",
         "yes",
@@ -299,7 +300,7 @@ def is_noninteractive() -> bool:
 def prompt_yes_no(question: str, default: bool = True) -> bool:
     """Prompt for yes/no. Ctrl+C exits, empty input returns default.
 
-    Non-interactive callers (``LUCIFEX_NONINTERACTIVE=1`` or a closed/redirected
+    Non-interactive callers (``HERMES_NONINTERACTIVE=1`` or a closed/redirected
     stdin) have no one to answer, so fall back to ``default`` instead of
     aborting the whole process.
     """
@@ -388,10 +389,10 @@ def _prompt_api_key(var: dict):
         save_env_value(var["name"], value)
         print_success("  ✓ Saved")
     else:
-        print_warning("  Skipped (configure later with 'lucifex setup')")
+        print_warning("  Skipped (configure later with 'hermes setup')")
 
 
-def _print_setup_summary(config: dict, lucifex_home):
+def _print_setup_summary(config: dict, LUCIFEX_HOME):
     """Print the setup completion summary."""
     # Tool availability summary
     print()
@@ -411,7 +412,7 @@ def _print_setup_summary(config: dict, lucifex_home):
     if _vision_backends:
         tool_status.append(("Vision (image analysis)", True, None))
     else:
-        tool_status.append(("Vision (image analysis)", False, "run 'lucifex setup' to configure"))
+        tool_status.append(("Vision (image analysis)", False, "run 'hermes setup' to configure"))
 
 
     # Web tools (Exa, Parallel, Firecrawl, or Tavily)
@@ -486,7 +487,7 @@ def _print_setup_summary(config: dict, lucifex_home):
         else:
             tool_status.append(("Image Generation", False, "FAL_KEY or OPENAI_API_KEY"))
 
-    # Video generation — opt-in via `lucifex tools` → Video Generation.
+    # Video generation — opt-in via `hermes tools` → Video Generation.
     # Only show the row when a plugin reports available so we don't badger
     # users who don't care about video gen with a "missing" status line.
     if subscription_features.video_gen.managed_by_nous:
@@ -533,7 +534,7 @@ def _print_setup_summary(config: dict, lucifex_home):
         if neutts_ok:
             tool_status.append(("Text-to-Speech (NeuTTS local)", True, None))
         else:
-            tool_status.append(("Text-to-Speech (NeuTTS — not installed)", False, "run 'lucifex setup tts'"))
+            tool_status.append(("Text-to-Speech (NeuTTS — not installed)", False, "run 'hermes setup tts'"))
     elif tts_provider == "kittentts":
         try:
             kittentts_ok = importlib.util.find_spec("kittentts") is not None
@@ -542,7 +543,7 @@ def _print_setup_summary(config: dict, lucifex_home):
         if kittentts_ok:
             tool_status.append(("Text-to-Speech (KittenTTS local)", True, None))
         else:
-            tool_status.append(("Text-to-Speech (KittenTTS — not installed)", False, "run 'lucifex setup tts'"))
+            tool_status.append(("Text-to-Speech (KittenTTS — not installed)", False, "run 'hermes setup tts'"))
     else:
         tool_status.append(("Text-to-Speech (Edge TTS)", True, None))
 
@@ -552,7 +553,7 @@ def _print_setup_summary(config: dict, lucifex_home):
         if subscription_features.modal.direct_override:
             tool_status.append(("Modal Execution (direct Modal)", True, None))
         else:
-            tool_status.append(("Modal Execution", False, "run 'lucifex setup terminal'"))
+            tool_status.append(("Modal Execution", False, "run 'hermes setup terminal'"))
     elif managed_nous_tools_enabled() and subscription_features.nous_auth_present:
         tool_status.append(("Modal Execution (optional via Nous subscription)", True, None))
 
@@ -560,7 +561,7 @@ def _print_setup_summary(config: dict, lucifex_home):
     if get_env_value("HASS_TOKEN"):
         tool_status.append(("Smart Home (Home Assistant)", True, None))
 
-    # Spotify (OAuth via lucifex auth spotify — check auth.json, not env vars)
+    # Spotify (OAuth via hermes auth spotify — check auth.json, not env vars)
     try:
         from lucifex_cli.auth import get_provider_auth_state
         _spotify_state = get_provider_auth_state("spotify") or {}
@@ -604,74 +605,11 @@ def _print_setup_summary(config: dict, lucifex_home):
     disabled_tools = [(name, var) for name, avail, var in tool_status if not avail]
     if disabled_tools:
         print_warning(
-            "Some tools are disabled. Run 'lucifex setup tools' to configure them,"
+            "Some tools are disabled. Run 'hermes setup tools' to configure them,"
         )
         from lucifex_constants import display_lucifex_home as _dhh
         print_warning(f"or edit {_dhh()}/.env directly to add the missing API keys.")
         print()
-
-    # Novas Capacidades — anunciar para todos os usuarios no setup
-    print()
-    print(
-        color(
-            "╔═════════════════════════════════════════════════════════╗",
-            Colors.CYAN,
-        )
-    )
-    print(
-        color(
-            "║         ✨  Novas Capacidades Disponíveis!  ✨           ║",
-            Colors.CYAN,
-        )
-    )
-    print(
-        color(
-            "╚═════════════════════════════════════════════════════════╝",
-            Colors.CYAN,
-        )
-    )
-    print()
-    print(
-        color("  🕷️  Web Scraping Stealth  (plugin: scrapling)", Colors.GREEN)
-    )
-    print(
-        color("     Bypass automático de Cloudflare, anti-bot e JS challenges.", Colors.DIM)
-    )
-    print(
-        color("     Ferramenta: web_extract_stealth — instala sozinho!", Colors.DIM)
-    )
-    print()
-    print(
-        color("  📡  Redes Sociais sem API  (plugin: agent-reach)", Colors.GREEN)
-    )
-    print(
-        color("     Twitter, Reddit, YouTube (transcrições!), GitHub — zero API key.", Colors.DIM)
-    )
-    print(
-        color("     Ferramentas: social_read, youtube_transcript, reddit_search", Colors.DIM)
-    )
-    print()
-    print(
-        color("  🎬  Criador de Vídeos  (plugin: video-creator)", Colors.GREEN)
-    )
-    print(
-        color("     Prompt → script → footage Pexels → narração → MP4 completo.", Colors.DIM)
-    )
-    print(
-        color("     Ferramenta: create_short_video | Requer: ffmpeg + PEXELS_API_KEY", Colors.DIM)
-    )
-    print()
-    print(
-        color("  🎨  Skill de Design  (skills/design)", Colors.GREEN)
-    )
-    print(
-        color("     Pensa como designer especialista ao criar UIs, slides e dashboards.", Colors.DIM)
-    )
-    print()
-    print(
-        color("  Use 'lucifex tools' para gerenciar os plugins acima.", Colors.DIM)
-    )
-    print()
 
     # Done banner
     print()
@@ -692,7 +630,6 @@ def _print_setup_summary(config: dict, lucifex_home):
     )
     print()
 
-
     # Show file locations prominently
     from lucifex_constants import display_lucifex_home as _dhh
     print(color(f"📁 All your files are in {_dhh()}/:", Colors.CYAN, Colors.BOLD))
@@ -700,7 +637,7 @@ def _print_setup_summary(config: dict, lucifex_home):
     print(f"   {color('Settings:', Colors.YELLOW)}  {get_config_path()}")
     print(f"   {color('API Keys:', Colors.YELLOW)}  {get_env_path()}")
     print(
-        f"   {color('Data:', Colors.YELLOW)}      {lucifex_home}/cron/, sessions/, logs/"
+        f"   {color('Data:', Colors.YELLOW)}      {LUCIFEX_HOME}/cron/, sessions/, logs/"
     )
     print()
 
@@ -708,17 +645,17 @@ def _print_setup_summary(config: dict, lucifex_home):
     print()
     print(color("📝 To edit your configuration:", Colors.CYAN, Colors.BOLD))
     print()
-    print(f"   {color('lucifex setup', Colors.GREEN)}          Re-run the full wizard")
-    print(f"   {color('lucifex setup model', Colors.GREEN)}    Change model/provider")
-    print(f"   {color('lucifex setup terminal', Colors.GREEN)} Change terminal backend")
-    print(f"   {color('lucifex setup gateway', Colors.GREEN)}  Configure messaging")
-    print(f"   {color('lucifex setup tools', Colors.GREEN)}    Configure tool providers")
+    print(f"   {color('hermes setup', Colors.GREEN)}          Re-run the full wizard")
+    print(f"   {color('hermes setup model', Colors.GREEN)}    Change model/provider")
+    print(f"   {color('hermes setup terminal', Colors.GREEN)} Change terminal backend")
+    print(f"   {color('hermes setup gateway', Colors.GREEN)}  Configure messaging")
+    print(f"   {color('hermes setup tools', Colors.GREEN)}    Configure tool providers")
     print()
-    print(f"   {color('lucifex config', Colors.GREEN)}         View current settings")
+    print(f"   {color('hermes config', Colors.GREEN)}         View current settings")
     print(
-        f"   {color('lucifex config edit', Colors.GREEN)}    Open config in your editor"
+        f"   {color('hermes config edit', Colors.GREEN)}    Open config in your editor"
     )
-    print(f"   {color('lucifex config set <key> <value>', Colors.GREEN)}")
+    print(f"   {color('hermes config set <key> <value>', Colors.GREEN)}")
     print("                          Set a specific value")
     print()
     print("   Or edit the files directly:")
@@ -730,9 +667,9 @@ def _print_setup_summary(config: dict, lucifex_home):
     print()
     print(color("🚀 Ready to go!", Colors.CYAN, Colors.BOLD))
     print()
-    print(f"   {color('lucifex', Colors.GREEN)}              Start chatting")
-    print(f"   {color('lucifex gateway', Colors.GREEN)}      Start messaging gateway")
-    print(f"   {color('lucifex doctor', Colors.GREEN)}       Check for issues")
+    print(f"   {color('hermes', Colors.GREEN)}              Start chatting")
+    print(f"   {color('hermes gateway', Colors.GREEN)}      Start messaging gateway")
+    print(f"   {color('hermes doctor', Colors.GREEN)}       Check for issues")
     print()
 
 
@@ -779,7 +716,7 @@ def _prompt_container_resources(config: dict):
 
 
 # Tool categories and provider config are now in tools_config.py (shared
-# between `lucifex tools` and `lucifex setup tools`).
+# between `hermes tools` and `hermes setup tools`).
 
 
 # =============================================================================
@@ -791,10 +728,10 @@ def _prompt_container_resources(config: dict):
 def setup_model_provider(config: dict, *, quick: bool = False):
     """Configure the inference provider and default model.
 
-    Delegates to ``cmd_model()`` (the same flow used by ``lucifex model``)
+    Delegates to ``cmd_model()`` (the same flow used by ``hermes model``)
     for provider selection, credential prompting, and model picking.
     This ensures a single code path for all provider setup — any new
-    provider added to ``lucifex model`` is automatically available here.
+    provider added to ``hermes model`` is automatically available here.
 
     When *quick* is True, skips credential rotation, vision, and TTS
     configuration — used by the streamlined first-time quick setup.
@@ -806,7 +743,7 @@ def setup_model_provider(config: dict, *, quick: bool = False):
     print_info(f"   Guide: {_DOCS_BASE}/integrations/providers")
     print()
 
-    # Delegate to the shared lucifex model flow — handles provider picker,
+    # Delegate to the shared hermes model flow — handles provider picker,
     # credential prompting, model selection, and config persistence.
     from lucifex_cli.main import select_provider_and_model
     try:
@@ -817,7 +754,7 @@ def setup_model_provider(config: dict, *, quick: bool = False):
     except Exception as exc:
         logger.debug("select_provider_and_model error during setup: %s", exc)
         print_warning(f"Provider setup encountered an error: {exc}")
-        print_info("You can try again later with: lucifex model")
+        print_info("You can try again later with: hermes model")
 
     # Re-sync the wizard's config dict from what cmd_model saved to disk.
     # This is critical: cmd_model writes to disk via its own load/save cycle,
@@ -838,8 +775,8 @@ def setup_model_provider(config: dict, *, quick: bool = False):
     # Credential rotation, vision-backend selection, and TTS provider are no
     # longer prompted here. They have safe defaults (rotation off, vision
     # auto-detected from the main provider, TTS = Edge) and are configurable
-    # on demand via `lucifex auth add`, `lucifex setup` vision, and
-    # `lucifex setup tts`. This keeps both quick and full setup thin.
+    # on demand via `hermes auth add`, `hermes setup` vision, and
+    # `hermes setup tts`. This keeps both quick and full setup thin.
 
     # Tool Gateway prompt is already shown by _model_flow_nous() above.
     save_config(config)
@@ -892,17 +829,24 @@ def _install_neutts_deps() -> bool:
     print_info("Installing neutts Python package...")
     print_info("This will also download the TTS model (~300MB) on first use.")
     print()
+
+    # Route through the canonical uv → pip → ensurepip ladder so pip-less
+    # venvs (Ubuntu 25.10 `python -m venv`, `uv venv`) work out of the box.
+    from lucifex_cli.tools_config import _pip_install
+
     try:
-        subprocess.run(
-            [sys.executable, "-m", "pip", "install", "-U", "neutts[all]", "--quiet"],
-            check=True, timeout=300,
-        )
+        result = _pip_install(["-U", "neutts[all]", "--quiet"], timeout=300)
+    except Exception as e:
+        print_error(f"Failed to install neutts: {e}")
+        print_info("Try manually: uv pip install -U 'neutts[all]'")
+        return False
+    if result.returncode == 0:
         print_success("neutts installed successfully")
         return True
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
-        print_error(f"Failed to install neutts: {e}")
-        print_info("Try manually: python -m pip install -U neutts[all]")
-        return False
+    err = (result.stderr or "").strip()
+    print_error(f"Failed to install neutts: {err[:300] if err else 'install failed'}")
+    print_info("Try manually: uv pip install -U 'neutts[all]'")
+    return False
 
 
 def _install_kittentts_deps() -> bool:
@@ -917,24 +861,29 @@ def _install_kittentts_deps() -> bool:
     print()
     print_info("Installing kittentts Python package (~25-80MB model downloaded on first use)...")
     print()
+
+    from lucifex_cli.tools_config import _pip_install
+
     try:
-        subprocess.run(
-            [sys.executable, "-m", "pip", "install", "-U", wheel_url, "soundfile", "--quiet"],
-            check=True, timeout=300,
-        )
+        result = _pip_install(["-U", wheel_url, "soundfile", "--quiet"], timeout=300)
+    except Exception as e:
+        print_error(f"Failed to install kittentts: {e}")
+        print_info(f"Try manually: uv pip install -U '{wheel_url}' soundfile")
+        return False
+    if result.returncode == 0:
         print_success("kittentts installed successfully")
         return True
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
-        print_error(f"Failed to install kittentts: {e}")
-        print_info(f"Try manually: python -m pip install -U '{wheel_url}' soundfile")
-        return False
+    err = (result.stderr or "").strip()
+    print_error(f"Failed to install kittentts: {err[:300] if err else 'install failed'}")
+    print_info(f"Try manually: uv pip install -U '{wheel_url}' soundfile")
+    return False
 
 
 def _xai_oauth_logged_in_for_setup() -> bool:
     """True iff xAI Grok OAuth credentials are already stored locally.
 
     Lets TTS / STT setup skip the API-key prompt for users who logged in
-    through ``lucifex model`` -> xAI Grok OAuth (SuperGrok / Premium+).
+    through ``hermes model`` -> xAI Grok OAuth (SuperGrok / Premium+).
     """
     try:
         from lucifex_cli.auth import get_xai_oauth_auth_status
@@ -1040,7 +989,7 @@ def _setup_tts_provider(config: dict):
         print_info("OpenAI TTS will use the managed Nous gateway and bill to your subscription.")
         if get_env_value("VOICE_TOOLS_OPENAI_KEY") or get_env_value("OPENAI_API_KEY"):
             print_warning(
-                "Direct OpenAI credentials are still configured and may take precedence until removed from ~/.lucifex/.env."
+                "Direct OpenAI credentials are still configured and may take precedence until removed from ~/.hermes/.env."
             )
 
     if selected == "neutts":
@@ -1092,7 +1041,7 @@ def _setup_tts_provider(config: dict):
 
     elif selected == "xai":
         # Resolution order: existing OAuth tokens (free for SuperGrok subscribers
-        # via the Lucifex auth store) > existing XAI_API_KEY > prompt the user.
+        # via the Hermes auth store) > existing XAI_API_KEY > prompt the user.
         # When neither is configured, offer both options instead of forcing the
         # API-key path — xAI TTS works fine with OAuth bearer tokens too.
         oauth_logged_in = _xai_oauth_logged_in_for_setup()
@@ -1136,7 +1085,7 @@ def _setup_tts_provider(config: dict):
                     from lucifex_constants import display_lucifex_home as _dhh
                     print_warning(
                         "No xAI API key provided for TTS. Configure XAI_API_KEY "
-                        f"via lucifex setup model or {_dhh()}/.env to use xAI TTS. "
+                        f"via hermes setup model or {_dhh()}/.env to use xAI TTS. "
                         "Falling back to Edge TTS."
                     )
                     selected = "edge"
@@ -1220,7 +1169,7 @@ def _setup_tts_provider(config: dict):
 
 
 def setup_tts(config: dict):
-    """Standalone TTS setup (for 'lucifex setup tts')."""
+    """Standalone TTS setup (for 'hermes setup tts')."""
     _setup_tts_provider(config)
 
 
@@ -1233,7 +1182,7 @@ def setup_terminal_backend(config: dict):
     """Configure the terminal execution backend."""
     import platform as _platform
     print_header("Terminal Backend")
-    print_info("Choose where Lucifex runs shell commands and code.")
+    print_info("Choose where Hermes runs shell commands and code.")
     print_info("This affects tool execution, file access, and isolation.")
     print_info(f"   Guide: {_DOCS_BASE}/user-guide/configuration#terminal-backend-configuration")
     print()
@@ -1280,7 +1229,7 @@ def setup_terminal_backend(config: dict):
         print_success("Terminal backend: Local")
         print_info("Commands run directly on this machine.")
         # Gateway working directory defaults to home; sudo stays off. Both are
-        # configurable later via `lucifex setup terminal` / config.yaml.
+        # configurable later via `hermes setup terminal` / config.yaml.
         config["terminal"].setdefault("cwd", str(Path.home()))
 
     elif selected_backend == "docker":
@@ -1294,7 +1243,7 @@ def setup_terminal_backend(config: dict):
         else:
             print_info(f"Docker found: {docker_bin}")
 
-        # Image and resource limits use defaults; tune via `lucifex setup terminal`.
+        # Image and resource limits use defaults; tune via `hermes setup terminal`.
         config["terminal"].setdefault(
             "docker_image", "nikolaik/python-nodejs:python3.11-nodejs20"
         )
@@ -1312,7 +1261,7 @@ def setup_terminal_backend(config: dict):
         else:
             print_info(f"Found: {sing_bin}")
 
-        # Image and resource limits use defaults; tune via `lucifex setup terminal`.
+        # Image and resource limits use defaults; tune via `hermes setup terminal`.
         config["terminal"].setdefault(
             "singularity_image",
             "docker://nikolaik/python-nodejs:python3.11-nodejs20",
@@ -1366,32 +1315,13 @@ def setup_terminal_backend(config: dict):
                 __import__("modal")
             except ImportError:
                 print_info("Installing modal SDK...")
-                import subprocess
+                from lucifex_cli.tools_config import _pip_install
 
-                uv_bin = shutil.which("uv")
-                if uv_bin:
-                    result = subprocess.run(
-                        [
-                            uv_bin,
-                            "pip",
-                            "install",
-                            "--python",
-                            sys.executable,
-                            "modal",
-                        ],
-                        capture_output=True,
-                        text=True,
-                    )
-                else:
-                    result = subprocess.run(
-                        [sys.executable, "-m", "pip", "install", "modal"],
-                        capture_output=True,
-                        text=True,
-                    )
+                result = _pip_install(["modal"])
                 if result.returncode == 0:
                     print_success("modal SDK installed")
                 else:
-                    print_warning("Install failed — run manually: pip install modal")
+                    print_warning("Install failed — run manually: uv pip install modal")
 
             # Modal token
             print()
@@ -1426,25 +1356,13 @@ def setup_terminal_backend(config: dict):
             __import__("daytona")
         except ImportError:
             print_info("Installing daytona SDK...")
-            import subprocess
+            from lucifex_cli.tools_config import _pip_install
 
-            uv_bin = shutil.which("uv")
-            if uv_bin:
-                result = subprocess.run(
-                    [uv_bin, "pip", "install", "--python", sys.executable, "daytona"],
-                    capture_output=True,
-                    text=True,
-                )
-            else:
-                result = subprocess.run(
-                    [sys.executable, "-m", "pip", "install", "daytona"],
-                    capture_output=True,
-                    text=True,
-                )
+            result = _pip_install(["daytona"])
             if result.returncode == 0:
                 print_success("daytona SDK installed")
             else:
-                print_warning("Install failed — run manually: pip install daytona")
+                print_warning("Install failed — run manually: uv pip install daytona")
                 if result.stderr:
                     print_info(f"  Error: {result.stderr.strip().splitlines()[-1]}")
 
@@ -1464,7 +1382,7 @@ def setup_terminal_backend(config: dict):
                 save_env_value("DAYTONA_API_KEY", api_key)
                 print_success("    Configured")
 
-        # Image and resource limits use defaults; tune via `lucifex setup terminal`.
+        # Image and resource limits use defaults; tune via `hermes setup terminal`.
         config["terminal"].setdefault(
             "daytona_image", "nikolaik/python-nodejs:python3.11-nodejs20"
         )
@@ -1536,19 +1454,19 @@ def _apply_default_agent_settings(config: dict):
     """Apply recommended defaults for all agent settings without prompting."""
     config.setdefault("agent", {})["max_turns"] = 150
     # config.yaml is the authoritative source for max_turns; the gateway
-    # bridges it into LUCIFEX_MAX_ITERATIONS at startup. We no longer write
+    # bridges it into HERMES_MAX_ITERATIONS at startup. We no longer write
     # to .env to avoid the dual-source inconsistency that caused the
     # 60-vs-500 bug (stale .env entry silently shadowing config.yaml).
-    remove_env_value("LUCIFEX_MAX_ITERATIONS")
+    remove_env_value("HERMES_MAX_ITERATIONS")
 
     config.setdefault("display", {})["tool_progress"] = "all"
 
     config.setdefault("compression", {})["enabled"] = True
     config["compression"]["threshold"] = 0.50
 
-    # Default to never auto-resetting sessions. The gateway treats absent
-    # session_reset as "both", so we must write "none" explicitly to make
-    # the no-auto-reset default actually take effect.
+    # Default: never auto-reset sessions. This matches the gateway's own
+    # default (SessionResetPolicy.mode = "none"); we still write it
+    # explicitly so the choice is visible/editable in config.yaml.
     config.setdefault("session_reset", {})["mode"] = "none"
 
     save_config(config)
@@ -1557,7 +1475,7 @@ def _apply_default_agent_settings(config: dict):
     print_info("  Tool progress: all")
     print_info("  Compression threshold: 0.50")
     print_info("  Session reset: never (use /reset or compression)")
-    print_info("  Run `lucifex setup agent` later to customize.")
+    print_info("  Run `hermes setup agent` later to customize.")
 
 
 def setup_agent_settings(config: dict):
@@ -1585,10 +1503,10 @@ def setup_agent_settings(config: dict):
             # Write to config.yaml (authoritative) only. Also clean up any
             # stale .env entry from earlier setup runs — the gateway's
             # bridge in gateway/run.py now unconditionally derives
-            # LUCIFEX_MAX_ITERATIONS from agent.max_turns at startup.
+            # HERMES_MAX_ITERATIONS from agent.max_turns at startup.
             config.setdefault("agent", {})["max_turns"] = max_iter
             config.pop("max_turns", None)
-            remove_env_value("LUCIFEX_MAX_ITERATIONS")
+            remove_env_value("HERMES_MAX_ITERATIONS")
             print_success(f"Max iterations set to {max_iter}")
     except ValueError:
         print_warning("Invalid number, keeping current value")
@@ -1601,7 +1519,7 @@ def setup_agent_settings(config: dict):
     print_info("  new     — Show tool name only when it changes (less noise)")
     print_info("  all     — Show every tool call with a short preview")
     print_info("  verbose — Full args, results, and debug logs")
-    print_info("  log     — Silent in chat; write every tool call to ~/.lucifex/logs/tool_calls.log (gateway only)")
+    print_info("  log     — Silent in chat; write every tool call to ~/.hermes/logs/tool_calls.log (gateway only)")
 
     current_mode = cfg_get(config, "display", "tool_progress", default="all")
     mode = prompt("Tool progress mode", current_mode)
@@ -1659,19 +1577,19 @@ def setup_agent_settings(config: dict):
     print_info("")
 
     reset_choices = [
-        "Inactivity + daily reset (recommended - reset whichever comes first)",
+        "Inactivity + daily reset (reset whichever comes first)",
         "Inactivity only (reset after N minutes of no messages)",
         "Daily only (reset at a fixed hour each day)",
-        "Never auto-reset (context lives until /reset or context compression)",
+        "Never auto-reset (recommended - context lives until /reset or context compression)",
         "Keep current settings",
     ]
 
     current_policy = config.get("session_reset", {})
-    current_mode = current_policy.get("mode", "both")
+    current_mode = current_policy.get("mode", "none")
     current_idle = current_policy.get("idle_minutes", 1440)
     current_hour = current_policy.get("at_hour", 4)
 
-    default_reset = {"both": 0, "idle": 1, "daily": 2, "none": 3}.get(current_mode, 0)
+    default_reset = {"both": 0, "idle": 1, "daily": 2, "none": 3}.get(current_mode, 3)
 
     reset_idx = prompt_choice("Session reset mode:", reset_choices, default_reset)
 
@@ -1754,17 +1672,17 @@ def _setup_telegram_auto_result():
 
     profile_name: str | None = None
     try:
-        profile_name = _profile_name_from_lucifex_home(Path(get_lucifex_home()))
+        profile_name = _profile_name_from_LUCIFEX_HOME(Path(get_lucifex_home()))
     except Exception:
         pass
 
     return auto_setup_telegram_bot_result(profile_name=profile_name)
 
 
-def _profile_name_from_lucifex_home(lucifex_home) -> str | None:
+def _profile_name_from_LUCIFEX_HOME(LUCIFEX_HOME) -> str | None:
     """Return the active profile name when LUCIFEX_HOME is a profile dir."""
-    if lucifex_home.parent.name == "profiles":
-        return lucifex_home.name
+    if LUCIFEX_HOME.parent.name == "profiles":
+        return LUCIFEX_HOME.name
     return None
 
 
@@ -1879,7 +1797,7 @@ def _setup_telegram():
         print_info("⚠️  No allowlist set - anyone who finds your bot can use it!")
 
     print()
-    print_info("📬 Home Channel: where Lucifex delivers cron job results,")
+    print_info("📬 Home Channel: where Hermes delivers cron job results,")
     print_info("   cross-platform messages, and notifications.")
     print_info("   For Telegram DMs, this is your user ID (same as above).")
 
@@ -1917,7 +1835,7 @@ def _setup_bluebubbles():
         if not prompt_yes_no("Reconfigure BlueBubbles?", False):
             return
 
-    print_info("Connects Lucifex to iMessage via BlueBubbles — a free, open-source")
+    print_info("Connects Hermes to iMessage via BlueBubbles — a free, open-source")
     print_info("macOS server that bridges iMessage to any device.")
     print_info("   Requires a Mac running BlueBubbles Server v1.0.0+")
     print_info("   Download: https://bluebubbles.app/")
@@ -2022,8 +1940,8 @@ def _setup_webhooks():
     print_info("   Route configuration guide:")
     print_info("   https://lucifex-agent.nousresearch.com/docs/user-guide/messaging/webhooks/#configuring-routes")
     print()
-    print_info("   Open config in your editor:  lucifex config edit")
-    print_info("   Open config in your editor:  lucifex config edit")
+    print_info("   Open config in your editor:  hermes config edit")
+    print_info("   Open config in your editor:  hermes config edit")
 
 
 def setup_gateway(config: dict):
@@ -2031,7 +1949,7 @@ def setup_gateway(config: dict):
     from lucifex_cli.gateway import _all_platforms, _platform_status, _configure_platform
 
     print_header("Messaging Platforms")
-    print_info("Connect to messaging platforms to chat with Lucifex from anywhere.")
+    print_info("Connect to messaging platforms to chat with Hermes from anywhere.")
     print_info("Toggle with Space, confirm with Enter.")
     print()
 
@@ -2049,7 +1967,7 @@ def setup_gateway(config: dict):
     selected = prompt_checklist("Select platforms to configure:", items, pre_selected)
 
     if not selected:
-        print_info("No platforms selected. Run 'lucifex setup gateway' later to configure.")
+        print_info("No platforms selected. Run 'hermes setup gateway' later to configure.")
         return
 
     for idx in selected:
@@ -2102,7 +2020,7 @@ def setup_gateway(config: dict):
             print_info("   Set one later with /set-home in your chat, or:")
             for plat in missing_home:
                 print_info(
-                    f"     lucifex config set {plat.upper()}_HOME_CHANNEL <channel_id>"
+                    f"     hermes config set {plat.upper()}_HOME_CHANNEL <channel_id>"
                 )
 
         # Offer to install the gateway as a system service
@@ -2117,7 +2035,7 @@ def setup_gateway(config: dict):
             _is_service_running,
             supports_systemd_services,
             has_conflicting_systemd_units,
-            has_legacy_lucifex_units,
+            has_legacy_hermes_units,
             install_linux_gateway_from_setup,
             print_systemd_scope_conflict_warning,
             print_legacy_unit_warning,
@@ -2142,7 +2060,7 @@ def setup_gateway(config: dict):
             print_systemd_scope_conflict_warning()
             print()
 
-        if supports_systemd and has_legacy_lucifex_units():
+        if supports_systemd and has_legacy_hermes_units():
             print_legacy_unit_warning()
             print()
 
@@ -2239,12 +2157,12 @@ def setup_gateway(config: dict):
                             print_error(f"  Start failed: {e}")
                 except Exception as e:
                     print_error(f"  Install failed: {e}")
-                    print_info("  You can try manually: lucifex gateway install")
+                    print_info("  You can try manually: hermes gateway install")
             else:
-                print_info("  You can install later: lucifex gateway install")
+                print_info("  You can install later: hermes gateway install")
                 if supports_systemd and os.geteuid() == 0:  # windows-footgun: ok — guarded by supports_systemd (Linux only)
-                    print_info("  Or as a boot-time service: lucifex gateway install --system")
-                print_info("  Or run in foreground:  lucifex gateway")
+                    print_info("  Or as a boot-time service: hermes gateway install --system")
+                print_info("  Or run in foreground:  hermes gateway")
         else:
             from lucifex_constants import is_container
             if is_container():
@@ -2256,7 +2174,7 @@ def setup_gateway(config: dict):
                 print_info("   docker restart <container>  # Manual restart")
             else:
                 print_info("Start the gateway to bring your bots online:")
-                print_info("   lucifex gateway              # Run in foreground")
+                print_info("   hermes gateway              # Run in foreground")
 
         print_info("━" * 50)
 
@@ -2269,7 +2187,7 @@ def setup_gateway(config: dict):
 def setup_tools(config: dict, first_install: bool = False):
     """Configure tools — delegates to the unified tools_command() in tools_config.py.
 
-    Both `lucifex setup tools` and `lucifex tools` use the same flow:
+    Both `hermes setup tools` and `hermes tools` use the same flow:
     platform selection → toolset toggles → provider/API key configuration.
 
     Args:
@@ -2434,12 +2352,12 @@ _OPENCLAW_SCRIPT = (
     / "migration"
     / "openclaw-migration"
     / "scripts"
-    / "openclaw_to_lucifex.py"
+    / "openclaw_to_hermes.py"
 )
 
 
 def _load_openclaw_migration_module():
-    """Load the openclaw_to_lucifex migration script as a module.
+    """Load the openclaw_to_hermes migration script as a module.
 
     Returns the loaded module, or None if the script can't be loaded.
     """
@@ -2447,7 +2365,7 @@ def _load_openclaw_migration_module():
         return None
 
     spec = importlib.util.spec_from_file_location(
-        "openclaw_to_lucifex", _OPENCLAW_SCRIPT
+        "openclaw_to_hermes", _OPENCLAW_SCRIPT
     )
     if spec is None or spec.loader is None:
         return None
@@ -2467,15 +2385,15 @@ def _load_openclaw_migration_module():
 
 # Item kinds that represent high-impact changes warranting explicit warnings.
 # Gateway tokens/channels can hijack messaging platforms from the old agent.
-# Config values may have different semantics between OpenClaw and Lucifex.
+# Config values may have different semantics between OpenClaw and Hermes.
 # Instruction/context files (.md) can contain incompatible setup procedures.
 _HIGH_IMPACT_KIND_KEYWORDS = {
-    "gateway": "⚠ Gateway/messaging — this will configure Lucifex to use your OpenClaw messaging channels",
-    "telegram": "⚠ Telegram — this will point Lucifex at your OpenClaw Telegram bot",
-    "slack": "⚠ Slack — this will point Lucifex at your OpenClaw Slack workspace",
-    "discord": "⚠ Discord — this will point Lucifex at your OpenClaw Discord bot",
-    "whatsapp": "⚠ WhatsApp — this will point Lucifex at your OpenClaw WhatsApp connection",
-    "config": "⚠ Config values — OpenClaw settings may not map 1:1 to Lucifex equivalents",
+    "gateway": "⚠ Gateway/messaging — this will configure Hermes to use your OpenClaw messaging channels",
+    "telegram": "⚠ Telegram — this will point Hermes at your OpenClaw Telegram bot",
+    "slack": "⚠ Slack — this will point Hermes at your OpenClaw Slack workspace",
+    "discord": "⚠ Discord — this will point Hermes at your OpenClaw Discord bot",
+    "whatsapp": "⚠ WhatsApp — this will point Hermes at your OpenClaw WhatsApp connection",
+    "config": "⚠ Config values — OpenClaw settings may not map 1:1 to Hermes equivalents",
     "soul": "⚠ Instruction file — may contain OpenClaw-specific setup/restart procedures",
     "memory": "⚠ Memory/context file — may reference OpenClaw-specific infrastructure",
     "context": "⚠ Context file — may contain OpenClaw-specific instructions",
@@ -2519,7 +2437,7 @@ def _print_migration_preview(report: dict):
         print()
 
     if conflict_items:
-        print(color("  Would overwrite (conflicts with existing Lucifex config):", Colors.YELLOW))
+        print(color("  Would overwrite (conflicts with existing Hermes config):", Colors.YELLOW))
         for item in conflict_items:
             kind = item.get("kind", "unknown")
             reason = item.get("reason", "already exists")
@@ -2540,13 +2458,13 @@ def _print_migration_preview(report: dict):
         for warning in sorted(warnings_shown):
             print(color(f"    {warning}", Colors.YELLOW))
         print()
-        print(color("  Note: OpenClaw config values may have different semantics in Lucifex.", Colors.YELLOW))
-        print(color("  For example, OpenClaw's tool_call_execution: \"auto\" ≠ Lucifex's yolo mode.", Colors.YELLOW))
+        print(color("  Note: OpenClaw config values may have different semantics in Hermes.", Colors.YELLOW))
+        print(color("  For example, OpenClaw's tool_call_execution: \"auto\" ≠ Hermes's yolo mode.", Colors.YELLOW))
         print(color("  Instruction files (.md) from OpenClaw may contain incompatible procedures.", Colors.YELLOW))
         print()
 
 
-def _offer_openclaw_migration(lucifex_home: Path) -> bool:
+def _offer_openclaw_migration(LUCIFEX_HOME: Path) -> bool:
     """Detect ~/.openclaw and offer to migrate during first-time setup.
 
     Runs a dry-run first to show the user exactly what would be imported,
@@ -2564,12 +2482,12 @@ def _offer_openclaw_migration(lucifex_home: Path) -> bool:
     print()
     print_header("OpenClaw Installation Detected")
     print_info(f"Found OpenClaw data at {openclaw_dir}")
-    print_info("Lucifex can preview what would be imported before making any changes.")
+    print_info("Hermes can preview what would be imported before making any changes.")
     print()
 
     if not prompt_yes_no("Would you like to see what can be imported?", default=True):
         print_info(
-            "Skipping migration. You can run it later with: lucifex claw migrate --dry-run"
+            "Skipping migration. You can run it later with: hermes claw migrate --dry-run"
         )
         return False
 
@@ -2594,7 +2512,7 @@ def _offer_openclaw_migration(lucifex_home: Path) -> bool:
         selected = mod.resolve_selected_options(None, None, preset="full")
         dry_migrator = mod.Migrator(
             source_root=openclaw_dir.resolve(),
-            target_root=lucifex_home.resolve(),
+            target_root=LUCIFEX_HOME.resolve(),
             execute=False,  # dry-run — no files modified
             workspace_target=None,
             overwrite=True,  # show everything including conflicts
@@ -2627,22 +2545,22 @@ def _offer_openclaw_migration(lucifex_home: Path) -> bool:
     # ── Phase 2: Confirm and execute ──
     if not prompt_yes_no("Proceed with migration?", default=False):
         print_info(
-            "Migration cancelled. You can run it later with: lucifex claw migrate"
+            "Migration cancelled. You can run it later with: hermes claw migrate"
         )
         print_info(
             "Use --dry-run to preview again, or --preset minimal for a lighter import."
         )
         return False
 
-    # Execute the migration — overwrite=False so existing Lucifex configs are
+    # Execute the migration — overwrite=False so existing Hermes configs are
     # preserved. The user saw the preview; conflicts are skipped by default.
     try:
         migrator = mod.Migrator(
             source_root=openclaw_dir.resolve(),
-            target_root=lucifex_home.resolve(),
+            target_root=LUCIFEX_HOME.resolve(),
             execute=True,
             workspace_target=None,
-            overwrite=False,  # preserve existing Lucifex config
+            overwrite=False,  # preserve existing Hermes config
             migrate_secrets=True,
             output_dir=None,
             selected_options=selected,
@@ -2665,7 +2583,7 @@ def _offer_openclaw_migration(lucifex_home: Path) -> bool:
     if migrated:
         print_success(f"Imported {migrated} item(s) from OpenClaw.")
     if conflicts:
-        print_info(f"Skipped {conflicts} item(s) that already exist in Lucifex (use lucifex claw migrate --overwrite to force).")
+        print_info(f"Skipped {conflicts} item(s) that already exist in Hermes (use hermes claw migrate --overwrite to force).")
     if skipped:
         print_info(f"Skipped {skipped} item(s) (not found or unchanged).")
     if errors:
@@ -2694,7 +2612,22 @@ SETUP_SECTIONS = [
 
 
 def _run_portal_one_shot(config: dict) -> None:
-    """One-shot Ollama setup — pick model + provider."""
+    """One-shot Nous Portal setup — OAuth + model pick + provider + Tool Gateway.
+
+    Wired into ``hermes setup --portal`` and ``hermes portal``. This is the
+    Nous-Portal slice of the first-time quick setup, collapsed into a single
+    shareable command so a brand-new user goes from zero to a fully working
+    Hermes session — model selected, provider set, and web/image/tts/browser
+    tools routed via their Portal sub — without being told to run
+    ``hermes setup`` and hunt for the quick-setup option.
+
+    The login + model selection + provider switch + Tool Gateway opt-in are all
+    delegated to ``_model_flow_nous`` — the exact same flow quick setup uses
+    (``_run_first_time_quick_setup``) and the same one ``hermes model`` runs
+    when you pick Nous. Routing through it (instead of hand-rolling the auth +
+    provider write here) means ``hermes portal`` always offers a model picker,
+    and there is a single source of truth for the Nous onboarding steps.
+    """
     from lucifex_cli.config import load_config
 
     print()
@@ -2704,7 +2637,7 @@ def _run_portal_one_shot(config: dict) -> None:
             Colors.MAGENTA,
         )
     )
-    print(color("│     ⚕ Lucifex Setup — Ollama (one-shot)             │", Colors.MAGENTA))
+    print(color("│     ⚕ Hermes Setup — Nous Portal (one-shot)             │", Colors.MAGENTA))
     print(
         color(
             "└─────────────────────────────────────────────────────────┘",
@@ -2712,26 +2645,37 @@ def _run_portal_one_shot(config: dict) -> None:
         )
     )
     print()
-    print_info("  Configure o provedor OLLAMA local para processar seus modelos.")
-    print_info("  Certifique-se de que o Ollama esta rodando em sua maquina.")
+    print_info("  One subscription, 300+ models, plus the Tool Gateway:")
+    print_info("    web search, image generation, TTS, browser automation")
+    print_info("    — all routed through your Nous Portal sub.")
     print()
-    print_info("  Download do Ollama: https://ollama.com")
+    print_info("  Sign up: https://portal.nousresearch.com/manage-subscription")
     print()
 
+    # _model_flow_nous handles BOTH the logged-out path (device-code OAuth,
+    # which selects a model internally) and the already-logged-in path (curated
+    # Nous model picker), then offers the Tool Gateway opt-in and sets
+    # provider=nous via the login/model save. This is the same routine quick
+    # setup calls, so `hermes portal` == quick setup's Nous step.
     try:
         from lucifex_cli.main import _model_flow_nous
 
         _model_flow_nous(config)
     except (KeyboardInterrupt, EOFError, SystemExit):
+        # _login_nous raises SystemExit(130)/(1) on cancel/failure; the
+        # logged-out path inside _model_flow_nous catches it, but the
+        # expired-session re-login path only catches Exception, so a
+        # SystemExit there would otherwise escape and kill the whole CLI.
+        # Treat all of these as a graceful cancel/abort for the portal flow.
         print()
-        print_info("  Setup cancelado.")
-        print_info("  Voce pode tentar novamente com `lucifex portal`.")
+        print_info("  Setup cancelled.")
+        print_info("  You can retry later with `hermes portal`.")
         return
     except Exception as exc:
-        logger.debug("_model_flow_nous error during `lucifex portal`: %s", exc)
+        logger.debug("_model_flow_nous error during `hermes portal`: %s", exc)
         print()
-        print_error(f"  Ocorreu um erro no setup do Ollama: {exc}")
-        print_info("  Voce pode tentar novamente com `lucifex portal`.")
+        print_error(f"  Nous Portal setup encountered an error: {exc}")
+        print_info("  You can retry later with `hermes portal`.")
         return
 
     # Re-sync the in-memory config from disk — _model_flow_nous (and the
@@ -2747,27 +2691,27 @@ def _run_portal_one_shot(config: dict) -> None:
 
     print()
     print_success("Portal setup complete.")
-    print_info("  Run `lucifex portal info` to inspect routing.")
-    print_info("  Run `lucifex` to start chatting.")
+    print_info("  Run `hermes portal info` to inspect routing.")
+    print_info("  Run `hermes` to start chatting.")
 
 
 def run_setup_wizard(args):
     """Run the interactive setup wizard.
 
     Supports full, quick, and section-specific setup:
-      lucifex setup           — full or quick (auto-detected)
-      lucifex setup model     — just model/provider
-      lucifex setup tts       — just text-to-speech
-      lucifex setup terminal  — just terminal backend
-      lucifex setup gateway   — just messaging platforms
-      lucifex setup tools     — just tool configuration
-      lucifex setup agent     — just agent settings
+      hermes setup           — full or quick (auto-detected)
+      hermes setup model     — just model/provider
+      hermes setup tts       — just text-to-speech
+      hermes setup terminal  — just terminal backend
+      hermes setup gateway   — just messaging platforms
+      hermes setup tools     — just tool configuration
+      hermes setup agent     — just agent settings
     """
     from lucifex_cli.config import is_managed, managed_error
     if is_managed():
         managed_error("run setup wizard")
         return
-    ensure_lucifex_home()
+    ensure_LUCIFEX_HOME()
 
     reset_requested = bool(getattr(args, "reset", False))
     if reset_requested:
@@ -2778,7 +2722,7 @@ def run_setup_wizard(args):
     quick_requested = bool(getattr(args, "quick", False))
 
     config = load_config()
-    lucifex_home = get_lucifex_home()
+    LUCIFEX_HOME = get_lucifex_home()
 
     # Back up existing config before setup modifies it (#3522)
     config_path = get_config_path()
@@ -2806,7 +2750,7 @@ def run_setup_wizard(args):
         )
         return
 
-    # --portal: one-shot Ollama setup. Skips the rest of the wizard.
+    # --portal: one-shot Nous Portal setup. Skips the rest of the wizard.
     if bool(getattr(args, "portal", False)):
         _run_portal_one_shot(config)
         return
@@ -2823,7 +2767,7 @@ def run_setup_wizard(args):
                         Colors.MAGENTA,
                     )
                 )
-                print(color(f"│     ⚕ Lucifex Setup — {label:<34s} │", Colors.MAGENTA))
+                print(color(f"│     ⚕ Hermes Setup — {label:<34s} │", Colors.MAGENTA))
                 print(
                     color(
                         "└─────────────────────────────────────────────────────────┘",
@@ -2859,7 +2803,7 @@ def run_setup_wizard(args):
     )
     print(
         color(
-            "│             ⚕ Lucifex Agent Setup Wizard                │", Colors.MAGENTA
+            "│             ⚕ Hermes Agent Setup Wizard                │", Colors.MAGENTA
         )
     )
     print(
@@ -2870,7 +2814,7 @@ def run_setup_wizard(args):
     )
     print(
         color(
-            "│  Let's configure your Lucifex Agent installation.       │", Colors.MAGENTA
+            "│  Let's configure your Hermes Agent installation.       │", Colors.MAGENTA
         )
     )
     print(
@@ -2894,16 +2838,16 @@ def run_setup_wizard(args):
         # missing items" flow (useful after a partial OpenClaw migration
         # or when a required API key got cleared).
         if quick_requested:
-            _run_quick_setup(config, lucifex_home)
+            _run_quick_setup(config, LUCIFEX_HOME)
             return
 
         print()
         print_header("Reconfigure")
-        print_success("You already have Lucifex configured.")
+        print_success("You already have Hermes configured.")
         print_info("Running the full wizard — each prompt shows your current value.")
         print_info("Press Enter to keep it, or type a new value to change it.")
         print_info("")
-        print_info("Tip: jump straight to a section with 'lucifex setup model|terminal|")
+        print_info("Tip: jump straight to a section with 'hermes setup model|terminal|")
         print_info("     gateway|tools|agent', or fill only missing items with --quick.")
         # Fall through to the "Full Setup — run all sections" block below.
         # --reconfigure is now the default on existing installs; the flag
@@ -2919,14 +2863,14 @@ def run_setup_wizard(args):
             print()
 
         # Offer OpenClaw migration before configuration begins
-        migration_ran = _offer_openclaw_migration(lucifex_home)
+        migration_ran = _offer_openclaw_migration(LUCIFEX_HOME)
         if migration_ran:
             config = load_config()
 
         setup_mode = prompt_choice(
-            "How would you like to set up Lucifex?",
+            "How would you like to set up Hermes?",
             [
-                "Quick Setup (Ollama) — free OAuth login, no API keys, model + tools (recommended)",
+                "Quick Setup (Nous Portal) — free OAuth login, no API keys, model + tools (recommended)",
                 "Full setup — configure every provider, tool & option yourself (bring your own keys)",
                 "Blank Slate — everything off except the bare minimum; opt in to each capability",
             ],
@@ -2934,20 +2878,20 @@ def run_setup_wizard(args):
         )
 
         if setup_mode == 0:
-            _run_first_time_quick_setup(config, lucifex_home, is_existing)
+            _run_first_time_quick_setup(config, LUCIFEX_HOME, is_existing)
             return
         if setup_mode == 2:
-            _run_blank_slate_setup(config, lucifex_home, is_existing)
+            _run_blank_slate_setup(config, LUCIFEX_HOME, is_existing)
             return
 
     # ── Full Setup — run all sections ──
     print_header("Configuration Location")
     print_info(f"Config file:  {get_config_path()}")
     print_info(f"Secrets file: {get_env_path()}")
-    print_info(f"Data folder:  {lucifex_home}")
+    print_info(f"Data folder:  {LUCIFEX_HOME}")
     print_info(f"Install dir:  {PROJECT_ROOT}")
     print()
-    print_info("You can edit these files directly or use 'lucifex config edit'")
+    print_info("You can edit these files directly or use 'hermes config edit'")
 
     if migration_ran:
         print()
@@ -2965,7 +2909,7 @@ def run_setup_wizard(args):
 
     # Section 3: Agent Settings — no longer prompted. First installs get the
     # recommended defaults silently; existing installs keep whatever they have.
-    # Tune later with `lucifex setup agent`.
+    # Tune later with `hermes setup agent`.
     if not is_existing:
         _apply_default_agent_settings(config)
 
@@ -2983,26 +2927,26 @@ def run_setup_wizard(args):
         print_info(f"Previous config backed up to: {_backup_path}")
         print_info("If setup changed a value you customized, restore it with:")
         print_info(f"  cp {_backup_path} {config_path}")
-    _print_setup_summary(config, lucifex_home)
+    _print_setup_summary(config, LUCIFEX_HOME)
 
 
-def _run_first_time_quick_setup(config: dict, lucifex_home, is_existing: bool):
-    """Streamlined first-time setup via Ollama: OAuth, model, terminal & messaging.
+def _run_first_time_quick_setup(config: dict, LUCIFEX_HOME, is_existing: bool):
+    """Streamlined first-time setup via Nous Portal: OAuth, model, terminal & messaging.
 
-    Routes straight to the Ollama provider — runs the device-code OAuth
+    Routes straight to the Nous Portal provider — runs the device-code OAuth
     login, picks a Nous model, then configures the terminal backend and (optionally)
     a messaging platform. Applies sensible defaults for everything else (agent
-    settings, tools); the user can customize later via ``lucifex setup <section>``
-    or switch providers with ``lucifex model``.
+    settings, tools); the user can customize later via ``hermes setup <section>``
+    or switch providers with ``hermes model``.
     """
     from lucifex_cli.config import load_config
 
-    # Step 1: Ollama — OAuth login + model selection.
+    # Step 1: Nous Portal — OAuth login + model selection.
     # _model_flow_nous() handles both the logged-out path (device-code OAuth,
     # which selects a model internally) and the already-logged-in path (curated
     # Nous model picker). Provider is set to "nous" by the login/model save.
     print()
-    print_header("Ollama")
+    print_header("Nous Portal")
     print_info("One subscription, 300+ models, plus the Tool Gateway:")
     print_info("  web search, image generation, TTS, browser automation.")
     print_info("Sign up: https://portal.nousresearch.com/manage-subscription")
@@ -3012,11 +2956,11 @@ def _run_first_time_quick_setup(config: dict, lucifex_home, is_existing: bool):
         _model_flow_nous(config)
     except (KeyboardInterrupt, EOFError):
         print()
-        print_info("Ollama setup cancelled.")
+        print_info("Nous Portal setup cancelled.")
     except Exception as exc:
         logger.debug("_model_flow_nous error during quick setup: %s", exc)
-        print_warning(f"Ollama setup encountered an error: {exc}")
-        print_info("You can try again later with: lucifex model")
+        print_warning(f"Nous Portal setup encountered an error: {exc}")
+        print_info("You can try again later with: hermes model")
 
     # Re-sync the wizard's config dict from disk — _model_flow_nous (and the
     # underlying login/model save) write via their own load/save cycle, and the
@@ -3039,7 +2983,7 @@ def _run_first_time_quick_setup(config: dict, lucifex_home, is_existing: bool):
         "Connect a messaging platform? (Telegram, Discord, etc.)",
         [
             "Set up messaging now (recommended)",
-            "Skip — set up later with 'lucifex setup gateway'",
+            "Skip — set up later with 'hermes setup gateway'",
         ],
         0,
     )
@@ -3051,12 +2995,12 @@ def _run_first_time_quick_setup(config: dict, lucifex_home, is_existing: bool):
     print()
     print_success("Setup complete! You're ready to go.")
     print()
-    print_info("  Configure all settings:    lucifex setup")
+    print_info("  Configure all settings:    hermes setup")
     if gateway_choice != 0:
-        print_info("  Connect Telegram/Discord:  lucifex setup gateway")
+        print_info("  Connect Telegram/Discord:  hermes setup gateway")
     print()
 
-    _print_setup_summary(config, lucifex_home)
+    _print_setup_summary(config, LUCIFEX_HOME)
 
 
 def _blank_slate_minimal_toolsets(config: dict):
@@ -3072,7 +3016,7 @@ def _blank_slate_minimal_toolsets(config: dict):
        non-configurable platform-toolset recovery that would otherwise re-add
        toolsets like ``kanban``). We list every known toolset except the two we
        keep, guaranteeing a true blank slate regardless of platform/recovery
-       quirks. The user re-enables any of them later via ``lucifex tools`` (which
+       quirks. The user re-enables any of them later via ``hermes tools`` (which
        rewrites ``platform_toolsets``) or by editing ``agent.disabled_toolsets``.
     """
     keep = {"file", "terminal"}
@@ -3088,10 +3032,16 @@ def _blank_slate_minimal_toolsets(config: dict):
         # Plain (non-composite) TOOLSETS entries — catches recovered toolsets
         # like ``kanban`` that aren't in CONFIGURABLE_TOOLSETS but get re-added.
         for k, tdef in TOOLSETS.items():
-            if k.startswith("lucifex-"):
+            if k.startswith("hermes-"):
                 continue  # platform composites — not user-facing toolsets
             if isinstance(tdef, dict) and tdef.get("includes"):
                 continue  # composite groupings, not leaf toolsets
+            if isinstance(tdef, dict) and tdef.get("posture"):
+                continue  # posture toolsets (e.g. coding) are session-level
+                # selections made by agent/coding_context.py — not permanent
+                # user-facing disables. Adding them here causes model_tools
+                # to subtract their tools (terminal, read_file, …) from the
+                # minimal Blank Slate surface (#57315).
             all_keys.add(k)
 
         disabled = sorted(all_keys - keep)
@@ -3104,8 +3054,8 @@ def _blank_slate_minimal_toolsets(config: dict):
 def _blank_slate_minimize_config(config: dict):
     """Turn OFF the optional config features for a Blank Slate install.
 
-    Everything here is opt-in afterwards via ``lucifex setup agent`` /
-    ``lucifex config set``. We keep only what's needed to run.
+    Everything here is opt-in afterwards via ``hermes setup agent`` /
+    ``hermes config set``. We keep only what's needed to run.
     """
     config.setdefault("agent", {})["max_turns"] = 90
 
@@ -3126,7 +3076,7 @@ def _blank_slate_minimize_config(config: dict):
     config.setdefault("display", {})["tool_progress"] = "all"
 
 
-def _run_blank_slate_setup(config: dict, lucifex_home, is_existing: bool):
+def _run_blank_slate_setup(config: dict, LUCIFEX_HOME, is_existing: bool):
     """Blank Slate setup — start with everything off except the bare minimum.
 
     Forces only the essentials to run an agent (provider + model, the file and
@@ -3185,7 +3135,7 @@ def _run_blank_slate_setup(config: dict, lucifex_home, is_existing: bool):
     if path == 0:
         save_config(config)
         # Blank Slate means no bundled skills; record the opt-out so future
-        # `lucifex update` runs don't re-inject them.
+        # `hermes update` runs don't re-inject them.
         try:
             from tools.skills_sync import set_bundled_skills_opt_out
             set_bundled_skills_opt_out(True)
@@ -3194,20 +3144,20 @@ def _run_blank_slate_setup(config: dict, lucifex_home, is_existing: bool):
         print()
         print_success("Blank Slate setup complete — minimal agent ready.")
         print_info("Enable anything later, on demand:")
-        print_info("  Enable tools:        lucifex tools")
-        print_info("  Seed skills:         lucifex skills opt-in --sync")
-        print_info("  Add MCP servers:     lucifex mcp add")
-        print_info("  Enable plugins:      lucifex plugins")
-        print_info("  Tune agent settings: lucifex setup agent")
+        print_info("  Enable tools:        hermes tools")
+        print_info("  Seed skills:         hermes skills opt-in --sync")
+        print_info("  Add MCP servers:     hermes mcp add")
+        print_info("  Enable plugins:      hermes plugins")
+        print_info("  Tune agent settings: hermes setup agent")
         print()
-        _print_setup_summary(config, lucifex_home)
+        _print_setup_summary(config, LUCIFEX_HOME)
         return
 
     # ── Walkthrough path — opt in to each capability ──
-    _blank_slate_walkthrough(config, lucifex_home)
+    _blank_slate_walkthrough(config, LUCIFEX_HOME)
 
 
-def _blank_slate_walkthrough(config: dict, lucifex_home):
+def _blank_slate_walkthrough(config: dict, LUCIFEX_HOME):
     """Opt-in walkthrough for Blank Slate: skills, tools, plugins, MCP, gateway."""
     from lucifex_cli.config import load_config
 
@@ -3230,8 +3180,8 @@ def _blank_slate_walkthrough(config: dict, lucifex_home):
         else:
             set_bundled_skills_opt_out(True)
             print_info("No skills seeded. A .no-bundled-skills marker keeps future")
-            print_info("`lucifex update` runs from re-injecting them. Opt back in any")
-            print_info("time with `lucifex skills opt-in --sync`.")
+            print_info("`hermes update` runs from re-injecting them. Opt back in any")
+            print_info("time with `hermes skills opt-in --sync`.")
     except Exception as exc:
         logger.debug("blank-slate skill handling error: %s", exc)
         print_warning(f"Skill setup step encountered an error: {exc}")
@@ -3254,23 +3204,23 @@ def _blank_slate_walkthrough(config: dict, lucifex_home):
             logger.debug("blank-slate tools_command error: %s", exc)
             print_warning(f"Tool selector encountered an error: {exc}")
     else:
-        print_info("Keeping the minimal toolset. Add tools later with `lucifex tools`.")
+        print_info("Keeping the minimal toolset. Add tools later with `hermes tools`.")
 
     # ── Built-in plugins (off unless chosen) ──
     print()
     print_header("Plugins")
     if prompt_yes_no("Review and enable built-in plugins now?", default=False):
-        print_info("Manage plugins with `lucifex plugins list` / `lucifex plugins install`.")
+        print_info("Manage plugins with `hermes plugins list` / `hermes plugins install`.")
     else:
-        print_info("No plugins enabled. Add later with `lucifex plugins`.")
+        print_info("No plugins enabled. Add later with `hermes plugins`.")
 
     # ── MCP servers (off unless chosen) ──
     print()
     print_header("MCP Servers")
     if prompt_yes_no("Add an MCP server now?", default=False):
-        print_info("Add servers with `lucifex mcp add <name> --url ... | --command ...`.")
+        print_info("Add servers with `hermes mcp add <name> --url ... | --command ...`.")
     else:
-        print_info("No MCP servers configured. Add later with `lucifex mcp add`.")
+        print_info("No MCP servers configured. Add later with `hermes mcp add`.")
 
     # ── Optional messaging gateway ──
     print()
@@ -3281,16 +3231,16 @@ def _blank_slate_walkthrough(config: dict, lucifex_home):
 
     print()
     print_success("Blank Slate setup complete — minimal agent ready.")
-    print_info("  Enable more tools:   lucifex tools")
-    print_info("  Seed skills:         lucifex skills opt-in --sync")
-    print_info("  Add MCP servers:     lucifex mcp add")
-    print_info("  Tune agent settings: lucifex setup agent")
+    print_info("  Enable more tools:   hermes tools")
+    print_info("  Seed skills:         hermes skills opt-in --sync")
+    print_info("  Add MCP servers:     hermes mcp add")
+    print_info("  Tune agent settings: hermes setup agent")
     print()
 
-    _print_setup_summary(config, lucifex_home)
+    _print_setup_summary(config, LUCIFEX_HOME)
 
 
-def _run_quick_setup(config: dict, lucifex_home):
+def _run_quick_setup(config: dict, LUCIFEX_HOME):
     """Quick setup — only configure items that are missing."""
     from lucifex_cli.config import (
         get_missing_env_vars,
@@ -3321,7 +3271,7 @@ def _run_quick_setup(config: dict, lucifex_home):
     if not has_anything_missing:
         print_success("Everything is configured! Nothing to do.")
         print()
-        print_info("Run 'lucifex setup' and choose 'Full Setup' to reconfigure,")
+        print_info("Run 'hermes setup' and choose 'Full Setup' to reconfigure,")
         print_info("or pick a specific section from the menu.")
         return
 
@@ -3383,8 +3333,8 @@ def _run_quick_setup(config: dict, lucifex_home):
     if missing_messaging:
         print()
         print_header("Messaging Platforms")
-        print_info("Connect Lucifex to messaging apps to chat from anywhere.")
-        print_info("You can configure these later with 'lucifex setup gateway'.")
+        print_info("Connect Hermes to messaging apps to chat from anywhere.")
+        print_info("You can configure these later with 'hermes setup gateway'.")
 
         # Group by platform (preserving order)
         platform_order = []
@@ -3453,4 +3403,4 @@ def _run_quick_setup(config: dict, lucifex_home):
         save_config(config)
 
     # Jump to summary
-    _print_setup_summary(config, lucifex_home)
+    _print_setup_summary(config, LUCIFEX_HOME)

@@ -1,4 +1,4 @@
-"""Tests for tools/image_source.py — the unified vision image-source resolver.
+﻿"""Tests for tools/image_source.py — the unified vision image-source resolver.
 
 Covers the delivery contract (data:/http/file/local/container source handling,
 size cap, magic-byte sniff) AND the terminal-backend confinement security model
@@ -19,10 +19,10 @@ PNG = b"\x89PNG\r\n\x1a\n" + b"\x00" * 64
 JPEG = b"\xff\xd8\xff" + b"\x00" * 64
 
 
-def _reload(monkeypatch, hermes_home: Path):
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-    import hermes_constants
-    importlib.reload(hermes_constants)
+def _reload(monkeypatch, LUCIFEX_HOME: Path):
+    monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
+    import lucifex_constants
+    importlib.reload(lucifex_constants)
     import tools.image_source as isrc
     importlib.reload(isrc)
     return isrc

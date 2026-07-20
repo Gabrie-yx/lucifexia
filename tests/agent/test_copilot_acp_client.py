@@ -1,4 +1,4 @@
-"""Focused regressions for the Copilot ACP shim safety layer."""
+﻿"""Focused regressions for the Copilot ACP shim safety layer."""
 
 from __future__ import annotations
 
@@ -164,7 +164,7 @@ class CopilotACPClientSafetyTests(unittest.TestCase):
 
             with patch.dict(
                 os.environ,
-                {"HOME": str(home), "HERMES_HOME": str(home / ".hermes")},
+                {"HOME": str(home), "LUCIFEX_HOME": str(home / ".hermes")},
                 clear=False,
             ):
                 response = self._dispatch(
@@ -285,13 +285,13 @@ def _fake_popen_capture(captured):
 
 
 def test_run_prompt_preserves_real_home_when_profile_home_available(monkeypatch, tmp_path):
-    hermes_home = tmp_path / "hermes"
-    (hermes_home / "home").mkdir(parents=True)
+    LUCIFEX_HOME = tmp_path / "hermes"
+    (LUCIFEX_HOME / "home").mkdir(parents=True)
     real_home = tmp_path / "real-home"
     real_home.mkdir()
 
     monkeypatch.setenv("HOME", str(real_home))
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
 
     captured = {}
     client = _make_home_client(tmp_path)
@@ -306,7 +306,7 @@ def test_run_prompt_preserves_real_home_when_profile_home_available(monkeypatch,
 
 def test_run_prompt_passes_home_when_parent_env_is_clean(monkeypatch, tmp_path):
     monkeypatch.delenv("HOME", raising=False)
-    monkeypatch.delenv("HERMES_HOME", raising=False)
+    monkeypatch.delenv("LUCIFEX_HOME", raising=False)
 
     captured = {}
     client = _make_home_client(tmp_path)

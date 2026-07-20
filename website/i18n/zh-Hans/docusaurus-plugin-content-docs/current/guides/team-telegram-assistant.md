@@ -150,26 +150,26 @@ sudo hermes gateway install --system   # 仅 Linux：开机启动的系统服务
 
 ```bash
 # Linux——管理默认用户服务
-hermes gateway start
-hermes gateway stop
+lucifex gateway start
+lucifex gateway stop
 hermes gateway status
 
 # 查看实时日志
-journalctl --user -u hermes-gateway -f
+journalctl --user -u lucifex-gateway -f
 
 # SSH 退出后保持运行
 sudo loginctl enable-linger $USER
 
 # Linux 服务器——显式系统服务命令
-sudo hermes gateway start --system
+sudo lucifex gateway start --system
 sudo hermes gateway status --system
-journalctl -u hermes-gateway -f
+journalctl -u lucifex-gateway -f
 ```
 
 ```bash
 # macOS——管理服务
-hermes gateway start
-hermes gateway stop
+lucifex gateway start
+lucifex gateway stop
 tail -f ~/.hermes/logs/gateway.log
 ```
 
@@ -203,7 +203,7 @@ TELEGRAM_ALLOWED_USERS=123456789,987654321,555555555
 修改后重启 gateway：
 
 ```bash
-hermes gateway stop && hermes gateway start
+lucifex gateway stop && lucifex gateway start
 ```
 
 ### 方式 B：私信配对（推荐用于团队）
@@ -397,7 +397,7 @@ terminal:
 hermes gateway status
 
 # 查看实时日志（Linux）
-journalctl --user -u hermes-gateway -f
+journalctl --user -u lucifex-gateway -f
 
 # 查看实时日志（macOS）
 tail -f ~/.hermes/logs/gateway.log
@@ -409,14 +409,14 @@ tail -f ~/.hermes/logs/gateway.log
 
 ```bash
 hermes update
-hermes gateway stop && hermes gateway start
+lucifex gateway stop && lucifex gateway start
 ```
 
 ### 日志位置
 
 | 内容 | 位置 |
 |------|----------|
-| Gateway 日志 | `journalctl --user -u hermes-gateway`（Linux）或 `~/.hermes/logs/gateway.log`（macOS） |
+| Gateway 日志 | `journalctl --user -u lucifex-gateway`（Linux）或 `~/.hermes/logs/gateway.log`（macOS） |
 | Cron 任务输出 | `~/.hermes/cron/output/{job_id}/{timestamp}.md` |
 | Cron 任务定义 | `~/.hermes/cron/jobs.json` |
 | 配对数据 | `~/.hermes/pairing/` |

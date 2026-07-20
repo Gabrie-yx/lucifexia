@@ -1,4 +1,4 @@
-export interface ConfigFieldSchema {
+﻿export interface ConfigFieldSchema {
   category?: string
   description?: string
   options?: unknown[]
@@ -110,7 +110,7 @@ export interface EnvVarInfo {
   is_password: boolean
   is_set: boolean
   // Backend-derived provider grouping hints (from the unified provider catalog
-  // in hermes_cli/provider_catalog.py). When present, the Keys tab groups by
+  // in lucifex_cli/provider_catalog.py). When present, the Keys tab groups by
   // this provider identity — the SAME one `hermes model` uses — instead of
   // desktop-only env-var prefix guesses. Empty for non-provider env vars.
   provider?: string
@@ -676,7 +676,7 @@ export interface ProfileSetupCommand {
 
 // ── Projects ───────────────────────────────────────────────────────────────
 // A first-class, per-profile, human-named workspace spanning one or more
-// folders. Mirrors hermes_cli/projects_db.Project.to_dict().
+// folders. Mirrors lucifex_cli/projects_db.Project.to_dict().
 export interface ProjectFolder {
   path: string
   label: null | string
@@ -917,7 +917,7 @@ export interface StatusResponse {
   gateway_running: boolean
   gateway_state: string | null
   gateway_updated_at: string | null
-  hermes_home: string
+  LUCIFEX_HOME: string
   latest_config_version: number
   release_date: string
   version: string

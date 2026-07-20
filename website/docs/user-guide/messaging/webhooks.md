@@ -534,7 +534,7 @@ This is the same trust model that applies to everything the agent reads: web pag
 
 ### Agent not responding
 
-- Run the gateway in foreground to see logs: `hermes gateway run`
+- Run the gateway in foreground to see logs: `lucifex gateway run`
 - Check that the prompt template is rendering correctly
 - Verify the delivery target is configured and connected
 

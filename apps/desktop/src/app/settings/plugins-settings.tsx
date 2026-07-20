@@ -1,4 +1,4 @@
-import { useStore } from '@nanostores/react'
+﻿import { useStore } from '@nanostores/react'
 
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
@@ -22,10 +22,10 @@ function reveal(file: string) {
 
 async function revealPluginsDir() {
   try {
-    const { hermes_home } = await getStatus()
+    const { LUCIFEX_HOME } = await getStatus()
     // openDir (not reveal): the door often doesn't exist on first use, and
     // showItemInFolder on a missing path silently no-ops (esp. Windows).
-    const result = await window.hermesDesktop?.openDir?.(`${hermes_home}/desktop-plugins`)
+    const result = await window.hermesDesktop?.openDir?.(`${LUCIFEX_HOME}/desktop-plugins`)
 
     if (result && !result.ok) {
       notifyError(result.error ?? 'unknown error', 'Could not open the plugins folder')

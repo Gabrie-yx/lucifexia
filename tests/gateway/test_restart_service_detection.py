@@ -1,4 +1,4 @@
-"""Tests for /restart service-manager detection (launchd vs interactive).
+﻿"""Tests for /restart service-manager detection (launchd vs interactive).
 
 The /restart handler routes through ``request_restart(via_service=True)``
 when a service manager supervises the gateway, so the process exits with
@@ -35,7 +35,7 @@ def _make_restart_event(update_id: int | None = 100) -> MessageEvent:
 
 
 def _make_runner_with_mock_restart(tmp_path, monkeypatch):
-    monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
+    monkeypatch.setattr(gateway_run, "_LUCIFEX_HOME", tmp_path)
     monkeypatch.delenv("INVOCATION_ID", raising=False)
     monkeypatch.delenv("XPC_SERVICE_NAME", raising=False)
     monkeypatch.delenv("HERMES_S6_SUPERVISED_CHILD", raising=False)

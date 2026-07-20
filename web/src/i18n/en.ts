@@ -136,7 +136,7 @@ export const en: Translations = {
       "This runs hermes update and restarts the gateway when it finishes. Active sessions keep their prompt cache until then.",
     updateHermesConfirmNow: "Update now",
     updateHermesConfirmTitle: "Update Hermes?",
-    updatingHermes: "Updating Hermes…",
+    updatingHermes: "Updating Lucifex…",
     waitingForOutput: "Waiting for output…",
   },
 

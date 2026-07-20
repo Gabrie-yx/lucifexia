@@ -9,7 +9,7 @@ Defaults: picks the session with the most messages, holds PageUp for 8s at
 
 The --tui build must exist (run `npm run build` in ui-tui first). This script
 launches `node dist/entry.js` directly with HERMES_TUI_RESUME set so it
-bypasses the hermes_cli wrapper — we want repeatable timing, not the CLI's
+bypasses the lucifex_cli wrapper — we want repeatable timing, not the CLI's
 session-picker flow.
 
 Environment overrides:
@@ -38,18 +38,18 @@ from typing import Any
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_PROJECT_ROOT))
 try:
-    from hermes_constants import get_hermes_home
+    from lucifex_constants import get_lucifex_home
 except ImportError:
-    def get_hermes_home() -> Path:  # type: ignore[misc]
-        val = (os.environ.get("HERMES_HOME") or "").strip()
+    def get_lucifex_home() -> Path:  # type: ignore[misc]
+        val = (os.environ.get("LUCIFEX_HOME") or "").strip()
         return Path(val) if val else Path.home() / ".hermes"
 
 DEFAULT_TUI_DIR = Path(
     os.environ.get("HERMES_TUI_DIR")
     or str(Path(__file__).resolve().parent.parent / "ui-tui")
 )
-DEFAULT_LOG = Path(os.environ.get("HERMES_PERF_LOG", str(get_hermes_home() / "perf.log")))
-DEFAULT_STATE_DB = get_hermes_home() / "state.db"
+DEFAULT_LOG = Path(os.environ.get("HERMES_PERF_LOG", str(get_lucifex_home() / "perf.log")))
+DEFAULT_STATE_DB = get_lucifex_home() / "state.db"
 
 # Keystroke escape sequences.  Matches what xterm/VT220 send when the
 # terminal has bracketed-paste disabled and the key-repeat handler fires.

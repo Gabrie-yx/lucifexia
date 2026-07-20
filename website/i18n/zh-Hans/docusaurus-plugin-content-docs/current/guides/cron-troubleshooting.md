@@ -38,7 +38,7 @@ hermes cron list
 
 Cron 任务由 gateway 的后台 ticker 线程触发，该线程每 60 秒 tick 一次。普通的 CLI 聊天会话**不会**自动触发 cron 任务。
 
-如果你期望任务自动触发，需要运行一个 gateway（前台运行用 `hermes gateway`，安装为服务用 `hermes gateway start`）。如需单次调试，可手动触发一次 tick：`hermes cron tick`。
+如果你期望任务自动触发，需要运行一个 gateway（前台运行用 `hermes gateway`，安装为服务用 `lucifex gateway start`）。如需单次调试，可手动触发一次 tick：`hermes cron tick`。
 
 ### 检查 4：检查系统时钟和时区
 
@@ -214,7 +214,7 @@ hermes skills list                  # 确认已安装的 skill
 
 1. 使用 `hermes cron run <job_id>` 运行任务（在下次 gateway tick 时触发），观察聊天输出中的错误
 2. 查看 `~/.hermes/logs/agent.log` 中的调度器消息和 `~/.hermes/logs/errors.log` 中的警告
-3. 在 [github.com/NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent) 提交 issue，并附上：
+3. 在 [github.com/NousResearch/lucifex-agent](https://github.com/NousResearch/lucifex-agent) 提交 issue，并附上：
    - 任务 ID 和调度表达式
    - 投递目标
    - 预期行为与实际行为

@@ -192,7 +192,7 @@ that exits as soon as the message is delivered.
 A live gateway is only required for **plugin platforms** that rely on a
 persistent adapter connection (for example, a custom plugin that keeps
 a long-lived WebSocket open). In that case you'll get a clear error
-pointing at the gateway; start it with `hermes gateway start` and retry.
+pointing at the gateway; start it with `lucifex gateway start` and retry.
 
 ---
 

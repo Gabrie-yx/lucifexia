@@ -1,4 +1,4 @@
-"""Windows gateway service backend (Scheduled Task + Startup-folder fallback).
+﻿"""Windows gateway service backend (Scheduled Task + Startup-folder fallback).
 
 This mirrors the contract exposed by ``launchd_install`` / ``launchd_start`` /
 ``launchd_status`` etc. on macOS and ``systemd_install`` / ``systemd_start`` on
@@ -55,8 +55,8 @@ _FALLBACK_PATTERNS = re.compile(
 )
 _ACCESS_DENIED_PATTERN = re.compile(r"(access is denied|acceso denegado)", re.IGNORECASE)
 
-_TASK_NAME_DEFAULT = "Lucifex_Gateway"
-_TASK_DESCRIPTION = "Lucifex Agent Gateway - Messaging Platform Integration"
+_TASK_NAME_DEFAULT = "Hermes_Gateway"
+_TASK_DESCRIPTION = "Hermes Agent Gateway - Messaging Platform Integration"
 _TASK_LOGON_DELAY = "PT30S"
 _TASK_RESTART_INTERVAL = "PT1M"
 _TASK_RESTART_COUNT = 999
@@ -85,10 +85,10 @@ def _assert_windows() -> None:
         raise RuntimeError("gateway_windows is Windows-only")
 
 
-def _preserve_lucifex_home_path(path: str | Path) -> str:
-    """Render Lucifex-owned paths under the configured LUCIFEX_HOME spelling.
+def _preserve_LUCIFEX_HOME_path(path: str | Path) -> str:
+    """Render Hermes-owned paths under the configured LUCIFEX_HOME spelling.
 
-    Windows installs may keep ``%LOCALAPPDATA%\\lucifex`` as a symlink/junction to
+    Windows installs may keep ``%LOCALAPPDATA%\\hermes`` as a symlink/junction to
     another drive. Runtime state should still identify itself by the configured
     AppData path, so launcher files must not bake in the resolved target when a
     path lives under LUCIFEX_HOME.
@@ -198,7 +198,7 @@ def _is_running_as_admin() -> bool:
 
 
 def _current_profile_cli_args() -> list[str]:
-    """Return CLI args that preserve the current Lucifex profile."""
+    """Return CLI args that preserve the current Hermes profile."""
     from lucifex_cli.gateway import _profile_arg
 
     profile_arg = _profile_arg()
@@ -244,15 +244,15 @@ def _launch_elevated_install(
     start_on_login: bool | None = None,
 ) -> bool:
     """Launch an elevated gateway install via UAC and return True on handoff."""
-    old_start_now = os.environ.get("LUCIFEX_GATEWAY_INSTALL_START_NOW")
-    old_start_on_login = os.environ.get("LUCIFEX_GATEWAY_INSTALL_START_ON_LOGIN")
-    old_handoff = os.environ.get("LUCIFEX_GATEWAY_ELEVATED_HANDOFF")
+    old_start_now = os.environ.get("HERMES_GATEWAY_INSTALL_START_NOW")
+    old_start_on_login = os.environ.get("HERMES_GATEWAY_INSTALL_START_ON_LOGIN")
+    old_handoff = os.environ.get("HERMES_GATEWAY_ELEVATED_HANDOFF")
     try:
         if start_now is not None:
-            os.environ["LUCIFEX_GATEWAY_INSTALL_START_NOW"] = "1" if start_now else "0"
+            os.environ["HERMES_GATEWAY_INSTALL_START_NOW"] = "1" if start_now else "0"
         if start_on_login is not None:
-            os.environ["LUCIFEX_GATEWAY_INSTALL_START_ON_LOGIN"] = "1" if start_on_login else "0"
-        os.environ["LUCIFEX_GATEWAY_ELEVATED_HANDOFF"] = "1"
+            os.environ["HERMES_GATEWAY_INSTALL_START_ON_LOGIN"] = "1" if start_on_login else "0"
+        os.environ["HERMES_GATEWAY_ELEVATED_HANDOFF"] = "1"
         extra_args = ["--elevated-handoff"]
         if force:
             extra_args.append("--force")
@@ -263,9 +263,9 @@ def _launch_elevated_install(
         return _launch_elevated_gateway_command("install", extra_args)
     finally:
         for key, old in (
-            ("LUCIFEX_GATEWAY_INSTALL_START_NOW", old_start_now),
-            ("LUCIFEX_GATEWAY_INSTALL_START_ON_LOGIN", old_start_on_login),
-            ("LUCIFEX_GATEWAY_ELEVATED_HANDOFF", old_handoff),
+            ("HERMES_GATEWAY_INSTALL_START_NOW", old_start_now),
+            ("HERMES_GATEWAY_INSTALL_START_ON_LOGIN", old_start_on_login),
+            ("HERMES_GATEWAY_ELEVATED_HANDOFF", old_handoff),
         ):
             if old is None:
                 os.environ.pop(key, None)
@@ -285,8 +285,8 @@ def _launch_elevated_uninstall() -> bool:
 def get_task_name() -> str:
     """Scheduled Task name, scoped per profile.
 
-    Default profile: ``Lucifex_Gateway``
-    Named profile X: ``Lucifex_Gateway_<X>``
+    Default profile: ``Hermes_Gateway``
+    Named profile X: ``Hermes_Gateway_<X>``
     """
     _assert_windows()
     # Local import to avoid circular module initialization during lucifex_cli boot.
@@ -306,9 +306,9 @@ def _sanitize_filename(value: str) -> str:
 def get_task_script_path() -> Path:
     """The generated ``gateway.cmd`` wrapper kept beside the VBS launcher.
 
-    Lives under ``%LOCALAPPDATA%\\lucifex\\gateway-service\\<task_name>.cmd``
+    Lives under ``%LOCALAPPDATA%\\hermes\\gateway-service\\<task_name>.cmd``
     (or ``<LUCIFEX_HOME>/gateway-service/<task_name>.cmd`` so per-profile
-    Lucifex installs stay self-contained).
+    Hermes installs stay self-contained).
     """
     _assert_windows()
     from lucifex_cli.config import get_lucifex_home
@@ -381,7 +381,7 @@ def _stable_gateway_working_dir(project_root: Path) -> str:
 def _build_gateway_cmd_script(
     python_path: str,
     working_dir: str,
-    lucifex_home: str,
+    LUCIFEX_HOME: str,
     profile_arg: str,
 ) -> str:
     """Build the ``gateway.cmd`` wrapper content (CRLF-terminated).
@@ -398,16 +398,16 @@ def _build_gateway_cmd_script(
     """
     lines = ["@echo off", f"rem {_TASK_DESCRIPTION}"]
     lines.append(f"cd /d {_quote_cmd_script_arg(working_dir)}")
-    lines.append(f'set "LUCIFEX_HOME={lucifex_home}"')
+    lines.append(f'set "LUCIFEX_HOME={LUCIFEX_HOME}"')
     lines.append('set "PYTHONIOENCODING=utf-8"')
-    lines.append('set "LUCIFEX_GATEWAY_DETACHED=1"')
+    lines.append('set "HERMES_GATEWAY_DETACHED=1"')
     pythonw_path, venv_dir, extra_pythonpath = _resolve_detached_python(python_path)
     # VIRTUAL_ENV lets the gateway's own python detection find the venv
     # if someone imports lucifex_constants-based logic during startup.
-    lines.append(f'set "VIRTUAL_ENV={_preserve_lucifex_home_path(venv_dir)}"')
+    lines.append(f'set "VIRTUAL_ENV={_preserve_LUCIFEX_HOME_path(venv_dir)}"')
     pythonpath_entries = [
-        _preserve_lucifex_home_path(Path(__file__).resolve().parent.parent),
-        *[_preserve_lucifex_home_path(entry) for entry in extra_pythonpath],
+        _preserve_LUCIFEX_HOME_path(Path(__file__).resolve().parent.parent),
+        *[_preserve_LUCIFEX_HOME_path(entry) for entry in extra_pythonpath],
     ]
     lines.append(f'set "PYTHONPATH={";".join([*pythonpath_entries, "%PYTHONPATH%"])}"')
 
@@ -440,7 +440,7 @@ def _quote_vbs_string(value: str) -> str:
 def _build_gateway_vbs_script(
     python_path: str,
     working_dir: str,
-    lucifex_home: str,
+    LUCIFEX_HOME: str,
     profile_arg: str,
 ) -> str:
     """Build a console-less ``gateway.vbs`` launcher (CRLF-terminated).
@@ -469,9 +469,9 @@ def _build_gateway_vbs_script(
     # list2cmdline gives CreateProcess-correct quoting for WScript.Shell.Run.
     command_line = subprocess.list2cmdline(prog_args)
 
-    repo_root = _preserve_lucifex_home_path(Path(__file__).resolve().parent.parent)
+    repo_root = _preserve_LUCIFEX_HOME_path(Path(__file__).resolve().parent.parent)
     static_pythonpath = os.pathsep.join(
-        [repo_root, *[_preserve_lucifex_home_path(entry) for entry in extra_pythonpath]]
+        [repo_root, *[_preserve_LUCIFEX_HOME_path(entry) for entry in extra_pythonpath]]
     )
 
     lines = [
@@ -480,10 +480,10 @@ def _build_gateway_vbs_script(
         "Dim sh, env, existing_pp",
         'Set sh = CreateObject("WScript.Shell")',
         'Set env = sh.Environment("PROCESS")',
-        f"env.Item({_quote_vbs_string('LUCIFEX_HOME')}) = {_quote_vbs_string(lucifex_home)}",
+        f"env.Item({_quote_vbs_string('LUCIFEX_HOME')}) = {_quote_vbs_string(LUCIFEX_HOME)}",
         f"env.Item({_quote_vbs_string('PYTHONIOENCODING')}) = {_quote_vbs_string('utf-8')}",
-        f"env.Item({_quote_vbs_string('LUCIFEX_GATEWAY_DETACHED')}) = {_quote_vbs_string('1')}",
-        f"env.Item({_quote_vbs_string('VIRTUAL_ENV')}) = {_quote_vbs_string(_preserve_lucifex_home_path(venv_dir))}",
+        f"env.Item({_quote_vbs_string('HERMES_GATEWAY_DETACHED')}) = {_quote_vbs_string('1')}",
+        f"env.Item({_quote_vbs_string('VIRTUAL_ENV')}) = {_quote_vbs_string(_preserve_LUCIFEX_HOME_path(venv_dir))}",
         # Mirror the cmd wrapper's ``PYTHONPATH=<static>;%PYTHONPATH%``: chain onto
         # whatever PYTHONPATH the task environment already carries, at runtime.
         f"existing_pp = env.Item({_quote_vbs_string('PYTHONPATH')})",
@@ -535,12 +535,12 @@ def _write_task_script() -> Path:
         get_python_path,
     )
 
-    python_path = _preserve_lucifex_home_path(get_python_path())
+    python_path = _preserve_LUCIFEX_HOME_path(get_python_path())
     working_dir = _stable_gateway_working_dir(PROJECT_ROOT)
-    lucifex_home = str(Path(get_lucifex_home()))
-    profile_arg = _profile_arg(lucifex_home)
+    LUCIFEX_HOME = str(Path(get_lucifex_home()))
+    profile_arg = _profile_arg(LUCIFEX_HOME)
 
-    content = _build_gateway_cmd_script(python_path, working_dir, lucifex_home, profile_arg)
+    content = _build_gateway_cmd_script(python_path, working_dir, LUCIFEX_HOME, profile_arg)
     script_path = get_task_script_path()
     tmp = script_path.with_suffix(".tmp")
     tmp.write_text(content, encoding="utf-8", newline="")
@@ -549,7 +549,7 @@ def _write_task_script() -> Path:
     # Also render the console-less .vbs launcher used by Scheduled Task and the
     # Startup-folder fallback via wscript.exe (issue #45599 fix A). The .cmd
     # wrapper stays as a generated helper/compatibility artifact.
-    vbs_content = _build_gateway_vbs_script(python_path, working_dir, lucifex_home, profile_arg)
+    vbs_content = _build_gateway_vbs_script(python_path, working_dir, LUCIFEX_HOME, profile_arg)
     vbs_path = script_path.with_suffix(".vbs")
     vbs_tmp = vbs_path.with_name(vbs_path.name + ".tmp")
     vbs_tmp.write_text(vbs_content, encoding="utf-8", newline="")
@@ -643,7 +643,7 @@ def _write_scheduled_task_xml(task_name: str, launcher_path: Path, user: str | N
 def _install_scheduled_task(task_name: str, script_path: Path) -> tuple[bool, str]:
     """Create or replace the Scheduled Task. Returns (success, detail).
 
-    Always recreate instead of ``/Change``. Older Lucifex builds and failed
+    Always recreate instead of ``/Change``. Older Hermes builds and failed
     experiments may have left repeat/restart settings on the task; ``/Change``
     preserves those stale triggers and can make the gateway relaunch every
     minute. Delete+create gives us a clean ONLOGON task every install.
@@ -782,12 +782,12 @@ def _build_gateway_argv() -> tuple[list[str], str, dict[str, str]]:
     )
 
     python_exe, venv_dir, extra_pythonpath = _resolve_detached_python(
-        _preserve_lucifex_home_path(get_python_path())
+        _preserve_LUCIFEX_HOME_path(get_python_path())
     )
-    project_root = _preserve_lucifex_home_path(PROJECT_ROOT)
+    project_root = _preserve_LUCIFEX_HOME_path(PROJECT_ROOT)
     working_dir = _stable_gateway_working_dir(PROJECT_ROOT)
-    lucifex_home = str(Path(get_lucifex_home()))
-    profile_arg = _profile_arg(lucifex_home)
+    LUCIFEX_HOME = str(Path(get_lucifex_home()))
+    profile_arg = _profile_arg(LUCIFEX_HOME)
 
     argv = [python_exe, "-m", "lucifex_cli.main"]
     if profile_arg:
@@ -795,14 +795,14 @@ def _build_gateway_argv() -> tuple[list[str], str, dict[str, str]]:
     argv.extend(["gateway", "run"])
 
     env_overlay = {
-        "LUCIFEX_HOME": lucifex_home,
+        "LUCIFEX_HOME": LUCIFEX_HOME,
         "PYTHONIOENCODING": "utf-8",
-        "LUCIFEX_GATEWAY_DETACHED": "1",
-        "VIRTUAL_ENV": _preserve_lucifex_home_path(venv_dir),
+        "HERMES_GATEWAY_DETACHED": "1",
+        "VIRTUAL_ENV": _preserve_LUCIFEX_HOME_path(venv_dir),
     }
     _prepend_pythonpath(
         env_overlay,
-        [project_root, *[_preserve_lucifex_home_path(entry) for entry in extra_pythonpath]]
+        [project_root, *[_preserve_LUCIFEX_HOME_path(entry) for entry in extra_pythonpath]]
         if extra_pythonpath
         else [project_root],
     )
@@ -862,17 +862,17 @@ def windowless_gateway_restart_spec(
     working_dir = _stable_gateway_working_dir(PROJECT_ROOT)
     project_root = str(PROJECT_ROOT)
     try:
-        lucifex_home = str(Path(get_lucifex_home()).resolve())
+        LUCIFEX_HOME = str(Path(get_lucifex_home()).resolve())
     except Exception:
-        lucifex_home = ""
+        LUCIFEX_HOME = ""
 
     env_overlay: dict[str, str] = {
         "PYTHONIOENCODING": "utf-8",
-        "LUCIFEX_GATEWAY_DETACHED": "1",
+        "HERMES_GATEWAY_DETACHED": "1",
         "VIRTUAL_ENV": str(venv_dir),
     }
-    if lucifex_home:
-        env_overlay["LUCIFEX_HOME"] = lucifex_home
+    if LUCIFEX_HOME:
+        env_overlay["LUCIFEX_HOME"] = LUCIFEX_HOME
     _prepend_pythonpath(
         env_overlay,
         [project_root, *extra_pythonpath] if extra_pythonpath else [project_root],
@@ -973,8 +973,8 @@ def _prompt_install_choices(
     start_on_login: bool | None = None,
 ) -> tuple[bool, bool]:
     """Return (start_now, start_on_login), asking before any UAC escalation."""
-    env_start_now = _install_choice_from_env("LUCIFEX_GATEWAY_INSTALL_START_NOW")
-    env_start_on_login = _install_choice_from_env("LUCIFEX_GATEWAY_INSTALL_START_ON_LOGIN")
+    env_start_now = _install_choice_from_env("HERMES_GATEWAY_INSTALL_START_NOW")
+    env_start_on_login = _install_choice_from_env("HERMES_GATEWAY_INSTALL_START_ON_LOGIN")
     if start_now is None:
         start_now = env_start_now
     if start_on_login is None:
@@ -1001,7 +1001,7 @@ def _install_startup_fallback(script_path: Path, start_now: bool, detail: str) -
     print(f"✓ Installed Windows login item: {entry}")
     print(f"  Task script: {script_path}")
 
-    # Re-running `lucifex -p <profile> gateway install` must be safe.
+    # Re-running `hermes -p <profile> gateway install` must be safe.
     # Startup-folder fallback only installs login persistence. Starting is
     # controlled by the pre-UAC start_now answer so all user decisions happen
     # before any elevation prompt.
@@ -1015,7 +1015,7 @@ def _install_startup_fallback(script_path: Path, start_now: bool, detail: str) -
         _report_gateway_start(f"direct spawn (PID {pid})")
     else:
         profile_arg = _profile_arg()
-        start_cmd = f"lucifex {profile_arg} gateway start" if profile_arg else "lucifex gateway start"
+        start_cmd = f"hermes {profile_arg} gateway start" if profile_arg else "lucifex gateway start"
         print("ℹ Startup fallback installed; gateway not started now.")
         print(f"  Start manually with: {start_cmd}")
     _print_next_steps()
@@ -1065,11 +1065,11 @@ def install(
         print("  UAC is Windows' admin approval prompt; it is needed to create/update the Scheduled Task.")
         if prompt_yes_no("  Open the UAC prompt now?", False):
             if _launch_elevated_install(force=force, start_now=start_now, start_on_login=start_on_login):
-                print("✓ Launched elevated Lucifex gateway install prompt.")
+                print("✓ Launched elevated Hermes gateway install prompt.")
                 if start_now:
                     print("  Approve the Windows UAC prompt; the elevated install will start the gateway afterwards.")
                 else:
-                    print("  Approve the Windows UAC prompt, then run: lucifex gateway status")
+                    print("  Approve the Windows UAC prompt, then run: hermes gateway status")
                 return
             print("⚠ Falling back to Startup folder because elevation was unavailable or cancelled.")
         else:
@@ -1106,11 +1106,11 @@ def install(
         print("  UAC is Windows' admin approval prompt; it is needed to create/update the Scheduled Task.")
         if prompt_yes_no("  Open the UAC prompt now?", False):
             if _launch_elevated_install(force=force, start_now=start_now, start_on_login=start_on_login):
-                print("✓ Launched elevated Lucifex gateway install prompt.")
+                print("✓ Launched elevated Hermes gateway install prompt.")
                 if start_now:
                     print("  Approve the Windows UAC prompt; the elevated install will start the gateway afterwards.")
                 else:
-                    print("  Approve the Windows UAC prompt, then run: lucifex gateway status")
+                    print("  Approve the Windows UAC prompt, then run: hermes gateway status")
                 return
             print("⚠ Falling back to Startup folder because elevation was unavailable or cancelled.")
         else:
@@ -1123,7 +1123,7 @@ def install(
         print(f"✓ Installed Windows login item: {entry}")
         print(f"  Task script: {script_path}")
 
-        # Re-running `lucifex -p <profile> gateway install` must be safe.
+        # Re-running `hermes -p <profile> gateway install` must be safe.
         # Startup-folder fallback only installs login persistence. Starting is
         # controlled by the pre-UAC start_now answer so all user decisions happen
         # before any elevation prompt.
@@ -1137,7 +1137,7 @@ def install(
             _report_gateway_start(f"direct spawn (PID {pid})")
         else:
             profile_arg = _profile_arg()
-            start_cmd = f"lucifex {profile_arg} gateway start" if profile_arg else "lucifex gateway start"
+            start_cmd = f"hermes {profile_arg} gateway start" if profile_arg else "lucifex gateway start"
             print("ℹ Startup fallback installed; gateway not started now.")
             print(f"  Start manually with: {start_cmd}")
         _print_next_steps()
@@ -1179,11 +1179,11 @@ def _report_gateway_start(via: str) -> None:
 def _print_next_steps() -> None:
     from lucifex_cli.config import get_lucifex_home
 
-    lucifex_home = Path(get_lucifex_home())
+    LUCIFEX_HOME = Path(get_lucifex_home())
     print()
     print("Next steps:")
-    print("  lucifex gateway status                      # Check status")
-    print(f"  type {lucifex_home}\\logs\\gateway.log       # View logs")
+    print("  hermes gateway status                      # Check status")
+    print(f"  type {LUCIFEX_HOME}\\logs\\gateway.log       # View logs")
 
 
 def uninstall() -> None:
@@ -1209,8 +1209,8 @@ def uninstall() -> None:
             print("  UAC is Windows' admin approval prompt; it is needed to remove the Scheduled Task.")
             if prompt_yes_no("  Open the UAC prompt now?", False):
                 if _launch_elevated_uninstall():
-                    print("✓ Launched elevated Lucifex gateway uninstall prompt.")
-                    print("  Approve the Windows UAC prompt, then run: lucifex gateway status")
+                    print("✓ Launched elevated Hermes gateway uninstall prompt.")
+                    print("  Approve the Windows UAC prompt, then run: hermes gateway status")
                     return
                 print("⚠ Elevated uninstall prompt was unavailable or cancelled.")
             else:
@@ -1454,7 +1454,7 @@ def status(deep: bool = False) -> None:
     if not task_installed and not startup_installed and not pids:
         print()
         print("To install:")
-        print("  lucifex gateway install")
+        print("  hermes gateway install")
 
 
 def start() -> None:
@@ -1473,7 +1473,7 @@ def start() -> None:
 
         print("✗ Gateway service is not installed")
         if not prompt_yes_no("  Install it now so the gateway starts on login?", True):
-            print("  Run: lucifex gateway install")
+            print("  Run: hermes gateway install")
             return
         install(force=False)
         task_installed = is_task_registered()
@@ -1678,5 +1678,5 @@ def restart() -> None:
     if not _wait_for_gateway_ready(timeout_s=15.0):
         raise RuntimeError(
             "Gateway restart did not produce a running gateway process. "
-            "Check logs/gateway.log and run `lucifex gateway status`."
+            "Check logs/gateway.log and run `hermes gateway status`."
         )

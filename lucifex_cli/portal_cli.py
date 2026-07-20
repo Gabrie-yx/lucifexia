@@ -1,21 +1,21 @@
-"""``lucifex portal`` — the human-readable entry point for Ollama.
+"""``hermes portal`` — the human-readable entry point for Nous Portal.
 
-Running ``lucifex portal`` with no subcommand performs the one-shot Portal
+Running ``hermes portal`` with no subcommand performs the one-shot Portal
 onboarding: OAuth login, pick a Nous model, switch the inference provider to
 Nous, and offer to enable the Tool Gateway. It is the friendly alias for
-``lucifex auth add nous --type oauth`` (which still works), is identical to
-``lucifex setup --portal``, and runs the same Nous flow as the first-time quick
+``hermes auth add nous --type oauth`` (which still works), is identical to
+``hermes setup --portal``, and runs the same Nous flow as the first-time quick
 setup.
 
 Subcommands:
-  (none)   Log in to Ollama + set it up (one-shot onboarding).
+  (none)   Log in to Nous Portal + set it up (one-shot onboarding).
   login    Explicit alias for the default one-shot onboarding.
   info     Show Portal auth state + which Tool Gateway tools are routed.
   open     Open the Portal subscription page in the user's default browser.
   tools    List Tool Gateway tools and which are active in the current config.
 
 This command is intentionally minimal — it does not duplicate functionality
-already in ``lucifex auth`` or ``lucifex tools``. It's the onboarding + discovery
+already in ``hermes auth`` or ``hermes tools``. It's the onboarding + discovery
 surface for the Portal subscription itself.
 """
 from __future__ import annotations
@@ -26,9 +26,9 @@ import webbrowser
 from lucifex_cli.colors import Colors, color
 from lucifex_cli.config import load_config
 
-DEFAULT_PORTAL_URL = "http://127.0.0.1:11434"
-SUBSCRIPTION_URL = "https://ollama.com"
-DOCS_URL = "https://github.com/Gabrie-yx/lucifexia#readme"
+DEFAULT_PORTAL_URL = "https://portal.nousresearch.com"
+SUBSCRIPTION_URL = "https://portal.nousresearch.com/manage-subscription"
+DOCS_URL = "https://lucifex-agent.nousresearch.com/docs/user-guide/features/tool-gateway"
 
 
 def _cmd_status(args) -> int:
@@ -46,7 +46,7 @@ def _cmd_status(args) -> int:
     logged_in = bool(auth.get("logged_in"))
 
     print()
-    print(color("  Ollama", Colors.MAGENTA))
+    print(color("  Nous Portal", Colors.MAGENTA))
     print(color("  ───────────", Colors.MAGENTA))
     if logged_in:
         portal = auth.get("portal_base_url") or DEFAULT_PORTAL_URL
@@ -58,7 +58,7 @@ def _cmd_status(args) -> int:
     else:
         print(f"  Auth:    {color('not logged in', Colors.YELLOW)}")
         print(f"  Sign up: {SUBSCRIPTION_URL}")
-        print(f"  Login:   lucifex portal")
+        print("  Login:   hermes portal")
 
     # Provider selection (independent of auth)
     model_cfg = config.get("model") if isinstance(config.get("model"), dict) else {}
@@ -66,7 +66,7 @@ def _cmd_status(args) -> int:
     if provider == "nous":
         print(f"  Model:   {color('✓ using Nous as inference provider', Colors.GREEN)}")
     elif provider:
-        print(f"  Model:   currently {provider} (switch with `lucifex model`)")
+        print(f"  Model:   currently {provider} (switch with `hermes model`)")
 
     # Tool Gateway routing
     print()
@@ -84,7 +84,7 @@ def _cmd_status(args) -> int:
     rows = []
     for feat in features.items():
         if feat.managed_by_nous:
-            state = color("via Ollama", Colors.GREEN)
+            state = color("via Nous Portal", Colors.GREEN)
         elif feat.active and feat.current_provider:
             state = feat.current_provider
         elif feat.active:
@@ -143,7 +143,7 @@ def _cmd_tools(args) -> int:
     print(color("  ────────────────────", Colors.MAGENTA))
 
     if not features.nous_auth_present:
-        print(color("  Not logged into Ollama — sign in with `lucifex portal`.", Colors.YELLOW))
+        print(color("  Not logged into Nous Portal — sign in with `hermes portal`.", Colors.YELLOW))
         print()
 
     label_width = max(len(label) for _, label, _ in catalog)
@@ -152,7 +152,7 @@ def _cmd_tools(args) -> int:
         if feat is None:
             state = color("unknown", Colors.DIM)
         elif feat.managed_by_nous:
-            state = color("✓ via Ollama", Colors.GREEN)
+            state = color("✓ via Nous Portal", Colors.GREEN)
         elif feat.active and feat.current_provider:
             state = feat.current_provider
         elif feat.active:
@@ -168,10 +168,10 @@ def _cmd_tools(args) -> int:
 
 
 def _cmd_login(args) -> int:
-    """Run the one-shot Ollama onboarding (login + model + provider + tools).
+    """Run the one-shot Nous Portal onboarding (login + model + provider + tools).
 
-    This is the human-readable front door for `lucifex auth add nous --type
-    oauth`. It reuses the exact wiring behind `lucifex setup --portal` (which in
+    This is the human-readable front door for `hermes auth add nous --type
+    oauth`. It reuses the exact wiring behind `hermes setup --portal` (which in
     turn runs the same Nous flow as the first-time quick setup), so the
     commands stay in lockstep: device-code login, pick a Nous model, switch the
     inference provider to Nous, then offer the Tool Gateway opt-in.
@@ -189,12 +189,12 @@ def _cmd_login(args) -> int:
 
 
 def portal_command(args) -> int:
-    """Top-level dispatch for `lucifex portal <subcommand>`."""
+    """Top-level dispatch for `hermes portal <subcommand>`."""
     sub = getattr(args, "portal_command", None)
     if sub in {None, "", "login"}:
-        # Default to the one-shot onboarding — `lucifex portal` is the
-        # human-readable alias for `lucifex auth add nous --type oauth` /
-        # `lucifex setup --portal`.
+        # Default to the one-shot onboarding — `hermes portal` is the
+        # human-readable alias for `hermes auth add nous --type oauth` /
+        # `hermes setup --portal`.
         return _cmd_login(args)
     if sub in {"info", "status"}:
         # `status` kept as a back-compat alias for the prior default.
@@ -204,20 +204,20 @@ def portal_command(args) -> int:
     if sub == "tools":
         return _cmd_tools(args)
     print(f"Unknown portal subcommand: {sub}", file=sys.stderr)
-    print("Run `lucifex portal -h` for usage.", file=sys.stderr)
+    print("Run `hermes portal -h` for usage.", file=sys.stderr)
     return 1
 
 
 def add_parser(subparsers) -> None:
-    """Register `lucifex portal` on the given argparse subparsers object."""
+    """Register `hermes portal` on the given argparse subparsers object."""
     portal_parser = subparsers.add_parser(
         "portal",
-        help="Set up Ollama (login, model pick, Tool Gateway); see also `portal info`",
+        help="Set up Nous Portal (login, model pick, Tool Gateway); see also `portal info`",
         description=(
-            "Run `lucifex portal` with no subcommand to log in to Ollama "
+            "Run `hermes portal` with no subcommand to log in to Nous Portal "
             "and set it up — pick a model, set Nous as your provider, and offer "
-            "the Tool Gateway (the human-readable alias for `lucifex auth add "
-            "nous --type oauth`, identical to `lucifex setup --portal`). "
+            "the Tool Gateway (the human-readable alias for `hermes auth add "
+            "nous --type oauth`, identical to `hermes setup --portal`). "
             "Subcommands: login (default), info, open, tools."
         ),
     )
@@ -225,7 +225,7 @@ def add_parser(subparsers) -> None:
 
     portal_sub.add_parser(
         "login",
-        help="Log in to Ollama + set it up (default; one-shot onboarding)",
+        help="Log in to Nous Portal + set it up (default; one-shot onboarding)",
     )
     portal_sub.add_parser(
         "info",

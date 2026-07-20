@@ -60,7 +60,7 @@ hermes auth spotify
 
 | 字段 | 值 |
 |-------|-------|
-| App name | 任意（例如 `hermes-agent`） |
+| App name | 任意（例如 `lucifex-agent`） |
 | App description | 任意（例如 `personal Hermes integration`） |
 | Website | 留空 |
 | Redirect URI | `http://127.0.0.1:43827/spotify/callback` |

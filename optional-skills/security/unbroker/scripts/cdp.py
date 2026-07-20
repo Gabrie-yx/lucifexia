@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """Launch (or detect) the operator's local Chrome/Chromium over the DevTools Protocol (CDP).
 
 Phase-2 work -- sending opt-out/CCPA email through the operator's logged-in webmail, and driving
@@ -37,9 +37,9 @@ def default_profile() -> Path:
     """Dedicated debug profile dir, NOT the operator's Default Chrome profile.
 
     Chrome refuses remote-debugging on a profile that is already open in another Chrome instance,
-    so we isolate the debug session in its own user-data-dir under HERMES_HOME.
+    so we isolate the debug session in its own user-data-dir under LUCIFEX_HOME.
     """
-    return paths.hermes_home() / "chrome-debug"
+    return paths.LUCIFEX_HOME() / "chrome-debug"
 
 
 def _mac_candidates() -> list[str]:

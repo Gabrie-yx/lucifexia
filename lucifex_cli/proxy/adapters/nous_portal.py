@@ -1,6 +1,6 @@
 """Nous Portal upstream adapter.
 
-Reads the user's Nous OAuth state from ``~/.lucifex/auth.json`` through the
+Reads the user's Nous OAuth state from ``~/.hermes/auth.json`` through the
 shared runtime resolver, validates or refreshes the inference JWT, then exposes
 the upstream base URL plus bearer for the proxy server to forward to.
 """
@@ -63,7 +63,15 @@ class NousPortalAdapter(UpstreamAdapter):
         return _ALLOWED_PATHS
 
     def is_authenticated(self) -> bool:
-        return True
+        state = self._read_state()
+        if state is None:
+            return False
+        # We need either a usable inference JWT OR (refresh_token + access_token)
+        # to recover. The refresh helper validates and refreshes as needed.
+        return bool(
+            state.get("agent_key")
+            or (state.get("refresh_token") and state.get("access_token"))
+        )
 
     def get_credential(self) -> UpstreamCredential:
         return self._get_credential()
@@ -91,7 +99,7 @@ class NousPortalAdapter(UpstreamAdapter):
             state = self._read_state()
             if state is None:
                 raise RuntimeError(
-                    "Not logged into Nous Portal. Run `lucifex auth add nous` first."
+                    "Not logged into Nous Portal. Run `hermes auth add nous` first."
                 )
 
             try:
@@ -122,7 +130,7 @@ class NousPortalAdapter(UpstreamAdapter):
             if not runtime_key:
                 raise RuntimeError(
                     "Nous Portal refresh did not return a usable inference JWT. "
-                    "Try `lucifex auth add nous` to re-authenticate."
+                    "Try `hermes auth add nous` to re-authenticate."
                 )
 
             # base_url returned by resolve_nous_runtime_credentials() already

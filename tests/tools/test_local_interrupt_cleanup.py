@@ -1,4 +1,4 @@
-"""Regression tests for _wait_for_process subprocess cleanup on exception exit.
+﻿"""Regression tests for _wait_for_process subprocess cleanup on exception exit.
 
 When the poll loop exits via KeyboardInterrupt or SystemExit (SIGTERM via
 cli.py signal handler, SIGINT on the main thread in non-interactive -q mode,
@@ -25,8 +25,8 @@ from tools.environments.local import LocalEnvironment
 
 
 @pytest.fixture(autouse=True)
-def _isolate_hermes_home(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+def _isolate_LUCIFEX_HOME(tmp_path, monkeypatch):
+    monkeypatch.setenv("LUCIFEX_HOME", str(tmp_path))
     (tmp_path / "logs").mkdir(exist_ok=True)
 
 

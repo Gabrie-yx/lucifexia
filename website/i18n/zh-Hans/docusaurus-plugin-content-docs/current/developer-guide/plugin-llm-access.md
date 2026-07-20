@@ -161,7 +161,7 @@ def _paste_to_tasks(ctx, raw_args: str) -> str:
 
 第三个完整示例（包含图像输入）位于
 [`hermes-example-plugins`](https://github.com/NousResearch/hermes-example-plugins/tree/main/plugin-llm-example)
-仓库（参考 plugin 的配套仓库——不随 hermes-agent 本体打包）。关于异步接口（`acomplete()` / `acomplete_structured()` 与 `asyncio.gather()` 配合使用），请参见同一仓库中的
+仓库（参考 plugin 的配套仓库——不随 lucifex-agent 本体打包）。关于异步接口（`acomplete()` / `acomplete_structured()` 与 `asyncio.gather()` 配合使用），请参见同一仓库中的
 [`plugin-llm-async-example`](https://github.com/NousResearch/hermes-example-plugins/tree/main/plugin-llm-async-example)。
 
 ## 何时使用哪种方式
@@ -362,8 +362,8 @@ Plugin id 对于扁平 plugin 是 manifest 中的 `name:` 字段，对于嵌套 
 
 ## 参考资料
 
-* 实现：[`agent/plugin_llm.py`](https://github.com/NousResearch/hermes-agent/blob/main/agent/plugin_llm.py)
-* 测试：[`tests/agent/test_plugin_llm.py`](https://github.com/NousResearch/hermes-agent/blob/main/tests/agent/test_plugin_llm.py)
+* 实现：[`agent/plugin_llm.py`](https://github.com/NousResearch/lucifex-agent/blob/main/agent/plugin_llm.py)
+* 测试：[`tests/agent/test_plugin_llm.py`](https://github.com/NousResearch/lucifex-agent/blob/main/tests/agent/test_plugin_llm.py)
 * 参考 plugin（配套仓库）：
   * [`plugin-llm-example`](https://github.com/NousResearch/hermes-example-plugins/tree/main/plugin-llm-example) — 带图像输入的同步结构化提取
   * [`plugin-llm-async-example`](https://github.com/NousResearch/hermes-example-plugins/tree/main/plugin-llm-async-example) — 使用 `asyncio.gather()` 的异步示例

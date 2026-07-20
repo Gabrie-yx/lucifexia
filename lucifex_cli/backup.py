@@ -1,10 +1,10 @@
-"""
-Backup and import commands for lucifex CLI.
+﻿"""
+Backup and import commands for hermes CLI.
 
-`lucifex backup` creates a zip archive of the entire ~/.lucifex/ directory
+`hermes backup` creates a zip archive of the entire ~/.hermes/ directory
 (excluding the lucifex-agent repo and transient files).
 
-`lucifex import` restores from a backup zip, overlaying onto the current
+`hermes import` restores from a backup zip, overlaying onto the current
 LUCIFEX_HOME root.
 """
 
@@ -88,7 +88,7 @@ _EXCLUDED_NAMES = {
     "cron.pid",
 }
 
-# File names that ``lucifex import`` must never overwrite, matched by basename so
+# File names that ``hermes import`` must never overwrite, matched by basename so
 # they're caught for the root profile (``gateway_state.json``) and for named
 # profiles alike (``profiles/<name>/gateway_state.json``).
 #
@@ -209,7 +209,7 @@ def _iter_external_files(base: Path) -> List[Path]:
 
 
 def _should_exclude(rel_path: Path) -> bool:
-    """Return True if *rel_path* (relative to lucifex root) should be skipped."""
+    """Return True if *rel_path* (relative to hermes root) should be skipped."""
     parts = rel_path.parts
 
     for part in parts:
@@ -257,23 +257,30 @@ def _safe_copy_db(src: Path, dst: Path) -> bool:
     """Copy a SQLite database safely using the backup() API.
 
     Handles WAL mode — produces a consistent snapshot even while
-    the DB is being written to.  Falls back to raw copy on failure.
+    the DB is being written to. Fail closed if a consistent snapshot cannot
+    be created: copying only the live main file can omit committed WAL data.
     """
+    conn = None
+    backup_conn = None
     try:
         conn = sqlite3.connect(f"file:{src}?mode=ro", uri=True)
         backup_conn = sqlite3.connect(str(dst))
         conn.backup(backup_conn)
-        backup_conn.close()
-        conn.close()
         return True
     except Exception as exc:
         logger.warning("SQLite safe copy failed for %s: %s", src, exc)
         try:
-            shutil.copy2(src, dst)
-            return True
-        except Exception as exc2:
-            logger.error("Raw copy also failed for %s: %s", src, exc2)
-            return False
+            dst.unlink(missing_ok=True)
+        except OSError:
+            pass
+        return False
+    finally:
+        for connection in (backup_conn, conn):
+            if connection is not None:
+                try:
+                    connection.close()
+                except Exception:
+                    pass
 
 
 # ---------------------------------------------------------------------------
@@ -290,11 +297,11 @@ def _format_size(nbytes: int) -> str:
 
 
 def run_backup(args) -> None:
-    """Create a zip backup of the Lucifex home directory."""
-    lucifex_root = get_default_lucifex_root()
+    """Create a zip backup of the Hermes home directory."""
+    hermes_root = get_default_lucifex_root()
 
-    if not lucifex_root.is_dir():
-        print(f"Error: Lucifex home directory not found at {lucifex_root}")
+    if not hermes_root.is_dir():
+        print(f"Error: Hermes home directory not found at {hermes_root}")
         sys.exit(1)
 
     # Determine output path
@@ -303,10 +310,10 @@ def run_backup(args) -> None:
         # If user gave a directory, put the zip inside it
         if out_path.is_dir():
             stamp = datetime.now().strftime("%Y-%m-%d-%H%M%S")
-            out_path = out_path / f"lucifex-backup-{stamp}.zip"
+            out_path = out_path / f"hermes-backup-{stamp}.zip"
     else:
         stamp = datetime.now().strftime("%Y-%m-%d-%H%M%S")
-        out_path = Path.home() / f"lucifex-backup-{stamp}.zip"
+        out_path = Path.home() / f"hermes-backup-{stamp}.zip"
 
     # Ensure the suffix is .zip
     if out_path.suffix.lower() != ".zip":
@@ -320,9 +327,9 @@ def run_backup(args) -> None:
     files_to_add: list[tuple[Path, Path]] = []  # (absolute, relative)
     skipped_dirs = set()
 
-    for dirpath, dirnames, filenames in os.walk(lucifex_root, followlinks=False):
+    for dirpath, dirnames, filenames in os.walk(hermes_root, followlinks=False):
         dp = Path(dirpath)
-        rel_dir = dp.relative_to(lucifex_root)
+        rel_dir = dp.relative_to(hermes_root)
 
         # Prune excluded directories in-place so os.walk doesn't descend
         # ``lucifex-agent`` is only pruned at the root level; nested dirs
@@ -338,7 +345,7 @@ def run_backup(args) -> None:
 
         for fname in filenames:
             fpath = dp / fname
-            rel = fpath.relative_to(lucifex_root)
+            rel = fpath.relative_to(hermes_root)
 
             if _should_skip_backup_file(fpath, rel, out_path):
                 continue
@@ -429,7 +436,10 @@ def run_backup(args) -> None:
 
     # Summary
     print()
-    print(f"Backup complete: {out_path}")
+    if errors:
+        print(f"Backup incomplete: {out_path}")
+    else:
+        print(f"Backup complete: {out_path}")
     print(f"  Files:       {file_count}")
     print(f"  Original:    {_format_size(total_bytes)}")
     print(f"  Compressed:  {_format_size(zip_size)}")
@@ -450,7 +460,7 @@ def run_backup(args) -> None:
             print(f"    {p}")
 
     if skipped_dirs:
-        print(f"\n  Excluded directories:")
+        print("\n  Excluded directories:")
         for d in sorted(skipped_dirs):
             print(f"    {d}/")
 
@@ -461,7 +471,8 @@ def run_backup(args) -> None:
         if len(errors) > 10:
             print(f"  ... and {len(errors) - 10} more")
 
-    print(f"\nRestore with: lucifex import {out_path.name}")
+    if not errors:
+        print(f"\nRestore with: hermes import {out_path.name}")
 
 
 # ---------------------------------------------------------------------------
@@ -469,7 +480,7 @@ def run_backup(args) -> None:
 # ---------------------------------------------------------------------------
 
 def _validate_backup_zip(zf: zipfile.ZipFile) -> tuple[bool, str]:
-    """Check that a zip looks like a Lucifex backup.
+    """Check that a zip looks like a Hermes backup.
 
     Returns (ok, reason).
     """
@@ -477,7 +488,7 @@ def _validate_backup_zip(zf: zipfile.ZipFile) -> tuple[bool, str]:
     if not names:
         return False, "zip archive is empty"
 
-    # Look for telltale files that a lucifex home would have
+    # Look for telltale files that a hermes home would have
     markers = {"config.yaml", ".env", "state.db"}
     found = set()
     for n in names:
@@ -488,7 +499,7 @@ def _validate_backup_zip(zf: zipfile.ZipFile) -> tuple[bool, str]:
 
     if not found:
         return False, (
-            "zip does not appear to be a Lucifex backup "
+            "zip does not appear to be a Hermes backup "
             "(no config.yaml, .env, or state databases found)"
         )
 
@@ -498,7 +509,7 @@ def _validate_backup_zip(zf: zipfile.ZipFile) -> tuple[bool, str]:
 def _detect_prefix(zf: zipfile.ZipFile) -> str:
     """Detect if the zip has a common directory prefix wrapping all entries.
 
-    Some tools zip as `.lucifex/config.yaml` instead of `config.yaml`.
+    Some tools zip as `.hermes/config.yaml` instead of `config.yaml`.
     Returns the prefix to strip (empty string if none).
     """
     names = [n for n in zf.namelist() if not n.endswith("/")]
@@ -512,15 +523,15 @@ def _detect_prefix(zf: zipfile.ZipFile) -> str:
     first_parts = {p[0] for p in parts_list if len(p) > 1}
     if len(first_parts) == 1:
         prefix = first_parts.pop()
-        # Only strip if it looks like a lucifex dir name
-        if prefix in {".lucifex", "lucifex"}:
+        # Only strip if it looks like a hermes dir name
+        if prefix in {".hermes", "hermes"}:
             return prefix + "/"
 
     return ""
 
 
 def run_import(args) -> None:
-    """Restore a Lucifex backup from a zip file."""
+    """Restore a Hermes backup from a zip file."""
     zip_path = Path(args.zipfile).expanduser().resolve()
 
     if not zip_path.is_file():
@@ -531,7 +542,7 @@ def run_import(args) -> None:
         print(f"Error: Not a valid zip file: {zip_path}")
         sys.exit(1)
 
-    lucifex_root = get_default_lucifex_root()
+    hermes_root = get_default_lucifex_root()
 
     with zipfile.ZipFile(zip_path, "r") as zf:
         # Validate
@@ -551,12 +562,12 @@ def run_import(args) -> None:
             print(f"Detected archive prefix: {prefix!r} (will be stripped)")
 
         # Check for existing installation
-        has_config = (lucifex_root / "config.yaml").exists()
-        has_env = (lucifex_root / ".env").exists()
+        has_config = (hermes_root / "config.yaml").exists()
+        has_env = (hermes_root / ".env").exists()
 
         if (has_config or has_env) and not args.force:
             print()
-            print("Warning: Target directory already has Lucifex configuration.")
+            print("Warning: Target directory already has Hermes configuration.")
             print("Importing will overwrite existing files with backup contents.")
             print()
             try:
@@ -570,7 +581,7 @@ def run_import(args) -> None:
 
         # Extract
         print(f"\nImporting {file_count} files ...")
-        lucifex_root.mkdir(parents=True, exist_ok=True)
+        hermes_root.mkdir(parents=True, exist_ok=True)
 
         errors = []
         restored = 0
@@ -631,11 +642,11 @@ def run_import(args) -> None:
                 skipped_runtime.append(rel)
                 continue
 
-            target = lucifex_root / rel
+            target = hermes_root / rel
 
             # Security: reject absolute paths and traversals
             try:
-                target.resolve().relative_to(lucifex_root.resolve())
+                target.resolve().relative_to(hermes_root.resolve())
             except ValueError:
                 errors.append(f"  {rel}: path traversal blocked")
                 continue
@@ -684,7 +695,7 @@ def run_import(args) -> None:
                 print(f"    ... and {len(skipped_runtime) - 10} more")
 
         # Post-import: restore profile wrapper scripts
-        profiles_dir = lucifex_root / "profiles"
+        profiles_dir = hermes_root / "profiles"
         restored_profiles = []
         if profiles_dir.is_dir():
             try:
@@ -721,26 +732,26 @@ def run_import(args) -> None:
             except ImportError:
                 # lucifex_cli.profiles might not be available (fresh install)
                 if any(profiles_dir.iterdir()):
-                    print(f"\n  Profiles detected but aliases could not be created.")
-                    print(f"  Run: lucifex profile list  (after installing lucifex)")
+                    print("\n  Profiles detected but aliases could not be created.")
+                    print("  Run: hermes profile list  (after installing hermes)")
 
         # Guidance
         print()
-        if not (lucifex_root / "lucifex-agent").is_dir():
+        if not (hermes_root / "lucifex-agent").is_dir():
             print("Note: The lucifex-agent codebase was not included in the backup.")
-            print("  If this is a fresh install, run: lucifex update")
+            print("  If this is a fresh install, run: hermes update")
 
         if restored_profiles:
             gw_profiles = [n for n, _ in restored_profiles]
             print("\nTo re-enable gateway services for profiles:")
             for pname in gw_profiles:
-                print(f"  lucifex -p {pname} gateway install")
+                print(f"  hermes -p {pname} gateway install")
 
-        print("Done. Your Lucifex configuration has been restored.")
+        print("Done. Your Hermes configuration has been restored.")
 
 
 # ---------------------------------------------------------------------------
-# Quick state snapshots (used by /snapshot slash command and lucifex backup --quick)
+# Quick state snapshots (used by /snapshot slash command and hermes backup --quick)
 # ---------------------------------------------------------------------------
 
 # Critical state files to include in quick snapshots (relative to LUCIFEX_HOME).
@@ -750,7 +761,7 @@ def run_import(args) -> None:
 # Entries may be individual files OR directories.  Directories are captured
 # recursively; missing entries are silently skipped.  Pairing data lives in
 # platform-specific JSON blobs outside state.db, so it's listed here explicitly
-# — `lucifex update` snapshots this set before pulling so approved-user lists
+# — `hermes update` snapshots this set before pulling so approved-user lists
 # are recoverable if anything goes wrong (issue #15733).
 _QUICK_STATE_FILES = (
     "state.db",
@@ -758,10 +769,12 @@ _QUICK_STATE_FILES = (
     ".env",
     "auth.json",
     "cron/jobs.json",
+    "cron/executions.db",
     "gateway_state.json",
     "channel_directory.json",
     "channel_aliases.json",
     "processes.json",
+    "gateway/discord_message_recovery.db",  # Discord reconnect replay ledger
     # Per-profile user-created stores that live outside the git checkout and
     # are therefore destroyed if the update flow removes/replaces the file and
     # the post-update schema-init re-creates an empty one (issue #52889). All
@@ -785,26 +798,59 @@ _QUICK_SNAPSHOTS_DIR = "state-snapshots"
 _QUICK_DEFAULT_KEEP = 20
 
 
-def _quick_snapshot_root(lucifex_home: Optional[Path] = None) -> Path:
-    home = lucifex_home or get_lucifex_home()
+def _quick_snapshot_root(LUCIFEX_HOME: Optional[Path] = None) -> Path:
+    home = LUCIFEX_HOME or get_lucifex_home()
     return home / _QUICK_SNAPSHOTS_DIR
 
 
 def create_quick_snapshot(
     label: Optional[str] = None,
-    lucifex_home: Optional[Path] = None,
+    LUCIFEX_HOME: Optional[Path] = None,
     keep: Optional[int] = None,
+    max_file_size: Optional[int] = None,
 ) -> Optional[str]:
     """Create a quick state snapshot of critical files.
 
     Copies STATE_FILES to a timestamped directory under state-snapshots/.
     Auto-prunes old snapshots beyond the keep limit.
 
+    Args:
+        max_file_size: When set, individual files larger than this many bytes
+            are skipped (with a printed warning) instead of copied. Used by
+            the pre-update safety snapshot so a multi-GB ``state.db`` can
+            never stall ``hermes update`` or silently eat disk — the small
+            pairing/cron/config files the snapshot exists to protect are
+            always captured. ``None`` (default) copies everything, which
+            preserves manual ``/snapshot`` and ``hermes backup --quick``
+            behavior.
+
     Returns:
         Snapshot ID (timestamp-based), or None if no files found.
     """
-    home = lucifex_home or get_lucifex_home()
+    home = LUCIFEX_HOME or get_lucifex_home()
     root = _quick_snapshot_root(home)
+
+    def _too_large(path: Path, rel_name: str) -> bool:
+        """True (and warn) when ``path`` exceeds the max_file_size cap."""
+        if max_file_size is None:
+            return False
+        try:
+            size = path.stat().st_size
+        except OSError:
+            return False
+        if size <= max_file_size:
+            return False
+        print(
+            f"  ⚠ Snapshot: skipping {rel_name} "
+            f"({_format_size(size)} exceeds {_format_size(max_file_size)} limit)"
+        )
+        logger.warning(
+            "Quick snapshot skipped %s: %d bytes exceeds %d byte limit",
+            rel_name,
+            size,
+            max_file_size,
+        )
+        return True
 
     ts = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
     snap_id = f"{ts}-{label}" if label else ts
@@ -831,6 +877,8 @@ def create_quick_snapshot(
                 # the board databases + their metadata to restore a board.
                 if "/workspaces/" in f"/{sub_rel}/" or "/attachments/" in f"/{sub_rel}/":
                     continue
+                if _too_large(sub, sub_rel):
+                    continue
                 dst = snap_dir / sub_rel
                 dst.parent.mkdir(parents=True, exist_ok=True)
                 try:
@@ -848,6 +896,9 @@ def create_quick_snapshot(
             continue
 
         if not src.is_file():
+            continue
+
+        if _too_large(src, rel):
             continue
 
         dst = snap_dir / rel
@@ -890,10 +941,10 @@ def create_quick_snapshot(
 
 def list_quick_snapshots(
     limit: int = 20,
-    lucifex_home: Optional[Path] = None,
+    LUCIFEX_HOME: Optional[Path] = None,
 ) -> List[Dict[str, Any]]:
     """List existing quick state snapshots, most recent first."""
-    root = _quick_snapshot_root(lucifex_home)
+    root = _quick_snapshot_root(LUCIFEX_HOME)
     if not root.exists():
         return []
 
@@ -916,14 +967,14 @@ def list_quick_snapshots(
 
 def restore_quick_snapshot(
     snapshot_id: str,
-    lucifex_home: Optional[Path] = None,
+    LUCIFEX_HOME: Optional[Path] = None,
 ) -> bool:
     """Restore state from a quick snapshot.
 
     Overwrites current state files with the snapshot's copies.
     Returns True if at least one file was restored.
     """
-    home = lucifex_home or get_lucifex_home()
+    home = LUCIFEX_HOME or get_lucifex_home()
     root = _quick_snapshot_root(home)
 
     # Security: reject snapshot_id values that contain path separators or
@@ -1010,7 +1061,11 @@ def _count_cron_jobs(path: Path) -> Optional[int]:
     if not path.is_file():
         return None
     try:
-        with open(path, "r", encoding="utf-8") as f:
+        # utf-8-sig: same dialect as cron/jobs.load_jobs — Windows editors
+        # may leave a UTF-8 BOM that plain utf-8 json.load rejects. Without
+        # it a BOM'd jobs.json counts as "unreadable" (None) and the
+        # post-update cron-loss auto-restore safety net silently disables.
+        with open(path, "r", encoding="utf-8-sig") as f:
             data = json.load(f)
     except (OSError, json.JSONDecodeError):
         return None
@@ -1024,9 +1079,9 @@ def _count_cron_jobs(path: Path) -> Optional[int]:
 
 def restore_cron_jobs_if_emptied(
     snapshot_id: str,
-    lucifex_home: Optional[Path] = None,
+    LUCIFEX_HOME: Optional[Path] = None,
 ) -> Optional[Dict[str, Any]]:
-    """Safety net for silent cron-job loss across ``lucifex update``.
+    """Safety net for silent cron-job loss across ``hermes update``.
 
     Config-version migrations have been observed to leave ``cron/jobs.json``
     valid-but-empty after an update, silently dropping every scheduled job
@@ -1047,7 +1102,7 @@ def restore_cron_jobs_if_emptied(
     Args:
         snapshot_id: The pre-update quick-snapshot id (from
             :func:`create_quick_snapshot`).
-        lucifex_home: Override for the Lucifex home directory (tests).
+        LUCIFEX_HOME: Override for the Hermes home directory (tests).
 
     Returns:
         ``None`` when no action was taken (the common, healthy path). On a
@@ -1057,7 +1112,7 @@ def restore_cron_jobs_if_emptied(
     if not snapshot_id:
         return None
 
-    home = lucifex_home or get_lucifex_home()
+    home = LUCIFEX_HOME or get_lucifex_home()
     live_path = home / _CRON_JOBS_REL
 
     live_count = _count_cron_jobs(live_path)
@@ -1122,14 +1177,14 @@ def _prune_quick_snapshots(root: Path, keep: int = _QUICK_DEFAULT_KEEP) -> int:
 
 def prune_quick_snapshots(
     keep: int = _QUICK_DEFAULT_KEEP,
-    lucifex_home: Optional[Path] = None,
+    LUCIFEX_HOME: Optional[Path] = None,
 ) -> int:
     """Manually prune quick snapshots. Returns count deleted."""
-    return _prune_quick_snapshots(_quick_snapshot_root(lucifex_home), keep=keep)
+    return _prune_quick_snapshots(_quick_snapshot_root(LUCIFEX_HOME), keep=keep)
 
 
 def run_quick_backup(args) -> None:
-    """CLI entry point for lucifex backup --quick."""
+    """CLI entry point for hermes backup --quick."""
     label = getattr(args, "label", None)
     snap_id = create_quick_snapshot(label=label)
     if snap_id:
@@ -1145,8 +1200,8 @@ def run_quick_backup(args) -> None:
 # Shared full-zip backup helper
 # ---------------------------------------------------------------------------
 
-def _write_full_zip_backup(out_path: Path, lucifex_root: Path) -> Optional[Path]:
-    """Write a full zip snapshot of ``lucifex_root`` to ``out_path``.
+def _write_full_zip_backup(out_path: Path, hermes_root: Path) -> Optional[Path]:
+    """Write a full zip snapshot of ``hermes_root`` to ``out_path``.
 
     Uses the same exclusion rules and SQLite safe-copy as :func:`run_backup`.
     Returns the output path on success, None on failure (nothing to back up,
@@ -1154,7 +1209,7 @@ def _write_full_zip_backup(out_path: Path, lucifex_root: Path) -> Optional[Path]
     """
     files_to_add: list[tuple[Path, Path]] = []
     try:
-        for dirpath, dirnames, filenames in os.walk(lucifex_root, followlinks=False):
+        for dirpath, dirnames, filenames in os.walk(hermes_root, followlinks=False):
             dp = Path(dirpath)
             # Prune excluded directories in-place so os.walk doesn't descend
             dirnames[:] = [d for d in dirnames if d not in _EXCLUDED_DIRS]
@@ -1162,7 +1217,7 @@ def _write_full_zip_backup(out_path: Path, lucifex_root: Path) -> Optional[Path]
             for fname in filenames:
                 fpath = dp / fname
                 try:
-                    rel = fpath.relative_to(lucifex_root)
+                    rel = fpath.relative_to(hermes_root)
                 except ValueError:
                     continue
 
@@ -1177,6 +1232,7 @@ def _write_full_zip_backup(out_path: Path, lucifex_root: Path) -> Optional[Path]
     if not files_to_add:
         return None
 
+    sqlite_snapshot_failed = False
     try:
         with zipfile.ZipFile(out_path, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as zf:
             for abs_path, rel_path in files_to_add:
@@ -1191,8 +1247,14 @@ def _write_full_zip_backup(out_path: Path, lucifex_root: Path) -> Optional[Path]
                         ) as tmp:
                             tmp_db = Path(tmp.name)
                         try:
-                            if _safe_copy_db(abs_path, tmp_db):
-                                zf.write(tmp_db, arcname=str(rel_path))
+                            if not _safe_copy_db(abs_path, tmp_db):
+                                logger.warning(
+                                    "Full-zip backup aborted: SQLite snapshot failed for %s",
+                                    rel_path,
+                                )
+                                sqlite_snapshot_failed = True
+                                break
+                            zf.write(tmp_db, arcname=str(rel_path))
                         finally:
                             tmp_db.unlink(missing_ok=True)
                     else:
@@ -1203,6 +1265,13 @@ def _write_full_zip_backup(out_path: Path, lucifex_root: Path) -> Optional[Path]
     except OSError as exc:
         logger.warning("Full-zip backup: zip write failed: %s", exc)
         # Best-effort cleanup of partial file
+        try:
+            out_path.unlink(missing_ok=True)
+        except OSError:
+            pass
+        return None
+
+    if sqlite_snapshot_failed:
         try:
             out_path.unlink(missing_ok=True)
         except OSError:
@@ -1221,8 +1290,8 @@ _PRE_UPDATE_PREFIX = "pre-update-"
 _PRE_UPDATE_DEFAULT_KEEP = 5
 
 
-def _pre_update_backup_dir(lucifex_home: Optional[Path] = None) -> Path:
-    home = lucifex_home or get_lucifex_home()
+def _pre_update_backup_dir(LUCIFEX_HOME: Optional[Path] = None) -> Path:
+    home = LUCIFEX_HOME or get_lucifex_home()
     return home / _PRE_UPDATE_BACKUPS_DIR
 
 
@@ -1239,7 +1308,7 @@ def _prune_pre_update_backups(backup_dir: Path, keep: int) -> int:
     than no backup at all (and the wrapper in ``main.py`` would still print
     a misleading ``Saved: <path>`` line for a file that no longer exists).
     Operators who genuinely don't want a backup should set
-    ``updates.pre_update_backup: false`` in config — that gates creation.
+    ``updates.pre_update_backup: off`` in config — that gates creation.
     """
     keep = max(keep, 1)
     if not backup_dir.exists():
@@ -1264,7 +1333,7 @@ def _prune_pre_update_backups(backup_dir: Path, keep: int) -> int:
 
 
 def create_pre_update_backup(
-    lucifex_home: Optional[Path] = None,
+    LUCIFEX_HOME: Optional[Path] = None,
     keep: int = _PRE_UPDATE_DEFAULT_KEEP,
 ) -> Optional[Path]:
     """Create a full zip backup of LUCIFEX_HOME under ``backups/``.
@@ -1275,13 +1344,13 @@ def create_pre_update_backup(
 
     Returns the path to the created zip, or ``None`` if no files were
     found or the backup could not be created.  Never raises — the caller
-    (``lucifex update``) should continue even if the backup fails.
+    (``hermes update``) should continue even if the backup fails.
     """
-    lucifex_root = lucifex_home or get_default_lucifex_root()
-    if not lucifex_root.is_dir():
+    hermes_root = LUCIFEX_HOME or get_default_lucifex_root()
+    if not hermes_root.is_dir():
         return None
 
-    backup_dir = _pre_update_backup_dir(lucifex_root)
+    backup_dir = _pre_update_backup_dir(hermes_root)
     try:
         backup_dir.mkdir(parents=True, exist_ok=True)
     except OSError as exc:
@@ -1291,7 +1360,7 @@ def create_pre_update_backup(
     stamp = datetime.now().strftime("%Y-%m-%d-%H%M%S")
     out_path = backup_dir / f"{_PRE_UPDATE_PREFIX}{stamp}.zip"
 
-    result = _write_full_zip_backup(out_path, lucifex_root)
+    result = _write_full_zip_backup(out_path, hermes_root)
     if result is None:
         return None
 
@@ -1300,7 +1369,7 @@ def create_pre_update_backup(
 
 
 # ---------------------------------------------------------------------------
-# Pre-migration auto-backup (used by `lucifex claw migrate`)
+# Pre-migration auto-backup (used by `hermes claw migrate`)
 # ---------------------------------------------------------------------------
 
 _PRE_MIGRATION_PREFIX = "pre-migration-"
@@ -1336,15 +1405,15 @@ def _prune_pre_migration_backups(backup_dir: Path, keep: int) -> int:
 
 
 def create_pre_migration_backup(
-    lucifex_home: Optional[Path] = None,
+    LUCIFEX_HOME: Optional[Path] = None,
     keep: int = _PRE_MIGRATION_DEFAULT_KEEP,
 ) -> Optional[Path]:
     """Create a full zip backup of LUCIFEX_HOME under ``backups/`` before a
-    ``lucifex claw migrate`` apply.
+    ``hermes claw migrate`` apply.
 
     Shares implementation with :func:`create_pre_update_backup` via
     ``_write_full_zip_backup`` — same exclusions, same SQLite safe-copy,
-    restorable with ``lucifex import <archive>``.  Writes to
+    restorable with ``hermes import <archive>``.  Writes to
     ``<LUCIFEX_HOME>/backups/pre-migration-<timestamp>.zip`` and auto-prunes
     old pre-migration backups.
 
@@ -1352,13 +1421,13 @@ def create_pre_migration_backup(
     to back up (fresh install) or the write failed.  Never raises — the
     caller decides whether to abort or proceed.
     """
-    lucifex_root = lucifex_home or get_default_lucifex_root()
-    if not lucifex_root.is_dir():
+    hermes_root = LUCIFEX_HOME or get_default_lucifex_root()
+    if not hermes_root.is_dir():
         return None
 
-    # Reuses the shared backups/ directory so `lucifex import` and the
+    # Reuses the shared backups/ directory so `hermes import` and the
     # update-backup listing pick up pre-migration archives too.
-    backup_dir = _pre_update_backup_dir(lucifex_root)
+    backup_dir = _pre_update_backup_dir(hermes_root)
     try:
         backup_dir.mkdir(parents=True, exist_ok=True)
     except OSError as exc:
@@ -1368,7 +1437,7 @@ def create_pre_migration_backup(
     stamp = datetime.now().strftime("%Y-%m-%d-%H%M%S")
     out_path = backup_dir / f"{_PRE_MIGRATION_PREFIX}{stamp}.zip"
 
-    result = _write_full_zip_backup(out_path, lucifex_root)
+    result = _write_full_zip_backup(out_path, hermes_root)
     if result is None:
         return None
 

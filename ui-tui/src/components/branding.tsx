@@ -44,7 +44,7 @@ export function ArtLines({ lines }: { lines: [string, string][] }) {
 // Terminals can't scale glyphs, so "responsive" means picking a layout that
 // fits the available columns. Thresholds are picked so each tier reads
 // comfortably without forcing wrap or truncation drift on box-drawing edges.
-const TAG_FULL = 'Lucifex Agent · Powered by Gabriel Mesquita'
+const TAG_FULL = 'Lucifex Agent ï¿½ Powered by Gabriel Mesquita'
 const TAG_MID = 'Messenger of the Digital Gods'
 const TAG_TINY = 'Lucifex Agent'
 const HIDE_BELOW = 34
@@ -224,7 +224,7 @@ export function SessionPanel({ info, maxWidth, sid, t }: SessionPanelProps) {
 
   // MCP headline counts *connected* servers, not configured-but-disabled ones,
   // so it matches the classic CLI banner (`sum(s.connected)` in
-  // hermes_cli/banner.py) and the "connected" label on the collapse toggle.
+  // lucifex_cli/banner.py) and the "connected" label on the collapse toggle.
   const mcpServers = info.mcp_servers ?? []
   const mcpConnected = mcpServers.filter(s => s.connected).length
 

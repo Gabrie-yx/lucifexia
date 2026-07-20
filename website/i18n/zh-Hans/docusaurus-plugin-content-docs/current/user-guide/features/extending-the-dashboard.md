@@ -731,12 +731,12 @@ async def do_action(body: dict):
 
 #### 访问 Hermes 内部模块
 
-后端路由在 dashboard 进程内运行，因此可以直接从 hermes-agent 代码库导入：
+后端路由在 dashboard 进程内运行，因此可以直接从 lucifex-agent 代码库导入：
 
 ```python
 from fastapi import APIRouter
-from hermes_state import SessionDB
-from hermes_cli.config import load_config
+from lucifex_state import SessionDB
+from lucifex_cli.config import load_config
 
 router = APIRouter()
 

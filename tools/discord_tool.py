@@ -1,4 +1,4 @@
-"""Discord server introspection and management tool.
+﻿"""Discord server introspection and management tool.
 
 Provides the agent with the ability to interact with Discord servers
 when running on the Discord gateway. Uses Discord REST API directly
@@ -100,7 +100,7 @@ def _discord_request(
         headers={
             "Authorization": f"Bot {token}",
             "Content-Type": "application/json",
-            "User-Agent": "Hermes-Agent (https://github.com/NousResearch/hermes-agent)",
+            "User-Agent": "lucifex-agent (https://github.com/NousResearch/lucifex-agent)",
         },
     )
 
@@ -174,9 +174,9 @@ _capability_bg_lock = threading.Lock()
 def _capability_disk_cache_path() -> "Path":
     from pathlib import Path
 
-    from hermes_constants import get_hermes_home
+    from lucifex_constants import get_lucifex_home
 
-    return get_hermes_home() / "cache" / "discord_capabilities.json"
+    return get_lucifex_home() / "cache" / "discord_capabilities.json"
 
 
 def _token_cache_key(token: str) -> str:
@@ -711,7 +711,7 @@ def _load_allowed_actions_config() -> Optional[List[str]]:
     Unknown action names are dropped with a log warning.
     """
     try:
-        from hermes_cli.config import load_config
+        from lucifex_cli.config import load_config
         cfg = load_config()
     except Exception as exc:
         logger.debug("discord: could not load config (%s); allowing all actions.", exc)

@@ -1,4 +1,4 @@
-"""Tests for plugins.google_meet.audio_bridge (v2).
+﻿"""Tests for plugins.google_meet.audio_bridge (v2).
 
 Covers the platform gating and pactl / system_profiler plumbing
 without actually invoking those tools on the host.
@@ -13,10 +13,10 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def _isolate_home(tmp_path, monkeypatch):
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-    yield hermes_home
+    LUCIFEX_HOME = tmp_path / ".hermes"
+    LUCIFEX_HOME.mkdir()
+    monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
+    yield LUCIFEX_HOME
 
 
 # ---------------------------------------------------------------------------

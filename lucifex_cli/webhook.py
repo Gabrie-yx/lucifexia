@@ -1,12 +1,12 @@
-"""lucifex webhook — manage dynamic webhook subscriptions from the CLI.
+﻿"""hermes webhook — manage dynamic webhook subscriptions from the CLI.
 
 Usage:
-    lucifex webhook subscribe <name> [options]
-    lucifex webhook list
-    lucifex webhook remove <name>
-    lucifex webhook test <name> [--payload '{"key": "value"}']
+    hermes webhook subscribe <name> [options]
+    hermes webhook list
+    hermes webhook remove <name>
+    hermes webhook test <name> [--payload '{"key": "value"}']
 
-Subscriptions persist to ~/.lucifex/webhook_subscriptions.json and are
+Subscriptions persist to ~/.hermes/webhook_subscriptions.json and are
 hot-reloaded by the webhook adapter without a gateway restart.
 """
 
@@ -28,13 +28,13 @@ _SUBSCRIPTIONS_FILENAME = "webhook_subscriptions.json"
 _SUBSCRIPTIONS_FILE_MODE = 0o600
 
 
-def _lucifex_home() -> Path:
+def _LUCIFEX_HOME() -> Path:
     from lucifex_constants import get_lucifex_home
     return get_lucifex_home()
 
 
 def _subscriptions_path() -> Path:
-    return _lucifex_home() / _SUBSCRIPTIONS_FILENAME
+    return _LUCIFEX_HOME() / _SUBSCRIPTIONS_FILENAME
 
 
 def _load_subscriptions() -> Dict[str, dict]:
@@ -96,9 +96,11 @@ def _is_webhook_enabled() -> bool:
 
 def _get_webhook_base_url() -> str:
     wh = _get_webhook_config().get("extra", {})
-    host = wh.get("host", "0.0.0.0")
+    host = wh.get("host")
     port = wh.get("port", 8644)
-    display_host = "localhost" if host == "0.0.0.0" else host
+    display_host = "localhost" if not host or host in {"0.0.0.0", "::"} else host
+    if ":" in display_host and not display_host.startswith("["):
+        display_host = f"[{display_host}]"
     return f"http://{display_host}:{port}"
 
 
@@ -108,14 +110,13 @@ def _setup_hint() -> str:
   Webhook platform is not enabled. To set it up:
 
   1. Run the gateway setup wizard:
-     lucifex gateway setup
+     hermes gateway setup
 
   2. Or manually add to {_dhh}/config.yaml:
      platforms:
        webhook:
          enabled: true
          extra:
-           host: "0.0.0.0"
            port: 8644
            secret: "your-global-hmac-secret"
 
@@ -137,12 +138,12 @@ def _require_webhook_enabled() -> bool:
 
 
 def webhook_command(args):
-    """Entry point for 'lucifex webhook' subcommand."""
+    """Entry point for 'hermes webhook' subcommand."""
     sub = getattr(args, "webhook_action", None)
 
     if not sub:
-        print("Usage: lucifex webhook {subscribe|list|remove|test}")
-        print("Run 'lucifex webhook --help' for details.")
+        print("Usage: hermes webhook {subscribe|list|remove|test}")
+        print("Run 'hermes webhook --help' for details.")
         return
 
     if not _require_webhook_enabled():
@@ -189,6 +190,10 @@ def _cmd_subscribe(args):
             return
         route["deliver_only"] = True
 
+    script = getattr(args, "script", "") or ""
+    if script.strip():
+        route["script"] = script.strip()
+
     if args.deliver_chat_id:
         route["deliver_extra"] = {"chat_id": args.deliver_chat_id}
 
@@ -212,16 +217,18 @@ def _cmd_subscribe(args):
         prompt_preview = route["prompt"][:80] + ("..." if len(route["prompt"]) > 80 else "")
         label = "Message" if route.get("deliver_only") else "Prompt"
         print(f"  {label}: {prompt_preview}")
-    print(f"\n  Configure your service to POST to the URL above.")
-    print(f"  Use the secret for HMAC-SHA256 signature validation.")
-    print(f"  The gateway must be running to receive events (lucifex gateway run).\n")
+    if route.get("script"):
+        print(f"  Script: {route['script']}")
+    print("\n  Configure your service to POST to the URL above.")
+    print("  Use the secret for HMAC-SHA256 signature validation.")
+    print("  The gateway must be running to receive events (lucifex gateway run).\n")
 
 
 def _cmd_list(args):
     subs = _load_subscriptions()
     if not subs:
         print("  No dynamic webhook subscriptions.")
-        print("  Create one with: lucifex webhook subscribe <name>")
+        print("  Create one with: hermes webhook subscribe <name>")
         return
 
     base_url = _get_webhook_base_url()
@@ -238,6 +245,8 @@ def _cmd_list(args):
         print(f"    URL:     {base_url}/webhooks/{name}")
         print(f"    Events:  {events}")
         print(f"    Deliver: {deliver}")
+        if route.get("script"):
+            print(f"    Script:  {route['script']}")
         print()
 
 
@@ -269,7 +278,7 @@ def _cmd_test(args):
     base_url = _get_webhook_base_url()
     url = f"{base_url}/webhooks/{name}"
 
-    payload = args.payload or '{"test": true, "event_type": "test", "message": "Hello from lucifex webhook test"}'
+    payload = args.payload or '{"test": true, "event_type": "test", "message": "Hello from hermes webhook test"}'
 
     import hmac
     import hashlib

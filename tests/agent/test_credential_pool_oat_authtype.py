@@ -1,4 +1,4 @@
-"""Regression tests for #63737: sk-ant-oat pool entries are OAuth."""
+﻿"""Regression tests for #63737: sk-ant-oat pool entries are OAuth."""
 
 import json
 from pathlib import Path
@@ -50,9 +50,9 @@ def test_non_anthropic_provider_unchanged():
 
 
 def test_add_entry_normalizes_before_persisting(tmp_path, monkeypatch):
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    LUCIFEX_HOME = tmp_path / "hermes"
+    LUCIFEX_HOME.mkdir()
+    monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
 
     pool = CredentialPool("anthropic", [])
     entry = pool.add_entry(PooledCredential(
@@ -65,15 +65,15 @@ def test_add_entry_normalizes_before_persisting(tmp_path, monkeypatch):
         access_token="sk-ant-oat-manual-entry",
     ))
 
-    persisted = json.loads((hermes_home / "auth.json").read_text())
+    persisted = json.loads((LUCIFEX_HOME / "auth.json").read_text())
     assert entry.auth_type == AUTH_TYPE_OAUTH
     assert persisted["credential_pool"]["anthropic"][0]["auth_type"] == AUTH_TYPE_OAUTH
 
 
 def test_load_heals_legacy_row_and_exposes_it_to_resolver(tmp_path, monkeypatch):
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    LUCIFEX_HOME = tmp_path / "hermes"
+    LUCIFEX_HOME.mkdir()
+    monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
     for key in ("ANTHROPIC_API_KEY", "ANTHROPIC_TOKEN", "CLAUDE_CODE_OAUTH_TOKEN"):
         monkeypatch.delenv(key, raising=False)
     monkeypatch.setattr(
@@ -81,7 +81,7 @@ def test_load_heals_legacy_row_and_exposes_it_to_resolver(tmp_path, monkeypatch)
         lambda: None,
     )
     token = "sk-ant-oat-legacy-manual"
-    auth_file = hermes_home / "auth.json"
+    auth_file = LUCIFEX_HOME / "auth.json"
     auth_file.write_text(json.dumps({
         "version": 1,
         "credential_pool": {
@@ -112,7 +112,7 @@ def test_profile_global_fallback_normalizes_in_memory_without_writing(tmp_path, 
     global_root.mkdir()
     profile_home = global_root / "profiles" / "coder"
     profile_home.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(profile_home))
+    monkeypatch.setenv("LUCIFEX_HOME", str(profile_home))
     token = "sk-ant-oat-global-fallback"
     global_auth = global_root / "auth.json"
     global_auth.write_text(json.dumps({

@@ -15,7 +15,7 @@ Hermes Agent supports Amazon Bedrock as a native provider using the **Converse A
   - `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` environment variables
   - `AWS_PROFILE` for SSO or named profiles
   - `aws configure` for local development
-- **boto3** — install with `cd ~/.hermes/hermes-agent && uv pip install -e ".[bedrock]"`
+- **boto3** — install with `cd ~/.hermes/lucifex-agent && uv pip install -e ".[bedrock]"`
 - **IAM permissions** — at minimum:
   - `bedrock:InvokeModel` and `bedrock:InvokeModelWithResponseStream` (for inference)
   - `bedrock:ListFoundationModels` and `bedrock:ListInferenceProfiles` (for model discovery)
@@ -28,7 +28,7 @@ On AWS compute, attach an IAM role with `AmazonBedrockFullAccess` and you're don
 
 ```bash
 # Install with Bedrock support
-cd ~/.hermes/hermes-agent && uv pip install -e ".[bedrock]"
+cd ~/.hermes/lucifex-agent && uv pip install -e ".[bedrock]"
 
 # Select Bedrock as your provider
 hermes model
@@ -134,7 +134,7 @@ Bedrock works with all Hermes gateway platforms (Telegram, Discord, Slack, Feish
 
 ```bash
 hermes gateway setup
-hermes gateway start
+lucifex gateway start
 ```
 
 The gateway reads `config.yaml` and uses the same Bedrock provider configuration.
@@ -167,4 +167,4 @@ You've hit the Bedrock per-model rate limit. Hermes automatically retries with b
 
 For a fully automated deployment on EC2 with CloudFormation:
 
-**[sample-hermes-agent-on-aws-with-bedrock](https://github.com/JiaDe-Wu/sample-hermes-agent-on-aws-with-bedrock)** — creates VPC, IAM role, EC2 instance, and configures Bedrock automatically. Deploy in any region with one click.
+**[sample-lucifex-agent-on-aws-with-bedrock](https://github.com/JiaDe-Wu/sample-lucifex-agent-on-aws-with-bedrock)** — creates VPC, IAM role, EC2 instance, and configures Bedrock automatically. Deploy in any region with one click.

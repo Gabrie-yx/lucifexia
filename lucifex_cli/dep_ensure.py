@@ -32,7 +32,7 @@ _DEP_CHECKS = {
     "browser": lambda: (
         agent_browser_runnable(shutil.which("agent-browser"))
         or _has_system_browser()
-        or _has_lucifex_agent_browser()
+        or _has_hermes_agent_browser()
     ),
     "ripgrep": lambda: shutil.which("rg") is not None,
     "ffmpeg": lambda: shutil.which("ffmpeg") is not None,
@@ -57,7 +57,7 @@ def _has_system_browser() -> bool:
     return False
 
 
-def _has_lucifex_agent_browser() -> bool:
+def _has_hermes_agent_browser() -> bool:
     from lucifex_constants import get_lucifex_home
     home = get_lucifex_home()
     if _IS_WINDOWS:
@@ -144,7 +144,7 @@ def ensure_dependency(
             "-ExecutionPolicy", "Bypass",
             "-File", str(script),
             "-Ensure", dep,
-            "-LucifexHome", str(get_lucifex_home()),
+            "-HermesHome", str(get_lucifex_home()),
         ]
     else:
         cmd = ["bash", str(script), "--ensure", dep]

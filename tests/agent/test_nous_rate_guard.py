@@ -1,4 +1,4 @@
-"""Tests for agent/nous_rate_guard.py — cross-session Nous Portal rate limit guard."""
+﻿"""Tests for agent/nous_rate_guard.py — cross-session Nous Portal rate limit guard."""
 
 import json
 import os
@@ -10,11 +10,11 @@ import pytest
 @pytest.fixture
 def rate_guard_env(tmp_path, monkeypatch):
     """Isolate rate guard state to a temp directory."""
-    hermes_home = str(tmp_path / ".hermes")
-    os.makedirs(hermes_home, exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", hermes_home)
+    LUCIFEX_HOME = str(tmp_path / ".hermes")
+    os.makedirs(LUCIFEX_HOME, exist_ok=True)
+    monkeypatch.setenv("LUCIFEX_HOME", LUCIFEX_HOME)
     # Clear any cached module-level imports
-    return hermes_home
+    return LUCIFEX_HOME
 
 
 class TestRecordNousRateLimit:

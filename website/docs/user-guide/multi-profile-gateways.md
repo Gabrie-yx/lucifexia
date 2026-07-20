@@ -26,7 +26,7 @@ be online at the same time. Common reasons:
 
 Every profile already gets its own per-platform LaunchAgent
 (`ai.hermes.gateway-<name>.plist`) or systemd user service
-(`hermes-gateway-<name>.service`). This guide adds the patterns for managing
+(`lucifex-gateway-<name>.service`). This guide adds the patterns for managing
 them collectively.
 
 ## Quick start
@@ -103,7 +103,7 @@ credentials, and routes each inbound message to the profile it belongs to. Each
 turn resolves the routed profile's config, skills, memory, SOUL, **and provider
 keys** — credentials are never shared across profiles.
 
-You do **not** run `hermes gateway start` for the secondary profiles — the
+You do **not** run `lucifex gateway start` for the secondary profiles — the
 default gateway serves them. See the contract changes below.
 
 ### What changes when multiplexing is on
@@ -113,7 +113,7 @@ moment the flag is off.
 
 #### 1. Secondary profiles must not start their own gateway
 
-With a multiplexer running, a named-profile `hermes gateway start` / `run` is a
+With a multiplexer running, a named-profile `lucifex gateway start` / `run` is a
 **hard error**, pointing you back at the multiplexer:
 
 ```
@@ -245,7 +245,7 @@ falls back to the default home.
 
 The CLI ships with single-profile lifecycle commands. To act across every
 profile, wrap them in a shell loop. Put the snippet below in
-`~/.local/bin/hermes-gateways` and `chmod +x` it:
+`~/.local/bin/lucifex-gateways` and `chmod +x` it:
 
 ```sh
 #!/bin/sh
@@ -255,7 +255,7 @@ set -eu
 profiles="default coder personal-bot research"
 
 usage() {
-  echo "Usage: hermes-gateways {start|stop|restart|status|list}"
+  echo "Usage: lucifex-gateways {start|stop|restart|status|list}"
 }
 
 run_for_profile() {
@@ -289,11 +289,11 @@ esac
 Then:
 
 ```bash
-hermes-gateways start      # start every configured profile
-hermes-gateways stop       # stop every configured profile
-hermes-gateways restart    # restart all
-hermes-gateways status     # status across all
-hermes-gateways list       # delegates to `hermes gateway list`
+lucifex-gateways start      # start every configured profile
+lucifex-gateways stop       # stop every configured profile
+lucifex-gateways restart    # restart all
+lucifex-gateways status     # status across all
+lucifex-gateways list       # delegates to `hermes gateway list`
 ```
 
 :::tip
@@ -327,10 +327,10 @@ never clash:
 | Platform | Path                                                              |
 | -------- | ----------------------------------------------------------------- |
 | macOS    | `~/Library/LaunchAgents/ai.hermes.gateway-<profile>.plist`        |
-| Linux    | `~/.config/systemd/user/hermes-gateway-<profile>.service`         |
+| Linux    | `~/.config/systemd/user/lucifex-gateway-<profile>.service`         |
 
 The default profile keeps the historical names: `ai.hermes.gateway.plist` /
-`hermes-gateway.service`.
+`lucifex-gateway.service`.
 
 ## Viewing logs
 
@@ -364,9 +364,9 @@ hermes logs --help              # filters, levels, JSON output
 
 ```bash
 hermes profile list             # profiles + model + gateway state
-hermes-gateways status          # full status across every profile
+lucifex-gateways status          # full status across every profile
 launchctl list | grep hermes    # macOS — PIDs and labels
-systemctl --user list-units 'hermes-gateway-*'   # Linux — units
+systemctl --user list-units 'lucifex-gateway-*'   # Linux — units
 ```
 
 ## Editing configuration
@@ -394,7 +394,7 @@ After editing `.env` or `config.yaml`, restart the affected gateway:
 ```bash
 coder gateway restart
 # or, for everything:
-hermes-gateways restart
+lucifex-gateways restart
 ```
 
 ## Keeping the host awake
@@ -448,7 +448,7 @@ sudo loginctl enable-linger "$USER"
 ```
 
 After enabling lingering, your systemd user units (including
-`hermes-gateway-<profile>.service`) continue running across SSH disconnects
+`lucifex-gateway-<profile>.service`) continue running across SSH disconnects
 and reboots.
 
 ## Token-conflict safety
@@ -471,7 +471,7 @@ every profile:
 
 ```bash
 hermes update
-hermes-gateways restart
+lucifex-gateways restart
 ```
 
 User-modified skills are never overwritten.
@@ -480,7 +480,7 @@ User-modified skills are never overwritten.
 
 ### "Could not find service in domain for user gui: 501"
 
-You ran `hermes gateway start` after a previous `hermes gateway stop`. The
+You ran `lucifex gateway start` after a previous `lucifex gateway stop`. The
 CLI's `stop` does a full `launchctl unload`, which removes the service from
 launchd's registry. The CLI catches this specific error on `start` and
 automatically re-loads the plist (`↻ launchd job was unloaded; reloading
@@ -491,7 +491,7 @@ service definition`). The service starts normally. Nothing to fix.
 If a profile's gateway shows `not running` but a process is still alive:
 
 ```bash
-ps -ef | grep "hermes_cli.*-p <profile>"
+ps -ef | grep "lucifex_cli.*-p <profile>"
 cat ~/.hermes/profiles/<profile>/gateway.pid
 kill -TERM <pid>          # graceful
 kill -KILL <pid>          # if that fails after a few seconds
@@ -506,7 +506,7 @@ launchctl unload ~/Library/LaunchAgents/ai.hermes.gateway-<profile>.plist
 launchctl load   ~/Library/LaunchAgents/ai.hermes.gateway-<profile>.plist
 
 # Linux
-systemctl --user restart hermes-gateway-<profile>.service
+systemctl --user restart lucifex-gateway-<profile>.service
 ```
 
 ### Health check

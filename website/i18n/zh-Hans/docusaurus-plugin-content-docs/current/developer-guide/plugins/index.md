@@ -552,7 +552,7 @@ def register(ctx):
 
 ```python
 # 包含 context 键的字典
-return {"context": "Recalled memories:\n- User prefers dark mode\n- Last project: hermes-agent"}
+return {"context": "Recalled memories:\n- User prefers dark mode\n- Last project: lucifex-agent"}
 
 # 纯字符串（等同于上面的字典形式）
 return "Recalled memories:\n- User prefers dark mode"
@@ -1076,7 +1076,7 @@ pip install hermes-plugin-calculator
 **Entry-point 插件**（推荐用于分发）：
 ```nix
 # User's configuration.nix
-services.hermes-agent.extraPythonPackages = [
+services.lucifex-agent.extraPythonPackages = [
   (pkgs.python312Packages.buildPythonPackage {
     pname = "my-plugin";
     version = "1.0.0";
@@ -1094,7 +1094,7 @@ services.hermes-agent.extraPythonPackages = [
 
 **目录插件**（无需 `pyproject.toml`）：
 ```nix
-services.hermes-agent.extraPlugins = [
+services.lucifex-agent.extraPlugins = [
   (pkgs.fetchFromGitHub {
     owner = "you";
     repo = "hermes-my-plugin";

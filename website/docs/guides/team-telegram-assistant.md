@@ -150,26 +150,26 @@ This creates a background service: a user-level **systemd** service on Linux by 
 
 ```bash
 # Linux — manage the default user service
-hermes gateway start
-hermes gateway stop
+lucifex gateway start
+lucifex gateway stop
 hermes gateway status
 
 # View live logs
-journalctl --user -u hermes-gateway -f
+journalctl --user -u lucifex-gateway -f
 
 # Keep running after SSH logout
 sudo loginctl enable-linger $USER
 
 # Linux servers — explicit system-service commands
-sudo hermes gateway start --system
+sudo lucifex gateway start --system
 sudo hermes gateway status --system
-journalctl -u hermes-gateway -f
+journalctl -u lucifex-gateway -f
 ```
 
 ```bash
 # macOS — manage the service
-hermes gateway start
-hermes gateway stop
+lucifex gateway start
+lucifex gateway stop
 tail -f ~/.hermes/logs/gateway.log
 ```
 
@@ -203,7 +203,7 @@ TELEGRAM_ALLOWED_USERS=123456789,987654321,555555555
 Restart the gateway after changes:
 
 ```bash
-hermes gateway stop && hermes gateway start
+lucifex gateway stop && lucifex gateway start
 ```
 
 ### Approach B: DM Pairing (Recommended for Teams)
@@ -397,7 +397,7 @@ This way, even if someone asks the bot to run something destructive, your host s
 hermes gateway status
 
 # Watch live logs (Linux)
-journalctl --user -u hermes-gateway -f
+journalctl --user -u lucifex-gateway -f
 
 # Watch live logs (macOS)
 tail -f ~/.hermes/logs/gateway.log
@@ -409,14 +409,14 @@ From Telegram, send `/update` to the bot — it will pull the latest version and
 
 ```bash
 hermes update
-hermes gateway stop && hermes gateway start
+lucifex gateway stop && lucifex gateway start
 ```
 
 ### Log Locations
 
 | What | Location |
 |------|----------|
-| Gateway logs | `journalctl --user -u hermes-gateway` (Linux) or `~/.hermes/logs/gateway.log` (macOS) |
+| Gateway logs | `journalctl --user -u lucifex-gateway` (Linux) or `~/.hermes/logs/gateway.log` (macOS) |
 | Cron job output | `~/.hermes/cron/output/{job_id}/{timestamp}.md` |
 | Cron job definitions | `~/.hermes/cron/jobs.json` |
 | Pairing data | `~/.hermes/pairing/` |

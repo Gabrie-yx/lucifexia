@@ -1,7 +1,7 @@
-"""Per-provider model-selection wizard flows for ``lucifex setup`` / ``lucifex model``.
+"""Per-provider model-selection wizard flows for ``hermes setup`` / ``hermes model``.
 
 Extracted from ``lucifex_cli/main.py`` as part of the god-file decomposition
-campaign (``~/.lucifex/plans/god-file-decomposition.md``, Phase 2 — splitting
+campaign (``~/.hermes/plans/god-file-decomposition.md``, Phase 2 — splitting
 main.py handler/flow bodies out of the module). These 18 ``_model_flow_*``
 functions are the interactive provider-setup branches dispatched by
 ``select_provider_and_model`` (which stays in main.py).
@@ -25,6 +25,107 @@ import os
 import subprocess
 
 from lucifex_cli.config import clear_model_endpoint_credentials
+
+
+# AWS cross-region inference profile prefixes. Any geo-prefixed profile only
+# routes from endpoints in its own geography, so the Bedrock picker must not
+# offer (e.g.) us.* profiles to an eu-central-2 endpoint — selecting one
+# produces a config AWS rejects regardless of credentials (#28156).
+# global.* routes from everywhere. Full set per the AWS cross-region
+# inference docs.
+BEDROCK_GEO_PREFIXES = (
+    "us.", "eu.", "ap.", "apac.", "jp.", "ca.", "sa.", "me.", "af.",
+)
+
+
+def bedrock_region_geo_prefix(region_name: str) -> str:
+    """Map an AWS region name to its inference-profile geo prefix ('' = unknown)."""
+    r = (region_name or "").lower()
+    for geo, region_prefixes in (
+        ("us.", ("us-", "us_gov")),
+        ("eu.", ("eu-",)),
+        ("ap.", ("ap-",)),
+        ("ca.", ("ca-",)),
+        ("sa.", ("sa-",)),
+        ("me.", ("me-",)),
+        ("af.", ("af-",)),
+    ):
+        if r.startswith(region_prefixes):
+            return geo
+    return ""
+
+
+def bedrock_model_routable_from_region(model_id: str, region_name: str) -> bool:
+    """True when *model_id* can be invoked from *region_name*'s endpoint.
+
+    Bare foundation-model ids and ``global.*`` profiles route from anywhere.
+    Geo-prefixed inference profiles (``us.*``, ``eu.*``, ...) only route from
+    endpoints in their own geography. Unknown region shapes hide nothing.
+    """
+    mid = (model_id or "").lower()
+    matched_geo = next((p for p in BEDROCK_GEO_PREFIXES if mid.startswith(p)), None)
+    if matched_geo is None or mid.startswith("global."):
+        return True
+    geo = bedrock_region_geo_prefix(region_name)
+    if not geo:
+        return True
+    if geo == "ap.":
+        # Asia-Pacific regions can carry ap./apac./jp. profile spellings.
+        return matched_geo in ("ap.", "apac.", "jp.")
+    return matched_geo == geo
+
+
+def _prune_replaced_custom_model_config_credentials(
+    base_url: str,
+    *,
+    provider_name: str = "",
+) -> None:
+    """Drop stale ``model_config`` credentials from inactive custom pools.
+
+    ``model_config`` means "the credential currently stored under
+    ``model.api_key``". After an explicit custom-endpoint switch, any old
+    custom pool still carrying that source points at the previous endpoint and
+    can be selected before the freshly saved config is tried.
+    """
+    try:
+        from agent.credential_pool import (
+            CUSTOM_POOL_PREFIX,
+            get_custom_provider_pool_key,
+        )
+        from lucifex_cli.auth import read_credential_pool, write_credential_pool
+
+        active_pool_key = get_custom_provider_pool_key(
+            base_url,
+            provider_name=provider_name or None,
+        )
+        if not active_pool_key:
+            return
+        pools = read_credential_pool(None)
+        if not isinstance(pools, dict):
+            return
+        for pool_key, entries in pools.items():
+            if (
+                not isinstance(pool_key, str)
+                or not pool_key.startswith(CUSTOM_POOL_PREFIX)
+                or pool_key == active_pool_key
+                or not isinstance(entries, list)
+            ):
+                continue
+            retained = []
+            removed_ids = []
+            changed = False
+            for entry in entries:
+                if isinstance(entry, dict) and entry.get("source") == "model_config":
+                    changed = True
+                    entry_id = entry.get("id")
+                    if entry_id:
+                        removed_ids.append(str(entry_id))
+                    continue
+                retained.append(entry)
+            if changed:
+                write_credential_pool(pool_key, retained, removed_ids=removed_ids)
+    except Exception:
+        return
 
 
 def _prompt_auth_credentials_choice(title: str) -> str:
@@ -78,9 +179,9 @@ def _model_flow_openrouter(config, current_model=""):
     from lucifex_cli.config import get_env_value
 
     # Route through _prompt_api_key so users can replace a stale/broken key
-    # in-flow (K/R/C) instead of having to edit ~/.lucifex/.env by hand. The
+    # in-flow (K/R/C) instead of having to edit ~/.hermes/.env by hand. The
     # previous bypass-when-key-exists branch left no way to recover from a
-    # bad paste short of re-running `lucifex setup` from scratch. OpenRouter
+    # bad paste short of re-running `hermes setup` from scratch. OpenRouter
     # isn't in PROVIDER_REGISTRY so we synthesize a minimal pconfig.
     pconfig = ProviderConfig(
         id="openrouter",
@@ -158,7 +259,7 @@ def _model_flow_moa(config, current_model=""):
     moa = normalize_moa_config(config.get("moa") if isinstance(config, dict) else {})
     presets = moa.get("presets") or {}
     if not presets:
-        print("No MoA presets configured. Run `lucifex moa configure <name>` first.")
+        print("No MoA presets configured. Run `hermes moa configure <name>` first.")
         return
 
     names = list(presets.keys())
@@ -229,85 +330,229 @@ def _model_flow_moa(config, current_model=""):
 
 
 def _model_flow_nous(config, current_model="", args=None):
-    """Ollama provider: pick a local model."""
+    """Nous Portal provider: ensure logged in, then pick model."""
     from lucifex_cli.auth import (
+        get_provider_auth_state,
         _prompt_model_selection,
         _save_model_choice,
         _update_config_for_provider,
-        clear_model_endpoint_credentials,
+        resolve_nous_runtime_credentials,
+        AuthError,
+        format_auth_error,
+        _login_nous,
+        PROVIDER_REGISTRY,
     )
     from lucifex_cli.config import (
+        get_env_value,
         load_config,
         save_config,
         save_env_value,
-        get_env_value,
     )
-    import urllib.request
-    import json
+    from lucifex_cli.nous_subscription import prompt_enable_tool_gateway
 
-    print()
-    print("Verificando instancia local do Ollama (http://127.0.0.1:11434)...")
-    
-    local_models = []
+    state = get_provider_auth_state("nous")
+    if not state or not state.get("access_token"):
+        print("Not logged into Nous Portal. Starting login...")
+        print()
+        try:
+            mock_args = argparse.Namespace(
+                portal_url=getattr(args, "portal_url", None),
+                inference_url=getattr(args, "inference_url", None),
+                client_id=getattr(args, "client_id", None),
+                scope=getattr(args, "scope", None),
+                no_browser=bool(getattr(args, "no_browser", False)),
+                timeout=getattr(args, "timeout", None) or 15.0,
+                ca_bundle=getattr(args, "ca_bundle", None),
+                insecure=bool(getattr(args, "insecure", False)),
+            )
+            _login_nous(mock_args, PROVIDER_REGISTRY["nous"])
+            # Offer Tool Gateway enablement for paid subscribers
+            try:
+                _refreshed = load_config() or {}
+                prompt_enable_tool_gateway(_refreshed)
+            except Exception:
+                pass
+        except SystemExit:
+            print("Login cancelled or failed.")
+            return
+        except Exception as exc:
+            print(f"Login failed: {exc}")
+            return
+        # login_nous already handles model selection + config update
+        return
+
+    # Already logged in — use curated model list (same as OpenRouter defaults).
+    # The live /models endpoint returns hundreds of models; the curated list
+    # shows only agentic models users recognize from OpenRouter.
+    from lucifex_cli.models import (
+        get_curated_nous_model_ids,
+        get_pricing_for_provider,
+        check_nous_free_tier,
+        partition_nous_models_by_tier,
+        union_with_portal_free_recommendations,
+        union_with_portal_paid_recommendations,
+    )
+
+    model_ids = get_curated_nous_model_ids()
+    if not model_ids:
+        print("No curated models available for Nous Portal.")
+        return
+
+    # Verify credentials are still valid (catches expired sessions early)
     try:
-        req = urllib.request.Request("http://127.0.0.1:11434/api/tags")
-        with urllib.request.urlopen(req, timeout=3) as resp:
-            data = json.loads(resp.read())
-            for m in data.get("models", []):
-                name = m.get("name")
-                if name:
-                    local_models.append(name)
+        creds = resolve_nous_runtime_credentials()
+    except Exception as exc:
+        relogin = isinstance(exc, AuthError) and exc.relogin_required
+        msg = format_auth_error(exc) if isinstance(exc, AuthError) else str(exc)
+        if relogin:
+            print(f"Session expired: {msg}")
+            print("Re-authenticating with Nous Portal...\n")
+            try:
+                mock_args = argparse.Namespace(
+                    portal_url=None,
+                    inference_url=None,
+                    client_id=None,
+                    scope=None,
+                    no_browser=False,
+                    timeout=15.0,
+                    ca_bundle=None,
+                    insecure=False,
+                )
+                _login_nous(mock_args, PROVIDER_REGISTRY["nous"])
+            except Exception as login_exc:
+                print(f"Re-login failed: {login_exc}")
+            return
+        print(f"Could not verify credentials: {msg}")
+        return
+
+    # Fetch live pricing (non-blocking — returns empty dict on failure)
+    pricing = get_pricing_for_provider("nous")
+
+    # Force fresh account data for model selection so recent credit purchases
+    # are reflected immediately.
+    free_tier = check_nous_free_tier(force_fresh=True)
+    if not free_tier:
+        try:
+            refreshed_creds = resolve_nous_runtime_credentials(
+                force_refresh=True,
+            )
+            if refreshed_creds:
+                creds = refreshed_creds
+        except Exception:
+            # Runtime inference has its own paid-entitlement recovery path; do
+            # not block model selection if this opportunistic refresh fails.
+            pass
+
+    # Resolve portal URL early — needed both for upgrade links and for the
+    # freeRecommendedModels endpoint below.
+    _nous_portal_url = ""
+    try:
+        _nous_state = get_provider_auth_state("nous")
+        if _nous_state:
+            _nous_portal_url = _nous_state.get("portal_base_url", "")
     except Exception:
         pass
 
-    if not local_models:
-        print("Aviso: Nao foi possivel conectar ao Ollama local ou nenhum modelo foi encontrado.")
-        print("Certifique-se de que o Ollama esta rodando (`ollama serve`).")
-        # Lista padrao de fallbacks
-        local_models = [
-            "llama3.1",
-            "llama3",
-            "qwen2.5-coder",
-            "qwen2.5",
-            "mistral",
-            "phi3",
-            "gemma2",
-        ]
+    # For free users: partition models into selectable/unavailable based on
+    # whether they are free per the Portal-reported pricing.  First augment
+    # with the Portal's freeRecommendedModels list so newly-launched free
+    # models show up even if this CLI build's hardcoded curated list and
+    # docs-hosted manifest haven't caught up yet.
+    #
+    # For paid users: mirror the same idea with paidRecommendedModels so
+    # newly-launched paid models surface in the picker too — independent
+    # of CLI release cadence.
+    unavailable_models: list[str] = []
+    unavailable_message = ""
+    if free_tier:
+        try:
+            from lucifex_cli.nous_account import (
+                format_nous_portal_entitlement_message,
+                get_nous_portal_account_info,
+            )
 
-    print(f"Encontrados {len(local_models)} modelo(s) ou sugestoes locais.")
-    selected = _prompt_model_selection(
-        local_models,
-        current_model=current_model,
-        confirm_provider="nous",
-    )
-    if not selected:
-        print("Nenhuma alteracao feita.")
+            _account_info = get_nous_portal_account_info(force_fresh=True)
+            unavailable_message = (
+                format_nous_portal_entitlement_message(
+                    _account_info,
+                    capability="paid Nous models",
+                )
+                or ""
+            )
+        except Exception:
+            unavailable_message = ""
+        model_ids, pricing = union_with_portal_free_recommendations(
+            model_ids, pricing, _nous_portal_url,
+        )
+        model_ids, unavailable_models = partition_nous_models_by_tier(
+            model_ids, pricing, free_tier=True
+        )
+    else:
+        model_ids, pricing = union_with_portal_paid_recommendations(
+            model_ids, pricing, _nous_portal_url,
+        )
+
+    if not model_ids and not unavailable_models:
+        print("No models available for Nous Portal after filtering.")
         return
 
-    _save_model_choice(selected)
-    inference_url = "http://127.0.0.1:11434/v1"
-    _update_config_for_provider("nous", inference_url)
+    if free_tier and not model_ids:
+        print("No free models currently available.")
+        if unavailable_models:
+            from lucifex_cli.auth import DEFAULT_NOUS_PORTAL_URL
 
-    # Recarrega o config
-    config = load_config()
-    current_model_cfg = config.get("model")
-    if isinstance(current_model_cfg, dict):
-        model_cfg = dict(current_model_cfg)
-    elif isinstance(current_model_cfg, str) and current_model_cfg.strip():
-        model_cfg = {"default": current_model_cfg.strip()}
+            _url = (_nous_portal_url or DEFAULT_NOUS_PORTAL_URL).rstrip("/")
+            print(unavailable_message or f"Upgrade at {_url} to access paid models.")
+        return
+
+    print(
+        f'Showing {len(model_ids)} curated models — use "Enter custom model name" for others.'
+    )
+
+    selected = _prompt_model_selection(
+        model_ids,
+        current_model=current_model,
+        pricing=pricing,
+        unavailable_models=unavailable_models,
+        portal_url=_nous_portal_url,
+        unavailable_message=unavailable_message,
+        confirm_provider="nous",
+        confirm_base_url=creds.get("base_url", ""),
+        confirm_api_key=creds.get("api_key", ""),
+    )
+    if selected:
+        _save_model_choice(selected)
+        # Reactivate Nous as the provider and update config
+        inference_url = creds.get("base_url", "")
+        _update_config_for_provider("nous", inference_url)
+        # Reload after the auth helper writes provider state. The incoming
+        # config object may still contain stale custom-provider fields.
+        config = load_config()
+        current_model_cfg = config.get("model")
+        if isinstance(current_model_cfg, dict):
+            model_cfg = dict(current_model_cfg)
+        elif isinstance(current_model_cfg, str) and current_model_cfg.strip():
+            model_cfg = {"default": current_model_cfg.strip()}
+        else:
+            model_cfg = {}
+        model_cfg["provider"] = "nous"
+        model_cfg["default"] = selected
+        if inference_url and inference_url.strip():
+            model_cfg["base_url"] = inference_url.rstrip("/")
+        else:
+            model_cfg.pop("base_url", None)
+        clear_model_endpoint_credentials(model_cfg)
+        config["model"] = model_cfg
+        # Clear any custom endpoint that might conflict
+        if get_env_value("OPENAI_BASE_URL"):
+            save_env_value("OPENAI_BASE_URL", "")
+            save_env_value("OPENAI_API_KEY", "")
+        save_config(config)
+        print(f"Default model set to: {selected} (via Nous Portal)")
+        # Offer Tool Gateway enablement for paid subscribers
+        prompt_enable_tool_gateway(config)
     else:
-        model_cfg = {}
-    model_cfg["provider"] = "nous"
-    model_cfg["default"] = selected
-    model_cfg["base_url"] = inference_url
-    clear_model_endpoint_credentials(model_cfg)
-    config["model"] = model_cfg
-    # Limpa endpoints conflitantes
-    if get_env_value("OPENAI_BASE_URL"):
-        save_env_value("OPENAI_BASE_URL", "")
-        save_env_value("OPENAI_API_KEY", "")
-    save_config(config)
-    print(f"✓ Provedor OLLAMA configurado com o modelo: {selected}")
+        print("No change.")
 
 def _model_flow_openai_codex(config, current_model=""):
     """OpenAI Codex provider: ensure logged in, then pick model."""
@@ -364,7 +609,7 @@ def _model_flow_openai_codex(config, current_model=""):
             return
 
     _codex_token = None
-    # Prefer credential pool (where `lucifex auth` stores device_code tokens),
+    # Prefer credential pool (where `hermes auth` stores device_code tokens),
     # fall back to legacy provider state.
     try:
         _codex_status = get_codex_auth_status()
@@ -458,7 +703,7 @@ def _model_flow_xai_oauth(_config, current_model="", *, args=None):
 
     # Resolve a usable base URL.  ``resolve_xai_oauth_runtime_credentials``
     # only reads from the auth.json singleton — but credentials may legitimately
-    # live only in the pool (e.g. after ``lucifex auth add xai-oauth``).  Fall
+    # live only in the pool (e.g. after ``hermes auth add xai-oauth``).  Fall
     # back to the default base URL in that case so the model picker still
     # completes successfully instead of bailing out with
     # ``Could not resolve xAI OAuth credentials``.
@@ -634,8 +879,8 @@ def _model_flow_custom(config):
     )
     if _looks_local and not _url_lower.endswith("/v1"):
         print()
-        print(f"  Hint: Did you mean to add /v1 at the end?")
-        print(f"  Most local model servers (Ollama, vLLM, llama.cpp) require it.")
+        print("  Hint: Did you mean to add /v1 at the end?")
+        print("  Most local model servers (Ollama, vLLM, llama.cpp) require it.")
         print(f"  e.g. {effective_url.rstrip('/')}/v1")
         try:
             _add_v1 = input("  Add /v1? [Y/n]: ").strip().lower()
@@ -667,7 +912,7 @@ def _model_flow_custom(config):
     else:
         print(
             f"Warning: could not verify this endpoint via {probe.get('probed_url')}. "
-            f"Lucifex will still save it."
+            f"Hermes will still save it."
         )
         if probe.get("suggested_base_url"):
             suggested = probe["suggested_base_url"]
@@ -787,7 +1032,7 @@ def _model_flow_custom(config):
         else:
             _caller_model.pop("api_mode", None)
         config["model"] = _caller_model
-        print("Endpoint saved. Use `/model` in chat or `lucifex model` to set a model.")
+        print("Endpoint saved. Use `/model` in chat or `hermes model` to set a model.")
 
     # Auto-save to custom_providers so it appears in the menu next time
     _save_custom_provider(
@@ -798,6 +1043,11 @@ def _model_flow_custom(config):
         name=display_name,
         api_mode=api_mode,
     )
+    _prune_replaced_custom_model_config_credentials(
+        effective_url,
+        provider_name=display_name,
+    )
+
 
 def _model_flow_azure_foundry(config, current_model=""):
     """Azure Foundry provider: configure endpoint, auth mode, API mode, and model.
@@ -862,7 +1112,7 @@ def _model_flow_azure_foundry(config, current_model=""):
     print("=" * 50)
     print()
     print("Azure Foundry can host models with either OpenAI-style or")
-    print("Anthropic-style API endpoints.  Lucifex will probe your")
+    print("Anthropic-style API endpoints.  Hermes will probe your")
     print("endpoint to auto-detect the transport and the deployed")
     print("models when possible.")
     print()
@@ -877,7 +1127,7 @@ def _model_flow_azure_foundry(config, current_model=""):
         )
         print(f"  Current API mode:  {_lbl}")
     if current_auth_mode == "entra_id":
-        print(f"  Current auth mode: Microsoft Entra ID (keyless)")
+        print("  Current auth mode: Microsoft Entra ID (keyless)")
     elif current_api_key:
         print(f"  Current auth mode: API key ({current_api_key[:8]}...)")
     print()
@@ -950,7 +1200,7 @@ def _model_flow_azure_foundry(config, current_model=""):
         if not has_azure_identity_installed():
             print("◐ The 'azure-identity' package is not installed yet.")
             print(
-                "  Lucifex will install it now (the preflight below "
+                "  Hermes will install it now (the preflight below "
                 "triggers the lazy-install). To skip lazy installs, "
                 "run:  pip install azure-identity"
             )
@@ -1587,9 +1837,9 @@ def _model_flow_copilot_acp(config, current_model=""):
     )
     effective_base = status.get("base_url") or pconfig.inference_base_url
 
-    print("  GitHub Copilot ACP delegates Lucifex turns to `copilot --acp`.")
-    print("  Lucifex currently starts its own ACP subprocess for each request.")
-    print("  Lucifex uses your selected model as a hint for the Copilot ACP session.")
+    print("  GitHub Copilot ACP delegates Hermes turns to `copilot --acp`.")
+    print("  Hermes currently starts its own ACP subprocess for each request.")
+    print("  Hermes uses your selected model as a hint for the Copilot ACP session.")
     print(f"  Command: {resolved_command}")
     print(f"  Backend marker: {effective_base}")
     print()
@@ -1599,7 +1849,7 @@ def _model_flow_copilot_acp(config, current_model=""):
     except Exception as exc:
         print(f"  ⚠ {exc}")
         print(
-            "  Set LUCIFEX_COPILOT_ACP_COMMAND or COPILOT_CLI_PATH if Copilot CLI is installed elsewhere."
+            "  Set HERMES_COPILOT_ACP_COMMAND or COPILOT_CLI_PATH if Copilot CLI is installed elsewhere."
         )
         return
 
@@ -1966,7 +2216,7 @@ def _model_flow_bedrock_api_key(config, region, current_model=""):
         bedrock_cfg["region"] = region
         cfg["bedrock"] = bedrock_cfg
 
-        # Save the API key env var name so lucifex knows where to find it
+        # Save the API key env var name so hermes knows where to find it
         save_env_value("OPENAI_API_KEY", existing_key)
         save_env_value("OPENAI_BASE_URL", mantle_base_url)
 
@@ -2063,6 +2313,8 @@ def _model_flow_bedrock(config, current_model=""):
             "global.twelvelabs.",
         )
         _EXCLUDE_SUBSTRINGS = ("safeguard", "voxtral", "palmyra-vision")
+
+
         filtered = []
         for m in live_models:
             mid = m["id"]
@@ -2070,44 +2322,59 @@ def _model_flow_bedrock(config, current_model=""):
                 continue
             if any(s in mid.lower() for s in _EXCLUDE_SUBSTRINGS):
                 continue
+            if not bedrock_model_routable_from_region(mid, region):
+                continue
             filtered.append(m)
 
-        # Deduplicate: prefer inference profiles (us.*, global.*) over bare
-        # foundation model IDs.
+        # Deduplicate: prefer inference profiles (geo-prefixed or global.*)
+        # over bare foundation model IDs.
+        _PROFILE_PREFIXES = BEDROCK_GEO_PREFIXES + ("global.",)
         profile_base_ids = set()
         for m in filtered:
             mid = m["id"]
-            if mid.startswith(("us.", "global.")):
-                base = mid.split(".", 1)[1] if "." in mid[3:] else mid
-                profile_base_ids.add(base)
+            _pp = next((p for p in _PROFILE_PREFIXES if mid.startswith(p)), None)
+            if _pp:
+                profile_base_ids.add(mid[len(_pp):])
 
         deduped = []
         for m in filtered:
             mid = m["id"]
-            if not mid.startswith(("us.", "global.")) and mid in profile_base_ids:
+            if (
+                not mid.startswith(_PROFILE_PREFIXES)
+                and mid in profile_base_ids
+            ):
                 continue
             deduped.append(m)
 
-        _RECOMMENDED = [
-            "us.anthropic.claude-sonnet-4-6",
-            "us.anthropic.claude-opus-4-6",
-            "us.anthropic.claude-haiku-4-5",
-            "us.amazon.nova-pro",
-            "us.amazon.nova-lite",
-            "us.amazon.nova-micro",
+        # Recommended models, matched geo-agnostically so an EU (eu.*) or
+        # APAC (apac.*) picker pins its own region's profile of the same
+        # model rather than a us.* one it can't route to (#28156).
+        _RECOMMENDED_BASES = [
+            "anthropic.claude-sonnet-4-6",
+            "anthropic.claude-opus-4-6",
+            "anthropic.claude-haiku-4-5",
+            "amazon.nova-pro",
+            "amazon.nova-lite",
+            "amazon.nova-micro",
             "deepseek.v3",
-            "us.meta.llama4-maverick",
-            "us.meta.llama4-scout",
+            "meta.llama4-maverick",
+            "meta.llama4-scout",
         ]
+
+        def _base_id(mid: str) -> str:
+            _pp = next((p for p in _PROFILE_PREFIXES if mid.startswith(p)), None)
+            return mid[len(_pp):] if _pp else mid
 
         def _sort_key(m):
             mid = m["id"]
-            for i, rec in enumerate(_RECOMMENDED):
-                if mid.startswith(rec):
-                    return (0, i, mid)
+            base = _base_id(mid)
+            for i, rec in enumerate(_RECOMMENDED_BASES):
+                if base.startswith(rec):
+                    # In-region geo profile beats global.* for the same model
+                    return (0, i, 0 if not mid.startswith("global.") else 1, mid)
             if mid.startswith("global."):
-                return (1, 0, mid)
-            return (2, 0, mid)
+                return (1, 0, 0, mid)
+            return (2, 0, 0, mid)
 
         deduped.sort(key=_sort_key)
         model_list = [m["id"] for m in deduped]
@@ -2195,7 +2462,7 @@ def _model_flow_vertex(config, current_model=""):
         print("  Vertex credentials: Application Default Credentials (ADC)")
         print("    Vertex uses OAuth2, not a static API key. Either:")
         print("      • run 'gcloud auth application-default login', or")
-        print("      • set VERTEX_CREDENTIALS_PATH in ~/.lucifex/.env to a service account JSON")
+        print("      • set VERTEX_CREDENTIALS_PATH in ~/.hermes/.env to a service account JSON")
     print()
 
     cfg = load_config()
@@ -2391,7 +2658,7 @@ def _model_flow_api_key_provider(config, provider_id, current_model=""):
                     "(<= 250 requests/day for gemini-2.5-flash)."
                 )
                 print(
-                    "   Lucifex typically makes 3-10 API calls per user turn "
+                    "   Hermes typically makes 3-10 API calls per user turn "
                     "(tool iterations + auxiliary tasks),"
                 )
                 print(
@@ -2401,7 +2668,7 @@ def _model_flow_api_key_provider(config, provider_id, current_model=""):
                 print("   an agent session.")
                 print()
                 print(
-                    "   To use Gemini with Lucifex, enable billing on your "
+                    "   To use Gemini with Hermes, enable billing on your "
                     "Google Cloud project and regenerate"
                 )
                 print(
@@ -2590,9 +2857,22 @@ def _model_flow_api_key_provider(config, provider_id, current_model=""):
         model_list = list(dict.fromkeys(mid for mid in model_list if mid))
 
     if model_list:
+        # Per-model pricing, when the provider supports it (fireworks via the
+        # models.dev disk cache, novita/deepinfra via their cached /models
+        # endpoints). get_pricing_for_provider() is memoized in-process and
+        # returns {} for providers without pricing — never a blocking fetch
+        # beyond the catalog lookup that already happened above.
+        pricing: dict = {}
+        try:
+            from lucifex_cli.models import get_pricing_for_provider
+
+            pricing = get_pricing_for_provider(provider_id) or {}
+        except Exception:
+            pricing = {}
         selected = _prompt_model_selection(
             model_list,
             current_model=current_model,
+            pricing=pricing,
             confirm_provider=provider_id,
             confirm_base_url=effective_base,
             confirm_api_key=existing_key,
@@ -2764,7 +3044,7 @@ def _model_flow_anthropic(config, current_model=""):
         # Update config with provider — clear base_url since
         # resolve_runtime_provider() always hardcodes Anthropic's URL.
         # Leaving a stale base_url in config can contaminate other
-        # providers if the user switches without running 'lucifex model'.
+        # providers if the user switches without running 'hermes model'.
         cfg = load_config()
         model = cfg.get("model")
         if not isinstance(model, dict):

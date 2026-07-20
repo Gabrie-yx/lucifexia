@@ -46,7 +46,7 @@ the feature.
 
 The location can be relocated with the `HERMES_MANAGED_DIR` environment variable
 (for containers or non-`/etc` deployments). This is a deployment/bootstrap path
-knob — like `HERMES_HOME` — set by the same administrator who owns the managed
+knob — like `LUCIFEX_HOME` — set by the same administrator who owns the managed
 files. It is **never persisted** to any `.env` by Hermes.
 
 ```bash

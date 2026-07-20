@@ -1,4 +1,4 @@
-"""Shared watermark helper used by the three watcher scripts.
+﻿"""Shared watermark helper used by the three watcher scripts.
 
 A watermark is just a JSON file that records the IDs we've seen on previous
 runs, so the next run only emits items we haven't seen before.
@@ -32,9 +32,9 @@ def _state_dir() -> Path:
     override = os.environ.get("WATCHER_STATE_DIR")
     if override:
         return Path(override)
-    # Default: $HERMES_HOME/watcher-state/, falling back to ~/.hermes/watcher-state/.
-    hermes_home = os.environ.get("HERMES_HOME") or str(Path.home() / ".hermes")
-    return Path(hermes_home) / "watcher-state"
+    # Default: $LUCIFEX_HOME/watcher-state/, falling back to ~/.hermes/watcher-state/.
+    LUCIFEX_HOME = os.environ.get("LUCIFEX_HOME") or str(Path.home() / ".hermes")
+    return Path(LUCIFEX_HOME) / "watcher-state"
 
 
 class Watermark:

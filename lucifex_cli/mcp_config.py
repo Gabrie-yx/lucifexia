@@ -1,11 +1,11 @@
 """
-MCP Server Management CLI — ``lucifex mcp`` subcommand.
+MCP Server Management CLI — ``hermes mcp`` subcommand.
 
-Implements ``lucifex mcp add/remove/list/test/configure`` for interactive
+Implements ``hermes mcp add/remove/list/test/configure`` for interactive
 MCP server lifecycle management (issue #690 Phase 2).
 
 Relies on tools/mcp_tool.py for connection/discovery and keeps
-configuration in ~/.lucifex/config.yaml under the ``mcp_servers`` key.
+configuration in ~/.hermes/config.yaml under the ``mcp_servers`` key.
 """
 
 import asyncio
@@ -152,7 +152,8 @@ def _replace_mcp_servers(servers: Dict[str, dict]) -> Tuple[bool, List[str]]:
 
 def _env_key_for_server(name: str) -> str:
     """Convert server name to an env-var key like ``MCP_MYSERVER_API_KEY``."""
-    return f"MCP_{name.upper().replace('-', '_')}_API_KEY"
+    suffix = re.sub(r"[^A-Za-z0-9_]", "_", name.upper()).strip("_")
+    return f"MCP_{suffix}_API_KEY"
 
 
 def _strip_bearer_prefix(token: str) -> str:
@@ -168,6 +169,31 @@ def _strip_bearer_prefix(token: str) -> str:
     if stripped[:7].lower() == "bearer ":
         return stripped[7:].strip()
     return stripped
+
+
+def _bearer_auth_headers(name: str) -> Dict[str, str]:
+    """Build the persisted Authorization header for a named MCP server.
+
+    The secret itself lives in the active profile's ``.env`` file. Keeping
+    this template construction beside ``_env_key_for_server`` ensures the CLI
+    and Dashboard produce byte-equivalent MCP configuration.
+    """
+    env_key = _env_key_for_server(name)
+    return {"Authorization": f"Bearer ${{{env_key}}}"}
+
+
+def _save_bearer_auth_token(name: str, token: str) -> Dict[str, str]:
+    """Persist a Bearer token in the active profile and return safe headers.
+
+    ``token`` is a one-time provisioning value. It is normalized and written
+    only to ``.env``; callers persist the returned interpolation template in
+    ``config.yaml``.
+    """
+    normalized = _strip_bearer_prefix(token)
+    if not normalized or normalized.lower() == "bearer":
+        raise ValueError("Bearer token is required")
+    save_env_value(_env_key_for_server(name), normalized)
+    return _bearer_auth_headers(name)
 
 
 def _parse_env_assignments(raw_env: Optional[List[str]]) -> Dict[str, str]:
@@ -229,7 +255,7 @@ def _resolve_mcp_server_config(config: dict) -> dict:
     """Resolve ``${ENV}`` placeholders in a server config before connecting.
 
     Mirrors ``_load_mcp_config()`` in ``tools/mcp_tool.py``: load
-    ``~/.lucifex/.env`` into ``os.environ`` and recursively interpolate any
+    ``~/.hermes/.env`` into ``os.environ`` and recursively interpolate any
     ``${VAR}`` placeholders. The CLI builds header templates like
     ``Authorization: Bearer ${MCP_X_API_KEY}`` but the probe path never
     resolved them, so the discovery probe sent the literal placeholder and
@@ -238,16 +264,19 @@ def _resolve_mcp_server_config(config: dict) -> dict:
     """
     from tools.mcp_tool import _interpolate_env_vars
 
-    try:
-        from lucifex_cli.env_loader import load_lucifex_dotenv
-        load_lucifex_dotenv()
-    except Exception:  # pragma: no cover — defensive
-        pass
+    from agent.secret_scope import current_secret_scope
+
+    if current_secret_scope() is None:
+        try:
+            from lucifex_cli.env_loader import load_lucifex_dotenv
+            load_lucifex_dotenv()
+        except Exception:  # pragma: no cover — defensive
+            pass
     return _interpolate_env_vars(config)
 
 
 def _probe_single_server(
-    name: str, config: dict, connect_timeout: float = 30, *, details: Optional[dict] = None
+    name: str, config: dict, connect_timeout: Optional[float] = None, *, details: Optional[dict] = None
 ) -> List[Tuple[str, str]]:
     """Temporarily connect to one MCP server, list its tools, disconnect.
 
@@ -267,12 +296,18 @@ def _probe_single_server(
         _run_on_mcp_loop,
         _connect_server,
         _stop_mcp_loop_if_idle,
+        _parse_boolish,
     )
 
     config = _resolve_mcp_server_config(config)
+    if connect_timeout is None:
+        raw_timeout = config.get("connect_timeout", 30)
+        try:
+            connect_timeout = max(1.0, float(raw_timeout))
+        except (TypeError, ValueError):
+            connect_timeout = 30.0
 
     _ensure_mcp_loop()
-
     tools_found: List[Tuple[str, str]] = []
 
     async def _probe():
@@ -287,18 +322,49 @@ def _probe_single_server(
                     desc = desc[:77] + "..."
                 tools_found.append((t.name, desc))
             if details is not None:
+                # Gate the capability probes exactly like runtime utility-tool
+                # registration (tools.mcp_tool._select_utility_schemas):
+                #   1. honour the user's tools.prompts / tools.resources config
+                #   2. only call a family the server actually advertises.
+                # Without this the "Test server" probe fired prompts/list and
+                # resources/list at every server unconditionally — so a server
+                # that rejects those methods (e.g. Unreal's MCP server, which
+                # answers "Call to unknown method 'prompts/list'") logged a hard
+                # error, and setting tools.prompts: false did NOT suppress it.
+                tools_filter = config.get("tools") or {}
+                prompts_enabled = _parse_boolish(
+                    tools_filter.get("prompts"), default=True
+                )
+                resources_enabled = _parse_boolish(
+                    tools_filter.get("resources"), default=True
+                )
+                advertised_caps = getattr(
+                    getattr(server, "initialize_result", None),
+                    "capabilities",
+                    None,
+                )
+
+                def _advertises(cap_attr: str) -> bool:
+                    # When no capability info was captured (legacy fixtures /
+                    # older servers) preserve the old always-try behaviour.
+                    if advertised_caps is None:
+                        return True
+                    return getattr(advertised_caps, cap_attr, None) is not None
+
                 # Capability probes are best-effort: servers without the
                 # capability raise, which just means "0".
-                try:
-                    result = await server.session.list_prompts()
-                    details["prompts"] = len(result.prompts)
-                except Exception:
-                    pass
-                try:
-                    result = await server.session.list_resources()
-                    details["resources"] = len(result.resources)
-                except Exception:
-                    pass
+                if prompts_enabled and _advertises("prompts"):
+                    try:
+                        result = await server.session.list_prompts()
+                        details["prompts"] = len(result.prompts)
+                    except Exception:
+                        pass
+                if resources_enabled and _advertises("resources"):
+                    try:
+                        result = await server.session.list_resources()
+                        details["resources"] = len(result.resources)
+                    except Exception:
+                        pass
         finally:
             await server.shutdown()
 
@@ -315,7 +381,7 @@ def _probe_single_server(
 def _oauth_tokens_present(name: str) -> bool:
     """Return True if an OAuth token file exists on disk for ``name``.
 
-    Used after ``lucifex mcp login`` to distinguish a genuine authentication
+    Used after ``hermes mcp login`` to distinguish a genuine authentication
     from a probe that succeeded only because the server allowed
     initialize/tools-list without auth (so no token was ever acquired).
     """
@@ -344,7 +410,7 @@ def _unwrap_exception_group(exc: BaseException) -> Exception:
     return RuntimeError(str(exc))
 
 
-# ─── lucifex mcp add ──────────────────────────────────────────────────────────
+# ─── hermes mcp add ──────────────────────────────────────────────────────────
 
 def cmd_mcp_add(args):
     """Add a new MCP server with discovery-first tool selection."""
@@ -360,6 +426,7 @@ def cmd_mcp_add(args):
     auth_type = getattr(args, "auth", None)
     preset_name = getattr(args, "preset", None)
     raw_env = getattr(args, "env", None)
+    raw_connect_timeout = getattr(args, "connect_timeout", None)
 
     server_config: Dict[str, Any] = {}
     try:
@@ -384,9 +451,9 @@ def cmd_mcp_add(args):
     if not url and not command:
         _error("Must specify --url <endpoint>, --command <cmd>, or --preset <name>")
         _info("Examples:")
-        _info('  lucifex mcp add ink --url "https://mcp.ml.ink/mcp"')
-        _info('  lucifex mcp add github --command npx --args @modelcontextprotocol/server-github')
-        _info('  lucifex mcp add myserver --preset mypreset')
+        _info('  hermes mcp add ink --url "https://mcp.ml.ink/mcp"')
+        _info('  hermes mcp add github --command npx --args @modelcontextprotocol/server-github')
+        _info('  hermes mcp add myserver --preset mypreset')
         return
 
     # Check if server already exists
@@ -405,6 +472,8 @@ def cmd_mcp_add(args):
             server_config["args"] = cmd_args
         if explicit_env:
             server_config["env"] = explicit_env
+    if raw_connect_timeout is not None:
+        server_config["connect_timeout"] = raw_connect_timeout
 
     issues = validate_mcp_server_entry(name, server_config)
     if issues:
@@ -451,19 +520,17 @@ def cmd_mcp_add(args):
                 existing_key = get_env_value(env_key)
                 if existing_key:
                     _success(f"{env_key}: already configured")
-                    api_key = existing_key
                 else:
                     api_key = _prompt("API key / Bearer token", password=True)
                     if api_key:
-                        api_key = _strip_bearer_prefix(api_key)
-                        save_env_value(env_key, api_key)
+                        server_config["headers"] = _save_bearer_auth_token(
+                            name, api_key
+                        )
                         _success(f"Saved to {display_lucifex_home()}/.env as {env_key}")
 
                 # Set header with env var interpolation
-                if api_key or existing_key:
-                    server_config["headers"] = {
-                        "Authorization": f"Bearer ${{{env_key}}}"
-                    }
+                if existing_key:
+                    server_config["headers"] = _bearer_auth_headers(name)
 
     # ── Discovery: connect and list tools ─────────────────────────────
 
@@ -478,7 +545,7 @@ def cmd_mcp_add(args):
             server_config["enabled"] = False
             if _save_mcp_server(name, server_config):
                 _success(f"Saved '{name}' to config (disabled)")
-                _info("Fix the issue, then: lucifex mcp test " + name)
+                _info("Fix the issue, then: hermes mcp test " + name)
         return
 
     if not tools:
@@ -548,7 +615,7 @@ def cmd_mcp_add(args):
         _info("Start a new session to use these tools.")
 
 
-# ─── lucifex mcp remove ───────────────────────────────────────────────────────
+# ─── hermes mcp remove ───────────────────────────────────────────────────────
 
 def cmd_mcp_remove(args):
     """Remove an MCP server from config."""
@@ -571,7 +638,7 @@ def cmd_mcp_remove(args):
 
     # Clean up OAuth tokens if they exist — route through MCPOAuthManager so
     # any provider instance cached in the current process (e.g. from an
-    # earlier `lucifex mcp test` in the same session) is evicted too.
+    # earlier `hermes mcp test` in the same session) is evicted too.
     try:
         from tools.mcp_oauth_manager import get_manager
         get_manager().remove(name)
@@ -580,7 +647,7 @@ def cmd_mcp_remove(args):
         pass
 
 
-# ─── lucifex mcp list ──────────────────────────────────────────────────────────
+# ─── hermes mcp list ──────────────────────────────────────────────────────────
 
 def cmd_mcp_list(args=None):
     """List all configured MCP servers."""
@@ -591,8 +658,8 @@ def cmd_mcp_list(args=None):
         _info("No MCP servers configured.")
         print()
         _info("Add one with:")
-        _info('  lucifex mcp add <name> --url <endpoint>')
-        _info('  lucifex mcp add <name> --command <cmd> --args <args...>')
+        _info('  hermes mcp add <name> --url <endpoint>')
+        _info('  hermes mcp add <name> --command <cmd> --args <args...>')
         print()
         return
 
@@ -649,7 +716,7 @@ def cmd_mcp_list(args=None):
     print()
 
 
-# ─── lucifex mcp test ──────────────────────────────────────────────────────────
+# ─── hermes mcp test ──────────────────────────────────────────────────────────
 
 def cmd_mcp_test(args):
     """Test connection to an MCP server."""
@@ -713,15 +780,15 @@ def cmd_mcp_test(args):
     print()
 
 
-# ─── lucifex mcp login ────────────────────────────────────────────────────────
+# ─── hermes mcp login ────────────────────────────────────────────────────────
 
 def _reauth_oauth_server(name: str, server_config: dict) -> bool:
     """Force a fresh OAuth flow for one server. Returns True on success.
 
     Wipes cached OAuth state (disk + in-process MCPOAuthManager cache),
     re-probes to trigger the browser flow, and verifies a token actually
-    landed before reporting success. Shared by ``lucifex mcp login`` and
-    ``lucifex mcp reauth`` so both behave identically for a single server.
+    landed before reporting success. Shared by ``hermes mcp login`` and
+    ``hermes mcp reauth`` so both behave identically for a single server.
     """
     url = server_config.get("url")
     if not url:
@@ -729,7 +796,7 @@ def _reauth_oauth_server(name: str, server_config: dict) -> bool:
         return False
     if server_config.get("auth") != "oauth":
         _error(f"Server '{name}' is not configured for OAuth (auth={server_config.get('auth')})")
-        _info("Use `lucifex mcp remove` + `lucifex mcp add` to reconfigure auth.")
+        _info("Use `hermes mcp remove` + `hermes mcp add` to reconfigure auth.")
         return False
 
     # Wipe both disk and in-memory cache so the next probe forces a fresh
@@ -744,8 +811,21 @@ def _reauth_oauth_server(name: str, server_config: dict) -> bool:
     _info(f"Starting OAuth flow for '{name}'...")
 
     # Probe triggers the OAuth flow (browser redirect + callback capture).
+    # Honor the server's configured connect_timeout so a human has enough
+    # time to complete the browser sign-in; the 30s default is too tight for
+    # an interactive OAuth round-trip. Floor at 315s — the OAuth callback
+    # window (300s in mcp_oauth) plus headroom — matching the GUI re-auth
+    # path in web_server.py so CLI and dashboard behave identically.
     try:
-        tools = _probe_single_server(name, server_config)
+        _login_connect_timeout = server_config.get("connect_timeout")
+        try:
+            _login_connect_timeout = float(_login_connect_timeout)
+        except (TypeError, ValueError):
+            _login_connect_timeout = 0.0
+        _login_connect_timeout = max(_login_connect_timeout, 315.0)
+        tools = _probe_single_server(
+            name, server_config, connect_timeout=_login_connect_timeout
+        )
         # A clean probe is NOT proof of authentication. Some MCP servers
         # (notably Google's official Drive server) serve initialize +
         # tools/list WITHOUT auth, so the probe lists tools even when the
@@ -766,15 +846,15 @@ def _reauth_oauth_server(name: str, server_config: dict) -> bool:
                 "OAuth client yourself and add its credentials to config.yaml:"
             )
             print()
-            print(color(f"    mcp_servers:", Colors.DIM))
+            print(color("    mcp_servers:", Colors.DIM))
             print(color(f"      {name}:", Colors.DIM))
             print(color(f"        url: {url}", Colors.DIM))
-            print(color(f"        auth: oauth", Colors.DIM))
-            print(color(f"        oauth:", Colors.DIM))
-            print(color(f"          client_id: \"<your-oauth-client-id>\"", Colors.DIM))
-            print(color(f"          client_secret: \"<your-oauth-client-secret>\"", Colors.DIM))
+            print(color("        auth: oauth", Colors.DIM))
+            print(color("        oauth:", Colors.DIM))
+            print(color("          client_id: \"<your-oauth-client-id>\"", Colors.DIM))
+            print(color("          client_secret: \"<your-oauth-client-secret>\"", Colors.DIM))
             print()
-            _info("Then re-run `lucifex mcp login " + name + "`.")
+            _info("Then re-run `hermes mcp login " + name + "`.")
             return False
         if tools:
             _success(f"Authenticated — {len(tools)} tool(s) available")
@@ -814,8 +894,8 @@ def cmd_mcp_login(args):
 def cmd_mcp_reauth(args):
     """Re-authenticate one OAuth MCP server, or all of them sequentially.
 
-    ``lucifex mcp reauth <name>`` re-auths a single server (same as ``login``).
-    ``lucifex mcp reauth --all`` discovers every ``auth: oauth`` server in
+    ``hermes mcp reauth <name>`` re-auths a single server (same as ``login``).
+    ``hermes mcp reauth --all`` discovers every ``auth: oauth`` server in
     config and re-auths them ONE AT A TIME.
 
     Serial-by-design: a human can only complete one browser OAuth flow at a
@@ -850,7 +930,7 @@ def cmd_mcp_reauth(args):
 
     if not name:
         _error("Specify a server name, or use --all to re-auth every OAuth server.")
-        _info("Usage: lucifex mcp reauth <name>   |   lucifex mcp reauth --all")
+        _info("Usage: hermes mcp reauth <name>   |   hermes mcp reauth --all")
         return
     if name not in servers:
         _error(f"Server '{name}' not found in config.")
@@ -861,13 +941,13 @@ def cmd_mcp_reauth(args):
     _reauth_oauth_server(name, servers[name])
 
 
-# ─── lucifex mcp configure ────────────────────────────────────────────────────
+# ─── hermes mcp configure ────────────────────────────────────────────────────
 
 def cmd_mcp_configure(args):
     """Reconfigure which tools are enabled for an existing MCP server."""
     import sys as _sys
     if not _sys.stdin.isatty():
-        print("Error: 'lucifex mcp configure' requires an interactive terminal.", file=_sys.stderr)
+        print("Error: 'hermes mcp configure' requires an interactive terminal.", file=_sys.stderr)
         _sys.exit(1)
     name = args.name
     servers = _get_mcp_servers()
@@ -963,7 +1043,7 @@ def cmd_mcp_configure(args):
 # ─── Dispatcher ───────────────────────────────────────────────────────────────
 
 def mcp_command(args):
-    """Main dispatcher for ``lucifex mcp`` subcommands."""
+    """Main dispatcher for ``hermes mcp`` subcommands."""
     action = getattr(args, "mcp_action", None)
 
     if action == "serve":
@@ -1007,21 +1087,21 @@ def mcp_command(args):
         handler(args)
     else:
         # No subcommand — drop the user into the catalog picker. This is the
-        # "try enabling and it flows you into setup" UX matching `lucifex plugin`.
+        # "try enabling and it flows you into setup" UX matching `hermes plugin`.
         from lucifex_cli.mcp_picker import run_picker
         run_picker()
         print(color("  Commands:", Colors.CYAN))
-        _info("lucifex mcp                                    Open the catalog picker (default)")
-        _info("lucifex mcp catalog                            List Nous-approved MCPs")
-        _info("lucifex mcp install <name>                     Install a catalog MCP")
-        _info("lucifex mcp serve                              Run as MCP server")
-        _info("lucifex mcp add <name> --url <endpoint>        Add a custom MCP server")
-        _info("lucifex mcp add <name> --command <cmd>         Add a stdio server")
-        _info("lucifex mcp add <name> --preset <preset>       Add from a known preset")
-        _info("lucifex mcp remove <name>                      Remove a server")
-        _info("lucifex mcp list                               List configured servers")
-        _info("lucifex mcp test <name>                        Test connection")
-        _info("lucifex mcp configure <name>                   Toggle tools")
-        _info("lucifex mcp login <name>                       Re-authenticate OAuth")
-        _info("lucifex mcp reauth <name> | --all              Re-auth one or all OAuth servers")
+        _info("hermes mcp                                    Open the catalog picker (default)")
+        _info("hermes mcp catalog                            List Nous-approved MCPs")
+        _info("hermes mcp install <name>                     Install a catalog MCP")
+        _info("hermes mcp serve                              Run as MCP server")
+        _info("hermes mcp add <name> --url <endpoint>        Add a custom MCP server")
+        _info("hermes mcp add <name> --command <cmd>         Add a stdio server")
+        _info("hermes mcp add <name> --preset <preset>       Add from a known preset")
+        _info("hermes mcp remove <name>                      Remove a server")
+        _info("hermes mcp list                               List configured servers")
+        _info("hermes mcp test <name>                        Test connection")
+        _info("hermes mcp configure <name>                   Toggle tools")
+        _info("hermes mcp login <name>                       Re-authenticate OAuth")
+        _info("hermes mcp reauth <name> | --all              Re-auth one or all OAuth servers")
         print()

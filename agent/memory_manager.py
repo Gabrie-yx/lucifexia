@@ -1,4 +1,4 @@
-"""MemoryManager — orchestrates memory providers for the agent.
+﻿"""MemoryManager — orchestrates memory providers for the agent.
 
 Single integration point in run_agent.py. Replaces scattered per-backend
 code with one manager that delegates to registered providers.
@@ -1214,13 +1214,13 @@ class MemoryManager:
     def initialize_all(self, session_id: str, **kwargs) -> None:
         """Initialize all providers.
 
-        Automatically injects ``hermes_home`` into *kwargs* so that every
+        Automatically injects ``LUCIFEX_HOME`` into *kwargs* so that every
         provider can resolve profile-scoped storage paths without importing
-        ``get_hermes_home()`` themselves.
+        ``get_lucifex_home()`` themselves.
         """
-        if "hermes_home" not in kwargs:
-            from hermes_constants import get_hermes_home
-            kwargs["hermes_home"] = str(get_hermes_home())
+        if "LUCIFEX_HOME" not in kwargs:
+            from lucifex_constants import get_lucifex_home
+            kwargs["LUCIFEX_HOME"] = str(get_lucifex_home())
         for provider in self._providers:
             try:
                 provider.initialize(session_id=session_id, **kwargs)

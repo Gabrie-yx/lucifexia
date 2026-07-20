@@ -1,4 +1,4 @@
-"""``lucifex insights`` subcommand parser.
+"""``hermes insights`` subcommand parser.
 
 Extracted from ``lucifex_cli/main.py:main()`` (god-file Phase 2 follow-up).
 Handler injected to avoid importing ``main``.

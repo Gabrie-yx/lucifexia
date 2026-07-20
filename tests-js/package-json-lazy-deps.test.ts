@@ -25,7 +25,7 @@
  *
  * If a future PR re-adds Camofox (or any other binary-postinstall package)
  * to root ``dependencies``, this test fails — read the lazy-install
- * guidance in the ``hermes-agent-dev`` skill before changing the
+ * guidance in the ``lucifex-agent-dev`` skill before changing the
  * expectations.
  */
 
@@ -49,7 +49,7 @@ test('camofox is not in root dependencies (must stay opt-in)', () => {
     !('@askjo/camofox-browser' in deps),
     'Camofox is a ~300MB binary-postinstall backend that must stay ' +
       'out of root package.json dependencies. It belongs in the ' +
-      'Camofox post_setup handler in hermes_cli/tools_config.py so it ' +
+      'Camofox post_setup handler in lucifex_cli/tools_config.py so it ' +
       'only installs when the user explicitly selects Camofox via ' +
       '`hermes tools` → Browser Automation → Camofox.'
   )

@@ -1,5 +1,5 @@
 """
-Single source of truth for provider identity in Lucifex Agent.
+Single source of truth for provider identity in Hermes Agent.
 
 Two data sources, merged at runtime:
 
@@ -7,7 +7,7 @@ Two data sources, merged at runtime:
    names, and full model metadata (context, cost, capabilities).  This is
    the primary database.
 
-2. **Lucifex overlays** — transport type, auth patterns, aggregator flags,
+2. **Hermes overlays** — transport type, auth patterns, aggregator flags,
    and additional env vars that models.dev doesn't track.  Small dict,
    maintained here.
 
@@ -28,12 +28,12 @@ from utils import base_url_host_matches, base_url_hostname
 logger = logging.getLogger(__name__)
 
 
-# -- Lucifex overlay ----------------------------------------------------------
-# Lucifex-specific metadata that models.dev doesn't provide.
+# -- Hermes overlay ----------------------------------------------------------
+# Hermes-specific metadata that models.dev doesn't provide.
 
 @dataclass(frozen=True)
-class LucifexOverlay:
-    """Lucifex-specific provider metadata layered on top of models.dev."""
+class HermesOverlay:
+    """Hermes-specific provider metadata layered on top of models.dev."""
 
     transport: str = "openai_chat"        # openai_chat | anthropic_messages | codex_responses
     is_aggregator: bool = False
@@ -43,171 +43,182 @@ class LucifexOverlay:
     base_url_env_var: str = ""            # env var for user-custom base URL
 
 
-LUCIFEX_OVERLAYS: Dict[str, LucifexOverlay] = {
-    "moa": LucifexOverlay(
+HERMES_OVERLAYS: Dict[str, HermesOverlay] = {
+    "moa": HermesOverlay(
         transport="openai_chat",
         auth_type="virtual",
         base_url_override="moa://local",
     ),
-    "openrouter": LucifexOverlay(
+    "openrouter": HermesOverlay(
         transport="openai_chat",
         is_aggregator=True,
         base_url_env_var="OPENROUTER_BASE_URL",
     ),
-    "nous": LucifexOverlay(
+    "nous": HermesOverlay(
         transport="openai_chat",
-        auth_type="api_key",
-        base_url_override="http://127.0.0.1:11434/v1",
+        auth_type="oauth_device_code",
+        base_url_override="https://inference-api.nousresearch.com/v1",
     ),
-    "openai-codex": LucifexOverlay(
+    "openai-codex": HermesOverlay(
         transport="codex_responses",
         auth_type="oauth_external",
         base_url_override="https://chatgpt.com/backend-api/codex",
     ),
-    "openai-api": LucifexOverlay(
+    "openai-api": HermesOverlay(
         transport="codex_responses",
         base_url_override="https://api.openai.com/v1",
         base_url_env_var="OPENAI_BASE_URL",
     ),
-    "xai-oauth": LucifexOverlay(
+    "xai-oauth": HermesOverlay(
         transport="codex_responses",
         auth_type="oauth_external",
         base_url_override="https://api.x.ai/v1",
         base_url_env_var="XAI_BASE_URL",
     ),
-    "qwen-oauth": LucifexOverlay(
+    "qwen-oauth": HermesOverlay(
         transport="openai_chat",
         auth_type="oauth_external",
         base_url_override="https://portal.qwen.ai/v1",
-        base_url_env_var="LUCIFEX_QWEN_BASE_URL",
+        base_url_env_var="HERMES_QWEN_BASE_URL",
     ),
-    "lmstudio": LucifexOverlay(
+    "lmstudio": HermesOverlay(
         transport="openai_chat",
         auth_type="api_key",
         extra_env_vars=("LM_API_KEY",),
         base_url_override="http://127.0.0.1:1234/v1",
         base_url_env_var="LM_BASE_URL",
     ),
-    "copilot-acp": LucifexOverlay(
+    "copilot-acp": HermesOverlay(
         transport="codex_responses",
         auth_type="external_process",
         base_url_override="acp://copilot",
         base_url_env_var="COPILOT_ACP_BASE_URL",
     ),
-    "github-copilot": LucifexOverlay(
+    "github-copilot": HermesOverlay(
         transport="openai_chat",
         extra_env_vars=("COPILOT_GITHUB_TOKEN", "GH_TOKEN"),
     ),
-    "anthropic": LucifexOverlay(
+    "anthropic": HermesOverlay(
         transport="anthropic_messages",
         extra_env_vars=("ANTHROPIC_TOKEN", "CLAUDE_CODE_OAUTH_TOKEN"),
     ),
-    "zai": LucifexOverlay(
+    "zai": HermesOverlay(
         transport="openai_chat",
         extra_env_vars=("GLM_API_KEY", "ZAI_API_KEY", "Z_AI_API_KEY"),
         base_url_env_var="GLM_BASE_URL",
     ),
-    "kimi-for-coding": LucifexOverlay(
+    "kimi-for-coding": HermesOverlay(
         transport="openai_chat",
         base_url_env_var="KIMI_BASE_URL",
     ),
-    "stepfun": LucifexOverlay(
+    "stepfun": HermesOverlay(
         transport="openai_chat",
         extra_env_vars=("STEPFUN_API_KEY",),
         base_url_override="https://api.stepfun.ai/step_plan/v1",
         base_url_env_var="STEPFUN_BASE_URL",
     ),
-    "minimax": LucifexOverlay(
+    "minimax": HermesOverlay(
         transport="anthropic_messages",
         base_url_env_var="MINIMAX_BASE_URL",
     ),
-    "minimax-oauth": LucifexOverlay(
+    "minimax-oauth": HermesOverlay(
         transport="anthropic_messages",
         auth_type="oauth_external",
         base_url_override="https://api.minimax.io/anthropic",
     ),
-    "minimax-cn": LucifexOverlay(
+    "minimax-cn": HermesOverlay(
         transport="anthropic_messages",
         base_url_env_var="MINIMAX_CN_BASE_URL",
     ),
-    "deepseek": LucifexOverlay(
+    "deepseek": HermesOverlay(
         transport="openai_chat",
         base_url_env_var="DEEPSEEK_BASE_URL",
     ),
-    "alibaba": LucifexOverlay(
+    "alibaba": HermesOverlay(
         transport="openai_chat",
         base_url_env_var="DASHSCOPE_BASE_URL",
     ),
-    "alibaba-coding-plan": LucifexOverlay(
+    "alibaba-coding-plan": HermesOverlay(
         transport="openai_chat",
         base_url_env_var="ALIBABA_CODING_PLAN_BASE_URL",
     ),
-    "opencode": LucifexOverlay(
+    "opencode": HermesOverlay(
         transport="openai_chat",
         is_aggregator=True,
         base_url_env_var="OPENCODE_ZEN_BASE_URL",
     ),
-    "opencode-go": LucifexOverlay(
+    "opencode-go": HermesOverlay(
         transport="openai_chat",
         is_aggregator=True,
         base_url_env_var="OPENCODE_GO_BASE_URL",
     ),
-    "kilo": LucifexOverlay(
+    "kilo": HermesOverlay(
         transport="openai_chat",
         is_aggregator=True,
         base_url_env_var="KILOCODE_BASE_URL",
     ),
-    "huggingface": LucifexOverlay(
+    "huggingface": HermesOverlay(
         transport="openai_chat",
         is_aggregator=True,
         base_url_env_var="HF_BASE_URL",
     ),
-    "novita": LucifexOverlay(
+    "novita": HermesOverlay(
         transport="openai_chat",
         is_aggregator=True,
         base_url_env_var="NOVITA_BASE_URL",
     ),
-    "xai": LucifexOverlay(
+    "xai": HermesOverlay(
         transport="codex_responses",
         base_url_override="https://api.x.ai/v1",
         base_url_env_var="XAI_BASE_URL",
     ),
-    "nvidia": LucifexOverlay(
+    "nvidia": HermesOverlay(
         transport="openai_chat",
         base_url_override="https://integrate.api.nvidia.com/v1",
         base_url_env_var="NVIDIA_BASE_URL",
     ),
-    "xiaomi": LucifexOverlay(
+    "xiaomi": HermesOverlay(
         transport="openai_chat",
         base_url_env_var="XIAOMI_BASE_URL",
     ),
-    "tencent-tokenhub": LucifexOverlay(
+    "tencent-tokenhub": HermesOverlay(
         transport="openai_chat",
         base_url_env_var="TOKENHUB_BASE_URL",
     ),
-    "arcee": LucifexOverlay(
+    "arcee": HermesOverlay(
         transport="openai_chat",
         base_url_override="https://api.arcee.ai/api/v1",
         base_url_env_var="ARCEE_BASE_URL",
     ),
-    "gmi": LucifexOverlay(
+    "gmi": HermesOverlay(
         transport="openai_chat",
         extra_env_vars=("GMI_API_KEY",),
         base_url_override="https://api.gmi-serving.com/v1",
         base_url_env_var="GMI_BASE_URL",
     ),
-    "ollama-cloud": LucifexOverlay(
+    "fireworks": HermesOverlay(
+        transport="openai_chat",
+        extra_env_vars=("FIREWORKS_API_KEY",),
+        base_url_override="https://api.fireworks.ai/inference/v1",
+    ),
+    "upstage": HermesOverlay(
+        transport="openai_chat",
+        extra_env_vars=("UPSTAGE_API_KEY",),
+        base_url_override="https://api.upstage.ai/v1",
+        base_url_env_var="UPSTAGE_BASE_URL",
+    ),
+    "ollama-cloud": HermesOverlay(
         transport="openai_chat",
         base_url_override="https://ollama.com/v1",
         base_url_env_var="OLLAMA_BASE_URL",
     ),
     # Azure Foundry: supports both OpenAI-style and Anthropic-style endpoints.
     # The transport is determined at runtime from config.yaml model.api_mode.
-    "azure-foundry": LucifexOverlay(
+    "azure-foundry": HermesOverlay(
         transport="openai_chat",  # default; overridden by api_mode in config
         base_url_env_var="AZURE_FOUNDRY_BASE_URL",
     ),
-    "bedrock": LucifexOverlay(
+    "bedrock": HermesOverlay(
         transport="bedrock_converse",
         auth_type="aws_sdk",
     ),
@@ -230,7 +241,7 @@ class ProviderDef:
     is_aggregator: bool = False
     auth_type: str = "api_key"
     doc: str = ""
-    source: str = ""                      # "models.dev", "lucifex", "user-config"
+    source: str = ""                      # "models.dev", "hermes", "user-config"
 
 
 # -- Aliases ------------------------------------------------------------------
@@ -343,6 +354,13 @@ ALIASES: Dict[str, str] = {
     "gmi-cloud": "gmi",
     "gmicloud": "gmi",
 
+    # fireworks
+    "fireworks-ai": "fireworks",
+    "fw": "fireworks",
+
+    # upstage
+    "solar": "upstage",
+
     # Local server aliases → virtual "local" concept (resolved via user config)
     "lmstudio": "lmstudio",
     "lm-studio": "lmstudio",
@@ -361,12 +379,13 @@ ALIASES: Dict[str, str] = {
 
 _LABEL_OVERRIDES: Dict[str, str] = {
     "moa": "Mixture of Agents",
-    "nous": "Ollama",
+    "nous": "Nous Portal",
     "openai-codex": "OpenAI Codex",
     "copilot-acp": "GitHub Copilot ACP",
     "stepfun": "StepFun Step Plan",
     "xiaomi": "Xiaomi MiMo",
     "gmi": "GMI Cloud",
+    "upstage": "Upstage Solar",
     "tencent-tokenhub": "Tencent TokenHub",
     "lmstudio": "LM Studio",
     "local": "Local endpoint",
@@ -402,8 +421,8 @@ def get_provider(name: str) -> Optional[ProviderDef]:
     """Look up a built-in provider by id or alias.
 
     Resolution order:
-      1. Lucifex overlays (for providers not in models.dev: nous, openai-codex, etc.)
-      2. models.dev catalog + Lucifex overlay
+      1. Hermes overlays (for providers not in models.dev: nous, openai-codex, etc.)
+      2. models.dev catalog + Hermes overlay
 
     User-defined providers from config.yaml (``providers:`` / ``custom_providers:``)
     are resolved by :func:`resolve_provider_full`, which layers ``resolve_user_provider``
@@ -421,7 +440,7 @@ def get_provider(name: str) -> Optional[ProviderDef]:
     except Exception:
         mdev_info = None
 
-    overlay = LUCIFEX_OVERLAYS.get(canonical)
+    overlay = HERMES_OVERLAYS.get(canonical)
 
     if mdev_info is not None:
         # Merge models.dev + overlay
@@ -431,7 +450,7 @@ def get_provider(name: str) -> Optional[ProviderDef]:
         base_url_env = overlay.base_url_env_var if overlay else ""
         base_url_override = overlay.base_url_override if overlay else ""
 
-        # Combine env vars: models.dev env + lucifex extra
+        # Combine env vars: models.dev env + hermes extra
         env_vars = list(mdev_info.env)
         if overlay and overlay.extra_env_vars:
             for ev in overlay.extra_env_vars:
@@ -452,7 +471,7 @@ def get_provider(name: str) -> Optional[ProviderDef]:
         )
 
     if overlay is not None:
-        # Lucifex-only provider (not in models.dev)
+        # Hermes-only provider (not in models.dev)
         return ProviderDef(
             id=canonical,
             name=_LABEL_OVERRIDES.get(canonical, canonical),
@@ -462,7 +481,7 @@ def get_provider(name: str) -> Optional[ProviderDef]:
             base_url_env_var=overlay.base_url_env_var,
             is_aggregator=overlay.is_aggregator,
             auth_type=overlay.auth_type,
-            source="lucifex",
+            source="hermes",
         )
 
     return None
@@ -530,44 +549,60 @@ def is_routing_aggregator(provider: str) -> bool:
     return is_aggregator(provider_norm)
 
 
+def host_mandated_api_mode(base_url: str = "") -> Optional[str]:
+    """Return the wire protocol a specific endpoint *requires*, or None.
+
+    Some hosts only accept one API mode and reject the others outright:
+      - api.openai.com only accepts the Responses API for its (reasoning)
+        models when tools + reasoning are in play (chat/completions 400s).
+      - api.anthropic.com / ``…/anthropic`` suffixes speak native Messages.
+      - Kimi's ``/coding`` endpoint speaks native Messages.
+      - AWS Bedrock runtime hosts speak Converse.
+
+    These are *mandatory* — a session carrying a stale api_mode (e.g. a
+    /model switch that kept the previous provider's ``chat_completions``)
+    must be overridden to the host's required mode, not merely filled in
+    when empty. Generic / unknown endpoints return None so an explicitly
+    configured api_mode on them is never clobbered.
+    """
+    if not base_url:
+        return None
+    url_lower = base_url.rstrip("/").lower()
+    hostname = base_url_hostname(base_url)
+    # Exact-hostname matching only — never bare substring — so lookalike hosts
+    # (api.openai.com.attacker.test) and path-segment spoofs
+    # (proxy.test/api.openai.com/v1) are NOT treated as the real endpoint. (#32243)
+    if hostname == "api.kimi.com" and "/coding" in url_lower:
+        return "anthropic_messages"
+    if hostname == "api.anthropic.com" or url_lower.endswith("/anthropic"):
+        return "anthropic_messages"
+    if hostname == "api.openai.com":
+        return "codex_responses"
+    if hostname.startswith("bedrock-runtime.") and base_url_host_matches(base_url, "amazonaws.com"):
+        return "bedrock_converse"
+    return None
+
+
 def determine_api_mode(provider: str, base_url: str = "") -> str:
     """Determine the API mode (wire protocol) for a provider/endpoint.
 
     Resolution order:
-      1. Known provider → transport → TRANSPORT_TO_API_MODE.
-      2. URL heuristics for unknown / custom providers.
-      3. Default: 'chat_completions'.
+      1. Host-mandated mode (special endpoints that only accept one protocol).
+      2. Known provider → transport → TRANSPORT_TO_API_MODE.
+      3. Direct provider checks (bedrock).
+      4. Default: 'chat_completions'.
     """
+    mandated = host_mandated_api_mode(base_url)
+    if mandated is not None:
+        return mandated
+
     pdef = get_provider(provider)
     if pdef is not None:
-        # Even for known providers, check URL heuristics for special endpoints
-        # (e.g. kimi /coding endpoint needs anthropic_messages even on 'custom')
-        if base_url:
-            url_lower = base_url.rstrip("/").lower()
-            if "api.kimi.com/coding" in url_lower:
-                return "anthropic_messages"
-            if url_lower.endswith("/anthropic") or "api.anthropic.com" in url_lower:
-                return "anthropic_messages"
-            if "api.openai.com" in url_lower:
-                return "codex_responses"
         return TRANSPORT_TO_API_MODE.get(pdef.transport, "chat_completions")
 
-    # Direct provider checks for providers not in LUCIFEX_OVERLAYS
+    # Direct provider checks for providers not in HERMES_OVERLAYS
     if provider == "bedrock":
         return "bedrock_converse"
-
-    # URL-based heuristics for custom / unknown providers
-    if base_url:
-        url_lower = base_url.rstrip("/").lower()
-        hostname = base_url_hostname(base_url)
-        if url_lower.endswith("/anthropic") or hostname == "api.anthropic.com":
-            return "anthropic_messages"
-        if hostname == "api.kimi.com" and "/coding" in url_lower:
-            return "anthropic_messages"
-        if hostname == "api.openai.com":
-            return "codex_responses"
-        if hostname.startswith("bedrock-runtime.") and base_url_host_matches(base_url, "amazonaws.com"):
-            return "bedrock_converse"
 
     return "chat_completions"
 

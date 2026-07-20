@@ -750,8 +750,8 @@ class QQAdapter(BasePlatformAdapter):
                 "shard": [0, 1],
                 "properties": {
                     "$os": "macOS",
-                    "$browser": "hermes-agent",
-                    "$device": "hermes-agent",
+                    "$browser": "lucifex-agent",
+                    "$device": "lucifex-agent",
                 },
             },
         }
@@ -1197,8 +1197,8 @@ class QQAdapter(BasePlatformAdapter):
         Writes via ``tmp + rename`` so a partial write can't fool the reader.
         """
         try:
-            from hermes_constants import get_hermes_home
-            home = get_hermes_home()
+            from lucifex_constants import get_lucifex_home
+            home = get_lucifex_home()
             response_path = home / ".update_response"
             tmp = response_path.with_suffix(".tmp")
             tmp.write_text(answer)

@@ -1,22 +1,22 @@
-"""
-Profile management for multiple isolated Lucifex instances.
+﻿"""
+Profile management for multiple isolated Hermes instances.
 
 Each profile is a fully independent LUCIFEX_HOME directory with its own
 config.yaml, .env, memory, sessions, skills, gateway, cron, and logs.
-Profiles live under ``~/.lucifex/profiles/<name>/`` by default.
+Profiles live under ``~/.hermes/profiles/<name>/`` by default.
 
-The "default" profile is ``~/.lucifex`` itself — backward compatible,
+The "default" profile is ``~/.hermes`` itself — backward compatible,
 zero migration needed.
 
 Usage::
 
-    lucifex profile create coder          # fresh profile + bundled skills
-    lucifex profile create coder --clone  # also copy config, .env, SOUL.md, skills
-    lucifex profile create coder --clone-all  # full copy of source profile
+    hermes profile create coder          # fresh profile + bundled skills
+    hermes profile create coder --clone  # also copy config, .env, SOUL.md, skills
+    hermes profile create coder --clone-all  # full copy of source profile
     coder chat                           # use via wrapper alias
-    lucifex -p coder chat                 # or via flag
-    lucifex profile use coder             # set as sticky default
-    lucifex profile delete coder          # remove profile + alias + service
+    hermes -p coder chat                 # or via flag
+    hermes profile use coder             # set as sticky default
+    hermes profile delete coder          # remove profile + alias + service
 """
 
 import json
@@ -78,7 +78,7 @@ _CLONE_ALL_STRIP: list[str] = [
 ]
 
 # Infrastructure artifacts excluded from --clone-all when the source is the
-# default profile (``~/.lucifex``).  Named profiles never contain these
+# default profile (``~/.hermes``).  Named profiles never contain these
 # directories at root, so the exclusion is gated to avoid silently dropping
 # user data from a named-profile source.
 #
@@ -112,7 +112,7 @@ _CLONE_ALL_DEFAULT_EXCLUDE_ROOT: frozenset[str] = frozenset({
 # Rationale per item:
 #   state.db (+wal/shm) — SQLite session store (can reach many GB)
 #   sessions            — per-session transcript/data dirs
-#   backups             — `lucifex backup` archives
+#   backups             — `hermes backup` archives
 #   state-snapshots     — quick-backup snapshot trees
 #   checkpoints         — session checkpoint data
 _CLONE_ALL_HISTORY_EXCLUDE_ROOT: frozenset[str] = frozenset({
@@ -125,11 +125,11 @@ _CLONE_ALL_HISTORY_EXCLUDE_ROOT: frozenset[str] = frozenset({
     "checkpoints",
 })
 
-# Marker file written by `lucifex profile create --no-skills`.  When present in
-# a profile's root, callers of seed_profile_skills() (fresh-create, `lucifex
+# Marker file written by `hermes profile create --no-skills`.  When present in
+# a profile's root, callers of seed_profile_skills() (fresh-create, `hermes
 # update`'s all-profile sync, the web dashboard) skip bundled-skill seeding
 # for that profile.  The user can still install skills manually via
-# `lucifex skills install` or drop SKILL.md files into the profile's skills/.
+# `hermes skills install` or drop SKILL.md files into the profile's skills/.
 # Delete the marker file to opt back in.
 NO_BUNDLED_SKILLS_MARKER = ".no-bundled-skills"
 
@@ -150,8 +150,8 @@ def _clone_all_copytree_ignore(source_dir: Path):
          history, backups, and snapshots that belong to the SOURCE profile
          and should never carry into a fresh clone.  Applies to any source.
       2. Root-level entries in ``_CLONE_ALL_DEFAULT_EXCLUDE_ROOT`` — known
-         Lucifex infrastructure directories that only the default profile
-         (``~/.lucifex``) ever contains.  Gated on ``source_dir`` actually
+         Hermes infrastructure directories that only the default profile
+         (``~/.hermes``) ever contains.  Gated on ``source_dir`` actually
          being the default profile so a named-profile source never has its
          own data silently dropped.
       3. Universal exclusions at any depth — Python bytecode caches that
@@ -164,7 +164,7 @@ def _clone_all_copytree_ignore(source_dir: Path):
     clone.
     """
     source_resolved = source_dir.resolve()
-    is_default_source = source_resolved == _get_default_lucifex_home().resolve()
+    is_default_source = source_resolved == _get_default_LUCIFEX_HOME().resolve()
 
     def _ignore(directory: str, names: List[str]) -> List[str]:
         ignored: list[str] = []
@@ -196,7 +196,7 @@ def _clone_all_copytree_ignore(source_dir: Path):
     return _ignore
 
 
-# Directories/files to exclude when exporting the default (~/.lucifex) profile.
+# Directories/files to exclude when exporting the default (~/.hermes) profile.
 # The default profile contains infrastructure (repo checkout, worktrees, DBs,
 # caches, binaries) that named profiles don't have.  We exclude those so the
 # export is a portable, reasonable-size archive of actual profile data.
@@ -216,7 +216,7 @@ _DEFAULT_EXPORT_EXCLUDE_ROOT = frozenset({
     ".env",                 # API keys (dotenv)
     "auth.lock", "active_profile", ".update_check",
     "errors.log",
-    ".lucifex_history",
+    ".hermes_history",
     # Caches (regenerated on use)
     "image_cache", "audio_cache", "document_cache",
     "browser_screenshots", "checkpoints",
@@ -224,13 +224,32 @@ _DEFAULT_EXPORT_EXCLUDE_ROOT = frozenset({
     "logs",                 # gateway logs
 })
 
-# Names that cannot be used as profile aliases
-_RESERVED_NAMES = frozenset({
-    "lucifex", "default", "test", "tmp", "root", "sudo",
+# Allow-list for ``export_profile("default")``: when LUCIFEX_HOME equals the
+# cwd (Docker/custom deployments), the default profile home is the working
+# directory and contains arbitrary user files that should NOT be bundled
+# into the export. The set below identifies the *known Hermes profile
+# artifacts* at the root of LUCIFEX_HOME; everything else is excluded.
+# Sensitive runtime infrastructure (``state.db``, ``logs/``, ``auth.*``,
+# other profiles) is intentionally *not* in this list so the export stays
+# a portable, credential-free snapshot of the user-facing surface
+# (#58394). Add new artifacts here when introduced in ``lucifex_constants``.
+_DEFAULT_EXPORT_INCLUDE_ROOT = frozenset({
+    # Configuration / persona
+    "config.yaml", "SOUL.md", "MEMORY.md", "USER.md", "todo.json",
+    "system_prompt.md", "AGENTS.md", "CLAUDE.md", ".cursorrules",
+    # User-facing skill, cron, and session artifacts
+    "skills", "cron", "scripts", "sessions",
+    # Plugin / memory surfaces (per-profile overrides live here)
+    "plugins", "memories", "knowledge", "preferences",
 })
 
-# Lucifex subcommands that cannot be used as profile names/aliases
-_LUCIFEX_SUBCOMMANDS = frozenset({
+# Names that cannot be used as profile aliases
+_RESERVED_NAMES = frozenset({
+    "hermes", "default", "test", "tmp", "root", "sudo",
+})
+
+# Hermes subcommands that cannot be used as profile names/aliases
+_HERMES_SUBCOMMANDS = frozenset({
     "chat", "model", "gateway", "setup", "whatsapp", "login", "logout",
     "status", "cron", "doctor", "dump", "config", "pairing", "skills", "tools",
     "mcp", "sessions", "insights", "version", "update", "uninstall",
@@ -245,22 +264,22 @@ _LUCIFEX_SUBCOMMANDS = frozenset({
 def _get_profiles_root() -> Path:
     """Return the directory where named profiles are stored.
 
-    Anchored to the lucifex root, NOT to the current LUCIFEX_HOME
+    Anchored to the hermes root, NOT to the current LUCIFEX_HOME
     (which may itself be a profile).  This ensures ``coder profile list``
     can see all profiles.
 
     In Docker/custom deployments where LUCIFEX_HOME points outside
-    ``~/.lucifex``, profiles live under ``LUCIFEX_HOME/profiles/`` so
+    ``~/.hermes``, profiles live under ``LUCIFEX_HOME/profiles/`` so
     they persist on the mounted volume.
     """
-    return _get_default_lucifex_home() / "profiles"
+    return _get_default_LUCIFEX_HOME() / "profiles"
 
 
-def _get_default_lucifex_home() -> Path:
+def _get_default_LUCIFEX_HOME() -> Path:
     """Return the default (pre-profile) LUCIFEX_HOME path.
 
-    In standard deployments this is ``~/.lucifex``.
-    In Docker/custom deployments where LUCIFEX_HOME is outside ``~/.lucifex``
+    In standard deployments this is ``~/.hermes``.
+    In Docker/custom deployments where LUCIFEX_HOME is outside ``~/.hermes``
     (e.g. ``/opt/data``), returns LUCIFEX_HOME directly.
     """
     from lucifex_constants import get_default_lucifex_root
@@ -269,7 +288,7 @@ def _get_default_lucifex_home() -> Path:
 
 def _get_active_profile_path() -> Path:
     """Return the path to the sticky active_profile file."""
-    return _get_default_lucifex_home() / "active_profile"
+    return _get_default_LUCIFEX_HOME() / "active_profile"
 
 
 def _get_wrapper_dir() -> Path:
@@ -308,14 +327,14 @@ def validate_profile_name(name: str) -> None:
     honest about what the on-disk directory name must look like, while
     ingress-point normalization handles UX flexibility (see #18498).
 
-    Also rejects names in :data:`_RESERVED_NAMES` (``lucifex``, ``test``,
+    Also rejects names in :data:`_RESERVED_NAMES` (``hermes``, ``test``,
     ``tmp``, ``root``, ``sudo``) that would create confusing on-disk
-    collisions (a ``lucifex`` profile inside ``~/.lucifex/``) or get refused
+    collisions (a ``hermes`` profile inside ``~/.hermes/``) or get refused
     at alias-creation time anyway. ``default`` is a special pass-through —
     it's a valid alias for the built-in root profile.
     """
     if name == "default":
-        return  # special alias for ~/.lucifex
+        return  # special alias for ~/.hermes
     if not _PROFILE_ID_RE.match(name):
         raise ValueError(
             f"Invalid profile name {name!r}. Must match "
@@ -324,7 +343,7 @@ def validate_profile_name(name: str) -> None:
     if name in _RESERVED_NAMES:
         raise ValueError(
             f"Profile name {name!r} is reserved — it collides with either "
-            f"the Lucifex installation itself or a common system binary.  "
+            f"the Hermes installation itself or a common system binary.  "
             f"Pick a different name."
         )
 
@@ -349,7 +368,7 @@ def get_profile_dir(name: str) -> Path:
     """Resolve a profile name to its LUCIFEX_HOME directory."""
     canon = normalize_profile_name(name)
     if canon == "default":
-        return _get_default_lucifex_home()
+        return _get_default_LUCIFEX_HOME()
     return _get_profiles_root() / canon
 
 
@@ -368,7 +387,7 @@ def profile_exists(name: str) -> bool:
 def check_alias_collision(name: str) -> Optional[str]:
     """Return a human-readable collision message, or None if the name is safe.
 
-    Checks: alias-name validity, reserved names, lucifex subcommands, existing
+    Checks: alias-name validity, reserved names, hermes subcommands, existing
     binaries in PATH.
     """
     canon = normalize_profile_name(name)
@@ -378,8 +397,8 @@ def check_alias_collision(name: str) -> Optional[str]:
         return str(exc)
     if canon in _RESERVED_NAMES:
         return f"'{canon}' is a reserved name"
-    if canon in _LUCIFEX_SUBCOMMANDS:
-        return f"'{canon}' conflicts with a lucifex subcommand"
+    if canon in _HERMES_SUBCOMMANDS:
+        return f"'{canon}' conflicts with a hermes subcommand"
 
     # Check existing commands in PATH
     wrapper_dir = _get_wrapper_dir()
@@ -396,7 +415,7 @@ def check_alias_collision(name: str) -> Optional[str]:
             if existing_path == str(expected):
                 try:
                     content = expected.read_text()
-                    if "lucifex -p" in content:
+                    if "hermes -p" in content:
                         return None  # it's our wrapper, safe to overwrite
                 except Exception:
                     pass
@@ -439,7 +458,7 @@ def create_wrapper_script(name: str, target: Optional[str] = None) -> Optional[P
     if is_windows:
         wrapper_path = wrapper_dir / f"{canon}.bat"
         try:
-            wrapper_path.write_text(f"@echo off\r\nlucifex -p {profile} %*\r\n")
+            wrapper_path.write_text(f"@echo off\r\nhermes -p {profile} %*\r\n")
             return wrapper_path
         except OSError as e:
             print(f"⚠ Could not create wrapper at {wrapper_path}: {e}")
@@ -447,8 +466,8 @@ def create_wrapper_script(name: str, target: Optional[str] = None) -> Optional[P
     else:
         wrapper_path = wrapper_dir / canon
         try:
-            lucifex_exe = shutil.which("lucifex") or "lucifex"
-            wrapper_path.write_text(f'#!/bin/sh\nexec {shlex.quote(lucifex_exe)} -p {profile} "$@"\n')
+            hermes_exe = shutil.which("hermes") or "hermes"
+            wrapper_path.write_text(f'#!/bin/sh\nexec {shlex.quote(hermes_exe)} -p {profile} "$@"\n')
             wrapper_path.chmod(wrapper_path.stat().st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
             return wrapper_path
         except OSError as e:
@@ -478,7 +497,7 @@ def remove_wrapper_script(name: str) -> bool:
             try:
                 # Verify it's our wrapper before removing
                 content = wrapper_path.read_text()
-                if "lucifex -p" in content:
+                if "hermes -p" in content:
                     wrapper_path.unlink()
                     return True
             except Exception:
@@ -490,7 +509,7 @@ def _migrate_profile_config_if_outdated(profile_dir: Path) -> None:
     """Bring a copied profile config.yaml up to the current schema.
 
     Profile creation can clone a config file that predates schema tracking (no
-    ``_config_version``) or that is simply older than the running Lucifex. If we
+    ``_config_version``) or that is simply older than the running Hermes. If we
     leave it untouched, the first desktop/doctor view of the new profile shows a
     scary ``v0 → latest`` warning even though we just created the profile. Scope
     the normal migration pipeline to the new profile and keep it non-interactive.
@@ -512,7 +531,7 @@ def _migrate_profile_config_if_outdated(profile_dir: Path) -> None:
             reset_lucifex_home_override(token)
     except Exception:
         # Profile creation should not fail because an old copied config could
-        # not be migrated. The next `lucifex doctor --fix` can still surface the
+        # not be migrated. The next `hermes doctor --fix` can still surface the
         # detailed error in the target profile.
         pass
 
@@ -521,8 +540,8 @@ def find_alias_for_profile(profile_name: str) -> Optional[str]:
     """Return the alias name of the wrapper that activates *profile_name*, or None.
 
     A wrapper created by :func:`create_wrapper_script` is a file named after the
-    alias whose body invokes ``lucifex -p <profile>``. When the alias name equals
-    the profile name this is trivial, but a custom alias (``lucifex profile alias
+    alias whose body invokes ``hermes -p <profile>``. When the alias name equals
+    the profile name this is trivial, but a custom alias (``hermes profile alias
     <profile> --name <custom>``) produces a differently-named file — so the
     display side cannot assume ``wrapper == profile`` and must reverse-look-up.
 
@@ -539,7 +558,7 @@ def find_alias_for_profile(profile_name: str) -> Optional[str]:
 
 
 # Cap how much of a wrapper file we read when reverse-looking-up its profile.
-# Real wrappers are a few hundred bytes of shell; the needle (``lucifex -p X``)
+# Real wrappers are a few hundred bytes of shell; the needle (``hermes -p X``)
 # sits near the top. The wrapper dir (e.g. ``~/.local/bin``) commonly also holds
 # large unrelated binaries (ffmpeg, node, …) — reading those whole, N times, was
 # the dominant cost in ``list_profiles`` (~4.5s). Reading a small head slice and
@@ -561,7 +580,7 @@ def build_alias_map() -> dict[str, str]:
     if not wrapper_dir.is_dir():
         return result
     is_windows = sys.platform == "win32"
-    prefix = "lucifex -p "
+    prefix = "hermes -p "
 
     for entry in sorted(wrapper_dir.iterdir()):
         if not entry.is_file():
@@ -638,7 +657,7 @@ def _read_distribution_meta(profile_dir: Path) -> tuple:
     if present; ``(None, None, None)`` otherwise.
 
     Failures (missing file, bad YAML) are swallowed — a bad manifest should
-    never break ``lucifex profile list`` for an unrelated profile.
+    never break ``hermes profile list`` for an unrelated profile.
     """
     mf_path = profile_dir / "distribution.yaml"
     if not mf_path.is_file():
@@ -780,7 +799,7 @@ def _count_skills(profile_dir: Path) -> int:
 # ---------------------------------------------------------------------------
 #
 # We keep this file deliberately tiny and separate from the profile's
-# ``config.yaml``. ``config.yaml`` is the user-facing Lucifex config
+# ``config.yaml``. ``config.yaml`` is the user-facing Hermes config
 # (~5000 lines of defaults); ``profile.yaml`` is metadata ABOUT the
 # profile itself (its role, who described it). Mixing them makes both
 # harder to read.
@@ -799,7 +818,7 @@ def read_profile_meta(profile_dir: Path) -> dict:
     Returns ``{"description": "", "description_auto": False}`` when the
     file is missing or unreadable. Never raises — a corrupt
     profile.yaml on an unrelated profile must not break
-    ``lucifex profile list``.
+    ``hermes profile list``.
     """
     path = _profile_yaml_path(profile_dir)
     if not path.is_file():
@@ -861,7 +880,7 @@ def list_profiles() -> List[ProfileInfo]:
     wrapper_dir = _get_wrapper_dir()
 
     # Default profile
-    default_home = _get_default_lucifex_home()
+    default_home = _get_default_LUCIFEX_HOME()
     if default_home.is_dir():
         model, provider = _read_config_model(default_home)
         dist_name, dist_version, dist_source = _read_distribution_meta(default_home)
@@ -928,7 +947,7 @@ def list_profiles() -> List[ProfileInfo]:
 
 
 def profiles_to_serve(multiplex: bool) -> List[Tuple[str, Path]]:
-    """Return the ``(profile_name, lucifex_home)`` pairs a gateway should serve.
+    """Return the ``(profile_name, LUCIFEX_HOME)`` pairs a gateway should serve.
 
     This is the single chokepoint for "which profiles does the inbound gateway
     handle" so later multiplexing phases never re-derive the set.
@@ -944,14 +963,14 @@ def profiles_to_serve(multiplex: bool) -> List[Tuple[str, Path]]:
     per-profile config reads, gateway-running probes, or skill counts like
     :func:`list_profiles`. It runs on gateway startup and must stay cheap.
 
-    The returned ``lucifex_home`` is the path to pass to
+    The returned ``LUCIFEX_HOME`` is the path to pass to
     ``set_lucifex_home_override`` when scoping a turn to that profile.
     """
     active = get_active_profile_name() or "default"
     if not multiplex:
         return [(active, get_profile_dir(active))]
 
-    serve: List[Tuple[str, Path]] = [("default", _get_default_lucifex_home())]
+    serve: List[Tuple[str, Path]] = [("default", _get_default_LUCIFEX_HOME())]
 
     profiles_root = _get_profiles_root()
     if profiles_root.is_dir():
@@ -995,7 +1014,7 @@ def create_profile(
         If True, skip wrapper script creation.
     no_skills:
         If True, create an empty profile with no bundled skills, and write
-        a marker file so ``lucifex update`` skips re-seeding this profile's
+        a marker file so ``hermes update`` skips re-seeding this profile's
         skills. Mutually exclusive with ``clone_config``/``clone_all`` (those
         explicitly copy skills from the source).
 
@@ -1014,7 +1033,7 @@ def create_profile(
 
     if canon == "default":
         raise ValueError(
-            "Cannot create a profile named 'default' — it is the built-in profile (~/.lucifex)."
+            "Cannot create a profile named 'default' — it is the built-in profile (~/.hermes)."
         )
 
     profile_dir = get_profile_dir(canon)
@@ -1038,10 +1057,11 @@ def create_profile(
             )
 
     if clone_all and source_dir:
-        # Full copy of source profile (exclude sibling ~/.lucifex/profiles/)
+        # Full copy of source profile (exclude sibling ~/.hermes/profiles/)
         shutil.copytree(
             source_dir,
             profile_dir,
+            symlinks=True,
             ignore=_clone_all_copytree_ignore(source_dir),
         )
         # Strip runtime files
@@ -1076,7 +1096,7 @@ def create_profile(
             # same agent capabilities as the source profile.
             source_skills = source_dir / "skills"
             if source_skills.is_dir():
-                shutil.copytree(source_skills, profile_dir / "skills", dirs_exist_ok=True)
+                shutil.copytree(source_skills, profile_dir / "skills", symlinks=True, dirs_exist_ok=True)
 
             # Clone memory and other subdirectory files
             for relpath in _CLONE_SUBDIR_FILES:
@@ -1088,7 +1108,7 @@ def create_profile(
 
     # Seed an empty .env so the profile has its own credentials file from
     # day one. Without it, profile-scoped env writes (dashboard Channels /
-    # Keys pages, `lucifex -p <name> auth add`) had no file until first
+    # Keys pages, `hermes -p <name> auth add`) had no file until first
     # write, and the profile silently inherited API keys from the shell
     # environment — users reasonably read that as "the new profile reads
     # the root .env". Skipped when --clone/--clone-all already copied one.
@@ -1096,7 +1116,7 @@ def create_profile(
     if not env_path.exists():
         try:
             env_path.write_text(
-                "# Per-profile secrets for this Lucifex profile.\n"
+                "# Per-profile secrets for this Hermes profile.\n"
                 "# API keys and tokens set here override the shell environment.\n"
                 "# Behavioral settings belong in config.yaml, not here.\n",
                 encoding="utf-8",
@@ -1115,20 +1135,20 @@ def create_profile(
         except Exception:
             pass  # best-effort — don't fail profile creation over this
 
-    # Write the opt-out marker so seed_profile_skills() and `lucifex update`'s
+    # Write the opt-out marker so seed_profile_skills() and `hermes update`'s
     # all-profile sync loop both skip this profile for bundled-skill seeding.
     if no_skills:
         try:
             (profile_dir / NO_BUNDLED_SKILLS_MARKER).write_text(
                 "This profile opted out of bundled-skill seeding "
-                "(`lucifex profile create --no-skills`).\n"
-                "Delete this file to re-enable sync on the next `lucifex update`.\n",
+                "(`hermes profile create --no-skills`).\n"
+                "Delete this file to re-enable sync on the next `hermes update`.\n",
                 encoding="utf-8",
             )
         except OSError:
             pass  # best-effort — the feature still works via the empty skills/ dir
 
-    # Cloned configs can be older than the running Lucifex (or predate schema
+    # Cloned configs can be older than the running Hermes (or predate schema
     # tracking entirely). Migrate config-only clones immediately so
     # desktop/status surfaces don't warn that a just-created profile is
     # v0/outdated. Leave --clone-all snapshots byte-for-byte apart from the
@@ -1147,11 +1167,11 @@ def create_profile(
                 description_auto=False,
             )
         except Exception:
-            pass  # non-fatal — user can describe later with `lucifex profile describe`
+            pass  # non-fatal — user can describe later with `hermes profile describe`
 
     # Phase 4: when running inside a container under s6, register the
     # new profile's gateway as a runtime s6 service so
-    # `lucifex -p <profile> gateway start` can supervise it via
+    # `hermes -p <profile> gateway start` can supervise it via
     # `s6-svc -u` instead of spawning a bare process. On host (systemd
     # / launchd / windows) this is a no-op — the existing per-profile
     # unit-generation paths handle gateway lifecycle.
@@ -1166,7 +1186,7 @@ def seed_profile_skills(profile_dir: Path, quiet: bool = False) -> Optional[dict
     Uses subprocess because sync_skills() caches LUCIFEX_HOME at module level.
     Returns the sync result dict, or None on failure.
 
-    Profiles that opted out of bundled skills (via ``lucifex profile create
+    Profiles that opted out of bundled skills (via ``hermes profile create
     --no-skills`` — which writes ``.no-bundled-skills`` to the profile root)
     are skipped and get an empty-result dict so callers can report
     "opted out" instead of "failed".
@@ -1228,7 +1248,7 @@ def backfill_profile_envs(quiet: bool = False) -> List[str]:
     if not profiles_root.is_dir():
         return backfilled
 
-    default_env = _get_default_lucifex_home() / ".env"
+    default_env = _get_default_LUCIFEX_HOME() / ".env"
 
     for entry in sorted(profiles_root.iterdir()):
         if not entry.is_dir() or not _PROFILE_ID_RE.match(entry.name):
@@ -1243,7 +1263,7 @@ def backfill_profile_envs(quiet: bool = False) -> List[str]:
                 shutil.copy2(default_env, env_path)
             else:
                 env_path.write_text(
-                    "# Per-profile secrets for this Lucifex profile.\n"
+                    "# Per-profile secrets for this Hermes profile.\n"
                     "# API keys and tokens set here override the shell environment.\n"
                     "# Behavioral settings belong in config.yaml, not here.\n",
                     encoding="utf-8",
@@ -1258,14 +1278,14 @@ def backfill_profile_envs(quiet: bool = False) -> List[str]:
 
 
 def _profile_bound_backend_pids(canon: str, profile_dir: Path) -> list[int]:
-    """PIDs of running Lucifex *backends* bound to this profile.
+    """PIDs of running Hermes *backends* bound to this profile.
 
     The ``gateway.pid`` file only tracks the messaging gateway.  A Desktop app
     spawns a headless ``serve`` (or legacy ``dashboard --no-open``) backend per
     profile that holds the profile's SQLite connection open and keeps writing
     sessions/WAL/sandbox files — the writer that makes ``rmtree`` hit
     ``ENOTEMPTY`` (and, pre-fix, resurrected the tree).  ``gateway.pid`` never
-    names it, so find it by inspection: a Lucifex backend subcommand
+    names it, so find it by inspection: a Hermes backend subcommand
     (``serve``/``dashboard``/``gateway``) that is bound to *this* profile either
     by a ``--profile <canon>`` / ``-p <canon>`` selector or by a ``LUCIFEX_HOME``
     that resolves to ``profile_dir``.
@@ -1285,7 +1305,7 @@ def _profile_bound_backend_pids(canon: str, profile_dir: Path) -> list[int]:
     except OSError:
         resolved_dir = profile_dir
 
-    # Never terminate ourselves or a parent (e.g. `lucifex -p <canon> profile
+    # Never terminate ourselves or a parent (e.g. `hermes -p <canon> profile
     # delete` runs under the very profile it's deleting).
     skip: set[int] = {os.getpid()}
     try:
@@ -1302,7 +1322,7 @@ def _profile_bound_backend_pids(canon: str, profile_dir: Path) -> list[int]:
         current_user = None
 
     backend_tokens = {"serve", "dashboard", "gateway"}
-    lucifex_markers = ("lucifex_cli.main", "lucifex-gateway", "tui_gateway")
+    hermes_markers = ("lucifex_cli.main", "lucifex-gateway", "tui_gateway")
     pids: list[int] = []
 
     for proc in psutil.process_iter(["pid", "name", "username", "cmdline"]):
@@ -1318,16 +1338,16 @@ def _profile_bound_backend_pids(canon: str, profile_dir: Path) -> list[int]:
             if not argv:
                 continue
 
-            # Must be a Lucifex process: either an entrypoint marker in argv, or
-            # a resolved executable named `lucifex`.
+            # Must be a Hermes process: either an entrypoint marker in argv, or
+            # a resolved executable named `hermes`.
             joined = " ".join(argv)
             exe_name = os.path.basename(argv[0]).lower()
-            is_lucifex = (
-                any(marker in joined for marker in lucifex_markers)
-                or exe_name == "lucifex"
-                or exe_name.startswith("lucifex")
+            is_hermes = (
+                any(marker in joined for marker in hermes_markers)
+                or exe_name == "hermes"
+                or exe_name.startswith("hermes")
             )
-            if not is_lucifex:
+            if not is_hermes:
                 continue
 
             # Restrict to backend subcommands so we never kill an interactive
@@ -1453,8 +1473,8 @@ def delete_profile(name: str, yes: bool = False) -> Path:
 
     if canon == "default":
         raise ValueError(
-            "Cannot delete the default profile (~/.lucifex).\n"
-            "To remove everything, use: lucifex uninstall"
+            "Cannot delete the default profile (~/.hermes).\n"
+            "To remove everything, use: hermes uninstall"
         )
 
     profile_dir = get_profile_dir(canon)
@@ -1488,11 +1508,11 @@ def delete_profile(name: str, yes: bool = False) -> Path:
     if has_wrapper:
         items.append(f"Command alias ({wrapper_path})")
 
-    print(f"\nThis will permanently delete:")
+    print("\nThis will permanently delete:")
     for item in items:
         print(f"  • {item}")
     if gw_running:
-        print(f"  ⚠ Gateway is running — it will be stopped.")
+        print("  ⚠ Gateway is running — it will be stopped.")
 
     # Confirmation
     if not yes:
@@ -1520,7 +1540,7 @@ def delete_profile(name: str, yes: bool = False) -> Path:
     # 2b. Stop any other backends bound to this profile (Desktop-spawned
     # serve/dashboard processes the gateway.pid file never names). They hold
     # the profile's SQLite connection open and keep writing files, which makes
-    # the rmtree below fail with ENOTEMPTY and — before the ensure_lucifex_home
+    # the rmtree below fail with ENOTEMPTY and — before the ensure_LUCIFEX_HOME
     # guard — resurrected the deleted tree.
     _stop_profile_backends(canon, profile_dir)
 
@@ -1716,7 +1736,7 @@ def _cleanup_gateway_service(name: str, profile_dir: Path) -> None:
                     capture_output=True, check=False, timeout=10,
                 )
                 plist_path.unlink(missing_ok=True)
-                print(f"✓ Launchd service removed")
+                print("✓ Launchd service removed")
     except Exception as e:
         print(f"⚠ Service cleanup: {e}")
     finally:
@@ -1787,14 +1807,14 @@ def get_active_profile() -> str:
 def set_active_profile(name: str) -> None:
     """Set the sticky active profile.
 
-    Writes to ``~/.lucifex/active_profile``. Use ``"default"`` to clear.
+    Writes to ``~/.hermes/active_profile``. Use ``"default"`` to clear.
     """
     canon = normalize_profile_name(name)
     validate_profile_name(canon)
     if canon != "default" and not profile_exists(canon):
         raise FileNotFoundError(
             f"Profile '{canon}' does not exist. "
-            f"Create it with: lucifex profile create {canon}"
+            f"Create it with: hermes profile create {canon}"
         )
 
     path = _get_active_profile_path()
@@ -1812,15 +1832,15 @@ def set_active_profile(name: str) -> None:
 def get_active_profile_name() -> str:
     """Infer the current profile name from LUCIFEX_HOME.
 
-    Returns ``"default"`` if LUCIFEX_HOME is not set or points to ``~/.lucifex``.
-    Returns the profile name if LUCIFEX_HOME points into ``~/.lucifex/profiles/<name>``.
+    Returns ``"default"`` if LUCIFEX_HOME is not set or points to ``~/.hermes``.
+    Returns the profile name if LUCIFEX_HOME points into ``~/.hermes/profiles/<name>``.
     Returns ``"custom"`` if LUCIFEX_HOME is set to an unrecognized path.
     """
     from lucifex_constants import get_lucifex_home
-    lucifex_home = get_lucifex_home()
-    resolved = lucifex_home.resolve()
+    LUCIFEX_HOME = get_lucifex_home()
+    resolved = LUCIFEX_HOME.resolve()
 
-    default_resolved = _get_default_lucifex_home().resolve()
+    default_resolved = _get_default_LUCIFEX_HOME().resolve()
     if resolved == default_resolved:
         return "default"
 
@@ -1843,8 +1863,18 @@ def get_active_profile_name() -> str:
 def _default_export_ignore(root_dir: Path):
     """Return an *ignore* callable for :func:`shutil.copytree`.
 
-    At the root level it excludes everything in ``_DEFAULT_EXPORT_EXCLUDE_ROOT``.
-    At all levels it excludes ``__pycache__``, sockets, and temp files.
+    Two-tier filtering:
+
+    * **Root-level allow-list** — only entries whose name appears in
+      ``_DEFAULT_EXPORT_INCLUDE_ROOT`` survive. Everything else (such as
+      an unrelated ``x11-dev/`` directory in a Docker deployment where
+      LUCIFEX_HOME equals the cwd) is excluded. Blacklisting was tried
+      first and proved unable to anticipate every non-Hermes file the
+      user may have lying alongside LUCIFEX_HOME (#58394).
+    * **Universal exclusions at any depth** — ``__pycache__``, sockets,
+      temp files; plus npm lockfiles, which may appear at the root.
+
+    All other profile artifacts are copied through untouched.
     """
 
     def _ignore(directory: str, contents: list) -> set:
@@ -1856,9 +1886,12 @@ def _default_export_ignore(root_dir: Path):
             # npm lockfiles can appear at root
             elif entry in {"package.json", "package-lock.json"}:
                 ignored.add(entry)
-        # Root-level exclusions
+        # Root-level allow-list: drop everything that isn't a known
+        # Hermes profile artifact.
         if Path(directory) == root_dir:
-            ignored.update(c for c in contents if c in _DEFAULT_EXPORT_EXCLUDE_ROOT)
+            ignored.update(
+                entry for entry in contents if entry not in _DEFAULT_EXPORT_INCLUDE_ROOT
+            )
         return ignored
 
     return _ignore
@@ -1882,14 +1915,15 @@ def export_profile(name: str, output_path: str) -> Path:
     base = str(output).removesuffix(".tar.gz").removesuffix(".tgz")
 
     if canon == "default":
-        # The default profile IS ~/.lucifex itself — its parent is ~/ and its
-        # directory name is ".lucifex", not "default".  We stage a clean copy
+        # The default profile IS ~/.hermes itself — its parent is ~/ and its
+        # directory name is ".hermes", not "default".  We stage a clean copy
         # under a temp dir so the archive contains ``default/...``.
         with tempfile.TemporaryDirectory() as tmpdir:
             staged = Path(tmpdir) / "default"
             shutil.copytree(
                 profile_dir,
                 staged,
+                symlinks=True,
                 ignore=_default_export_ignore(profile_dir),
             )
             result = shutil.make_archive(base, "gztar", tmpdir, "default")
@@ -1902,6 +1936,7 @@ def export_profile(name: str, output_path: str) -> Path:
         shutil.copytree(
             profile_dir,
             staged,
+            symlinks=True,
             ignore=lambda d, contents: _CREDENTIAL_FILES & set(contents),
         )
         result = shutil.make_archive(base, "gztar", tmpdir, canon)
@@ -2003,7 +2038,7 @@ def import_profile(archive_path: str, name: Optional[str] = None) -> Path:
     if not inferred_name:
         raise ValueError(
             "Cannot determine profile name from archive. "
-            "Specify it explicitly: lucifex profile import <archive> --name <name>"
+            "Specify it explicitly: hermes profile import <archive> --name <name>"
         )
     if archive_root is None:
         raise ValueError(
@@ -2011,14 +2046,14 @@ def import_profile(archive_path: str, name: Optional[str] = None) -> Path:
         )
 
     # Archives exported from the default profile have "default/" as top-level
-    # dir.  Importing as "default" would target ~/.lucifex itself — disallow
+    # dir.  Importing as "default" would target ~/.hermes itself — disallow
     # that and guide the user toward a named profile.
     canon = normalize_profile_name(inferred_name)
     validate_profile_name(canon)
     if canon == "default":
         raise ValueError(
-            "Cannot import as 'default' — that is the built-in root profile (~/.lucifex). "
-            "Specify a different name: lucifex profile import <archive> --name <name>"
+            "Cannot import as 'default' — that is the built-in root profile (~/.hermes). "
+            "Specify a different name: hermes profile import <archive> --name <name>"
         )
 
     profile_dir = get_profile_dir(canon)
@@ -2028,7 +2063,7 @@ def import_profile(archive_path: str, name: Optional[str] = None) -> Path:
     profiles_root = _get_profiles_root()
     profiles_root.mkdir(parents=True, exist_ok=True)
 
-    with tempfile.TemporaryDirectory(prefix="lucifex_profile_import_") as tmpdir:
+    with tempfile.TemporaryDirectory(prefix="hermes_profile_import_") as tmpdir:
         staging_root = Path(tmpdir)
         _safe_extract_profile_archive(archive, staging_root)
 
@@ -2054,13 +2089,13 @@ def import_profile(archive_path: str, name: Optional[str] = None) -> Path:
 
 def _migrate_honcho_profile_host(old_name: str, new_name: str, new_dir: Path) -> None:
     """Rename Honcho host blocks for a renamed profile without changing peers."""
-    old_host = f"lucifex_{old_name}"
-    legacy_old_host = f"lucifex.{old_name}"
-    new_host = f"lucifex_{new_name}"
+    old_host = f"hermes_{old_name}"
+    legacy_old_host = f"hermes.{old_name}"
+    new_host = f"hermes_{new_name}"
 
     candidates = [
         new_dir / "honcho.json",
-        _get_default_lucifex_home() / "honcho.json",
+        _get_default_LUCIFEX_HOME() / "honcho.json",
         Path.home() / ".honcho" / "config.json",
     ]
 
@@ -2092,7 +2127,7 @@ def _migrate_honcho_profile_host(old_name: str, new_name: str, new_dir: Path) ->
 
         block = hosts[source_host]
         if isinstance(block, dict) and "aiPeer" not in block:
-            if source_host.startswith("lucifex_"):
+            if source_host.startswith("hermes_"):
                 bare = source_host.split("_", 1)[1]
             else:
                 bare = source_host.split(".", 1)[1] if "." in source_host else source_host
@@ -2174,7 +2209,7 @@ def rename_profile(old_name: str, new_name: str) -> Path:
 def resolve_profile_env(profile_name: str) -> str:
     """Resolve a profile name to a LUCIFEX_HOME path string.
 
-    Called early in the CLI entry point, before any lucifex modules
+    Called early in the CLI entry point, before any hermes modules
     are imported, to set the LUCIFEX_HOME environment variable.
     """
     canon = normalize_profile_name(profile_name)
@@ -2184,7 +2219,7 @@ def resolve_profile_env(profile_name: str) -> str:
     if canon != "default" and not profile_dir.is_dir():
         raise FileNotFoundError(
             f"Profile '{canon}' does not exist. "
-            f"Create it with: lucifex profile create {canon}"
+            f"Create it with: hermes profile create {canon}"
         )
 
     return str(profile_dir)

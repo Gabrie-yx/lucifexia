@@ -309,7 +309,7 @@ Meta only allows **free-form messages** within a 24-hour window after the user's
 
 Hermes warns the agent about this window in its system prompt, so the model knows to mention it when scheduling delayed messages.
 
-Message-template support (the workaround for outside-window sends) is not yet implemented in Hermes. If you need it, please [open an issue](https://github.com/NousResearch/hermes-agent/issues) — it's planned but waiting on a clear demand signal.
+Message-template support (the workaround for outside-window sends) is not yet implemented in Hermes. If you need it, please [open an issue](https://github.com/NousResearch/lucifex-agent/issues) — it's planned but waiting on a clear demand signal.
 
 ### Group chats
 
@@ -361,7 +361,7 @@ Same 401 root causes as outbound (`graph error 190`) — the access token is inv
 
 Common cause: the toolset configured for `whatsapp_cloud` is missing the tools the agent wants to call.  Check `hermes tools list` and verify the platform is using `hermes-whatsapp` (the default Cloud adapter toolset, same as Baileys).
 
-If the model emits tool-call-shaped text instead of a structured call, it usually means the toolset was effectively empty.  See `hermes_cli/platforms.py` for the platform → default toolset mapping.
+If the model emits tool-call-shaped text instead of a structured call, it usually means the toolset was effectively empty.  See `lucifex_cli/platforms.py` for the platform → default toolset mapping.
 
 ### STT (voice note transcription) returns empty / "could not transcribe"
 

@@ -1,7 +1,7 @@
-"""CLI for the Lucifex Kanban board — ``lucifex kanban …`` subcommand.
+"""CLI for the Hermes Kanban board — ``hermes kanban …`` subcommand.
 
 Exposes the full Kanban command surface documented in the design spec
-(``docs/lucifex-kanban-v1-spec.pdf``).  All DB work is delegated to
+(``docs/hermes-kanban-v1-spec.pdf``).  All DB work is delegated to
 ``kanban_db``.  This module adds:
 
   * Argparse subcommand construction (``build_parser``).
@@ -142,7 +142,7 @@ def _check_dispatcher_presence() -> tuple[bool, str]:
       is running but the config flag is off. Message is human guidance
       explaining the next step.
 
-    Used by ``lucifex kanban create`` (and callers) to warn when a task
+    Used by ``hermes kanban create`` (and callers) to warn when a task
     will sit in ``ready`` because nothing is there to pick it up.
     Defensive against import failures and config-read errors — if the
     probe itself errors, we return ``(True, "")`` so we don't spam
@@ -173,7 +173,7 @@ def _check_dispatcher_presence() -> tuple[bool, str]:
             "Gateway is running but kanban.dispatch_in_gateway=false in "
             "config.yaml — the task will sit in 'ready' until you flip it "
             "back on and restart the gateway, OR run the legacy "
-            "standalone daemon (`lucifex kanban daemon --force`)."
+            "standalone daemon (`hermes kanban daemon --force`)."
         )
     return (
         False,
@@ -199,17 +199,17 @@ def build_parser(parent_subparsers: argparse._SubParsersAction) -> argparse.Argu
         "kanban",
         help="Multi-profile collaboration board (tasks, links, comments)",
         description=(
-            "Durable SQLite-backed task board shared across Lucifex profiles. "
+            "Durable SQLite-backed task board shared across Hermes profiles. "
             "Tasks are claimed atomically, can depend on other tasks, and "
             "are executed by a named profile in an isolated workspace. "
             "See https://lucifex-agent.nousresearch.com/docs/user-guide/features/kanban "
-            "or docs/lucifex-kanban-v1-spec.pdf for the full design."
+            "or docs/hermes-kanban-v1-spec.pdf for the full design."
         ),
     )
     # --- global --board flag ---
     # Applies to every subcommand below. When set, scopes all reads and
     # writes to that board's DB. When omitted, resolves via the
-    # LUCIFEX_KANBAN_BOARD env var, then the persisted current-board
+    # HERMES_KANBAN_BOARD env var, then the persisted current-board
     # file, then "default". See kanban_db.get_current_board().
     kanban_parser.add_argument(
         "--board",
@@ -217,8 +217,8 @@ def build_parser(parent_subparsers: argparse._SubParsersAction) -> argparse.Argu
         metavar="<slug>",
         help=(
             "Board slug to operate on. Defaults to the current board "
-            "(set via `lucifex kanban boards switch <slug>` or the "
-            "LUCIFEX_KANBAN_BOARD env var). Use `lucifex kanban boards list` "
+            "(set via `hermes kanban boards switch <slug>` or the "
+            "HERMES_KANBAN_BOARD env var). Use `hermes kanban boards list` "
             "to see all boards."
         ),
     )
@@ -318,7 +318,7 @@ def build_parser(parent_subparsers: argparse._SubParsersAction) -> argparse.Argu
     p_create.add_argument("--project", default=None,
                           help="Link to a project (id or slug). Anchors the task's "
                                "worktree under the project's primary repo with a "
-                               "deterministic branch. See `lucifex project list`.")
+                               "deterministic branch. See `hermes project list`.")
     p_create.add_argument("--tenant", default=None, help="Tenant namespace")
     p_create.add_argument("--priority", type=int, default=0, help="Priority tiebreaker")
     p_create.add_argument("--triage", action="store_true",
@@ -392,7 +392,7 @@ def build_parser(parent_subparsers: argparse._SubParsersAction) -> argparse.Argu
     # --- list ---
     p_list = sub.add_parser("list", aliases=["ls"], help="List tasks")
     p_list.add_argument("--mine", action="store_true",
-                        help="Filter by $LUCIFEX_PROFILE as assignee")
+                        help="Filter by $HERMES_PROFILE as assignee")
     p_list.add_argument("--assignee", default=None)
     p_list.add_argument("--status", default=None,
                         choices=sorted(kb.VALID_STATUSES))
@@ -518,9 +518,27 @@ def build_parser(parent_subparsers: argparse._SubParsersAction) -> argparse.Argu
     p_comment.add_argument("task_id")
     p_comment.add_argument("text", nargs="+", help="Comment body")
     p_comment.add_argument("--author", default=None,
-                           help="Author name (default: $LUCIFEX_PROFILE or 'user')")
+                           help="Author name (default: $HERMES_PROFILE or 'user')")
     p_comment.add_argument("--max-len", type=int, default=None,
                            help="Trim the stored comment body to this many characters")
+
+    # --- attach / attachments / attach-rm ---
+    p_attach = sub.add_parser("attach", help="Attach a local file to a task")
+    p_attach.add_argument("task_id")
+    p_attach.add_argument("path", help="Path to the local file to attach")
+    p_attach.add_argument("--content-type", default=None,
+                          help="MIME type (default: guessed from the file extension)")
+    p_attach.add_argument("--name", default=None,
+                          help="Stored filename (default: the source file's basename)")
+    p_attach.add_argument("--author", default=None,
+                          help="uploaded_by label (default: $HERMES_PROFILE or 'user')")
+
+    p_attachments = sub.add_parser("attachments", help="List a task's attachments")
+    p_attachments.add_argument("task_id")
+    p_attachments.add_argument("--json", action="store_true")
+
+    p_attach_rm = sub.add_parser("attach-rm", help="Delete an attachment by id")
+    p_attach_rm.add_argument("attachment_id", type=int)
 
     p_complete = sub.add_parser("complete", help="Mark one or more tasks done")
     p_complete.add_argument("task_ids", nargs="+",
@@ -576,7 +594,10 @@ def build_parser(parent_subparsers: argparse._SubParsersAction) -> argparse.Argu
     p_schedule.add_argument("--ids", nargs="+", default=None,
                             help="Additional task ids to schedule with the same reason (bulk mode)")
 
-    p_unblock = sub.add_parser("unblock", help="Return one or more blocked/scheduled tasks to ready")
+    p_unblock = sub.add_parser(
+        "unblock",
+        help="Return blocked/scheduled tasks to ready, or todo while parents remain open",
+    )
     p_unblock.add_argument(
         "--reason",
         default=None,
@@ -765,7 +786,7 @@ def build_parser(parent_subparsers: argparse._SubParsersAction) -> argparse.Argu
     p_asg = sub.add_parser(
         "assignees",
         help="List known profiles + per-profile task counts "
-             "(union of ~/.lucifex/profiles/ and current assignees on the board)",
+             "(union of ~/.hermes/profiles/ and current assignees on the board)",
     )
     p_asg.add_argument("--json", action="store_true")
 
@@ -805,7 +826,7 @@ def build_parser(parent_subparsers: argparse._SubParsersAction) -> argparse.Argu
         "--author",
         default=None,
         help="Author name recorded on the audit comment "
-             "(default: $LUCIFEX_PROFILE or 'specifier')",
+             "(default: $HERMES_PROFILE or 'specifier')",
     )
     p_specify.add_argument(
         "--json",
@@ -842,7 +863,7 @@ def build_parser(parent_subparsers: argparse._SubParsersAction) -> argparse.Argu
         "--author",
         default=None,
         help="Author name recorded on the audit comment "
-             "(default: $LUCIFEX_PROFILE or 'decomposer')",
+             "(default: $HERMES_PROFILE or 'decomposer')",
     )
     p_decompose.add_argument(
         "--json",
@@ -868,7 +889,7 @@ def build_parser(parent_subparsers: argparse._SubParsersAction) -> argparse.Argu
 # ---------------------------------------------------------------------------
 
 def kanban_command(args: argparse.Namespace) -> int:
-    """Entry point from ``lucifex kanban …`` argparse dispatch.
+    """Entry point from ``hermes kanban …`` argparse dispatch.
 
     Returns a shell-style exit code (0 on success, non-zero on error).
     """
@@ -880,8 +901,8 @@ def kanban_command(args: argparse.Namespace) -> int:
             parser.print_help()
         else:
             print(
-                "usage: lucifex kanban <action> [options]\n"
-                "Run 'lucifex kanban --help' for the full list of actions.",
+                "usage: hermes kanban <action> [options]\n"
+                "Run 'hermes kanban --help' for the full list of actions.",
                 file=sys.stderr,
             )
         return 0
@@ -895,7 +916,7 @@ def kanban_command(args: argparse.Namespace) -> int:
         return _dispatch_boards(args)
 
     # `--board <slug>` applies to every subcommand below by way of an
-    # env-var pin for the duration of this call. Using LUCIFEX_KANBAN_BOARD
+    # env-var pin for the duration of this call. Using HERMES_KANBAN_BOARD
     # (rather than threading `board=` through 50+ kb.connect() sites)
     # keeps the patch small and inherits the exact same resolution the
     # dispatcher uses for workers — consistency is a feature here.
@@ -915,7 +936,7 @@ def kanban_command(args: argparse.Namespace) -> int:
         if normed != kb.DEFAULT_BOARD and not kb.board_exists(normed):
             print(
                 f"kanban: board {normed!r} does not exist. "
-                f"Create it with `lucifex kanban boards create {normed}`.",
+                f"Create it with `hermes kanban boards create {normed}`.",
                 file=sys.stderr,
             )
             return 1
@@ -951,6 +972,9 @@ def kanban_command(args: argparse.Namespace) -> int:
             "unlink":   _cmd_unlink,
             "claim":    _cmd_claim,
             "comment":  _cmd_comment,
+            "attach":   _cmd_attach,
+            "attachments": _cmd_attachments,
+            "attach-rm": _cmd_attach_rm,
             "complete": _cmd_complete,
             "edit":     _cmd_edit,
             "block":    _cmd_block,
@@ -992,7 +1016,7 @@ def kanban_command(args: argparse.Namespace) -> int:
 
 def _profile_author() -> str:
     """Best-effort author name for an interactive CLI call."""
-    for env in ("LUCIFEX_PROFILE_NAME", "LUCIFEX_PROFILE"):
+    for env in ("HERMES_PROFILE_NAME", "HERMES_PROFILE"):
         v = os.environ.get(env)
         if v:
             return v
@@ -1004,11 +1028,11 @@ def _profile_author() -> str:
 
 
 # ---------------------------------------------------------------------------
-# Boards management (lucifex kanban boards …)
+# Boards management (hermes kanban boards …)
 # ---------------------------------------------------------------------------
 
 def _dispatch_boards(args: argparse.Namespace) -> int:
-    """Handle ``lucifex kanban boards <action>``.
+    """Handle ``hermes kanban boards <action>``.
 
     Boards management is deliberately separate from the task-level
     commands: it operates on the filesystem (board directories,
@@ -1064,7 +1088,7 @@ def _cmd_boards_list(args: argparse.Namespace) -> int:
         return 0
     # Human table: marker (•) for current, slug, display name, counts.
     if not boards:
-        print("(no boards — create one with `lucifex kanban boards create <slug>`)")
+        print("(no boards — create one with `hermes kanban boards create <slug>`)")
         return 0
     print(f"{'':2s}  {'SLUG':24s}  {'NAME':28s}  COUNTS")
     for b in boards:
@@ -1081,7 +1105,7 @@ def _cmd_boards_list(args: argparse.Namespace) -> int:
     print()
     print(f"Current board: {current}")
     if len(boards) > 1:
-        print("Switch boards with `lucifex kanban boards switch <slug>`.")
+        print("Switch boards with `hermes kanban boards switch <slug>`.")
     return 0
 
 
@@ -1111,12 +1135,12 @@ def _cmd_boards_create(args: argparse.Namespace) -> int:
         kb.set_current_board(meta["slug"])
         print(f"  Switched to {meta['slug']!r}.")
     else:
-        print(f"  Use `lucifex kanban boards switch {meta['slug']}` to make it current.")
+        print(f"  Use `hermes kanban boards switch {meta['slug']}` to make it current.")
     return 0
 
 
 def _cmd_boards_rm(args: argparse.Namespace) -> int:
-    # When the user runs `lucifex kanban boards delete <slug>` (alias), the
+    # When the user runs `hermes kanban boards delete <slug>` (alias), the
     # boards_action is 'delete' but args.delete is never set to True because
     # the --delete flag belongs to the 'rm' subparser only.  Detect the alias
     # and treat it identically to `boards rm --delete` (fixes #23139).
@@ -1147,7 +1171,7 @@ def _cmd_boards_switch(args: argparse.Namespace) -> int:
     if not kb.board_exists(normed):
         print(
             f"kanban boards switch: board {normed!r} does not exist. "
-            f"Create it with `lucifex kanban boards create {normed}`.",
+            f"Create it with `hermes kanban boards create {normed}`.",
             file=sys.stderr,
         )
         return 1
@@ -1243,7 +1267,7 @@ def _cmd_init(args: argparse.Namespace) -> int:
     # already addressable. Multica does this auto-detection on its
     # daemon start; we do it here at init time instead because our
     # dispatcher doesn't need to enumerate — we just pass the name
-    # through to `lucifex -p <name>`.
+    # through to `hermes -p <name>`.
     try:
         profiles = kb.list_profiles_on_disk()
     except Exception:
@@ -1254,8 +1278,8 @@ def _cmd_init(args: argparse.Namespace) -> int:
         for name in profiles:
             print(f"  {name}")
     else:
-        print("No profiles found under ~/.lucifex/profiles/.")
-        print("Create one with `lucifex -p <name> setup` before assigning tasks.")
+        print("No profiles found under ~/.hermes/profiles/.")
+        print("Create one with `hermes -p <name> setup` before assigning tasks.")
     print()
     print("Next step: start the gateway so ready tasks actually get picked up.")
     print("  lucifex gateway start")
@@ -1290,7 +1314,7 @@ def _cmd_assignees(args: argparse.Namespace) -> int:
         print(json.dumps(data, indent=2, ensure_ascii=False))
         return 0
     if not data:
-        print("(no assignees — create a profile with `lucifex -p <name> setup`)")
+        print("(no assignees — create a profile with `hermes -p <name> setup`)")
         return 0
     # Header
     print(f"{'NAME':20s}  {'ON DISK':8s}  COUNTS")
@@ -1434,7 +1458,7 @@ def _cmd_list(args: argparse.Namespace) -> int:
         print(
             f"Board: {current} "
             f"({other_count} other board{'s' if other_count != 1 else ''} — "
-            f"`lucifex kanban boards list`)\n"
+            f"`hermes kanban boards list`)\n"
         )
     if not tasks:
         print("(no matching tasks)")
@@ -1580,7 +1604,7 @@ def _cmd_show(args: argparse.Namespace) -> int:
         print(task.result)
     elif latest_summary:
         # Worker handoff lives on the latest run, not on tasks.result.
-        # Surface it at top-level so a glance at ``lucifex kanban show <id>``
+        # Surface it at top-level so a glance at ``hermes kanban show <id>``
         # tells you what the worker did even if tasks.result is empty.
         print()
         print("Latest summary:")
@@ -1851,10 +1875,88 @@ def _cmd_comment(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_attach(args: argparse.Namespace) -> int:
+    """Attach a local file to a task.
+
+    Reads the file off disk, writes it under the task's attachments dir,
+    and records the metadata row via the shared ``store_attachment_bytes``
+    path (same code the dashboard upload and the agent tool use), so the
+    25 MB cap and name-sanitisation behave identically everywhere.
+    """
+    import mimetypes
+
+    src = Path(args.path).expanduser()
+    if not src.is_file():
+        print(f"kanban: no such file: {src}", file=sys.stderr)
+        return 1
+    data = src.read_bytes()
+    name = args.name or src.name
+    content_type = args.content_type or mimetypes.guess_type(name)[0]
+    uploaded_by = args.author or _profile_author()
+    try:
+        with kb.connect_closing() as conn:
+            att_id = kb.store_attachment_bytes(
+                conn,
+                args.task_id,
+                name,
+                data,
+                content_type=content_type,
+                uploaded_by=uploaded_by,
+            )
+    except kb.AttachmentTooLarge as exc:
+        print(f"kanban: {exc}", file=sys.stderr)
+        return 1
+    print(f"Attached {name} to {args.task_id} (attachment {att_id}, {len(data)} bytes)")
+    return 0
+
+
+def _cmd_attachments(args: argparse.Namespace) -> int:
+    """List a task's attachments."""
+    with kb.connect_closing() as conn:
+        if kb.get_task(conn, args.task_id) is None:
+            print(f"no such task: {args.task_id}", file=sys.stderr)
+            return 1
+        atts = kb.list_attachments(conn, args.task_id)
+    if getattr(args, "json", False):
+        print(json.dumps([
+            {
+                "id": a.id,
+                "filename": a.filename,
+                "content_type": a.content_type,
+                "size": a.size,
+                "uploaded_by": a.uploaded_by,
+                "stored_path": a.stored_path,
+                "created_at": a.created_at,
+            }
+            for a in atts
+        ], indent=2))
+        return 0
+    if not atts:
+        print(f"No attachments on {args.task_id}")
+        return 0
+    print(f"Attachments on {args.task_id}:")
+    for a in atts:
+        ct = a.content_type or "-"
+        print(f"  [{a.id}] {a.filename}  ({a.size} bytes, {ct}, by {a.uploaded_by or '-'})")
+        print(f"        {a.stored_path}")
+    return 0
+
+
+def _cmd_attach_rm(args: argparse.Namespace) -> int:
+    """Delete an attachment by id (removes the row and the on-disk blob)."""
+    with kb.connect_closing() as conn:
+        removed = kb.delete_attachment(conn, args.attachment_id)
+    if removed is None:
+        print(f"no such attachment: {args.attachment_id}", file=sys.stderr)
+        return 1
+    print(f"Deleted attachment {args.attachment_id} ({removed.filename}) from {removed.task_id}")
+    return 0
+
+
 def _worker_run_id_for(task_id: str) -> Optional[int]:
-    if os.environ.get("LUCIFEX_KANBAN_TASK") != task_id:
+    if os.environ.get("HERMES_KANBAN_TASK") != task_id:
         return None
-    raw = os.environ.get("LUCIFEX_KANBAN_RUN_ID")
+    raw = os.environ.get("HERMES_KANBAN_RUN_ID")
     if not raw:
         return None
     try:
@@ -1894,6 +1996,50 @@ def _cmd_complete(args: argparse.Namespace) -> int:
     failed: list[str] = []
     with kb.connect_closing() as conn:
         for tid in ids:
+            # Goal-mode pre-completion judge gate (mirrors the gate in
+            # tools/kanban_tools.py:_handle_complete — Issue #38367).
+            # Without this, a goal_mode worker can call
+            # `hermes kanban complete <id>` from the terminal tool and
+            # bypass the auxiliary judge that the tool-call path enforces.
+            task = kb.get_task(conn, tid)
+            if task and task.goal_mode:
+                judge_available = False
+                try:
+                    from agent.auxiliary_client import get_text_auxiliary_client
+                    _client, _model = get_text_auxiliary_client("goal_judge")
+                    judge_available = _client is not None and bool(_model)
+                except Exception:
+                    pass
+                if judge_available:
+                    from lucifex_cli.goals import judge_goal
+                    verdict = "done"
+                    reason = ""
+                    try:
+                        # judge_goal returns (verdict, reason, parse_failed,
+                        # wait_directive, transport_failed) — see
+                        # lucifex_cli/goals.py. Unpacking fewer raises
+                        # ValueError into the fail-open handler below,
+                        # silently disabling the gate.
+                        verdict, reason, _, _, _ = judge_goal(
+                            goal=f"{task.title}\n\n{task.body or ''}".strip(),
+                            last_response=(summary or args.result or "").strip(),
+                        )
+                    except Exception as judge_exc:
+                        import logging as _logging
+                        _logging.getLogger(__name__).warning(
+                            "goal judge check failed, allowing completion: %s",
+                            judge_exc,
+                            exc_info=True,
+                        )
+                    if verdict != "done":
+                        print(
+                            f"kanban: goal completion of {tid} rejected by judge: {reason}. "
+                            f"Provide evidence matching the task's acceptance criteria.",
+                            file=sys.stderr,
+                        )
+                        failed.append(tid)
+                        continue
+
             if not kb.complete_task(
                 conn, tid,
                 result=args.result,
@@ -2238,7 +2384,7 @@ def _cmd_daemon(args: argparse.Namespace) -> int:
     # casually — intentional.
     if not getattr(args, "force", False):
         print(
-            "lucifex kanban daemon: DEPRECATED — the dispatcher now runs\n"
+            "hermes kanban daemon: DEPRECATED — the dispatcher now runs\n"
             "inside the gateway. To use kanban:\n"
             "\n"
             "    lucifex gateway start       # starts the gateway + embedded dispatcher\n"
@@ -2307,8 +2453,8 @@ def _cmd_daemon(args: argparse.Namespace) -> int:
                     f"ready queue non-empty for {health_state['bad_ticks']} "
                     f"consecutive ticks but 0 workers spawned successfully. "
                     f"Check profile health (venv, PATH, credentials) and "
-                    f"`lucifex kanban list --status ready` / "
-                    f"`lucifex kanban list --status blocked` for recent "
+                    f"`hermes kanban list --status ready` / "
+                    f"`hermes kanban list --status blocked` for recent "
                     f"spawn_failed tasks.",
                     file=sys.stderr, flush=True,
                 )
@@ -2331,7 +2477,7 @@ def _cmd_daemon(args: argparse.Namespace) -> int:
 
     def _ready_queue_nonempty() -> bool:
         """Cheap probe — is there at least one ready+assigned+unclaimed
-        task whose assignee maps to a real Lucifex profile (i.e. one the
+        task whose assignee maps to a real Hermes profile (i.e. one the
         dispatcher would actually try to spawn for)?
 
         Filters out tasks assigned to control-plane lanes
@@ -2753,6 +2899,7 @@ Common subcommands:
   `stats`               Per-status / per-assignee counts
   `create <title>…`     Create a task (auto-subscribes you to events)
   `comment <id> <msg>`  Append a comment
+  `attach <id> <path>`  Attach a local file; `attachments <id>` to list
   `complete <id>…`      Mark task(s) done
   `block <id> [reason]` Mark blocked; `schedule <id> [reason]` parks time-delay work; `unblock <id>` to revive
   `assign <id> <profile>`  Reassign

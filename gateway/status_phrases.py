@@ -1,11 +1,11 @@
-"""Human-friendly generic gateway status phrases.
+﻿"""Human-friendly generic gateway status phrases.
 
 These helpers deliberately avoid relaying raw model scratch text.  They turn
 Hermes' long-running gateway status surface into short status lines suitable
 for chat surfaces.
 
 Built-in defaults live in ``gateway/assets/status_phrases.yaml``. Users can add
-portable, profile-relative phrase catalogs under ``HERMES_HOME`` either by using
+portable, profile-relative phrase catalogs under ``LUCIFEX_HOME`` either by using
 conventional paths::
 
     ~/.hermes/status_phrases.yaml
@@ -15,7 +15,7 @@ or by pointing config at a relative file/directory::
 
     display:
       status_phrases:
-        path: status_phrases/whatsapp.yaml  # relative to HERMES_HOME
+        path: status_phrases/whatsapp.yaml  # relative to LUCIFEX_HOME
         mode: append                        # append (default) or replace
 
 Absolute paths and ``..`` escapes are ignored on purpose so config stays
@@ -34,7 +34,7 @@ from typing import Any
 
 import yaml
 
-from hermes_constants import get_hermes_home
+from lucifex_constants import get_lucifex_home
 
 # These are Hermes UI surfaces, not app/vendor/domain buckets.  Keep this
 # long-running-only: regular tool/thinking/interim chatter is intentionally not
@@ -163,22 +163,22 @@ def resolve_status_phrase_catalog(user_config: Mapping[str, Any] | None, platfor
     ``display.platforms.<platform>.status_phrases``.
     """
     catalog = _copy_default_catalog()
-    hermes_home = get_hermes_home()
-    _merge_phrase_paths(catalog, list(_CONVENTIONAL_RELATIVE_PATHS), base_dir=hermes_home)
+    LUCIFEX_HOME = get_lucifex_home()
+    _merge_phrase_paths(catalog, list(_CONVENTIONAL_RELATIVE_PATHS), base_dir=LUCIFEX_HOME)
 
     display = (user_config or {}).get("display") if isinstance(user_config, Mapping) else None
     if not isinstance(display, Mapping):
         return catalog
 
-    _merge_phrase_config(catalog, display.get("generic_status_phrases"), base_dir=hermes_home)
-    _merge_phrase_config(catalog, display.get("status_phrases"), base_dir=hermes_home)
+    _merge_phrase_config(catalog, display.get("generic_status_phrases"), base_dir=LUCIFEX_HOME)
+    _merge_phrase_config(catalog, display.get("status_phrases"), base_dir=LUCIFEX_HOME)
 
     platforms = display.get("platforms")
     if platform_key and isinstance(platforms, Mapping):
         platform_display = platforms.get(platform_key)
         if isinstance(platform_display, Mapping):
-            _merge_phrase_config(catalog, platform_display.get("generic_status_phrases"), base_dir=hermes_home)
-            _merge_phrase_config(catalog, platform_display.get("status_phrases"), base_dir=hermes_home)
+            _merge_phrase_config(catalog, platform_display.get("generic_status_phrases"), base_dir=LUCIFEX_HOME)
+            _merge_phrase_config(catalog, platform_display.get("status_phrases"), base_dir=LUCIFEX_HOME)
     return catalog
 
 

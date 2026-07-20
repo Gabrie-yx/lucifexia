@@ -187,7 +187,7 @@ Gemini works with all Hermes gateway platforms (Telegram, Discord, Slack, WhatsA
 
 ```bash
 hermes gateway setup
-hermes gateway start
+lucifex gateway start
 ```
 
 The gateway reads `config.yaml` and uses the same Gemini provider configuration.

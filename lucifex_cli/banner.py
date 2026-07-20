@@ -1,8 +1,7 @@
-"""Welcome banner, ASCII art, skills summary, and update check for the CLI.
+﻿"""Welcome banner, ASCII art, skills summary, and update check for the CLI.
 
 Pure display functions with no LucifexCLI state dependency.
 """
-
 import json
 import logging
 import os
@@ -61,26 +60,27 @@ def _skin_color(key: str, fallback: str) -> str:
 
 from lucifex_cli import __version__ as VERSION, __release_date__ as RELEASE_DATE
 
-LUCIFEX_AGENT_LOGO = """[bold #FFA1A1]██╗     ██╗  ██╗ ██████╗████████╗███████╗███████╗██╗  ██╗      █████╗  ██████╗ ███████╗███╗   ██╗████████╗[/]
-[bold #FFA1A1]██║     ██║  ██║██╔════╝╚══██╔══╝██╔════╝██╔════╝╚██╗██╔╝     ██╔══██╗██╔════╝ ██╔════╝████╗  ██║╚══██╔══╝[/]
-[#FF8080]██║     ██║  ██║██║        ██║   █████╗  █████╗   ╚███╔╝ █████╗███████║██║  ███╗█████╗  ██╔██╗ ██║   ██║[/]
-[#FF8080]██║     ██║  ██║██║        ██║   ██╔══╝  ██╔══╝   ██╔██╗ ╚════╝██╔══██║██║   ██║██╔══╝  ██║╚██╗██║   ██║[/]
-[#FF5C5C]███████╗╚██████╔╝╚██████╗  ██║   ██║     ███████╗██╔╝ ██╗     ██║  ██║╚██████╔╝███████╗██║ ╚████║   ██║[/]
-[#FF5C5C]╚══════╝ ╚═════╝  ╚═════╝  ╚═╝   ╚═╝     ╚══════╝╚═╝  ╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═══╝   ╚═╝[/]"""
+# ASCII Art - LUCIFEX-AGENT logo
+HERMES_AGENT_LOGO = """[bold #FFD700]██╗     ██╗   ██╗██████╗ ██╗███████╗██╗  ██╗      █████╗  ██████╗ ███████╗███╗   ██╗████████╗[/]
+[bold #FFD700]██║     ██║   ██║██╔═══╝ ██║██╔════╝╚██╗██╔╝     ██╔══██╗██╔════╝ ██╔════╝████╗  ██║╚══██╔══╝[/]
+[#FFBF00]██║     ██║   ██║██║     ██║█████╗   ╚███╔╝ █████╗███████║██║  ███╗█████╗  ██╔██╗ ██║   ██║   [/]
+[#FFBF00]██║     ██║   ██║██║     ██║██╔══╝   ██╔██╗ ╚════╝██╔══██║██║   ██║██╔══╝  ██║╚██╗██║   ██║   [/]
+[#CD7F32]███████╗╚██████╔╝╚██████╗██║██║     ██╔╝ ██╗     ██║  ██║╚██████╔╝███████╗██║ ╚████║   ██║   [/]
+[#CD7F32]╚══════╝ ╚═════╝  ╚═════╝╚═╝╚═╝     ╚═╝  ╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═══╝   ╚═╝   [/]"""
 
-LUCIFEX_TRIDENT = """[#FF5C5C]              ⢰⡆⠀⠀⠀⠀⢰⡆              [/]
-[#FF5C5C]              ⢸⣿⡄⠀⠀⢠⣿⡇              [/]
-[#FF8080]      ⢰⡆⠀⠀⢸⣿⣧⠀⠀⣼⣿⡇⠀⠀⢰⡆      [/]
-[#FF8080]      ⢸⣿⡄⠀⠸⣿⣿⣆⣰⣿⣿⠇⠀⢠⣿⡇      [/]
-[#FFA1A1]      ⠸⣿⣷⣄⠀⢻⣿⣿⣿⣿⡟⠀⣠⣿⣿⠇      [/]
-[#FFA1A1]       ⠙⢿⣿⣦⣄⣻⣿⣿⣿⣏⣠⣴⣿⡿⠋       [/]
-[#FF8080]         ⠈⠻⢿⣿⣿⣿⣿⣿⣿⡿⠟⠁         [/]
-[#FF8080]              ⢹⣿⣿⣿⡏              [/]
-[#FF5C5C]              ⢸⣿⣿⣿⡇              [/]
-[#FF5C5C]              ⢸⣿⣿⣿⡇              [/]
-[#FF5C5C]              ⢸⣿⣿⣿⡇              [/]
-[#FF5C5C]              ⠘⣿⣿⣿⠃              [/]
-[#FF5C5C]               ⠙⠿⠋               """
+# ASCII Art - Lucifex Emblem (compact, fits in left panel)
+HERMES_CADUCEUS = """[#CD7F32]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣠⣴⣶⣦⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#CD7F32]⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣴⣿⣿⣿⣿⣿⣿⣿⣦⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#FFBF00]⠀⠀⠀⠀⠀⠀⠀⢀⣴⣿⣿⠿⠋⠁⠉⠙⠿⣿⣿⣦⡀⠀⠀⠀⠀⠀⠀⠀[/]
+[#FFBF00]⠀⠀⠀⠀⠀⢀⣴⣿⣿⠿⠁⠀⣠⣴⣦⣄⠀⠈⠿⣿⣿⣦⡀⠀⠀⠀⠀⠀[/]
+[#FFD700]⠀⠀⠀⢀⣴⣿⣿⠿⠁⠀⣠⣾⣿⣿⣿⣿⣷⣄⠀⠈⠿⣿⣿⣦⡀⠀⠀⠀[/]
+[#FFD700]⠀⠀⠀⢿⣿⣿⣅⠀⢀⣾⣿⣿⠿⠉⠉⠿⣿⣿⣷⡀⠀⣅⣿⣿⢿⠀⠀⠀[/]
+[#FFBF00]⠀⠀⠀⠈⠻⣿⣿⣷⣾⣿⣿⠋⠀⠀⠀⠘⣿⣿⣷⣾⣿⣿⠟⠁⠀⠀⠀[/]
+[#FFBF00]⠀⠀⠀⠀⠀⠈⠻⣿⣿⣿⠁⠀⠀⠀⠀⠀⠙⣿⣿⣿⠟⠁⠀⠀⠀⠀⠀[/]
+[#CD7F32]⠀⠀⠀⠀⠀⠀⠀⠈⠻⣿⣦⡀⠀⠀⠀⢀⣠⣿⠟⠁⠀⠀⠀⠀⠀⠀⠀[/]
+[#CD7F32]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠻⣿⣦⡀⢀⣴⣿⠟⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#B8860B]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠻⣿⣿⠟⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#B8860B]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]"""
 
 
 
@@ -116,13 +116,11 @@ def get_available_skills() -> Dict[str, List[str]]:
 _UPDATE_CHECK_CACHE_SECONDS = 6 * 3600
 
 # Sentinel returned when we know an update exists but can't count commits
-# (e.g. nix-built lucifex — no local git history to count against).
+# (e.g. nix-built hermes — no local git history to count against).
 UPDATE_AVAILABLE_NO_COUNT = -1
 
-# Hardcoded to the official private repo — always used for update checks,
-# regardless of what remote the user has configured locally.
-_UPSTREAM_REPO_URL = "https://github.com/Gabrie-yx/lucifexia.git"
-_OFFICIAL_REPO_CANONICAL = "github.com/gabrie-yx/lucifexia"
+_UPSTREAM_REPO_URL = "https://github.com/NousResearch/lucifex-agent.git"
+_OFFICIAL_REPO_CANONICAL = "github.com/nousresearch/lucifex-agent"
 
 
 def _canonical_github_remote(url: str | None) -> str:
@@ -194,17 +192,6 @@ def _check_via_rev(local_rev: str) -> Optional[int]:
 
 def _check_via_local_git(repo_dir: Path) -> Optional[int]:
     """Count commits behind origin/main in a local checkout."""
-    # Enforce origin URL to always point to the private repo
-    try:
-        subprocess.run(
-            ["git", "remote", "set-url", "origin", _UPSTREAM_REPO_URL],
-            cwd=str(repo_dir),
-            capture_output=True,
-            timeout=5
-        )
-    except Exception:
-        pass
-
     origin_url = _git_stdout(["remote", "get-url", "origin"], cwd=repo_dir)
     if _is_official_ssh_remote(origin_url):
         head_rev = _git_stdout(["rev-parse", "HEAD"], cwd=repo_dir)
@@ -306,9 +293,9 @@ def check_via_pypi() -> Optional[int]:
 
 
 def check_for_updates() -> Optional[int]:
-    """Check whether a Lucifex update is available.
+    """Check whether a Hermes update is available.
 
-    Two paths: if ``LUCIFEX_REVISION`` is set (nix builds embed it), compare
+    Two paths: if ``HERMES_REVISION`` is set (nix builds embed it), compare
     it to upstream main via ``git ls-remote``. Otherwise look for a local
     git checkout and count commits behind ``origin/main``.
 
@@ -316,25 +303,25 @@ def check_for_updates() -> Optional[int]:
     if behind but the count is unknown, ``0`` if up-to-date, or ``None`` if
     the check failed or doesn't apply. Cached for 6 hours.
     """
-    lucifex_home = get_lucifex_home()
-    cache_file = lucifex_home / ".update_check"
-    embedded_rev = os.environ.get("LUCIFEX_REVISION") or None
+    LUCIFEX_HOME = get_lucifex_home()
+    cache_file = LUCIFEX_HOME / ".update_check"
+    embedded_rev = os.environ.get("HERMES_REVISION") or None
 
     # Docker images have no working tree to count commits against — the
     # published image excludes `.git` (see .dockerignore) and sets no
-    # LUCIFEX_REVISION (that's nix-only). Without this guard the checks below
+    # HERMES_REVISION (that's nix-only). Without this guard the checks below
     # fall through to `check_via_pypi()`, whose PyPI-version mismatch flag (1)
     # then gets rendered by the CLI banner and the TUI badge as a phantom
     # "1 commit behind" — even though no git repo or commit math is involved,
-    # and `lucifex update` correctly refuses to run in-place inside the
-    # container anyway. The dashboard's REST `/api/lucifex/update/check`
+    # and `hermes update` correctly refuses to run in-place inside the
+    # container anyway. The dashboard's REST `/api/hermes/update/check`
     # endpoint already short-circuits docker the same way (web_server.py);
     # mirror that here so the banner/TUI surfaces agree. Returning None makes
     # both the Rich banner (build_welcome_banner) and the Ink badge
     # (branding.tsx, guarded on `typeof === 'number' && > 0`) show nothing.
     try:
-        from lucifex_cli.config import detect_install_method
-        if detect_install_method() == "docker":
+        from lucifex_cli.config import detect_install_method, get_project_root
+        if detect_install_method(get_project_root()) == "docker":
             return None
     except Exception:
         pass
@@ -365,7 +352,7 @@ def check_for_updates() -> Optional[int]:
         # Path(__file__) always resolves to the actual installed checkout.
         repo_dir = Path(__file__).parent.parent.resolve()
         if not (repo_dir / ".git").exists():
-            repo_dir = lucifex_home / "lucifex-agent"
+            repo_dir = LUCIFEX_HOME / "lucifex-agent"
         if not (repo_dir / ".git").exists():
             behind = check_via_pypi()
         else:
@@ -382,7 +369,7 @@ def check_for_updates() -> Optional[int]:
 
 
 def _resolve_repo_dir() -> Optional[Path]:
-    """Return the active Lucifex git checkout, or None if this isn't a git install.
+    """Return the active Hermes git checkout, or None if this isn't a git install.
 
     Prefers the running code's location over the profile-scoped path
     because ``$LUCIFEX_HOME/lucifex-agent/`` may be a stale copy carried
@@ -390,8 +377,8 @@ def _resolve_repo_dir() -> Optional[Path]:
     """
     repo_dir = Path(__file__).parent.parent.resolve()
     if not (repo_dir / ".git").exists():
-        lucifex_home = get_lucifex_home()
-        repo_dir = lucifex_home / "lucifex-agent"
+        LUCIFEX_HOME = get_lucifex_home()
+        repo_dir = LUCIFEX_HOME / "lucifex-agent"
     return repo_dir if (repo_dir / ".git").exists() else None
 
 
@@ -469,7 +456,7 @@ def get_git_banner_state(repo_dir: Optional[Path] = None) -> Optional[dict]:
     return {"upstream": upstream, "local": local, "ahead": max(ahead, 0)}
 
 
-_RELEASE_URL_BASE = "https://github.com/Gabrie-yx/lucifexia/releases/tag"
+_RELEASE_URL_BASE = "https://github.com/NousResearch/lucifex-agent/releases/tag"
 _latest_release_cache: Optional[tuple] = None  # (tag, url) once resolved
 
 
@@ -477,7 +464,8 @@ def get_latest_release_tag(repo_dir: Optional[Path] = None) -> Optional[tuple]:
     """Return ``(tag, release_url)`` for the latest git tag, or None.
 
     Local-only — runs ``git describe --tags --abbrev=0`` against the
-    Lucifex checkout. Cached per-process.
+    Hermes checkout. Cached per-process. Release URL always points at the
+    canonical NousResearch/lucifex-agent repo (forks don't get a link).
     """
     global _latest_release_cache
     if _latest_release_cache is not None:
@@ -515,12 +503,21 @@ def get_latest_release_tag(repo_dir: Optional[Path] = None) -> Optional[tuple]:
 
 
 def format_banner_version_label() -> str:
-    """Return the version label shown in the startup banner title.
+    """Return the version label shown in the startup banner title."""
+    base = f"Lucifex Agent v{VERSION} ({RELEASE_DATE})"
+    state = get_git_banner_state()
+    if not state:
+        return base
 
-    Returns only the clean version + release date, without any git commit
-    hashes or ahead/behind counts that could expose internal repo state.
-    """
-    return f"Lucifex Agent v{VERSION} ({RELEASE_DATE})"
+    upstream = state["upstream"]
+    local = state["local"]
+    ahead = int(state.get("ahead") or 0)
+
+    if ahead <= 0 or upstream == local:
+        return f"{base} · upstream {upstream}"
+
+    carried_word = "commit" if ahead == 1 else "commits"
+    return f"{base} · upstream {upstream} · local {local} (+{ahead} carried {carried_word})"
 
 
 # =========================================================================
@@ -651,10 +648,10 @@ def build_welcome_banner(console: "Console", model: str, cwd: str,
     try:
         from lucifex_cli.skin_engine import get_active_skin
         _bskin = get_active_skin()
-        _hero = _bskin.banner_hero if hasattr(_bskin, 'banner_hero') and _bskin.banner_hero else LUCIFEX_TRIDENT
+        _hero = _bskin.banner_hero if hasattr(_bskin, 'banner_hero') and _bskin.banner_hero else HERMES_CADUCEUS
     except Exception:
         _bskin = None
-        _hero = LUCIFEX_TRIDENT
+        _hero = HERMES_CADUCEUS
     left_lines = ["", _hero, ""]
     if (provider or "").strip().lower() == "moa":
         # MoA virtual provider: ``model`` is a preset name. Show the preset and
@@ -677,7 +674,7 @@ def build_welcome_banner(console: "Console", model: str, cwd: str,
             preset_name = preset_name[:25] + "..."
         agg_str = f" [dim {dim}]·[/] [dim {dim}]agg {agg_label}[/]" if agg_label else ""
         ctx_str = f" [dim {dim}]·[/] [dim {dim}]{_format_context_length(context_length)} context[/]" if context_length else ""
-        left_lines.append(f"[{accent}]MoA: {preset_name}[/]{agg_str}{ctx_str}")
+        left_lines.append(f"[{accent}]MoA: {preset_name}[/]{agg_str}{ctx_str} [dim {dim}]·[/] [dim {dim}]Nous Research[/]")
     else:
         model_short = model.split("/")[-1] if "/" in model else model
         if model_short.endswith(".gguf"):
@@ -685,9 +682,9 @@ def build_welcome_banner(console: "Console", model: str, cwd: str,
         if len(model_short) > 28:
             model_short = model_short[:25] + "..."
         ctx_str = f" [dim {dim}]·[/] [dim {dim}]{_format_context_length(context_length)} context[/]" if context_length else ""
-        left_lines.append(f"[{accent}]{model_short}[/]{ctx_str}")
+        left_lines.append(f"[{accent}]{model_short}[/]{ctx_str} [dim {dim}]·[/] [dim {dim}]Nous Research[/]")
 
-    if os.getenv("LUCIFEX_YOLO_MODE"):
+    if os.getenv("HERMES_YOLO_MODE"):
         left_lines.append(f"[bold red]⚠ YOLO mode[/] [dim {dim}]— all approval prompts bypassed[/]")
     left_lines.append(f"[dim {dim}]{cwd}[/]")
     if session_id:
@@ -805,18 +802,34 @@ def build_welcome_banner(console: "Console", model: str, cwd: str,
         skills_by_category = {}
         total_skills = 0
 
+    # Dynamically size skills display based on terminal width.
+    # Rich grid with 2 columns; right column gets roughly 60% of terminal.
+    _term_cols = shutil.get_terminal_size().columns
+    _right_col_width = max(int(_term_cols * 0.6) - 10, 30)
+
     if not _skills_enabled:
         right_lines.append(f"[dim {dim}]Skills toolset disabled[/]")
     elif skills_by_category:
         for category in sorted(skills_by_category.keys()):
             skill_names = sorted(skills_by_category[category])
-            if len(skill_names) > 8:
-                display_names = skill_names[:8]
-                skills_str = ", ".join(display_names) + f" +{len(skill_names) - 8} more"
-            else:
-                skills_str = ", ".join(skill_names)
-            if len(skills_str) > 50:
-                skills_str = skills_str[:47] + "..."
+            # Account for "category: " prefix
+            _prefix_len = len(category) + 2
+            _avail = max(_right_col_width - _prefix_len, 20)
+            # Accumulate skills until we run out of space
+            parts, length = [], 0
+            for i, name in enumerate(skill_names):
+                _sep = ", " if parts else ""
+                _needed = len(_sep) + len(name)
+                # Estimate indicator size IF we were to add this skill then stop
+                _after = len(skill_names) - (i + 1)  # remaining after adding this
+                _ind_len = len(f", +{_after} more") if _after > 0 else 0
+                if parts and length + _needed + _ind_len > _avail:
+                    remaining = len(skill_names) - len(parts)
+                    parts.append(f"+{remaining} more")
+                    break
+                parts.append(name)
+                length += _needed
+            skills_str = ", ".join(parts)
             right_lines.append(f"[dim {dim}]{category}:[/] [{text}]{skills_str}[/]")
     else:
         right_lines.append(f"[dim {dim}]No skills installed[/]")
@@ -863,7 +876,7 @@ def build_welcome_banner(console: "Console", model: str, cwd: str,
                     f"[dim yellow] — run [bold]{recommended_update_command()}[/bold] to update[/]"
                 )
             else:
-                # UPDATE_AVAILABLE_NO_COUNT: nix-built lucifex; we know an update
+                # UPDATE_AVAILABLE_NO_COUNT: nix-built hermes; we know an update
                 # exists but not by how much, and we don't know how the user
                 # installed it (nix run, profile, system flake, home-manager).
                 managed_cmd = get_managed_update_command()
@@ -874,17 +887,23 @@ def build_welcome_banner(console: "Console", model: str, cwd: str,
     except Exception:
         pass  # Never break the banner over an update check
 
-    # Pip-install warning — `pip install lucifex-agent` is not the supported
-    # install path (it exists on PyPI for internal/CI reasons, not end users).
-    # Such installs miss the git checkout + installer-managed deps, so updates,
-    # self-update, and issue triage don't behave correctly. Warn, don't block.
+    # Unsupported install-method warning — pip/PyPI and Homebrew are no
+    # longer an officially supported distribution method (see
+    # website/docs/getting-started/platform-support.md). Such installs miss
+    # the git checkout + installer-managed deps, so updates, self-update, and
+    # issue triage don't behave correctly. Warn, don't block. NixOS is fully
+    # supported and never hits this.
     try:
-        from lucifex_cli.config import detect_install_method
-        if detect_install_method() == "pip":
+        from lucifex_cli.config import (
+            detect_install_method,
+            format_unsupported_install_warning,
+            is_unsupported_install_method,
+            get_project_root
+        )
+        _install_method = detect_install_method(get_project_root())
+        if is_unsupported_install_method(_install_method):
             right_lines.append(
-                "[bold yellow]⚠ pip install not officially supported[/]"
-                "[dim yellow] — exists for reasons other than user install; "
-                "expect instability and an inability to support issues[/]"
+                f"[bold yellow]⚠ {format_unsupported_install_warning(_install_method)}[/]"
             )
     except Exception:
         pass  # Never break the banner over the install-method check
@@ -911,7 +930,7 @@ def build_welcome_banner(console: "Console", model: str, cwd: str,
     console.print()
     term_width = shutil.get_terminal_size().columns
     if term_width >= 95:
-        _logo = _bskin.banner_logo if _bskin and hasattr(_bskin, 'banner_logo') and _bskin.banner_logo else LUCIFEX_AGENT_LOGO
+        _logo = _bskin.banner_logo if _bskin and hasattr(_bskin, 'banner_logo') and _bskin.banner_logo else HERMES_AGENT_LOGO
         console.print(_logo)
         console.print()
     console.print(outer_panel)

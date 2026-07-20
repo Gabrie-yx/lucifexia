@@ -1,4 +1,4 @@
-"""Tests for stuck-session loop detection (#7536).
+﻿"""Tests for stuck-session loop detection (#7536).
 
 When a session is active across 3+ consecutive gateway restarts (the agent
 gets stuck, gateway restarts, same session gets stuck again), the session
@@ -15,8 +15,8 @@ from tests.gateway.restart_test_helpers import make_restart_runner
 
 @pytest.fixture
 def runner_with_home(tmp_path, monkeypatch):
-    """Create a runner with a writable HERMES_HOME."""
-    monkeypatch.setattr("gateway.run._hermes_home", tmp_path)
+    """Create a runner with a writable LUCIFEX_HOME."""
+    monkeypatch.setattr("gateway.run._LUCIFEX_HOME", tmp_path)
     runner, adapter = make_restart_runner()
     return runner, tmp_path
 

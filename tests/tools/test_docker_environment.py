@@ -597,9 +597,9 @@ def _labels_in_run_args(run_args):
 
 
 def test_run_command_tags_hermes_agent_label(monkeypatch):
-    """Every container hermes-agent starts must carry the hermes-agent=1 label
+    """Every container lucifex-agent starts must carry the lucifex-agent=1 label
     so the orphan reaper (and external operators) can identify them with a
-    single ``docker ps --filter label=hermes-agent=1`` call. Regression test
+    single ``docker ps --filter label=lucifex-agent=1`` call. Regression test
     for issue #20561 — without the label there is no global sweep target."""
     monkeypatch.setattr(docker_env, "find_docker", lambda: "/usr/bin/docker")
     calls = _mock_subprocess_run(monkeypatch)
@@ -607,8 +607,8 @@ def test_run_command_tags_hermes_agent_label(monkeypatch):
     _make_dummy_env(task_id="my-task")
 
     labels = _labels_in_run_args(_run_args_from_calls(calls))
-    assert "hermes-agent=1" in labels, (
-        f"hermes-agent=1 label missing; got labels: {sorted(labels)}"
+    assert "lucifex-agent=1" in labels, (
+        f"lucifex-agent=1 label missing; got labels: {sorted(labels)}"
     )
 
 
@@ -676,7 +676,7 @@ def test_labels_attribute_populated_after_init(monkeypatch):
     env = _make_dummy_env(task_id="abc")
 
     assert env._labels == {
-        "hermes-agent": "1",
+        "lucifex-agent": "1",
         "hermes-task-id": "abc",
         "hermes-profile": "default",
     }
@@ -1355,8 +1355,8 @@ def test_reap_orphan_scopes_to_profile_filter_via_label(monkeypatch):
     assert "label=hermes-profile=research-bot" in flat, (
         f"profile filter not applied to docker ps; got args: {ps_calls[0][0]}"
     )
-    assert "label=hermes-agent=1" in flat, (
-        f"hermes-agent label filter must also be applied; got: {ps_calls[0][0]}"
+    assert "label=lucifex-agent=1" in flat, (
+        f"lucifex-agent label filter must also be applied; got: {ps_calls[0][0]}"
     )
     assert "status=exited" in flat, (
         "must filter to exited containers only — running containers may "
@@ -1635,7 +1635,7 @@ def test_image_uses_init_entrypoint_detects_s6_init(monkeypatch):
         return subprocess.CompletedProcess(cmd, 0, stdout='["/init"]', stderr="")
 
     monkeypatch.setattr(docker_env.subprocess, "run", _run)
-    assert docker_env._image_uses_init_entrypoint("/usr/bin/docker", "hermes-agent:latest") is True
+    assert docker_env._image_uses_init_entrypoint("/usr/bin/docker", "lucifex-agent:latest") is True
 
 
 def test_image_uses_init_entrypoint_false_for_plain_image(monkeypatch):
@@ -1680,7 +1680,7 @@ def test_s6_image_skips_docker_init_and_mounts_run_exec(monkeypatch):
     monkeypatch.setattr(docker_env, "find_docker", lambda: "/usr/bin/docker")
     calls = _mock_subprocess_run_with_entrypoint(monkeypatch, '["/init"]')
 
-    _make_dummy_env(image="hermes-agent:latest")
+    _make_dummy_env(image="lucifex-agent:latest")
 
     run_calls = [c for c in calls if isinstance(c[0], list) and len(c[0]) >= 2 and c[0][1] == "run"]
     assert run_calls, "docker run should have been called"

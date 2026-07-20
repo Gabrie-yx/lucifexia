@@ -1,4 +1,4 @@
-"""Tests for the ``_codex_silent_hang_hint`` heuristic.
+﻿"""Tests for the ``_codex_silent_hang_hint`` heuristic.
 
 The helper substitutes an actionable hint into the stale-call timeout
 warning when the request matches a known Codex silent-reject pattern
@@ -31,8 +31,8 @@ def _make_agent(tmp_path: Path, **overrides):
 
 
 @pytest.fixture(autouse=True)
-def _isolate_hermes_home(monkeypatch, tmp_path):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+def _isolate_LUCIFEX_HOME(monkeypatch, tmp_path):
+    monkeypatch.setenv("LUCIFEX_HOME", str(tmp_path))
     (tmp_path / ".env").write_text("", encoding="utf-8")
 
 

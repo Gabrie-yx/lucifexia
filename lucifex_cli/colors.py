@@ -1,4 +1,4 @@
-"""Shared ANSI color utilities for Lucifex CLI modules."""
+"""Shared ANSI color utilities for Hermes CLI modules."""
 
 import os
 import sys

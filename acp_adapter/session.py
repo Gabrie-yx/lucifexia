@@ -1,4 +1,4 @@
-"""ACP session manager — maps ACP sessions to Hermes AIAgent instances.
+﻿"""ACP session manager — maps ACP sessions to Hermes AIAgent instances.
 
 Sessions are persisted to the shared SessionDB (``~/.hermes/state.db``) so they
 survive process restarts and appear in ``session_search``.  When the editor
@@ -8,7 +8,7 @@ history.
 """
 from __future__ import annotations
 
-from hermes_constants import get_hermes_home
+from lucifex_constants import get_lucifex_home
 
 import copy
 import json
@@ -35,7 +35,7 @@ def _translate_acp_cwd(cwd: str) -> str:
     agents, tools, and persisted ACP sessions all agree on the usable workspace.
     Native Linux/macOS keeps the original cwd unchanged.
     """
-    from hermes_constants import translate_cwd_for_wsl_backend
+    from lucifex_constants import translate_cwd_for_wsl_backend
 
     return translate_cwd_for_wsl_backend(str(cwd))
 
@@ -48,7 +48,7 @@ def _normalize_cwd_for_compare(cwd: str | None) -> str:
 
     # Normalize Windows drive paths into the equivalent WSL mount form so
     # ACP history filters match the same workspace across Windows and WSL.
-    from hermes_constants import windows_path_to_wsl
+    from lucifex_constants import windows_path_to_wsl
 
     translated = windows_path_to_wsl(expanded)
     if translated is not None:
@@ -393,17 +393,17 @@ class SessionManager:
         Returns ``None`` if the DB is unavailable (e.g. import error in a
         minimal test environment).
 
-        Note: we resolve ``HERMES_HOME`` dynamically rather than relying on
+        Note: we resolve ``LUCIFEX_HOME`` dynamically rather than relying on
         the module-level ``DEFAULT_DB_PATH`` constant, because that constant
         is evaluated at import time and won't reflect env-var changes made
-        later (e.g. by the test fixture ``_isolate_hermes_home``).
+        later (e.g. by the test fixture ``_isolate_LUCIFEX_HOME``).
         """
         if self._db_instance is not None:
             return self._db_instance
         try:
-            from hermes_state import SessionDB
-            hermes_home = get_hermes_home()
-            self._db_instance = SessionDB(db_path=hermes_home / "state.db")
+            from lucifex_state import SessionDB
+            LUCIFEX_HOME = get_lucifex_home()
+            self._db_instance = SessionDB(db_path=LUCIFEX_HOME / "state.db")
             return self._db_instance
         except Exception:
             logger.debug("SessionDB unavailable for ACP persistence", exc_info=True)
@@ -538,7 +538,7 @@ class SessionManager:
         # LIVE REPLAY — the loaded list becomes the resumed agent's working
         # conversation. A durable ``user;user`` violation left in state.db would
         # otherwise re-fire the pre-request defensive repair on every request
-        # for the rest of the session (see hermes_state.get_messages_as_conversation).
+        # for the rest of the session (see lucifex_state.get_messages_as_conversation).
         try:
             history = db.get_messages_as_conversation(
                 session_id, repair_alternation=True
@@ -601,8 +601,8 @@ class SessionManager:
             return self._agent_factory()
 
         from run_agent import AIAgent
-        from hermes_cli.config import load_config
-        from hermes_cli.runtime_provider import resolve_runtime_provider
+        from lucifex_cli.config import load_config
+        from lucifex_cli.runtime_provider import resolve_runtime_provider
 
         config = load_config()
         model_cfg = config.get("model")

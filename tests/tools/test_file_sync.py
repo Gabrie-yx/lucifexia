@@ -1,4 +1,4 @@
-"""Tests for FileSyncManager — mtime tracking, deletion detection, transactional rollback."""
+﻿"""Tests for FileSyncManager — mtime tracking, deletion detection, transactional rollback."""
 
 import io
 import os
@@ -343,7 +343,7 @@ class TestSyncBackSecurity:
         )
 
         mgr.sync(force=True)
-        mgr.sync_back(hermes_home=tmp_path)
+        mgr.sync_back(LUCIFEX_HOME=tmp_path)
 
         assert credential.read_text(encoding="utf-8") == "host-token"
         assert skill.read_text(encoding="utf-8") == "remote-skill"

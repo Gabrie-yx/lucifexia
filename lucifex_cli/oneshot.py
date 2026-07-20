@@ -4,12 +4,12 @@ Bypasses cli.py entirely.  No banner, no spinner, no session_id line,
 no stderr chatter.  Just the agent's final text to stdout.
 
 Toolsets = explicit --toolsets when provided, otherwise whatever the user has
-configured for "cli" in `lucifex tools`.
+configured for "cli" in `hermes tools`.
 Rules / memory / AGENTS.md / preloaded skills = same as a normal chat turn.
-Approvals = auto-bypassed (LUCIFEX_YOLO_MODE=1 is set for the call).
+Approvals = auto-bypassed (HERMES_YOLO_MODE=1 is set for the call).
 Working directory = the user's CWD (AGENTS.md etc. resolve from there as usual).
 
-Model / provider selection mirrors `lucifex chat`:
+Model / provider selection mirrors `hermes chat`:
     - Both optional. If omitted, use the user's configured default.
     - If both given, pair them exactly as given.
     - If only --model given, auto-detect the provider that serves it.
@@ -25,8 +25,10 @@ import logging
 import os
 import sys
 from contextlib import redirect_stderr, redirect_stdout
+from pathlib import Path
 from typing import Optional
 
+from gateway.session_context import declare_stateless_channel
 from lucifex_cli.fallback_config import get_fallback_chain
 
 
@@ -56,7 +58,7 @@ def _validate_explicit_toolsets(toolsets: object = None) -> tuple[list[str] | No
     try:
         from toolsets import validate_toolset
     except Exception as exc:
-        return None, f"lucifex -z: failed to validate --toolsets: {exc}\n"
+        return None, f"hermes -z: failed to validate --toolsets: {exc}\n"
 
     built_in = [name for name in normalized if validate_toolset(name)]
     unresolved = [name for name in normalized if name not in built_in]
@@ -78,7 +80,7 @@ def _validate_explicit_toolsets(toolsets: object = None) -> tuple[list[str] | No
         ignored = [name for name in normalized if name not in {"all", "*"}]
         if ignored:
             sys.stderr.write(
-                "lucifex -z: --toolsets all enables every toolset; "
+                "hermes -z: --toolsets all enables every toolset; "
                 f"ignoring additional entries: {', '.join(ignored)}\n"
             )
         return None, None
@@ -109,17 +111,60 @@ def _validate_explicit_toolsets(toolsets: object = None) -> tuple[list[str] | No
     valid = built_in + mcp_valid
 
     if unknown:
-        sys.stderr.write(f"lucifex -z: ignoring unknown --toolsets entries: {', '.join(unknown)}\n")
+        sys.stderr.write(f"hermes -z: ignoring unknown --toolsets entries: {', '.join(unknown)}\n")
     if disabled:
         sys.stderr.write(
-            "lucifex -z: ignoring disabled MCP servers (set enabled: true in config.yaml to use): "
+            "hermes -z: ignoring disabled MCP servers (set enabled: true in config.yaml to use): "
             f"{', '.join(disabled)}\n"
         )
 
     if not valid:
-        return None, "lucifex -z: --toolsets did not contain any valid toolsets.\n"
+        return None, "hermes -z: --toolsets did not contain any valid toolsets.\n"
 
     return valid, None
+
+
+def _write_usage_file(path: Optional[str], result: dict, failure: Optional[str] = None) -> None:
+    """Best-effort JSON usage report for pipelines (``-z --usage-file``).
+
+    Written even on failure so callers can always account for spend. Never
+    raises — a broken usage write must not mask the run's own outcome.
+    """
+    if not path:
+        return
+    try:
+        import json
+
+        report = {
+            "estimated_cost_usd": result.get("estimated_cost_usd"),
+            "cost_status": result.get("cost_status"),
+            "cost_source": result.get("cost_source"),
+            "input_tokens": result.get("input_tokens"),
+            "output_tokens": result.get("output_tokens"),
+            "cache_read_tokens": result.get("cache_read_tokens"),
+            "cache_write_tokens": result.get("cache_write_tokens"),
+            "reasoning_tokens": result.get("reasoning_tokens"),
+            "total_tokens": result.get("total_tokens"),
+            "api_calls": result.get("api_calls"),
+            "model": result.get("model"),
+            "provider": result.get("provider"),
+            "session_id": result.get("session_id"),
+            "completed": result.get("completed"),
+            "failed": bool(result.get("failed")) or failure is not None,
+            # Billing-audit field: the service tier this run REQUESTED via
+            # request_overrides.extra_body (e.g. OpenAI "flex"). None when
+            # unset. Lets batch pipelines verify the tier they think they're
+            # paying for actually went out on the wire (July 2026 incident:
+            # a config-matching bug silently dropped flex -> 2.3x billing).
+            "service_tier": result.get("service_tier"),
+        }
+        if failure is not None:
+            report["failure"] = failure
+        out = Path(path).expanduser()
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    except Exception:
+        pass
 
 
 def run_oneshot(
@@ -127,6 +172,7 @@ def run_oneshot(
     model: Optional[str] = None,
     provider: Optional[str] = None,
     toolsets: object = None,
+    usage_file: Optional[str] = None,
 ) -> int:
     """Execute a single prompt and print only the final content block.
 
@@ -137,8 +183,12 @@ def run_oneshot(
         provider: Optional provider override. Falls back to config.yaml's
             model.provider, then "auto".
         toolsets: Optional comma-separated string or iterable of toolsets.
+        usage_file: Optional path; when set, a JSON usage report (estimated
+            cost, token counts, model, api_calls) is written there after the
+            run — even when the run fails — so pipelines can account for
+            spend per invocation.
 
-    Returns the exit code.  Caller should sys.exit() with the return.
+    Returns the exit code.  The caller owns process termination.
     """
     # Silence every stdlib logger for the duration.  AIAgent, tools, and
     # provider adapters all log to stderr through the root logger; file
@@ -155,7 +205,7 @@ def run_oneshot(
     env_model_early = os.getenv("LUCIFEX_INFERENCE_MODEL", "").strip()
     if provider and not ((model or "").strip() or env_model_early):
         sys.stderr.write(
-            "lucifex -z: --provider requires --model (or LUCIFEX_INFERENCE_MODEL). "
+            "hermes -z: --provider requires --model (or LUCIFEX_INFERENCE_MODEL). "
             "Pass both explicitly, or neither to use your configured defaults.\n"
         )
         return 2
@@ -168,8 +218,17 @@ def run_oneshot(
 
     # Auto-approve any shell / tool approvals.  Non-interactive by
     # definition — a prompt would hang forever.
-    os.environ["LUCIFEX_YOLO_MODE"] = "1"
-    os.environ["LUCIFEX_ACCEPT_HOOKS"] = "1"
+    os.environ["HERMES_YOLO_MODE"] = "1"
+    os.environ["HERMES_ACCEPT_HOOKS"] = "1"
+
+    # One-shot prints a single final response and exits: there is no later turn
+    # for a detached subagent's completion to re-enter, and nothing here drains
+    # process_registry.completion_queue (only cli.py's interactive process_loop
+    # and the gateway watchers do). Left unbound, async_delivery_supported()
+    # defaults True, delegate_task is forced background, and every subagent
+    # result is discarded. Declaring the channel stateless routes delegate_task
+    # to its inline/synchronous path. See declare_stateless_channel().
+    declare_stateless_channel()
 
     # Redirect stderr AND stdout to devnull for the entire call tree.
     # We'll print the final response to the real stdout at the end.
@@ -209,10 +268,14 @@ def run_oneshot(
         # Re-raise control-flow exceptions so the parent handles them as usual
         # (Ctrl-C / explicit sys.exit() inside the agent).
         if isinstance(failure, (KeyboardInterrupt, SystemExit)):
+            _write_usage_file(usage_file, result, failure=repr(failure))
             raise failure
-        real_stderr.write(f"lucifex -z: agent failed: {failure}\n")
+        _write_usage_file(usage_file, result, failure=str(failure))
+        real_stderr.write(f"hermes -z: agent failed: {failure}\n")
         real_stderr.flush()
         return 1
+
+    _write_usage_file(usage_file, result)
 
     if response:
         real_stdout.write(response)
@@ -224,7 +287,7 @@ def run_oneshot(
         return 2
 
     if not (response or "").strip():
-        real_stderr.write("lucifex -z: no final response was produced; treating the run as failed.\n")
+        real_stderr.write("hermes -z: no final response was produced; treating the run as failed.\n")
         real_stderr.flush()
         return 1
 
@@ -232,7 +295,7 @@ def run_oneshot(
 
 
 def _create_session_db_for_oneshot():
-    """Best-effort SessionDB for ``lucifex -z`` / oneshot mode.
+    """Best-effort SessionDB for ``hermes -z`` / oneshot mode.
 
     Oneshot bypasses ``LucifexCLI._init_agent()``, so it must wire the SQLite
     session store itself. Without this, the ``session_search``/recall tool is
@@ -256,7 +319,7 @@ def _run_agent(
 ) -> tuple[str, dict]:
     """Build an AIAgent exactly like a normal CLI chat turn would, then
     run a single conversation.  Returns ``(final_response, run_result)``."""
-    # Imports are local so they don't run when lucifex is invoked for
+    # Imports are local so they don't run when hermes is invoked for
     # other commands (keeps top-level CLI startup cheap).
     from lucifex_cli.config import load_config
     from lucifex_cli.models import detect_provider_for_model
@@ -312,7 +375,7 @@ def _run_agent(
                     cfg_provider = str(model_cfg.get("provider") or "").strip().lower()
                 current_provider = (
                     cfg_provider
-                    or os.getenv("LUCIFEX_INFERENCE_PROVIDER", "").strip().lower()
+                    or os.getenv("HERMES_INFERENCE_PROVIDER", "").strip().lower()
                     or "auto"
                 )
                 detected = detect_provider_for_model(explicit_model, current_provider)
@@ -333,44 +396,76 @@ def _run_agent(
         toolsets_list = sorted(_get_platform_tools(cfg, "cli"))
 
     session_db = _create_session_db_for_oneshot()
-    # Read the effective fallback chain from profile config so oneshot workers
-    # honour the same merge semantics as interactive CLI and gateway sessions.
-    _fb = get_fallback_chain(cfg)
+    # The try spans agent construction (not just ``chat``) so the SQLite store
+    # opened above is always closed — including when ``AIAgent(...)`` itself
+    # raises on a provider/config error. The one-shot exit path hard-exits via
+    # os._exit and skips finalizers, so an un-closed connection here would leak.
+    agent = None
+    try:
+        # Read the effective fallback chain from profile config so oneshot
+        # workers honour the same merge semantics as interactive CLI and
+        # gateway sessions.
+        _fb = get_fallback_chain(cfg)
 
-    agent = AIAgent(
-        api_key=runtime.get("api_key"),
-        base_url=runtime.get("base_url"),
-        provider=runtime.get("provider"),
-        api_mode=runtime.get("api_mode"),
-        model=effective_model,
-        enabled_toolsets=toolsets_list,
-        quiet_mode=True,
-        platform="cli",
-        session_db=session_db,
-        credential_pool=runtime.get("credential_pool"),
-        fallback_model=_fb or None,
-        # Interactive callbacks are intentionally NOT wired beyond this
-        # one.  In oneshot mode there's no user sitting at a terminal:
-        #   - clarify  → returns a synthetic "pick a default" instruction
-        #                so the agent continues instead of stalling on
-        #                the tool's built-in "not available" error
-        #   - sudo password prompt → terminal_tool gates on
-        #                LUCIFEX_INTERACTIVE which we never set
-        #   - shell-hook approval → auto-approved via LUCIFEX_ACCEPT_HOOKS=1
-        #                (set above); also falls back to deny on non-tty
-        #   - dangerous-command approval → bypassed via LUCIFEX_YOLO_MODE=1
-        #   - skill secret capture → returns gracefully when no callback set
-        clarify_callback=_oneshot_clarify_callback,
-    )
+        agent = AIAgent(
+            api_key=runtime.get("api_key"),
+            base_url=runtime.get("base_url"),
+            provider=runtime.get("provider"),
+            api_mode=runtime.get("api_mode"),
+            model=effective_model,
+            enabled_toolsets=toolsets_list,
+            quiet_mode=True,
+            platform="cli",
+            session_db=session_db,
+            credential_pool=runtime.get("credential_pool"),
+            fallback_model=_fb or None,
+            # Interactive callbacks are intentionally NOT wired beyond this
+            # one.  In oneshot mode there's no user sitting at a terminal:
+            #   - clarify  → returns a synthetic "pick a default" instruction
+            #                so the agent continues instead of stalling on
+            #                the tool's built-in "not available" error
+            #   - sudo password prompt → terminal_tool gates on
+            #                HERMES_INTERACTIVE which we never set
+            #   - shell-hook approval → auto-approved via HERMES_ACCEPT_HOOKS=1
+            #                (set above); also falls back to deny on non-tty
+            #   - dangerous-command approval → bypassed via HERMES_YOLO_MODE=1
+            #   - skill secret capture → returns gracefully when no callback set
+            clarify_callback=_oneshot_clarify_callback,
+        )
 
-    # Belt-and-braces: make sure AIAgent doesn't invoke any streaming
-    # display callbacks that would bypass our stdout capture.
-    agent.suppress_status_output = True
-    agent.stream_delta_callback = None
-    agent.tool_gen_callback = None
+        # Belt-and-braces: make sure AIAgent doesn't invoke any streaming
+        # display callbacks that would bypass our stdout capture.
+        agent.suppress_status_output = True
+        agent.stream_delta_callback = None
+        agent.tool_gen_callback = None
 
-    result = agent.run_conversation(prompt)
-    return (result.get("final_response") or "", result)
+        result = agent.run_conversation(prompt)
+        return (result.get("final_response") or "", result)
+    finally:
+        # Ordering deliberately mirrors gateway/run.py:_cleanup_agent_resources,
+        # NOT cli.py:_run_cleanup — oneshot has no _active_agent_ref and must
+        # close the agent explicitly because the hard-exit path skips finalizers.
+        if agent is not None:
+            try:
+                session_messages = getattr(agent, "_session_messages", None)
+                if isinstance(session_messages, list):
+                    agent.shutdown_memory_provider(session_messages)
+                else:
+                    agent.shutdown_memory_provider()
+            except Exception:
+                logging.debug("oneshot memory/context cleanup failed", exc_info=True)
+            try:
+                agent.close()
+            except Exception:
+                logging.debug("oneshot agent cleanup failed", exc_info=True)
+        # agent.close() calls session_db.end_session() but leaves the connection
+        # open; close it here to checkpoint the WAL before os._exit skips
+        # finalizers.
+        if session_db is not None:
+            try:
+                session_db.close()
+            except Exception:
+                logging.debug("oneshot session store cleanup failed", exc_info=True)
 
 
 def _oneshot_clarify_callback(question: str, choices=None) -> str:

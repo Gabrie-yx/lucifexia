@@ -40,7 +40,7 @@ from typing import Any, Dict, List, Optional
 from agent.web_search_provider import WebSearchProvider
 from tools.xai_http import (
     has_xai_credentials,
-    hermes_xai_user_agent,
+    lucifex_xai_user_agent,
     resolve_xai_http_credentials,
 )
 
@@ -64,7 +64,7 @@ _JSON_BLOCK_RE = re.compile(r"\{[\s\S]*\}", re.MULTILINE)
 def _load_xai_web_config() -> Dict[str, Any]:
     """Read ``web.xai`` from config.yaml (returns {} on miss)."""
     try:
-        from hermes_cli.config import load_config
+        from lucifex_cli.config import load_config
 
         cfg = load_config()
         web_section = cfg.get("web") if isinstance(cfg, dict) else None
@@ -223,7 +223,7 @@ class XAIWebSearchProvider(WebSearchProvider):
         headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
-            "User-Agent": hermes_xai_user_agent(),
+            "User-Agent": lucifex_xai_user_agent(),
         }
 
         try:

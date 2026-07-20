@@ -1,4 +1,4 @@
-import json
+﻿import json
 import os
 import stat
 import time
@@ -298,9 +298,9 @@ def test_link_ovcli_profile_removes_stale_inline_config(tmp_path):
 
 def test_post_setup_existing_profile_picker_validates_and_links_saved_profile(tmp_path, monkeypatch):
     _clear_openviking_env(monkeypatch)
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir()
-    env_path = hermes_home / ".env"
+    LUCIFEX_HOME = tmp_path / "hermes"
+    LUCIFEX_HOME.mkdir()
+    env_path = LUCIFEX_HOME / ".env"
     env_path.write_text("OPENVIKING_ENDPOINT=http://old.local\nOTHER_KEY=keep\n", encoding="utf-8")
     openviking_home = tmp_path / ".openviking"
     openviking_home.mkdir()
@@ -311,10 +311,10 @@ def test_post_setup_existing_profile_picker_validates_and_links_saved_profile(tm
         json.dumps({"url": "https://vps.example", "api_key": "user-key"}),
         encoding="utf-8",
     )
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
     monkeypatch.setattr(openviking_module.Path, "home", staticmethod(lambda: tmp_path))
 
-    from hermes_cli import memory_setup
+    from lucifex_cli import memory_setup
 
     validate_calls = []
 
@@ -332,7 +332,7 @@ def test_post_setup_existing_profile_picker_validates_and_links_saved_profile(tm
     monkeypatch.setattr(memory_setup, "_curses_select", lambda *args, **kwargs: next(choices))
     config = {"memory": {}}
 
-    OpenVikingMemoryProvider().post_setup(str(hermes_home), config)
+    OpenVikingMemoryProvider().post_setup(str(LUCIFEX_HOME), config)
 
     assert validate_calls == [{
         "endpoint": "https://vps.example",
@@ -354,13 +354,13 @@ def test_post_setup_existing_profile_picker_validates_and_links_saved_profile(tm
 
 def test_post_setup_create_remote_user_profile_can_mirror_to_openviking_store(tmp_path, monkeypatch):
     _clear_openviking_env(monkeypatch)
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    LUCIFEX_HOME = tmp_path / "hermes"
+    LUCIFEX_HOME.mkdir()
+    monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
     monkeypatch.setattr(openviking_module.Path, "home", staticmethod(lambda: tmp_path))
     _allow_setup_validation(monkeypatch)
 
-    from hermes_cli import memory_setup
+    from lucifex_cli import memory_setup
 
     choices = iter([1, 0, 1])
     monkeypatch.setattr(memory_setup, "_curses_select", lambda *args, **kwargs: next(choices))
@@ -376,7 +376,7 @@ def test_post_setup_create_remote_user_profile_can_mirror_to_openviking_store(tm
     )
     config = {"memory": {}}
 
-    OpenVikingMemoryProvider().post_setup(str(hermes_home), config)
+    OpenVikingMemoryProvider().post_setup(str(LUCIFEX_HOME), config)
 
     mirrored_path = tmp_path / ".openviking" / "ovcli.conf.VPS"
     assert mirrored_path.exists()
@@ -390,19 +390,19 @@ def test_post_setup_create_remote_user_profile_can_mirror_to_openviking_store(tm
         "use_ovcli_config": True,
         "ovcli_config_path": str(mirrored_path),
     }
-    env_path = hermes_home / ".env"
+    env_path = LUCIFEX_HOME / ".env"
     if env_path.exists():
         assert "OPENVIKING_" not in env_path.read_text(encoding="utf-8")
 
 
 def test_post_setup_create_remote_user_can_keep_hermes_only(tmp_path, monkeypatch):
     _clear_openviking_env(monkeypatch)
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    LUCIFEX_HOME = tmp_path / "hermes"
+    LUCIFEX_HOME.mkdir()
+    monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
     _allow_setup_validation(monkeypatch)
 
-    from hermes_cli import memory_setup
+    from lucifex_cli import memory_setup
 
     choices = iter([1, 0, 0])
     monkeypatch.setattr(memory_setup, "_curses_select", lambda *args, **kwargs: next(choices))
@@ -417,11 +417,11 @@ def test_post_setup_create_remote_user_can_keep_hermes_only(tmp_path, monkeypatc
     )
     config = {"memory": {}}
 
-    OpenVikingMemoryProvider().post_setup(str(hermes_home), config)
+    OpenVikingMemoryProvider().post_setup(str(LUCIFEX_HOME), config)
 
     assert config["memory"]["provider"] == "openviking"
     assert config["memory"]["openviking"] == {"use_ovcli_config": False}
-    env_text = (hermes_home / ".env").read_text(encoding="utf-8")
+    env_text = (LUCIFEX_HOME / ".env").read_text(encoding="utf-8")
     assert "OPENVIKING_ENDPOINT=https://openviking.example" in env_text
     assert "OPENVIKING_API_KEY=user-secret" in env_text
     assert "OPENVIKING_AGENT=agent" in env_text
@@ -430,11 +430,11 @@ def test_post_setup_create_remote_user_can_keep_hermes_only(tmp_path, monkeypatc
 
 def test_post_setup_create_openviking_service_validates_after_api_key(tmp_path, monkeypatch):
     _clear_openviking_env(monkeypatch)
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    LUCIFEX_HOME = tmp_path / "hermes"
+    LUCIFEX_HOME.mkdir()
+    monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
 
-    from hermes_cli import memory_setup
+    from lucifex_cli import memory_setup
 
     validation_calls = []
 
@@ -463,7 +463,7 @@ def test_post_setup_create_openviking_service_validates_after_api_key(tmp_path, 
     )
     config = {"memory": {}}
 
-    OpenVikingMemoryProvider().post_setup(str(hermes_home), config)
+    OpenVikingMemoryProvider().post_setup(str(LUCIFEX_HOME), config)
 
     assert validation_calls == [(
         {
@@ -477,7 +477,7 @@ def test_post_setup_create_openviking_service_validates_after_api_key(tmp_path, 
         },
         True,
     )]
-    env_text = (hermes_home / ".env").read_text(encoding="utf-8")
+    env_text = (LUCIFEX_HOME / ".env").read_text(encoding="utf-8")
     assert "OPENVIKING_ENDPOINT=https://api.vikingdb.cn-beijing.volces.com/openviking" in env_text
     assert "OPENVIKING_API_KEY=service-secret" in env_text
     assert "OPENVIKING_AGENT=agent" in env_text
@@ -485,13 +485,13 @@ def test_post_setup_create_openviking_service_validates_after_api_key(tmp_path, 
 
 def test_post_setup_remote_blank_api_key_cancels_without_saving(tmp_path, monkeypatch):
     _clear_openviking_env(monkeypatch)
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    LUCIFEX_HOME = tmp_path / "hermes"
+    LUCIFEX_HOME.mkdir()
+    monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
     monkeypatch.setattr(openviking_module, "_validate_openviking_reachability", lambda endpoint: (True, ""))
 
-    from hermes_cli import config as hermes_config
-    from hermes_cli import memory_setup
+    from lucifex_cli import config as hermes_config
+    from lucifex_cli import memory_setup
 
     save_config = MagicMock()
     monkeypatch.setattr(hermes_config, "save_config", save_config)
@@ -507,20 +507,20 @@ def test_post_setup_remote_blank_api_key_cancels_without_saving(tmp_path, monkey
     )
     config = {"memory": {"provider": "builtin"}}
 
-    OpenVikingMemoryProvider().post_setup(str(hermes_home), config)
+    OpenVikingMemoryProvider().post_setup(str(LUCIFEX_HOME), config)
 
     save_config.assert_not_called()
     assert config == {"memory": {"provider": "builtin"}}
-    assert not (hermes_home / ".env").exists()
+    assert not (LUCIFEX_HOME / ".env").exists()
 
 
 def test_post_setup_user_key_path_can_route_detected_root_key_to_root_setup(tmp_path, monkeypatch):
     _clear_openviking_env(monkeypatch)
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    LUCIFEX_HOME = tmp_path / "hermes"
+    LUCIFEX_HOME.mkdir()
+    monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
 
-    from hermes_cli import memory_setup
+    from lucifex_cli import memory_setup
 
     def validate_values(values, *, require_api_key=False):
         assert values["api_key"] == "root-secret"
@@ -548,10 +548,10 @@ def test_post_setup_user_key_path_can_route_detected_root_key_to_root_setup(tmp_
     monkeypatch.setattr(memory_setup, "_prompt", fake_prompt)
     config = {"memory": {}}
 
-    OpenVikingMemoryProvider().post_setup(str(hermes_home), config)
+    OpenVikingMemoryProvider().post_setup(str(LUCIFEX_HOME), config)
 
     assert prompt_events.count("Hermes peer ID in OpenViking") == 1
-    env_text = (hermes_home / ".env").read_text(encoding="utf-8")
+    env_text = (LUCIFEX_HOME / ".env").read_text(encoding="utf-8")
     assert "OPENVIKING_API_KEY=root-secret" in env_text
     assert "OPENVIKING_ACCOUNT=acct" in env_text
     assert "OPENVIKING_USER=alice" in env_text
@@ -560,11 +560,11 @@ def test_post_setup_user_key_path_can_route_detected_root_key_to_root_setup(tmp_
 
 def test_post_setup_root_key_path_can_route_detected_user_key_to_user_setup(tmp_path, monkeypatch):
     _clear_openviking_env(monkeypatch)
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    LUCIFEX_HOME = tmp_path / "hermes"
+    LUCIFEX_HOME.mkdir()
+    monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
 
-    from hermes_cli import memory_setup
+    from lucifex_cli import memory_setup
 
     def validate_values(values, *, require_api_key=False):
         assert values["api_key"] == "user-secret"
@@ -588,9 +588,9 @@ def test_post_setup_root_key_path_can_route_detected_user_key_to_user_setup(tmp_
     )
     config = {"memory": {}}
 
-    OpenVikingMemoryProvider().post_setup(str(hermes_home), config)
+    OpenVikingMemoryProvider().post_setup(str(LUCIFEX_HOME), config)
 
-    env_text = (hermes_home / ".env").read_text(encoding="utf-8")
+    env_text = (LUCIFEX_HOME / ".env").read_text(encoding="utf-8")
     assert "OPENVIKING_API_KEY=user-secret" in env_text
     assert "OPENVIKING_AGENT=agent" in env_text
     assert "OPENVIKING_ACCOUNT" not in env_text
@@ -651,8 +651,8 @@ def test_start_local_openviking_server_uses_endpoint_host_and_port(monkeypatch):
 
 
 def test_start_local_openviking_server_writes_output_to_log(tmp_path, monkeypatch):
-    hermes_home = tmp_path / "hermes"
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    LUCIFEX_HOME = tmp_path / "hermes"
+    monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
     popen_calls = []
 
     class FakeProcess:
@@ -661,7 +661,7 @@ def test_start_local_openviking_server_writes_output_to_log(tmp_path, monkeypatc
     def fake_popen(args, **kwargs):
         popen_calls.append((args, kwargs))
         assert kwargs["stdout"] is kwargs["stderr"]
-        assert kwargs["stdout"].name == str(hermes_home / "logs" / "openviking-server.log")
+        assert kwargs["stdout"].name == str(LUCIFEX_HOME / "logs" / "openviking-server.log")
         assert not kwargs["stdout"].closed
         return FakeProcess()
 
@@ -671,7 +671,7 @@ def test_start_local_openviking_server_writes_output_to_log(tmp_path, monkeypatc
     started, message = openviking_module._start_local_openviking_server("http://127.0.0.1:1934")
 
     assert started is True
-    assert str(hermes_home / "logs" / "openviking-server.log") in message
+    assert str(LUCIFEX_HOME / "logs" / "openviking-server.log") in message
     assert popen_calls
 
 
@@ -1068,12 +1068,12 @@ def test_initialize_does_not_emit_cli_warning_when_callback_absent(monkeypatch):
 
 def test_post_setup_local_server_down_can_offer_autostart(tmp_path, monkeypatch):
     _clear_openviking_env(monkeypatch)
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    LUCIFEX_HOME = tmp_path / "hermes"
+    LUCIFEX_HOME.mkdir()
+    monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
     monkeypatch.setattr(openviking_module, "_validate_openviking_setup_values", lambda values, *, require_api_key=False: (True, "", None))
 
-    from hermes_cli import memory_setup
+    from lucifex_cli import memory_setup
 
     reachability_calls = []
 
@@ -1097,27 +1097,27 @@ def test_post_setup_local_server_down_can_offer_autostart(tmp_path, monkeypatch)
     )
     config = {"memory": {}}
 
-    OpenVikingMemoryProvider().post_setup(str(hermes_home), config)
+    OpenVikingMemoryProvider().post_setup(str(LUCIFEX_HOME), config)
 
     assert started == ["http://localhost:1933"]
     assert reachability_calls == ["http://localhost:1933"]
-    env_text = (hermes_home / ".env").read_text(encoding="utf-8")
+    env_text = (LUCIFEX_HOME / ".env").read_text(encoding="utf-8")
     assert "OPENVIKING_ENDPOINT=http://localhost:1933" in env_text
     assert "OPENVIKING_API_KEY" not in env_text
 
 
 def test_post_setup_invalid_env_profile_can_create_new_config(tmp_path, monkeypatch):
     _clear_openviking_env(monkeypatch)
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir()
+    LUCIFEX_HOME = tmp_path / "hermes"
+    LUCIFEX_HOME.mkdir()
     ovcli_path = tmp_path / "broken" / "ovcli.conf"
     ovcli_path.parent.mkdir()
     ovcli_path.write_text("{", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
     monkeypatch.setenv("OPENVIKING_CLI_CONFIG_FILE", str(ovcli_path))
     _allow_setup_validation(monkeypatch)
 
-    from hermes_cli import memory_setup
+    from lucifex_cli import memory_setup
 
     choices = iter([1, 0, 0])
     monkeypatch.setattr(memory_setup, "_curses_select", lambda *args, **kwargs: next(choices))
@@ -1132,7 +1132,7 @@ def test_post_setup_invalid_env_profile_can_create_new_config(tmp_path, monkeypa
     )
     config = {"memory": {}}
 
-    OpenVikingMemoryProvider().post_setup(str(hermes_home), config)
+    OpenVikingMemoryProvider().post_setup(str(LUCIFEX_HOME), config)
 
     assert ovcli_path.read_text(encoding="utf-8") == "{"
     assert config["memory"]["openviking"] == {"use_ovcli_config": False}
@@ -1301,11 +1301,11 @@ def test_tool_add_resource_uploads_file_uri(tmp_path):
 def test_tool_add_resource_rejects_hermes_credential_file_upload(tmp_path, monkeypatch):
     import agent.file_safety as fs
 
-    hermes_home = tmp_path / "hermes_home"
-    hermes_home.mkdir()
-    auth_json = hermes_home / "auth.json"
+    LUCIFEX_HOME = tmp_path / "LUCIFEX_HOME"
+    LUCIFEX_HOME.mkdir()
+    auth_json = LUCIFEX_HOME / "auth.json"
     auth_json.write_text('{"OPENROUTER_API_KEY":"sk-test-secret"}', encoding="utf-8")
-    monkeypatch.setattr(fs, "_hermes_home_path", lambda: hermes_home)
+    monkeypatch.setattr(fs, "_LUCIFEX_HOME_path", lambda: LUCIFEX_HOME)
 
     provider = OpenVikingMemoryProvider()
     provider._client = MagicMock()
@@ -1395,14 +1395,14 @@ def test_tool_add_resource_directory_zip_skips_symlink_escape(tmp_path):
 def test_tool_add_resource_directory_zip_skips_hermes_credential_files(tmp_path, monkeypatch):
     import agent.file_safety as fs
 
-    hermes_home = tmp_path / "hermes_home"
-    hermes_home.mkdir()
-    (hermes_home / "guide.md").write_text("# Guide\n", encoding="utf-8")
-    (hermes_home / "auth.json").write_text(
+    LUCIFEX_HOME = tmp_path / "LUCIFEX_HOME"
+    LUCIFEX_HOME.mkdir()
+    (LUCIFEX_HOME / "guide.md").write_text("# Guide\n", encoding="utf-8")
+    (LUCIFEX_HOME / "auth.json").write_text(
         '{"OPENROUTER_API_KEY":"sk-test-secret"}',
         encoding="utf-8",
     )
-    monkeypatch.setattr(fs, "_hermes_home_path", lambda: hermes_home)
+    monkeypatch.setattr(fs, "_LUCIFEX_HOME_path", lambda: LUCIFEX_HOME)
 
     provider = OpenVikingMemoryProvider()
     provider._client = MagicMock()
@@ -1415,15 +1415,15 @@ def test_tool_add_resource_directory_zip_skips_hermes_credential_files(tmp_path,
                 name: archive.read(name)
                 for name in archive.namelist()
             }
-        return "upload_hermes_home.zip"
+        return "upload_LUCIFEX_HOME.zip"
 
     provider._client.upload_temp_file.side_effect = inspect_upload
     provider._client.post.return_value = {
         "status": "ok",
-        "result": {"root_uri": "viking://resources/hermes_home"},
+        "result": {"root_uri": "viking://resources/LUCIFEX_HOME"},
     }
 
-    result = json.loads(provider._tool_add_resource({"url": str(hermes_home)}))
+    result = json.loads(provider._tool_add_resource({"url": str(LUCIFEX_HOME)}))
 
     assert result["status"] == "added"
     assert archive_entries["names"] == ["guide.md"]
@@ -2182,7 +2182,7 @@ def test_validate_openviking_identity_value_matches_cli_rules(value, field, ok):
     assert valid is ok
     assert bool(normalized) is ok
 # ---------------------------------------------------------------------------
-# on_session_switch — flush + commit + rotate behavior (hermes-agent#28296)
+# on_session_switch — flush + commit + rotate behavior (lucifex-agent#28296)
 # ---------------------------------------------------------------------------
 
 def _make_provider_with_session(session_id: str, turn_count: int):
@@ -2562,7 +2562,7 @@ def test_end_then_switch_with_pending_tokens_does_not_double_commit():
 
 
 def test_session_needs_commit_guard_wins_over_stale_turn_count():
-    """Regression for hermes-agent#28296 review (M3): once a session is marked
+    """Regression for lucifex-agent#28296 review (M3): once a session is marked
     committed, _session_needs_commit must return False even if turn_count is
     still positive. A racing sync_turn can re-increment _turn_count after the
     commit+reset; without the guard ordering, a follow-up finalizer would
@@ -2665,7 +2665,7 @@ def test_on_session_switch_waits_for_all_writers_not_just_latest():
 
 
 def test_on_session_switch_does_not_block_caller_on_slow_drain():
-    """Regression for hermes-agent#28296 review (H1): on_session_switch must
+    """Regression for lucifex-agent#28296 review (H1): on_session_switch must
     NOT run the old-session drain/commit on the caller's thread. /new, /branch,
     /resume, /undo call this synchronously on the command thread, so a slow
     writer drain (up to _SESSION_DRAIN_TIMEOUT/_DEFERRED_COMMIT_TIMEOUT) or a
@@ -2713,7 +2713,7 @@ def test_on_session_switch_defers_old_commit_to_finalizer_thread():
     """The switch path rotates session state synchronously (cheap, in-memory)
     but offloads the old-session drain + commit onto a daemon finalizer so the
     caller's command thread (/new, /branch, /resume) never blocks on the up-to
-    -_DEFERRED_COMMIT_TIMEOUT drain or the commit POST. See hermes-agent#28296
+    -_DEFERRED_COMMIT_TIMEOUT drain or the commit POST. See lucifex-agent#28296
     review (the #41945 'do not block the turn thread' contract)."""
     import threading
 

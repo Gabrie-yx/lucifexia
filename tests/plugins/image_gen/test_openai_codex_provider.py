@@ -1,4 +1,4 @@
-"""Tests for the bundled ``openai-codex`` image_gen plugin.
+﻿"""Tests for the bundled ``openai-codex`` image_gen plugin.
 
 Mirrors ``test_openai_provider.py`` but targets the standalone
 Codex/ChatGPT-OAuth-backed provider that uses the Responses
@@ -34,8 +34,8 @@ def _b64_png() -> str:
 
 
 @pytest.fixture(autouse=True)
-def _tmp_hermes_home(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+def _tmp_LUCIFEX_HOME(tmp_path, monkeypatch):
+    monkeypatch.setenv("LUCIFEX_HOME", str(tmp_path))
     yield tmp_path
 
 

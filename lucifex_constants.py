@@ -1,4 +1,4 @@
-"""Shared constants for Lucifex Agent.
+﻿"""Shared constants for Lucifex Agent.
 
 Import-safe module with no dependencies — can be imported from anywhere
 without risk of circular imports.
@@ -107,6 +107,14 @@ def get_lucifex_home() -> Path:
             except Exception:
                 pass
 
+    return _get_platform_default_lucifex_home()
+
+
+def get_process_lucifex_home() -> Path:
+    """Return the process launch LUCIFEX_HOME, ignoring contextvar overrides."""
+    val = os.environ.get("LUCIFEX_HOME", "").strip() or os.environ.get("LUCIFEX_HOME", "").strip()
+    if val:
+        return Path(val)
     return _get_platform_default_lucifex_home()
 
 
@@ -986,3 +994,14 @@ FINISH_REASON_LENGTH = "length"
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 OPENROUTER_MODELS_URL = f"{OPENROUTER_BASE_URL}/models"
+
+# Compatibility aliases for legacy hermes imports
+get_lucifex_home = get_lucifex_home
+get_process_lucifex_home = get_process_lucifex_home
+get_hermes_dir = get_lucifex_home
+get_default_lucifex_root = get_default_lucifex_root
+display_lucifex_home = display_lucifex_home
+get_lucifex_home_override = get_lucifex_home_override
+set_lucifex_home_override = set_lucifex_home_override
+reset_lucifex_home_override = reset_lucifex_home_override
+_LUCIFEX_HOME_OVERRIDE = _LUCIFEX_HOME_OVERRIDE

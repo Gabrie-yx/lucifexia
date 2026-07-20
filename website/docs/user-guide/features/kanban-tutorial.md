@@ -130,7 +130,7 @@ that picks up all three specialist profiles' tasks on the same
 kanban.db:
 
 ```bash
-hermes gateway start
+lucifex gateway start
 ```
 
 Now filter the board to `content-ops` (or just search for "Transcribe") and you get this:

@@ -172,8 +172,8 @@ nano ~/.hermes/profiles/assistant/.env
 ### 持久化服务
 
 ```bash
-coder gateway install         # 创建 hermes-gateway-coder systemd/launchd 服务
-assistant gateway install     # 创建 hermes-gateway-assistant 服务
+coder gateway install         # 创建 lucifex-gateway-coder systemd/launchd 服务
+assistant gateway install     # 创建 lucifex-gateway-assistant 服务
 ```
 
 每个 profile 拥有独立的服务名称，各自独立运行。
@@ -251,9 +251,9 @@ eval "$(hermes completion zsh)"
 
 ## 工作原理
 
-profile 使用 `HERMES_HOME` 环境变量。运行 `coder chat` 时，包装脚本在启动 hermes 前将 `HERMES_HOME` 设置为 `~/.hermes/profiles/coder`。由于代码库中 119+ 个文件通过 `get_hermes_home()` 解析路径，Hermes 状态会自动限定在 profile 目录范围内——包括配置、会话、记忆、技能、状态数据库、gateway PID、日志和 cron 任务。
+profile 使用 `LUCIFEX_HOME` 环境变量。运行 `coder chat` 时，包装脚本在启动 hermes 前将 `LUCIFEX_HOME` 设置为 `~/.hermes/profiles/coder`。由于代码库中 119+ 个文件通过 `get_lucifex_home()` 解析路径，Hermes 状态会自动限定在 profile 目录范围内——包括配置、会话、记忆、技能、状态数据库、gateway PID、日志和 cron 任务。
 
-这与终端工作目录是分开的。工具执行从 `terminal.cwd` 开始（或在 local 后端使用 `cwd: "."` 时从启动目录开始），而非自动从 `HERMES_HOME` 开始。
+这与终端工作目录是分开的。工具执行从 `terminal.cwd` 开始（或在 local 后端使用 `cwd: "."` 时从启动目录开始），而非自动从 `LUCIFEX_HOME` 开始。
 
 默认 profile 就是 `~/.hermes` 本身。无需迁移——现有安装的工作方式完全不变。
 
