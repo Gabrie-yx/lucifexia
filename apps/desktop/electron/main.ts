@@ -3804,7 +3804,7 @@ function fetchJson(url, token, options: any = {}) {
         method: options.method || 'GET',
         headers: {
           'Content-Type': contentType,
-          'X-Hermes-Session-Token': token,
+          'X-Lucifex-Session-Token': token,
           ...(body ? { 'Content-Length': String(body.length) } : {})
         }
       },
