@@ -1290,7 +1290,6 @@ def run_doctor(args):
         pass
 
     _section("Directory Structure")
-    LUCIFEX_HOME = LUCIFEX_HOME
     if LUCIFEX_HOME.exists():
         check_ok(f"{_DHH} directory exists")
     elif should_fix:
