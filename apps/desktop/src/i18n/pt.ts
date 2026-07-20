@@ -118,7 +118,8 @@ export const pt = defineLocale({
     backendOutOfDateMessage: 'Seu backend está mais antigo que este app. Atualize para alinhar.',
     updateLucifex: 'Atualizar Lucifex',
     updateReadyTitle: 'Atualização pronta',
-    updateReadyMessage: (count: number) => `${count} nova${count === 1 ? '' : 's'} alteraç${count === 1 ? 'ão' : 'ões'} disponíve${count === 1 ? 'l' : 'is'}.`,
+    updateReadyMessage: (count: number) =>
+      `${count} nova${count === 1 ? '' : 's'} alteraç${count === 1 ? 'ão' : 'ões'} disponíve${count === 1 ? 'l' : 'is'}.`,
     seeWhatsNew: 'Ver novidades',
     errors: {
       methodNotAllowed: 'O backend rejeitou a requisição (405). Tente reiniciar o Lucifex Desktop.',
@@ -218,9 +219,15 @@ export const pt = defineLocale({
       kinds: {
         approval: { label: 'Aprovação necessária', description: 'Um comando aguarda aprovação ou rejeição.' },
         input: { label: 'Entrada necessária', description: 'Lucifex fez uma pergunta ou precisa de uma senha.' },
-        turnDone: { label: 'Resposta pronta', description: 'Um turno terminou enquanto Lucifex estava em segundo plano.' },
+        turnDone: {
+          label: 'Resposta pronta',
+          description: 'Um turno terminou enquanto Lucifex estava em segundo plano.'
+        },
         turnError: { label: 'Turno falhou', description: 'Um turno encerrou com erro.' },
-        backgroundDone: { label: 'Tarefa em segundo plano concluída', description: 'Um comando em segundo plano terminou.' }
+        backgroundDone: {
+          label: 'Tarefa em segundo plano concluída',
+          description: 'Um comando em segundo plano terminou.'
+        }
       },
       test: 'Enviar notificação de teste',
       testTitle: 'Lucifex',
@@ -264,11 +271,13 @@ export const pt = defineLocale({
       translucencyTitle: 'Translucidez da Janela',
       translucencyDesc: 'Veja o desktop através da janela. Apenas macOS e Windows.',
       embedsTitle: 'Embeds Inline',
-      embedsDesc: 'Pré-visualizações de sites de terceiros. Perguntar mostra placeholder; Sempre carrega automaticamente; Desligado mantém links simples.',
+      embedsDesc:
+        'Pré-visualizações de sites de terceiros. Perguntar mostra placeholder; Sempre carrega automaticamente; Desligado mantém links simples.',
       embedsAsk: 'Perguntar',
       embedsAlways: 'Sempre',
       embedsOff: 'Desligado',
-      embedsReset: (count: number) => `Redefinir ${count} serviço${count === 1 ? '' : 's'} permitido${count === 1 ? '' : 's'}`,
+      embedsReset: (count: number) =>
+        `Redefinir ${count} serviço${count === 1 ? '' : 's'} permitido${count === 1 ? '' : 's'}`,
       product: 'Produto',
       productDesc: 'Atividade amigável com resumos concisos.',
       technical: 'Técnico',
@@ -277,7 +286,8 @@ export const pt = defineLocale({
       themeDesc: 'Paletas do desktop. O modo selecionado é aplicado por cima.',
       themeProfileNote: (profile: string) => `Salvo para o perfil ${profile} — cada perfil mantém seu próprio tema.`,
       installTitle: 'Instalar do VS Code',
-      installDesc: 'Cole um ID de extensão do Marketplace (ex: dracula-theme.theme-dracula) para converter seu tema de cores.',
+      installDesc:
+        'Cole um ID de extensão do Marketplace (ex: dracula-theme.theme-dracula) para converter seu tema de cores.',
       installPlaceholder: 'publisher.extension',
       installButton: 'Instalar',
       installing: 'Instalando…',
@@ -379,7 +389,8 @@ export const pt = defineLocale({
       unavailableDesc: 'A ponte IPC não expõe as configurações do gateway.',
       title: 'Conexão do Gateway',
       envOverride: 'substituição por env',
-      intro: 'O Lucifex Desktop inicia seu próprio gateway local por padrão. Use um gateway remoto para controlar um backend em outra máquina.',
+      intro:
+        'O Lucifex Desktop inicia seu próprio gateway local por padrão. Use um gateway remoto para controlar um backend em outra máquina.',
       appliesTo: 'Aplica-se a',
       allProfiles: 'Todos os perfis',
       defaultConnection: 'Conexão padrão para todo perfil sem substituição própria.',
@@ -450,7 +461,8 @@ export const pt = defineLocale({
       saveServer: 'Salvar servidor',
       test: 'Testar conexão',
       testing: 'Testando...',
-      testOk: (count: number) => `Conectado — ${count} ferramenta${count === 1 ? '' : 's'} disponíve${count === 1 ? 'l' : 'is'}`,
+      testOk: (count: number) =>
+        `Conectado — ${count} ferramenta${count === 1 ? '' : 's'} disponíve${count === 1 ? 'l' : 'is'}`,
       testFailed: 'Falha na conexão',
       tabServers: 'Servidores',
       tabCatalog: 'Catálogo',
@@ -1103,7 +1115,11 @@ export const pt = defineLocale({
         browser_fill: { done: 'Preencheu campo', pending: 'Preenchendo campo', pendingAction: 'Preenchendo' },
         browser_navigate: { done: 'Abriu página', pending: 'Abrindo página', pendingAction: 'Abrindo' },
         browser_snapshot: { done: 'Capturou snapshot', pending: 'Capturando snapshot', pendingAction: 'Capturando' },
-        browser_take_screenshot: { done: 'Capturou screenshot', pending: 'Capturando screenshot', pendingAction: 'Capturando' },
+        browser_take_screenshot: {
+          done: 'Capturou screenshot',
+          pending: 'Capturando screenshot',
+          pendingAction: 'Capturando'
+        },
         browser_type: { done: 'Digitou na página', pending: 'Digitando na página', pendingAction: 'Digitando' },
         clarify: { done: 'Fez uma pergunta', pending: 'Fazendo uma pergunta', pendingAction: 'Perguntando' },
         cronjob: { done: 'Job cron', pending: 'Agendando job cron', pendingAction: 'Agendando' },

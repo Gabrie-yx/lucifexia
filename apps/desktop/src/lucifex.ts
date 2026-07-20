@@ -17,9 +17,9 @@ import type {
   DebugShareResponse,
   ElevenLabsVoicesResponse,
   EnvVarInfo,
+  LogsResponse,
   LucifexConfig,
   LucifexConfigRecord,
-  LogsResponse,
   McpCatalogResponse,
   McpServerSummary,
   MemoryProviderConfig,
@@ -109,9 +109,9 @@ export type {
   ElevenLabsVoicesResponse,
   EnvVarInfo,
   GatewayReadyPayload,
+  LogsResponse,
   LucifexConfig,
   LucifexConfigRecord,
-  LogsResponse,
   McpCatalogEntry,
   McpCatalogResponse,
   McpServerSummary,
@@ -1102,13 +1102,15 @@ export function installMcpCatalogEntry(
   name: string,
   env: Record<string, string> = {}
 ): Promise<{ ok: boolean; name?: string; pid?: number; action?: string; background?: boolean }> {
-  return window.lucifexDesktop.api<{ ok: boolean; name?: string; pid?: number; action?: string; background?: boolean }>({
-    ...profileScoped(),
-    path: '/api/mcp/catalog/install',
-    method: 'POST',
-    body: { name, env, enable: true },
-    timeoutMs: 60_000
-  })
+  return window.lucifexDesktop.api<{ ok: boolean; name?: string; pid?: number; action?: string; background?: boolean }>(
+    {
+      ...profileScoped(),
+      path: '/api/mcp/catalog/install',
+      method: 'POST',
+      body: { name, env, enable: true },
+      timeoutMs: 60_000
+    }
+  )
 }
 
 // ---------------------------------------------------------------------------

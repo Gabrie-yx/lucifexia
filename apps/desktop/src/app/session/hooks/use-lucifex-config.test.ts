@@ -2,8 +2,8 @@
 import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { getLucifexConfig } from '@/lucifex'
 import { persistString } from '@/lib/storage'
+import { getLucifexConfig } from '@/lucifex'
 import { $currentCwd, setCurrentCwd } from '@/store/session'
 
 import { useLucifexConfig } from './use-lucifex-config'

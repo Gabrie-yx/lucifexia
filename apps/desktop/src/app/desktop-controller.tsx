@@ -15,11 +15,11 @@ import { cn } from '@/lib/utils'
 import { useSkinCommand } from '@/themes/use-skin-command'
 
 import { formatRefValue } from '../components/assistant-ui/directive-text'
-import { getSessionMessages, type SessionMessage, triggerCronJob } from '../lucifex'
 import { type ChatMessage, chatMessageText, preserveLocalAssistantErrors, toChatMessages } from '../lib/chat-messages'
 import { storedSessionIdForNotification } from '../lib/session-ids'
 import { isMessagingSource } from '../lib/session-source'
 import { latestSessionTodos } from '../lib/todos'
+import { getSessionMessages, type SessionMessage, triggerCronJob } from '../lucifex'
 import { setCronFocusJobId } from '../store/cron'
 import {
   $fileBrowserOpen,
@@ -1293,9 +1293,7 @@ export function DesktopController() {
       onOpenSettings={openSettings}
       overlays={overlays}
       previewPaneOpen={
-        chatOpen &&
-        (Boolean(previewTarget || filePreviewTarget) ||
-          rightRailActiveTabId === RIGHT_RAIL_BROWSER_TAB_ID)
+        chatOpen && (Boolean(previewTarget || filePreviewTarget) || rightRailActiveTabId === RIGHT_RAIL_BROWSER_TAB_ID)
       }
       statusbarItems={statusbarItems}
       terminalPaneOpen={terminalSidebarOpen}

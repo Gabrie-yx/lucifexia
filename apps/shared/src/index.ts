@@ -47,8 +47,8 @@ export {
   type GatewayAuthMode,
   GatewayReauthRequiredError,
   type GatewayWsConnection,
-  type LucifexWebSocketUrlOptions,
   isGatewayReauthRequired,
+  type LucifexWebSocketUrlOptions,
   resolveGatewayWsUrl,
   type ResolveGatewayWsUrlDeps,
   type WebSocketAuthParam

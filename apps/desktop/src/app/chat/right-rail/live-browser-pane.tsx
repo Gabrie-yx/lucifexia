@@ -1,16 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
 import { useStore } from '@nanostores/react'
-import {
-  IconArrowLeft,
-  IconArrowRight,
-  IconRefresh,
-  IconLock,
-  IconExternalLink
-} from '@tabler/icons-react'
+import { IconArrowLeft, IconArrowRight, IconExternalLink, IconLock, IconRefresh } from '@tabler/icons-react'
+import { useEffect, useRef, useState } from 'react'
 
-import { fetchBrowserLatest } from '@/lucifex'
 import { Codicon } from '@/components/ui/codicon'
 import { cn } from '@/lib/utils'
+import { fetchBrowserLatest } from '@/lucifex'
 import { $activeSessionId } from '@/store/session'
 
 export function LiveBrowserPane() {
@@ -32,8 +26,10 @@ export function LiveBrowserPane() {
     if (prevSessionRef.current === undefined) {
       // First render — just record the initial session, no reset needed.
       prevSessionRef.current = sessionId
+
       return
     }
+
     if (prevSessionRef.current !== sessionId) {
       prevSessionRef.current = sessionId
       // Record the wall-clock time the new session started so we can
@@ -53,14 +49,24 @@ export function LiveBrowserPane() {
 
     const poll = async () => {
       // Skip polling while the browser tab/window is hidden — saves CPU + disk I/O.
-      if (document.hidden) return
+      if (document.hidden) {
+        return
+      }
+
       try {
         // Pass the current ETag so the server can return 304 (null) if unchanged.
         const etag = lastMtime > 0 ? `"${lastMtime}"` : undefined
         const res = await fetchBrowserLatest(etag)
-        if (cancelled) return
+
+        if (cancelled) {
+          return
+        }
+
         // null = 304 Not Modified — image unchanged, keep current state
-        if (res === null) return
+        if (res === null) {
+          return
+        }
+
         if (res.data_url && res.timestamp !== lastMtime) {
           // Reject screenshots that predate the current session start.
           // This prevents a leftover latest_browser.png from a previous session
@@ -69,15 +75,19 @@ export function LiveBrowserPane() {
             // Stale screenshot from a previous session — silently skip.
             // Update lastMtime so we don't keep re-fetching the same stale file.
             lastMtime = res.timestamp
+
             return
           }
+
           lastMtime = res.timestamp
           setDataUrl(res.data_url)
           setTimestamp(res.timestamp)
+
           if (res.url) {
             setCurrentUrl(res.url)
           }
         }
+
         // Active = screenshot taken within the last 30 seconds
         const diff = Date.now() / 1000 - (res.timestamp || 0)
         setActive(!!res.data_url && diff < 30)
@@ -90,14 +100,15 @@ export function LiveBrowserPane() {
     void poll()
 
     // Poll every 1.2 s. Slightly offset from 1000ms to stagger with other timers.
-    const timer = setInterval(() => { void poll() }, 1200)
+    const timer = setInterval(() => {
+      void poll()
+    }, 1200)
 
     return () => {
       cancelled = true
       clearInterval(timer)
     }
-  // Re-run the polling loop when the session changes so lastMtime resets cleanly.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Re-run the polling loop when the session changes so lastMtime resets cleanly.
   }, [sessionId])
 
   return (
@@ -105,7 +116,12 @@ export function LiveBrowserPane() {
       {/* Active/Inactive Browser Banner */}
       <div className="flex h-8 shrink-0 items-center justify-between border-b border-(--ui-stroke-tertiary) px-3 bg-(--ui-sidebar-surface-background)">
         <span className="text-[0.625rem] font-bold uppercase tracking-wider text-muted-foreground/80 flex items-center gap-1.5">
-          <span className={cn("size-2 rounded-full", active ? "bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-muted-foreground/30")} />
+          <span
+            className={cn(
+              'size-2 rounded-full',
+              active ? 'bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-muted-foreground/30'
+            )}
+          />
           {active ? 'Navegador Ativo' : 'Navegador Ocioso'}
         </span>
         {timestamp > 0 && (
@@ -119,14 +135,23 @@ export function LiveBrowserPane() {
       <div className="flex h-11 shrink-0 items-center justify-start gap-2 border-b border-(--ui-stroke-tertiary) px-3 bg-(--ui-sidebar-surface-background)/50 backdrop-blur-sm">
         {/* Navigation Controls */}
         <div className="flex items-center gap-1">
-          <button className="p-1 rounded text-muted-foreground/40 hover:bg-(--chrome-action-hover) cursor-not-allowed transition-colors" disabled>
+          <button
+            className="p-1 rounded text-muted-foreground/40 hover:bg-(--chrome-action-hover) cursor-not-allowed transition-colors"
+            disabled
+          >
             <IconArrowLeft className="size-3.5" />
           </button>
-          <button className="p-1 rounded text-muted-foreground/40 hover:bg-(--chrome-action-hover) cursor-not-allowed transition-colors" disabled>
+          <button
+            className="p-1 rounded text-muted-foreground/40 hover:bg-(--chrome-action-hover) cursor-not-allowed transition-colors"
+            disabled
+          >
             <IconArrowRight className="size-3.5" />
           </button>
-          <button className="p-1 rounded text-muted-foreground/60 hover:text-foreground hover:bg-(--chrome-action-hover) transition-colors" title="Recarregar captura">
-            <IconRefresh className={cn("size-3.5", active && "animate-spin [animation-duration:3s]")} />
+          <button
+            className="p-1 rounded text-muted-foreground/60 hover:text-foreground hover:bg-(--chrome-action-hover) transition-colors"
+            title="Recarregar captura"
+          >
+            <IconRefresh className={cn('size-3.5', active && 'animate-spin [animation-duration:3s]')} />
           </button>
         </div>
 

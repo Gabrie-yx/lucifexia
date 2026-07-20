@@ -1,8 +1,8 @@
 import { type MutableRefObject, useCallback, useState } from 'react'
 
-import { getLucifexConfig, getLucifexConfigDefaults } from '@/lucifex'
 import { BUILTIN_PERSONALITIES, normalizePersonalityValue, personalityNamesFromConfig } from '@/lib/chat-runtime'
 import { normalize } from '@/lib/text'
+import { getLucifexConfig, getLucifexConfigDefaults } from '@/lucifex'
 import {
   $currentCwd,
   setAvailablePersonalities,
