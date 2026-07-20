@@ -1,5 +1,5 @@
-﻿"""
-Top-level argparse construction for the hermes CLI.
+"""
+Top-level argparse construction for the lucifex CLI.
 
 Lives in its own module so other modules (e.g. ``relaunch.py``) can
 introspect the parser to discover which flags exist without running the
@@ -126,7 +126,7 @@ def build_top_level_parser():
     # --model / --provider are accepted at the top level so they can pair
     # with -z without needing the `chat` subcommand.  If neither -z nor a
     # subcommand consumes them, they fall through harmlessly as None.
-    # Mirrors `hermes chat --model ... --provider ...` semantics.
+    # Mirrors `lucifex chat --model ... --provider ...` semantics.
     _inherited_flag(
         parser,
         "-m",
@@ -144,7 +144,7 @@ def build_top_level_parser():
         help=(
             "Provider override for this invocation (e.g. openrouter, anthropic). "
             "Applies to -z/--oneshot and --tui. The persistent provider lives in config.yaml "
-            "under model.provider — use `hermes setup` or edit the file to change it."
+            "under model.provider — use `lucifex setup` or edit the file to change it."
         ),
     )
     parser.add_argument(
@@ -269,7 +269,7 @@ def build_top_level_parser():
     chat_parser = subparsers.add_parser(
         "chat",
         help="Interactive chat with the agent",
-        description="Start an interactive chat session with Hermes Agent",
+        description="Start an interactive chat session with Lucifex Agent",
     )
     chat_parser.add_argument(
         "-q", "--query", help="Single query (non-interactive mode)"
@@ -278,7 +278,7 @@ def build_top_level_parser():
         "--image", help="Optional local image path to attach to a single query"
     )
     # `default=argparse.SUPPRESS` on flags that are ALSO declared on the
-    # top-level parser: when the user writes `hermes -m foo chat`, argparse
+    # top-level parser: when the user writes `lucifex -m foo chat`, argparse
     # first sets `args.model = "foo"` from the top-level parser, then
     # dispatches to the chat subparser. Without SUPPRESS the chat subparser's
     # own default (`None`) would silently clobber the top-level value because
@@ -417,7 +417,7 @@ def build_top_level_parser():
         "--safe-mode",
         action="store_true",
         default=argparse.SUPPRESS,
-        help="Troubleshooting mode: disable ALL customizations — user config, AGENTS.md/memory injection, plugins, and MCP servers (implies --ignore-user-config and --ignore-rules). Use to isolate whether a problem comes from your setup or from Hermes itself.",
+        help="Troubleshooting mode: disable ALL customizations — user config, AGENTS.md/memory injection, plugins, and MCP servers (implies --ignore-user-config and --ignore-rules). Use to isolate whether a problem comes from your setup or from Lucifex itself.",
     )
     chat_parser.add_argument(
         "--source",

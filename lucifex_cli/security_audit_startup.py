@@ -1,4 +1,4 @@
-﻿"""Startup security posture audit (warn-on-load, never blocks).
+"""Startup security posture audit (warn-on-load, never blocks).
 
 Surfaces dangerous host / deployment posture at process start so operators
 get an at-a-glance "you're exposed" signal. Motivated by the June 2026
@@ -28,7 +28,7 @@ import re
 from pathlib import Path
 from typing import Any, Optional
 
-logger = logging.getLogger("hermes.security_audit")
+logger = logging.getLogger("lucifex.security_audit")
 
 # Sentinel so the audit only runs once per process even if both the CLI and
 # gateway startup paths call it.
@@ -52,7 +52,7 @@ def _running_as_root() -> Optional[str]:
     return (
         "Running as ROOT. The agent's terminal/file tools execute with full "
         "root privileges — a single prompt-injection or exposed endpoint is a "
-        "full host compromise. Run Hermes as an unprivileged user (or in a "
+        "full host compromise. Run Lucifex as an unprivileged user (or in a "
         "sandboxed terminal backend / container with a non-root user)."
     )
 
@@ -169,7 +169,7 @@ def _container_no_volume_mount(LUCIFEX_HOME: Optional[Path]) -> Optional[str]:
     if not _in_container():
         return None
     home = LUCIFEX_HOME or Path(
-        os.environ.get("LUCIFEX_HOME", os.path.expanduser("~/.hermes"))
+        os.environ.get("LUCIFEX_HOME", os.path.expanduser("~/.lucifex"))
     )
     try:
         if _path_is_mounted(home):

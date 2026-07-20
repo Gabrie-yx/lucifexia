@@ -1,4 +1,4 @@
-﻿"""Helpers for loading Hermes .env files consistently across entrypoints."""
+"""Helpers for loading Lucifex .env files consistently across entrypoints."""
 
 from __future__ import annotations
 
@@ -31,7 +31,7 @@ _WARNED_UTF32_PATHS: set[str] = set()
 
 # Map of env-var name → source label ("bitwarden", etc.) for credentials
 # that were injected by an external secret source during load_lucifex_dotenv().
-# Used by setup / `hermes model` flows to label detected credentials so
+# Used by setup / `lucifex model` flows to label detected credentials so
 # users understand WHERE a key came from when their .env doesn't contain it
 # directly (otherwise the "credentials detected ✓" line looks identical to
 # the .env case and they don't know Bitwarden is wired up).
@@ -153,7 +153,7 @@ def _sanitize_loaded_credentials() -> None:
             "rich-text editor, or web page that substituted lookalike\n"
             "  Unicode glyphs for ASCII letters. If authentication fails "
             "(e.g. \"API key not valid\"), re-copy the key from the\n"
-            "  provider's dashboard and run `hermes setup` (or edit the "
+            "  provider's dashboard and run `lucifex setup` (or edit the "
             ".env file in a plain-text editor).",
             file=sys.stderr,
         )
@@ -191,7 +191,7 @@ def _sanitize_env_file_if_needed(path: Path) -> None:
     UTF-32-LE's BOM starts with UTF-16-LE's FF FE.
 
     We delegate to ``lucifex_cli.config._sanitize_env_lines`` which
-    already knows all valid Hermes env-var names and can split
+    already knows all valid Lucifex env-var names and can split
     concatenated lines correctly.
     """
     if not path.exists():
@@ -290,7 +290,7 @@ def load_lucifex_dotenv(
     LUCIFEX_HOME: str | os.PathLike | None = None,
     project_env: str | os.PathLike | None = None,
 ) -> list[Path]:
-    """Load Hermes environment files with user config taking precedence.
+    """Load Lucifex environment files with user config taking precedence.
 
     Behavior:
     - `~/.lucifex/.env` overrides stale shell-exported values when present.
@@ -300,7 +300,7 @@ def load_lucifex_dotenv(
     """
     loaded: list[Path] = []
 
-    home_path = Path(LUCIFEX_HOME or os.getenv("LUCIFEX_HOME", Path.home() / ".hermes"))
+    home_path = Path(LUCIFEX_HOME or os.getenv("LUCIFEX_HOME", Path.home() / ".lucifex"))
     user_env = home_path / ".env"
     project_env_path = Path(project_env) if project_env else None
 
@@ -321,7 +321,7 @@ def load_lucifex_dotenv(
     # .op.env is gitignored — the service-account token never enters the
     # committed .env file.
     # Users on systemd can alternatively use:
-    #   EnvironmentFile=-/path/to/.hermes/.op.env
+    #   EnvironmentFile=-/path/to/.lucifex/.op.env
     # in their gateway unit, which takes precedence (override=False below
     # ensures .op.env never clobbers a token already in the environment).
     op_env = home_path / ".op.env"
@@ -374,7 +374,7 @@ def _apply_external_secret_sources(home_path: Path) -> None:
     """Pull secrets from every enabled external source into env.
 
     Runs AFTER dotenv loads so .env values are visible (sources use them
-    to locate bootstrap tokens) but BEFORE the rest of Hermes reads
+    to locate bootstrap tokens) but BEFORE the rest of Lucifex reads
     ``os.environ`` for credentials.  Any failure here is logged and
     swallowed — external secret sources must never block startup.
 
@@ -420,7 +420,7 @@ def _apply_external_secret_sources(home_path: Path) -> None:
         # user-supplied and might have the same copy-paste corruption as
         # a manually edited .env (see #6843).
         _sanitize_loaded_credentials()
-        # Remember where each var came from so setup / `hermes model`
+        # Remember where each var came from so setup / `lucifex model`
         # flows can label detected credentials with "(from Bitwarden)" /
         # "(from 1Password)" — otherwise users see "credentials ✓" with
         # no hint the value came from a vault rather than .env.

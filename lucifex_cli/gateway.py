@@ -1,7 +1,7 @@
-﻿"""
-Gateway subcommand for hermes CLI.
+"""
+Gateway subcommand for lucifex CLI.
 
-Handles: hermes gateway [run|start|stop|restart|status|install|uninstall|setup]
+Handles: lucifex gateway [run|start|stop|restart|status|install|uninstall|setup]
 """
 
 import asyncio
@@ -50,7 +50,7 @@ from lucifex_cli.config import (
 )
 
 # display_lucifex_home is imported lazily at call sites to avoid ImportError
-# when lucifex_constants is cached from a pre-update version during `hermes update`.
+# when lucifex_constants is cached from a pre-update version during `lucifex update`.
 from lucifex_cli.setup import (
     print_header,
     print_info,
@@ -181,7 +181,7 @@ def _get_parent_pid(pid: int) -> int | None:
     older implementation shelled out to ``ps -o ppid= -p <pid>``, which
     silently fails on Windows (no ``ps``) so the ancestor walk terminated
     at self — the caller's dedup / exclude logic then couldn't distinguish
-    "hermes CLI that invoked this scan" from "real gateway process".
+    "lucifex CLI that invoked this scan" from "real gateway process".
     """
     if pid <= 1:
         return None
@@ -308,7 +308,7 @@ def _get_ancestor_pids() -> set[int]:
 
     Walks from the current PID up to PID 1 (init) so that process-table scans
     never match the calling CLI process or any of its parents.  This prevents
-    ``hermes gateway status`` from falsely counting the ``hermes`` CLI that
+    ``lucifex gateway status`` from falsely counting the ``lucifex`` CLI that
     invoked it as a running gateway instance (see #13242).
     """
     ancestors: set[int] = set()
@@ -345,7 +345,7 @@ def _scan_gateway_pids(
     discover gateways outside the current profile.
     """
     # Exclude the entire ancestor chain so the CLI process that invoked this
-    # scan (e.g. ``hermes gateway status``) is never mistaken for a running
+    # scan (e.g. ``lucifex gateway status``) is never mistaken for a running
     # gateway.  See #13242.
     exclude_pids = exclude_pids | _get_ancestor_pids()
     pids: list[int] = []
@@ -596,10 +596,10 @@ def find_gateway_pids(
         exclude_pids: PIDs to exclude from the result (e.g. service-managed
             PIDs that should not be killed during a stale-process sweep).
         all_profiles: When ``True``, return gateway PIDs across **all**
-            profiles (the pre-7923 global behaviour).  ``hermes update``
+            profiles (the pre-7923 global behaviour).  ``lucifex update``
             needs this because a code update affects every profile.
             When ``False`` (default), only PIDs belonging to the current
-            Hermes profile are returned.
+            Lucifex profile are returned.
     """
     _exclude = set(exclude_pids or set())
     pids: list[int] = []
@@ -628,7 +628,7 @@ def find_gateway_pids(
 def find_profile_gateway_processes(
     exclude_pids: set | None = None,
 ) -> list[ProfileGatewayProcess]:
-    """Return running gateway PIDs mapped to Hermes profiles via PID files."""
+    """Return running gateway PIDs mapped to Lucifex profiles via PID files."""
     _exclude = set(exclude_pids or set())
     processes: list[ProfileGatewayProcess] = []
     try:
@@ -700,10 +700,10 @@ def _capture_gateway_argv(pid: int) -> list[str] | None:
 
 
 def _prepare_profile_gateway_update_restart(profile: str, pid: int) -> str | None:
-    """Choose who relaunches a profile gateway after ``hermes update``.
+    """Choose who relaunches a profile gateway after ``lucifex update``.
 
     A gateway started with ``--external-supervisor`` must exit back to that
-    manager. Starting Hermes's detached watcher as well would escape the
+    manager. Starting Lucifex's detached watcher as well would escape the
     manager and race its replacement process. Ordinary foreground gateways
     retain the existing detached-watcher behavior.
     """
@@ -753,8 +753,8 @@ def _spawn_gateway_restart_watcher(old_pid: int, run_argv: list[str]) -> bool:
     #
     # Windows — ``start_new_session`` is silently accepted but does NOT
     # detach.  The watcher stays attached to the CLI's console and dies
-    # when the user closes the terminal, leaving ``hermes update`` users
-    # with no running gateway until they re-invoke ``hermes gateway``
+    # when the user closes the terminal, leaving ``lucifex update`` users
+    # with no running gateway until they re-invoke ``lucifex gateway``
     # manually.  The Win32 equivalent is the ``CREATE_NEW_PROCESS_GROUP |
     # DETACHED_PROCESS | CREATE_NO_WINDOW`` creationflags bundle.
     #
@@ -988,7 +988,7 @@ def _sync_LUCIFEX_HOME_from_systemd_unit(system: bool) -> None:
     """When acting on a system-scope unit, adopt its ``LUCIFEX_HOME``.
 
     Under ``sudo``, ``LUCIFEX_HOME`` is stripped and ``HOME=/root``, so
-    :func:`get_lucifex_home` falls back to ``/root/.hermes`` — the wrong
+    :func:`get_lucifex_home` falls back to ``/root/.lucifex`` — the wrong
     profile. The unit file pins ``LUCIFEX_HOME`` for the actual gateway
     process, so we mirror that into our own environment to make
     ``read_runtime_status`` / ``get_running_pid`` read the correct files.
@@ -1145,7 +1145,7 @@ def _wait_for_systemd_service_restart(
 
     print(
         f"⚠ {scope_label} service did not become active within {int(timeout)}s.\n"
-        f"  Check status: {'sudo ' if system else ''}hermes gateway status\n"
+        f"  Check status: {'sudo ' if system else ''}lucifex gateway status\n"
         f"  Check logs:   journalctl {'--user ' if not system else ''}-u {svc} -l --since '2 min ago'"
     )
     return False
@@ -1187,7 +1187,7 @@ def _print_systemd_start_limit_wait(system: bool = False) -> None:
     print(f"⏳ {scope_label} service is temporarily rate-limited by systemd.")
     print("  systemd is refusing another immediate start after repeated exits.")
     print(
-        f"  Wait for the start-limit window to expire, then run: {'sudo ' if system else ''}hermes gateway restart{scope_flag}"
+        f"  Wait for the start-limit window to expire, then run: {'sudo ' if system else ''}lucifex gateway restart{scope_flag}"
     )
     print(f"  Or clear the failed state manually: {systemctl_prefix}reset-failed {svc}")
     print(f"  Check logs: {journal_prefix}-u {svc} -l --since '5 min ago'")
@@ -1404,14 +1404,14 @@ def _print_gateway_process_mismatch(snapshot: GatewayRuntimeSnapshot) -> None:
             "⚠ Gateway process is running for this profile, but the service is not active"
         )
         print(f"  PID(s): {_format_gateway_pids(snapshot.gateway_pids, limit=None)}")
-        print("  This is usually a manual foreground/tmux/nohup run, so `hermes gateway`")
+        print("  This is usually a manual foreground/tmux/nohup run, so `lucifex gateway`")
         print("  can refuse to start another copy until this process stops.")
 
 
 def _print_other_profiles_gateway_status() -> None:
     """Print a summary of gateway status across all profiles.
 
-    Shown at the bottom of ``hermes gateway status`` output so users with
+    Shown at the bottom of ``lucifex gateway status`` output so users with
     multiple profiles can tell at a glance which gateways are running and
     avoid confusing another profile's process with the current one.
     """
@@ -1659,7 +1659,7 @@ def _systemd_operational(system: bool = False) -> bool:
 def _container_systemd_operational() -> bool:
     """Return True when a container exposes working user or system systemd.
 
-    This is NOT our Hermes Docker image — that one runs s6-overlay as
+    This is NOT our Lucifex Docker image — that one runs s6-overlay as
     PID 1 (since Phase 2 of the s6-overlay supervision plan) and is
     detected via ``service_manager.detect_service_manager() == "s6"``.
     This function handles the "container managed by something else"
@@ -1721,7 +1721,7 @@ def _windows_gateway_should_absorb_console_controls() -> bool:
 # =============================================================================
 
 _SERVICE_BASE = "lucifex-gateway"
-SERVICE_DESCRIPTION = "Hermes Agent Gateway - Messaging Platform Integration"
+SERVICE_DESCRIPTION = "Lucifex Agent Gateway - Messaging Platform Integration"
 
 
 def _profile_suffix() -> str:
@@ -1762,7 +1762,7 @@ def _profile_arg(LUCIFEX_HOME: str | None = None, default_root: str | Path | Non
         LUCIFEX_HOME: Optional explicit LUCIFEX_HOME path. Defaults to the current
             ``get_lucifex_home()`` value. Should be passed when generating a
             service definition for a different user (e.g. system service).
-        default_root: Optional Hermes root to compare against. Used when
+        default_root: Optional Lucifex root to compare against. Used when
             generating a system service for another user from a sudo/root
             process, where ``Path.home()`` and ``get_default_lucifex_root()``
             refer to root but the target profile lives under the service user.
@@ -1787,7 +1787,7 @@ def _profile_arg(LUCIFEX_HOME: str | None = None, default_root: str | Path | Non
 
 def _profile_arg_for_target_user(LUCIFEX_HOME: str, target_home_dir: str) -> str:
     """Return the profile arg for a system service running as another user."""
-    target_root = Path(target_home_dir) / ".hermes"
+    target_root = Path(target_home_dir) / ".lucifex"
     try:
         Path(LUCIFEX_HOME).resolve().relative_to(target_root.resolve())
         return _profile_arg(LUCIFEX_HOME, default_root=target_root)
@@ -1798,7 +1798,7 @@ def _profile_arg_for_target_user(LUCIFEX_HOME: str, target_home_dir: str) -> str
 def get_service_name() -> str:
     """Derive a systemd service name scoped to this LUCIFEX_HOME.
 
-    Default ``~/.hermes`` returns ``lucifex-gateway`` (backward compatible).
+    Default ``~/.lucifex`` returns ``lucifex-gateway`` (backward compatible).
     Profile ``~/.lucifex/profiles/coder`` returns ``lucifex-gateway-coder``.
     Any other LUCIFEX_HOME appends a short hash for uniqueness.
     """
@@ -2062,11 +2062,11 @@ def has_conflicting_systemd_units() -> bool:
     return len(get_installed_systemd_scopes()) > 1
 
 
-# Legacy service names from older Hermes installs that predate the
+# Legacy service names from older Lucifex installs that predate the
 # lucifex-gateway rename. Kept as an explicit allowlist (NOT a glob) so
 # profile units (lucifex-gateway-*.service) and unrelated third-party
-# "hermes" units are never matched.
-_LEGACY_SERVICE_NAMES: tuple[str, ...] = ("hermes.service",)
+# "lucifex" units are never matched.
+_LEGACY_SERVICE_NAMES: tuple[str, ...] = ("lucifex.service",)
 
 # ExecStart content markers that identify a unit as running our gateway.
 # A legacy unit is only flagged when its file contains one of these.
@@ -2074,8 +2074,8 @@ _LEGACY_UNIT_EXECSTART_MARKERS: tuple[str, ...] = (
     "lucifex_cli.main gateway",
     "lucifex_cli/main.py gateway",
     "gateway/run.py",
-    " hermes gateway ",
-    "/hermes gateway ",
+    " lucifex gateway ",
+    "/lucifex gateway ",
 )
 
 
@@ -2092,10 +2092,10 @@ def _legacy_unit_search_paths() -> list[tuple[bool, Path]]:
 
 
 def _find_legacy_hermes_units() -> list[tuple[str, Path, bool]]:
-    """Return ``[(unit_name, unit_path, is_system)]`` for legacy Hermes gateway units.
+    """Return ``[(unit_name, unit_path, is_system)]`` for legacy Lucifex gateway units.
 
-    Detects unit files installed by older Hermes versions that used a
-    different service name (e.g. ``hermes.service`` before the rename to
+    Detects unit files installed by older Lucifex versions that used a
+    different service name (e.g. ``lucifex.service`` before the rename to
     ``lucifex-gateway.service``). When both a legacy unit and the current
     ``lucifex-gateway.service`` are active, they fight over the same bot
     token — the PR #5646 signal-recovery change turns this into a 30-second
@@ -2105,9 +2105,9 @@ def _find_legacy_hermes_units() -> list[tuple[str, Path, bool]]:
 
     * Explicit allowlist of legacy names (no globbing). Profile units such
       as ``lucifex-gateway-coder.service`` and unrelated third-party
-      ``hermes-*`` services are never matched.
+      ``lucifex-*`` services are never matched.
     * ExecStart content check — only flag units that invoke our gateway
-      entrypoint. A user-created ``hermes.service`` running an unrelated
+      entrypoint. A user-created ``lucifex.service`` running an unrelated
       binary is left untouched.
     * Results are returned purely for caller inspection; this function
       never mutates or removes anything.
@@ -2130,12 +2130,12 @@ def _find_legacy_hermes_units() -> list[tuple[str, Path, bool]]:
 
 
 def has_legacy_hermes_units() -> bool:
-    """Return True when any legacy Hermes gateway unit files exist."""
+    """Return True when any legacy Lucifex gateway unit files exist."""
     return bool(_find_legacy_hermes_units())
 
 
 def print_legacy_unit_warning() -> None:
-    """Warn about legacy Hermes gateway unit files if any are installed.
+    """Warn about legacy Lucifex gateway unit files if any are installed.
 
     Idempotent: prints nothing when no legacy units are detected. Safe to
     call from any status/install/setup path.
@@ -2143,21 +2143,21 @@ def print_legacy_unit_warning() -> None:
     legacy = _find_legacy_hermes_units()
     if not legacy:
         return
-    print_warning("Legacy Hermes gateway unit(s) detected from an older install:")
+    print_warning("Legacy Lucifex gateway unit(s) detected from an older install:")
     for name, path, is_system in legacy:
         scope = "system" if is_system else "user"
         print_info(f"    {path}  ({scope} scope)")
     print_info("  These run alongside the current lucifex-gateway service and")
     print_info("  cause SIGTERM flap loops — both try to use the same bot token.")
     print_info("  Remove them with:")
-    print_info("    hermes gateway migrate-legacy")
+    print_info("    lucifex gateway migrate-legacy")
 
 
 def remove_legacy_hermes_units(
     interactive: bool = True,
     dry_run: bool = False,
 ) -> tuple[int, list[Path]]:
-    """Stop, disable, and remove legacy Hermes gateway unit files.
+    """Stop, disable, and remove legacy Lucifex gateway unit files.
 
     Iterates over whatever ``_find_legacy_hermes_units()`` returns — which is
     an explicit allowlist of legacy names (not a glob). Profile units and
@@ -2175,14 +2175,14 @@ def remove_legacy_hermes_units(
     """
     legacy = _find_legacy_hermes_units()
     if not legacy:
-        print("No legacy Hermes gateway units found.")
+        print("No legacy Lucifex gateway units found.")
         return 0, []
 
     user_units = [(n, p) for n, p, is_sys in legacy if not is_sys]
     system_units = [(n, p) for n, p, is_sys in legacy if is_sys]
 
     print()
-    print("Legacy Hermes gateway unit(s) found:")
+    print("Legacy Lucifex gateway unit(s) found:")
     for name, path, is_system in legacy:
         scope = "system" if is_system else "user"
         print(f"  {path}  ({scope} scope)")
@@ -2193,7 +2193,7 @@ def remove_legacy_hermes_units(
         return 0, [p for _, p, _ in legacy]
 
     if interactive and not prompt_yes_no("Remove these legacy units?", True):
-        print("Skipped. Run again with: hermes gateway migrate-legacy")
+        print("Skipped. Run again with: lucifex gateway migrate-legacy")
         return 0, [p for _, p, _ in legacy]
 
     removed = 0
@@ -2222,7 +2222,7 @@ def remove_legacy_hermes_units(
         if os.geteuid() != 0:  # windows-footgun: ok — Linux systemd removal path, guarded by `if system == "Linux"` / systemd-only branch
             print()
             print_warning("System-scope legacy units require root to remove.")
-            print_info("  Re-run with: sudo hermes gateway migrate-legacy")
+            print_info("  Re-run with: sudo lucifex gateway migrate-legacy")
             for _, path in system_units:
                 remaining.append(path)
         else:
@@ -2269,8 +2269,8 @@ def print_systemd_scope_conflict_warning() -> None:
         "  Default gateway commands target the user service unless you pass --system."
     )
     print_info("  Keep one of these:")
-    print_info("    hermes gateway uninstall")
-    print_info("    sudo hermes gateway uninstall --system")
+    print_info("    lucifex gateway uninstall")
+    print_info("    sudo lucifex gateway uninstall --system")
 
 
 def _require_root_for_system_service(action: str) -> None:
@@ -2382,7 +2382,7 @@ def install_linux_gateway_from_setup(force: bool = False, enable_on_startup: boo
             # direct caller — we do NOT print a self-elevation recipe.
             print_warning(
                 "  System service install requires root. Re-run setup from a "
-                "root shell, or install a user service instead: hermes gateway install"
+                "root shell, or install a user service instead: lucifex gateway install"
             )
             return scope, False
 
@@ -2470,7 +2470,7 @@ def print_systemd_linger_guidance() -> None:
 def _launchd_user_home() -> Path:
     """Return the real macOS user home for launchd artifacts.
 
-    Profile-mode Hermes often sets ``HOME`` to a profile-scoped directory, but
+    Profile-mode Lucifex often sets ``HOME`` to a profile-scoped directory, but
     launchd user agents still live under the actual account home.
     """
     import pwd
@@ -2481,11 +2481,11 @@ def _launchd_user_home() -> Path:
 def get_launchd_plist_path() -> Path:
     """Return the launchd plist path, scoped per profile.
 
-    Default ``~/.hermes`` → ``ai.hermes.gateway.plist`` (backward compatible).
-    Profile ``~/.lucifex/profiles/coder`` → ``ai.hermes.gateway-coder.plist``.
+    Default ``~/.lucifex`` → ``ai.lucifex.gateway.plist`` (backward compatible).
+    Profile ``~/.lucifex/profiles/coder`` → ``ai.lucifex.gateway-coder.plist``.
     """
     suffix = _profile_suffix()
-    name = f"ai.hermes.gateway-{suffix}" if suffix else "ai.hermes.gateway"
+    name = f"ai.lucifex.gateway-{suffix}" if suffix else "ai.lucifex.gateway"
     return _launchd_user_home() / "Library" / "LaunchAgents" / f"{name}.plist"
 
 
@@ -2596,8 +2596,8 @@ def _remap_path_for_user(path: str, target_home_dir: str) -> str:
     If *path* lives under ``Path.home()`` the corresponding prefix is swapped
     to *target_home_dir*; otherwise the path is returned unchanged.
 
-      /root/.hermes/lucifex-agent  -> /home/alice/.hermes/lucifex-agent
-      /opt/hermes                 -> /opt/hermes  (kept as-is)
+      /root/.lucifex/lucifex-agent  -> /home/alice/.lucifex/lucifex-agent
+      /opt/lucifex                 -> /opt/lucifex  (kept as-is)
 
     Note: this function intentionally does NOT resolve symlinks. A venv's
     ``bin/python`` is typically a symlink to the base interpreter (e.g. a
@@ -2621,9 +2621,9 @@ def _LUCIFEX_HOME_for_target_user(target_home_dir: str) -> str:
 
     When installing a system service via sudo, get_lucifex_home() resolves to
     root's home.  This translates it to the target user's equivalent path:
-      /root/.hermes                    → /home/alice/.hermes
-      /root/.hermes/profiles/coder     → /home/alice/.hermes/profiles/coder
-      /opt/custom-hermes               → /opt/custom-hermes  (kept as-is)
+      /root/.lucifex                    → /home/alice/.lucifex
+      /root/.lucifex/profiles/coder     → /home/alice/.lucifex/profiles/coder
+      /opt/custom-lucifex               → /opt/custom-lucifex  (kept as-is)
     """
     current_hermes_raw = os.environ.get("LUCIFEX_HOME", "").strip()
     current_hermes = (
@@ -2634,19 +2634,19 @@ def _LUCIFEX_HOME_for_target_user(target_home_dir: str) -> str:
     # Keep explicit custom paths lexical. Resolving a non-existent custom path
     # can rewrite it through host-specific path mappings, which would bake a
     # different LUCIFEX_HOME into the generated service unit.
-    current_default = Path.home() / ".hermes"
-    target_default = Path(target_home_dir) / ".hermes"
+    current_default = Path.home() / ".lucifex"
+    target_default = Path(target_home_dir) / ".lucifex"
 
-    # Default ~/.hermes → remap to target user's default
+    # Default ~/.lucifex → remap to target user's default
     if current_hermes == current_default:
         return str(target_default)
 
-    # Profile or subdir of ~/.hermes → preserve the relative structure
+    # Profile or subdir of ~/.lucifex → preserve the relative structure
     try:
         relative = current_hermes.relative_to(current_default)
         return str(target_default / relative)
     except ValueError:
-        # Completely custom path (not under ~/.hermes) — keep as-is
+        # Completely custom path (not under ~/.lucifex) — keep as-is
         return str(current_hermes)
 
 
@@ -2692,7 +2692,7 @@ def _stable_service_working_dir() -> str:
     resolution does not depend on cwd. Pinning ``WorkingDirectory`` to
     ``PROJECT_ROOT`` (``Path(__file__).parent.parent``) is actively harmful:
     when the unit is generated from a transient checkout — a ``.worktrees/``
-    dir, or a clone that ``hermes update`` later relocates/removes — the path
+    dir, or a clone that ``lucifex update`` later relocates/removes — the path
     rots. systemd then fails the start at the CHDIR step (``status=200/CHDIR``,
     "Changing to the requested working directory failed") *before* Python
     loads, so the on-boot ``refresh_systemd_unit_if_needed()`` self-heal never
@@ -2935,8 +2935,8 @@ def systemd_unit_is_current(system: bool = False) -> bool:
     # pinned LUCIFEX_HOME is adopted before any compare/regenerate" at a single
     # site, so a future callsite cannot regress it by forgetting to pre-sync.
     #
-    # Under ``sudo hermes gateway … --system``, LUCIFEX_HOME is often stripped
-    # and falls back to ``/root/.hermes``. Adopting the unit's pinned home
+    # Under ``sudo lucifex gateway … --system``, LUCIFEX_HOME is often stripped
+    # and falls back to ``/root/.lucifex``. Adopting the unit's pinned home
     # first makes TimeoutStopSec / WorkingDirectory / LUCIFEX_HOME comparisons
     # use the real operator config — otherwise start/restart "refresh" rewrites
     # a correct unit from root's defaults and ``status`` keeps warning forever.
@@ -2974,8 +2974,8 @@ def _temp_home_in_service_definition(definition: str) -> str | None:
     service file silently breaks the user's gateway on the next (re)start:
     the gateway comes back "active (running)" but pointed at an empty temp
     home ("No messaging platforms enabled"), deaf to every platform.
-    Seen live 2026-06-11: an E2E guard probe ran ``hermes gateway restart``
-    with ``LUCIFEX_HOME=/tmp/hermes-e2e-<pr>`` exported; the restart path's
+    Seen live 2026-06-11: an E2E guard probe ran ``lucifex gateway restart``
+    with ``LUCIFEX_HOME=/tmp/lucifex-e2e-<pr>`` exported; the restart path's
     unit refresh baked the temp path into the production unit and the
     post-update restart produced a zombie gateway for 7+ hours.
 
@@ -3061,7 +3061,7 @@ def refresh_systemd_unit_if_needed(system: bool = False) -> bool:
         return False
 
     # Structural variant of the same belt: refuse to bake ANY temp-dir
-    # LUCIFEX_HOME into the unit (manual E2E homes like /tmp/hermes-e2e-NNN
+    # LUCIFEX_HOME into the unit (manual E2E homes like /tmp/lucifex-e2e-NNN
     # don't carry the pytest markers above but poison the unit identically).
     if _refuse_temp_home_service_write(new_unit, "systemd unit"):
         return False
@@ -3069,7 +3069,7 @@ def refresh_systemd_unit_if_needed(system: bool = False) -> bool:
     unit_path.write_text(new_unit, encoding="utf-8")
     _run_systemctl(["daemon-reload"], system=system, check=True, timeout=30)
     print(
-        f"↻ Updated gateway {_service_scope_label(system)} service definition to match the current Hermes install"
+        f"↻ Updated gateway {_service_scope_label(system)} service definition to match the current Lucifex install"
     )
     return True
 
@@ -3175,8 +3175,8 @@ def _print_system_scope_remediation(action: str) -> None:
     else:
         print_info(f"         sudo systemctl {action} {svc}")
     print_info("    2. Switch to a per-user service (recommended for personal use):")
-    print_info("         sudo hermes gateway uninstall --system")
-    print_info("         hermes gateway install")
+    print_info("         sudo lucifex gateway uninstall --system")
+    print_info("         lucifex gateway install")
     print_info("         lucifex gateway start")
 
 
@@ -3204,7 +3204,7 @@ def systemd_install(
     if system:
         _require_root_for_system_service("install")
 
-    # Offer to remove legacy units (hermes.service from pre-rename installs)
+    # Offer to remove legacy units (lucifex.service from pre-rename installs)
     # before installing the new lucifex-gateway.service. If both remain, they
     # flap-fight for the Telegram bot token on every gateway startup.
     # Only removes units matching _LEGACY_SERVICE_NAMES + our ExecStart
@@ -3224,7 +3224,7 @@ def systemd_install(
     # regenerate. This pre-sync is NOT redundant with the systemd_unit_is_current
     # chokepoint: the ``--force`` path below skips the is_current gate and calls
     # generate_systemd_unit() directly (line ~3172), so without this a
-    # ``sudo hermes gateway install --system --force`` would bake /root/.hermes
+    # ``sudo lucifex gateway install --system --force`` would bake /root/.lucifex
     # into an already-correct unit. Keep it to protect that bypass path.
     if unit_path.exists():
         _sync_LUCIFEX_HOME_from_systemd_unit(system=system)
@@ -3263,7 +3263,7 @@ def systemd_install(
         f"  {'sudo ' if system else ''}lucifex gateway start{scope_flag}              # Start the service"
     )
     print(
-        f"  {'sudo ' if system else ''}hermes gateway status{scope_flag}             # Check status"
+        f"  {'sudo ' if system else ''}lucifex gateway status{scope_flag}             # Check status"
     )
     print(
         f"  {'journalctl' if system else 'journalctl --user'} -u {get_service_name()} -f  # View logs"
@@ -3305,7 +3305,7 @@ def _require_service_installed(action: str, system: bool = False) -> None:
     if not unit_path.exists():
         scope_flag = " --system" if system else ""
         print("✗ Gateway service is not installed")
-        print(f"  Run: {'sudo ' if system else ''}hermes gateway install{scope_flag}")
+        print(f"  Run: {'sudo ' if system else ''}lucifex gateway install{scope_flag}")
         sys.exit(1)
 
 
@@ -3349,7 +3349,7 @@ def systemd_stop(system: bool = False):
         label = _service_scope_label(system)
         print(
             f"Gateway {label} service is still stopping after 90s; "
-            "check `hermes gateway status` or logs for final shutdown state."
+            "check `lucifex gateway status` or logs for final shutdown state."
         )
         return
     print(f"✓ {_service_scope_label(system).capitalize()} service stopped")
@@ -3422,7 +3422,7 @@ def systemd_restart(system: bool = False):
             label = _service_scope_label(system)
             print(
                 f"Gateway {label} service is still restarting after 90s; "
-                "check `hermes gateway status` or logs for final state."
+                "check `lucifex gateway status` or logs for final state."
             )
             return
         _wait_for_systemd_service_restart(system=system, previous_pid=pid)
@@ -3452,7 +3452,7 @@ def systemd_restart(system: bool = False):
         label = _service_scope_label(system)
         print(
             f"Gateway {label} service is still restarting after 90s; "
-            "check `hermes gateway status` or logs for final state."
+            "check `lucifex gateway status` or logs for final state."
         )
         return
     _wait_for_systemd_service_restart(system=system, previous_pid=pid)
@@ -3465,7 +3465,7 @@ def systemd_status(deep: bool = False, system: bool = False, full: bool = False)
 
     if not unit_path.exists():
         print("✗ Gateway service is not installed")
-        print(f"  Run: {'sudo ' if system else ''}hermes gateway install{scope_flag}")
+        print(f"  Run: {'sudo ' if system else ''}lucifex gateway install{scope_flag}")
         return
 
     if has_conflicting_systemd_units():
@@ -3479,7 +3479,7 @@ def systemd_status(deep: bool = False, system: bool = False, full: bool = False)
     if not systemd_unit_is_current(system=system):
         print("⚠ Installed gateway service definition is outdated")
         print(
-            f"  Run: {'sudo ' if system else ''}hermes gateway restart{scope_flag}  # auto-refreshes the unit"
+            f"  Run: {'sudo ' if system else ''}lucifex gateway restart{scope_flag}  # auto-refreshes the unit"
         )
         print()
 
@@ -3535,7 +3535,7 @@ def systemd_status(deep: bool = False, system: bool = False, full: bool = False)
     elif _systemd_unit_is_start_limited(unit_props):
         print("  ⏳ Restart pending: systemd is temporarily rate-limiting starts")
         print(
-            f"  Run after the start-limit window expires: {'sudo ' if system else ''}hermes gateway restart{scope_flag}"
+            f"  Run after the start-limit window expires: {'sudo ' if system else ''}lucifex gateway restart{scope_flag}"
         )
         print(
             f"  Or clear it manually: systemctl {'--user ' if not system else ''}reset-failed {get_service_name()}"
@@ -3585,7 +3585,7 @@ def systemd_status(deep: bool = False, system: bool = False, full: bool = False)
 def get_launchd_label() -> str:
     """Return the launchd service label, scoped per profile."""
     suffix = _profile_suffix()
-    return f"ai.hermes.gateway-{suffix}" if suffix else "ai.hermes.gateway"
+    return f"ai.lucifex.gateway-{suffix}" if suffix else "ai.lucifex.gateway"
 
 
 # Cached launchd domain result — probing is cheap but should only run once per
@@ -4117,7 +4117,7 @@ def refresh_launchd_plist_if_needed() -> bool:
         # launchd no longer knows about, so the gateway stays dark until a
         # manual `launchctl bootstrap`. Failures append a timestamped line
         # to ~/.lucifex/logs/launchd-reload.log, which the health watchdog
-        # can tail to detect a persistent orphan. See hermes-restart
+        # can tail to detect a persistent orphan. See lucifex-restart
         # rootcause handoff (2026-06-26 incident).
         reload_log_path = get_lucifex_home() / "logs" / "launchd-reload.log"
         try:
@@ -4195,7 +4195,7 @@ def refresh_launchd_plist_if_needed() -> bool:
             _launchd_reload_log_path(),
         )
     print(
-        "↻ Updated gateway launchd service definition to match the current Hermes install"
+        "↻ Updated gateway launchd service definition to match the current Lucifex install"
     )
     return True
 
@@ -4235,7 +4235,7 @@ def launchd_install(force: bool = False):
     _clear_launchd_unsupported_marker()
     print()
     print("Next steps:")
-    print("  hermes gateway status             # Check status")
+    print("  lucifex gateway status             # Check status")
     from lucifex_constants import display_lucifex_home as _dhh
 
     print(f"  tail -f {_dhh()}/logs/gateway.log  # View logs")
@@ -4494,14 +4494,14 @@ def launchd_status(deep: bool = False):
     # unmanageable domain).  A PID in the output confirms a live process.
     launchd_pid = _parse_launchd_pid_from_list_output(list_output) if service_listed else None
 
-    # Hermes PID tracking — may be a detached fallback process spawned when
+    # Lucifex PID tracking — may be a detached fallback process spawned when
     # launchd cannot manage the domain on this host.
     from gateway.status import get_running_pid
     fallback_pid = get_running_pid(cleanup_stale=False)
 
     # Avoid double-counting: when launchd IS supervising, fallback_pid and
     # launchd_pid point at the same process (the gateway writes both the
-    # launchd PID and the Hermes PID file).
+    # launchd PID and the Lucifex PID file).
     if launchd_pid is not None and fallback_pid == launchd_pid:
         fallback_pid = None
 
@@ -4513,9 +4513,9 @@ def launchd_status(deep: bool = False):
     # ── Report ──
     print(f"Launchd plist: {plist_path}")
     if launchd_plist_is_current():
-        print("✓ Service definition matches the current Hermes install")
+        print("✓ Service definition matches the current Lucifex install")
     else:
-        print("⚠ Service definition is stale relative to the current Hermes install")
+        print("⚠ Service definition is stale relative to the current Lucifex install")
         print("  Run: lucifex gateway start")
 
     if service_listed:
@@ -4565,7 +4565,7 @@ def _truthy_env(value: str | None) -> bool:
 
 def _is_official_docker_checkout() -> bool:
     return (
-        str(PROJECT_ROOT) == "/opt/hermes"
+        str(PROJECT_ROOT) == "/opt/lucifex"
         and (PROJECT_ROOT / "docker" / "entrypoint.sh").is_file()
     )
 
@@ -4674,7 +4674,7 @@ def _guard_named_profile_under_multiplexer(force: bool = False) -> None:
     )
     print("  Manage the multiplexer instead (from the default profile):")
     print()
-    print("    hermes gateway restart")
+    print("    lucifex gateway restart")
     print()
     print("  Pass --force to start a separate profile gateway anyway (not")
     print("  recommended while the multiplexer is running).")
@@ -4712,7 +4712,7 @@ def _guard_supervised_gateway_conflict(force: bool = False) -> None:
         "  instead:"
     )
     print()
-    print("    hermes gateway restart")
+    print("    lucifex gateway restart")
     print()
     print(
         "  Pass --force to start a foreground gateway anyway (not recommended\n"
@@ -4747,7 +4747,7 @@ def _guard_existing_gateway_process_conflict(replace: bool = False) -> None:
     print_error(
         f"Another gateway instance is already running (PID {pid})."
     )
-    print("  Use 'hermes gateway restart' to replace it,")
+    print("  Use 'lucifex gateway restart' to replace it,")
     print("  or 'lucifex gateway stop' first.")
     print("  Or use 'lucifex gateway run --replace' to auto-replace.")
     sys.exit(1)
@@ -4763,12 +4763,12 @@ def _guard_official_docker_root_gateway() -> None:
         return
 
     print_error(
-        "Refusing to run the Hermes gateway as root inside the official Docker image."
+        "Refusing to run the Lucifex gateway as root inside the official Docker image."
     )
     print(
-        "  The image entrypoint normally drops privileges to the 'hermes' user. "
+        "  The image entrypoint normally drops privileges to the 'lucifex' user. "
         "If you override entrypoint in Docker Compose, include "
-        "/opt/hermes/docker/entrypoint.sh before the Hermes command."
+        "/opt/lucifex/docker/entrypoint.sh before the Lucifex command."
     )
     print(
         "  Running the gateway as root can leave root-owned files in "
@@ -4841,7 +4841,7 @@ def run_gateway(verbose: int = 0, quiet: bool = False, replace: bool = False, fo
     # Refresh the systemd unit definition on every boot so that restart
     # settings (RestartSec, StartLimitIntervalSec, etc.) stay current even
     # when the process was respawned via exit-code-75 (stale-code or
-    # /restart) rather than through `hermes gateway restart` which already
+    # /restart) rather than through `lucifex gateway restart` which already
     # calls refresh_systemd_unit_if_needed().  Without this, a code update
     # that ships new unit settings won't take effect until the next manual
     # `lucifex gateway start/restart` — leaving the gateway vulnerable to
@@ -4855,7 +4855,7 @@ def run_gateway(verbose: int = 0, quiet: bool = False, replace: bool = False, fo
     from gateway.run import start_gateway
 
     print("┌─────────────────────────────────────────────────────────┐")
-    print("│           ⚕ Hermes Gateway Starting...                 │")
+    print("│           ⚕ Lucifex Gateway Starting...                 │")
     print("├─────────────────────────────────────────────────────────┤")
     print("│  Messaging platforms + cron scheduler                    │")
     print("│  Press Ctrl+C to stop                                   │")
@@ -5038,7 +5038,7 @@ _PLATFORMS = [
         "setup_instructions": [
             "1. In Mattermost: Integrations → Bot Accounts → Add Bot Account",
             "   (System Console → Integrations → Bot Accounts must be enabled)",
-            "2. Give it a username (e.g. hermes) and copy the bot token",
+            "2. Give it a username (e.g. lucifex) and copy the bot token",
             "3. Works with any self-hosted Mattermost instance — enter your server URL",
             "4. To find your user ID: click your avatar (top-left) → Profile",
             "   Your user ID is displayed there — click it to copy.",
@@ -5069,7 +5069,7 @@ _PLATFORMS = [
                 "name": "MATTERMOST_HOME_CHANNEL",
                 "prompt": "Home channel ID (for cron/notification delivery, or empty to set later with /set-home)",
                 "password": False,
-                "help": "Channel ID where Hermes delivers cron results and notifications.",
+                "help": "Channel ID where Lucifex delivers cron results and notifications.",
             },
             {
                 "name": "MATTERMOST_REPLY_MODE",
@@ -5108,9 +5108,9 @@ _PLATFORMS = [
             "2. Complete the BlueBubbles setup wizard — sign in with your Apple ID",
             "3. In BlueBubbles Settings → API, note the Server URL and password",
             "4. The server URL is typically http://<your-mac-ip>:1234",
-            "5. Hermes connects via the BlueBubbles REST API and receives",
+            "5. Lucifex connects via the BlueBubbles REST API and receives",
             "   incoming messages via a local webhook",
-            "6. To authorize users, use DM pairing: hermes pairing generate bluebubbles",
+            "6. To authorize users, use DM pairing: lucifex pairing generate bluebubbles",
             "   Share the code — the user sends it via iMessage to get approved",
         ],
         "vars": [
@@ -5189,7 +5189,7 @@ _PLATFORMS = [
             "1. Download the Yuanbao app from https://yuanbao.tencent.com/",
             "2. In the app, go to PAI → My Bot and create a new bot",
             "3. After the bot is created, copy the App ID and App Secret",
-            "4. Enter them below and Hermes will connect automatically over WebSocket",
+            "4. Enter them below and Lucifex will connect automatically over WebSocket",
         ],
         "vars": [
             {
@@ -5215,7 +5215,7 @@ def _all_platforms() -> list[dict]:
     Combines the built-in ``_PLATFORMS`` with plugin platforms registered via
     ``platform_registry``. Plugins are discovered on first call so bundled
     platforms (like IRC, which auto-load via ``kind: platform``) appear in
-    ``hermes setup gateway`` without needing the gateway to be running.
+    ``lucifex setup gateway`` without needing the gateway to be running.
     Built-ins keep their dict shape; plugin entries are adapted to the same
     shape with ``_registry_entry`` holding the source.
 
@@ -5225,7 +5225,7 @@ def _all_platforms() -> list[dict]:
         ``mautrix[encryption]`` -> ``python-olm``, which has no Windows
         wheel and needs ``make`` + libolm to build from sdist. There's
         no native Windows path that works, so we don't offer it in the
-        picker. Users who want Matrix on Windows can run hermes under
+        picker. Users who want Matrix on Windows can run lucifex under
         WSL.
     """
     # Populate the registry so plugin platforms are visible. Idempotent.
@@ -5516,7 +5516,7 @@ def _setup_standard_platform(platform: dict):
                 else:
                     access_choices = [
                         "Enable open access (anyone can message the bot)",
-                        "Use DM pairing (unknown users request access, you approve with 'hermes pairing approve')",
+                        "Use DM pairing (unknown users request access, you approve with 'lucifex pairing approve')",
                         "Skip for now (bot will deny all users until configured)",
                     ]
                     default_access_idx = 1
@@ -5538,13 +5538,13 @@ def _setup_standard_platform(platform: dict):
                         "  DM pairing mode — users will receive a code to request access."
                     )
                     print_info(
-                        "  Approve with: hermes pairing approve <platform> <code>"
+                        "  Approve with: lucifex pairing approve <platform> <code>"
                     )
                 elif is_email:
                     print_success("  Unknown email senders will be ignored.")
                 else:
                     print_info(
-                        "  Skipped — configure later with 'hermes gateway setup'"
+                        "  Skipped — configure later with 'lucifex gateway setup'"
                     )
             continue
 
@@ -5661,10 +5661,10 @@ def _setup_weixin():
     print()
     print(color("  ─── 💬 Weixin / WeChat Setup ───", Colors.CYAN))
     print()
-    print_info("  1. Hermes will open Tencent iLink QR login in this terminal.")
+    print_info("  1. Lucifex will open Tencent iLink QR login in this terminal.")
     print_info("  2. Use WeChat to scan and confirm the QR code.")
     print_info(
-        "  3. Hermes will store the returned account_id/token in ~/.lucifex/.env."
+        "  3. Lucifex will store the returned account_id/token in ~/.lucifex/.env."
     )
     print_info(
         "  4. This adapter supports native text, image, video, and document delivery."
@@ -5687,7 +5687,7 @@ def _setup_weixin():
 
     if not check_weixin_requirements():
         print_error("  Missing dependencies: Weixin needs aiohttp and cryptography.")
-        print_info("  Install them, then rerun `hermes gateway setup`.")
+        print_info("  Install them, then rerun `lucifex gateway setup`.")
         return
 
     print()
@@ -5741,7 +5741,7 @@ def _setup_weixin():
         save_env_value("WEIXIN_ALLOWED_USERS", "")
         print_success("  DM pairing enabled.")
         print_info(
-            "  Unknown DM users can request access and you approve them with `hermes pairing approve`."
+            "  Unknown DM users can request access and you approve them with `lucifex pairing approve`."
         )
     elif access_idx == 1:
         save_env_value("WEIXIN_DM_POLICY", "open")
@@ -5916,7 +5916,7 @@ def _setup_qqbot():
             save_env_value("QQ_ALLOWED_USERS", "")
         print_success("  DM pairing enabled.")
         print_info(
-            "  Unknown users can request access; approve with `hermes pairing approve`."
+            "  Unknown users can request access; approve with `lucifex pairing approve`."
         )
     elif access_idx == 1:
         save_env_value("QQ_ALLOW_ALL_USERS", "true")
@@ -6305,7 +6305,7 @@ def gateway_setup():
                         gateway_windows.restart()
                     else:
                         stop_profile_gateway()
-                        print_info("Start manually: hermes gateway")
+                        print_info("Start manually: lucifex gateway")
                 except UserSystemdUnavailableError as e:
                     print_error("  Restart failed — user systemd not reachable:")
                     for line in str(e).splitlines():
@@ -6389,20 +6389,20 @@ def gateway_setup():
                                 print_error(f"  Start failed: {e}")
                     except subprocess.CalledProcessError as e:
                         print_error(f"  Install failed: {e}")
-                        print_info("  You can try manually: hermes gateway install")
+                        print_info("  You can try manually: lucifex gateway install")
                 else:
                     print_info("  Skipped start and auto-start setup.")
-                    print_info("  You can install later: hermes gateway install")
+                    print_info("  You can install later: lucifex gateway install")
                     if supports_systemd_services():
                         print_info(
-                            "  Or as a boot-time service: sudo hermes gateway install --system"
+                            "  Or as a boot-time service: sudo lucifex gateway install --system"
                         )
                     print_info("  Or run in foreground:  lucifex gateway run")
             elif is_wsl():
                 print_info("  WSL detected but systemd is not running.")
                 print_info("  Run in foreground: lucifex gateway run")
                 print_info(
-                    "  For persistence:   tmux new -s hermes 'lucifex gateway run'"
+                    "  For persistence:   tmux new -s lucifex 'lucifex gateway run'"
                 )
                 print_info(
                     "  To enable systemd: add systemd=true to /etc/wsl.conf, then 'wsl --shutdown'"
@@ -6420,7 +6420,7 @@ def gateway_setup():
                 print_info("  Run in foreground: lucifex gateway run")
     else:
         print()
-        print_info("No platforms configured. Run 'hermes gateway setup' when ready.")
+        print_info("No platforms configured. Run 'lucifex gateway setup' when ready.")
 
     print()
 
@@ -6544,7 +6544,7 @@ def gateway_command(args):
             print(f"  {line}")
         sys.exit(1)
     except SystemScopeRequiresRootError as e:
-        # The direct ``hermes gateway install|uninstall|start|stop|restart``
+        # The direct ``lucifex gateway install|uninstall|start|stop|restart``
         # path lands here when the user typed a system-scope action without
         # sudo. Same exit code as before — just gives the wizard a way to
         # intercept the same condition with friendlier guidance before the
@@ -6574,7 +6574,7 @@ def _maybe_redirect_run_to_s6_supervision(args) -> bool:
          ``lucifex gateway run`` are unaffected.
       2. ``HERMES_S6_SUPERVISED_CHILD`` is exported by
          ``S6ServiceManager._render_run_script`` for the supervised
-         process itself — i.e. when s6-supervise execs ``hermes gateway
+         process itself — i.e. when s6-supervise execs ``lucifex gateway
          run --replace`` as a longrun, this guard short-circuits the
          redirect so the supervised gateway actually runs in
          foreground (otherwise we'd recurse: run → start → run → start
@@ -6619,8 +6619,8 @@ def _maybe_redirect_run_to_s6_supervision(args) -> bool:
     # `docker stop` sends SIGTERM, at which point /init runs stage 3
     # shutdown (which tears down the supervised gateway cleanly).
     #
-    # Prefer `sleep infinity` (matches the static main-hermes service's
-    # pattern in docker/s6-rc.d/main-hermes/run, and frees the Python
+    # Prefer `sleep infinity` (matches the static main-lucifex service's
+    # pattern in docker/s6-rc.d/main-lucifex/run, and frees the Python
     # interpreter — the heartbeat is a tiny `sleep` process, not a
     # resident interpreter). But `os.execvp` does a PATH lookup for the
     # `sleep` binary and historically crashed the whole container with
@@ -6698,7 +6698,7 @@ def _gateway_command_inner(args):
         run_as_user = getattr(args, "run_as_user", None)
         if is_termux():
             print("Gateway service installation is not supported on Termux.")
-            print("Run manually: hermes gateway")
+            print("Run manually: lucifex gateway")
             sys.exit(1)
         if supports_systemd_services():
             if is_wsl():
@@ -6709,7 +6709,7 @@ def _gateway_command_inner(args):
                     "  Consider running in foreground instead: lucifex gateway run"
                 )
                 print_info(
-                    "  Or use tmux/screen for persistence: tmux new -s hermes 'lucifex gateway run'"
+                    "  Or use tmux/screen for persistence: tmux new -s lucifex 'lucifex gateway run'"
                 )
                 print()
             # Honor CLI flags (--start-now / --no-start-now, --start-on-login /
@@ -6762,7 +6762,7 @@ def _gateway_command_inner(args):
                 "  lucifex gateway run                              # direct foreground"
             )
             print(
-                "  tmux new -s hermes 'lucifex gateway run'         # persistent via tmux"
+                "  tmux new -s lucifex 'lucifex gateway run'         # persistent via tmux"
             )
             print(
                 "  nohup lucifex gateway run > ~/.lucifex/logs/gateway.log 2>&1 &  # background"
@@ -6776,9 +6776,9 @@ def _gateway_command_inner(args):
             if detect_service_manager() == "s6":
                 print("Per-profile gateways are auto-registered when you create a profile.")
                 print()
-                print("  hermes profile create <name>     # creates the s6 service slot")
-                print("  hermes -p <name> gateway start   # bring it up via s6")
-                print("  hermes status                    # see currently-supervised gateways")
+                print("  lucifex profile create <name>     # creates the s6 service slot")
+                print("  lucifex -p <name> gateway start   # bring it up via s6")
+                print("  lucifex status                    # see currently-supervised gateways")
                 return
             # Fallback for pre-s6 containers or other container runtimes
             # we haven't taught about supervision (Podman without our
@@ -6825,8 +6825,8 @@ def _gateway_command_inner(args):
             if detect_service_manager() == "s6":
                 print("Per-profile gateways are auto-unregistered when you delete the profile.")
                 print()
-                print("  hermes profile delete <name>     # tears down the s6 service slot")
-                print("  hermes -p <name> gateway stop    # stop without deleting the profile")
+                print("  lucifex profile delete <name>     # tears down the s6 service slot")
+                print("  lucifex -p <name> gateway stop    # stop without deleting the profile")
                 return
             print("Service uninstall is not applicable inside a Docker container.")
             print("To stop the gateway, stop or remove the container:")
@@ -6845,7 +6845,7 @@ def _gateway_command_inner(args):
         # Phase 4: inside a container with s6, dispatch via the service
         # manager instead of falling through to systemd/launchd/windows.
         # `--all` isn't meaningful here (each profile has its own service
-        # slot — start them individually via `hermes -p <name> gateway
+        # slot — start them individually via `lucifex -p <name> gateway
         # start`), so just bring up the current profile's slot.
         if not start_all and _dispatch_via_service_manager_if_s6("start"):
             return
@@ -6863,7 +6863,7 @@ def _gateway_command_inner(args):
             print(
                 "Gateway service start is not supported on Termux because there is no system service manager."
             )
-            print("Run manually: hermes gateway")
+            print("Run manually: lucifex gateway")
             sys.exit(1)
         if supports_systemd_services():
             systemd_start(system=system)
@@ -6881,7 +6881,7 @@ def _gateway_command_inner(args):
                 "  lucifex gateway run                              # direct foreground"
             )
             print(
-                "  tmux new -s hermes 'lucifex gateway run'         # persistent via tmux"
+                "  tmux new -s lucifex 'lucifex gateway run'         # persistent via tmux"
             )
             print(
                 "  nohup lucifex gateway run > ~/.lucifex/logs/gateway.log 2>&1 &  # background"
@@ -7009,7 +7009,7 @@ def _gateway_command_inner(args):
             print_error(
                 "Refusing to restart the gateway from inside the gateway process.\n"
                 "This command was blocked to prevent restart loops.\n"
-                "Use `hermes gateway restart` from a shell outside the running gateway."
+                "Use `lucifex gateway restart` from a shell outside the running gateway."
             )
             sys.exit(1)
 
@@ -7138,7 +7138,7 @@ def _gateway_command_inner(args):
                     print(f"  Run:  sudo loginctl enable-linger {_username}")
                     print()
                     print("  Then restart the gateway:")
-                    print("    hermes gateway restart")
+                    print("    lucifex gateway restart")
                     return
 
             if service_configured:
@@ -7214,11 +7214,11 @@ def _gateway_command_inner(args):
                     print(
                         "To install as a Windows Scheduled Task (auto-start on login):"
                     )
-                    print("  hermes gateway install")
+                    print("  lucifex gateway install")
                 else:
                     print("To install as a service:")
-                    print("  hermes gateway install")
-                    print("  sudo hermes gateway install --system")
+                    print("  lucifex gateway install")
+                    print("  sudo lucifex gateway install --system")
             else:
                 print("✗ Gateway is not running")
                 runtime_lines = _runtime_health_lines()
@@ -7236,19 +7236,19 @@ def _gateway_command_inner(args):
                     )
                 elif is_wsl():
                     print(
-                        "  tmux new -s hermes 'lucifex gateway run'         # persistent via tmux"
+                        "  tmux new -s lucifex 'lucifex gateway run'         # persistent via tmux"
                     )
                     print(
                         "  nohup lucifex gateway run > ~/.lucifex/logs/gateway.log 2>&1 &  # background"
                     )
                 elif is_windows():
                     print(
-                        "  hermes gateway install  # Install as Windows Scheduled Task (auto-start on login)"
+                        "  lucifex gateway install  # Install as Windows Scheduled Task (auto-start on login)"
                     )
                 else:
-                    print("  hermes gateway install  # Install as user service")
+                    print("  lucifex gateway install  # Install as user service")
                     print(
-                        "  sudo hermes gateway install --system  # Install as boot-time system service"
+                        "  sudo lucifex gateway install --system  # Install as boot-time system service"
                     )
 
         # Show other profiles' gateway status for multi-profile awareness
@@ -7258,8 +7258,8 @@ def _gateway_command_inner(args):
         _gateway_list()
 
     elif subcmd == "migrate-legacy":
-        # Stop, disable, and remove legacy Hermes gateway unit files from
-        # pre-rename installs (e.g. hermes.service). Profile units and
+        # Stop, disable, and remove legacy Lucifex gateway unit files from
+        # pre-rename installs (e.g. lucifex.service). Profile units and
         # unrelated third-party services are never touched.
         dry_run = getattr(args, "dry_run", False)
         yes = getattr(args, "yes", False)

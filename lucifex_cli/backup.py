@@ -1,10 +1,10 @@
-﻿"""
-Backup and import commands for hermes CLI.
+"""
+Backup and import commands for lucifex CLI.
 
-`hermes backup` creates a zip archive of the entire ~/.lucifex/ directory
+`lucifex backup` creates a zip archive of the entire ~/.lucifex/ directory
 (excluding the lucifex-agent repo and transient files).
 
-`hermes import` restores from a backup zip, overlaying onto the current
+`lucifex import` restores from a backup zip, overlaying onto the current
 LUCIFEX_HOME root.
 """
 
@@ -88,7 +88,7 @@ _EXCLUDED_NAMES = {
     "cron.pid",
 }
 
-# File names that ``hermes import`` must never overwrite, matched by basename so
+# File names that ``lucifex import`` must never overwrite, matched by basename so
 # they're caught for the root profile (``gateway_state.json``) and for named
 # profiles alike (``profiles/<name>/gateway_state.json``).
 #
@@ -209,7 +209,7 @@ def _iter_external_files(base: Path) -> List[Path]:
 
 
 def _should_exclude(rel_path: Path) -> bool:
-    """Return True if *rel_path* (relative to hermes root) should be skipped."""
+    """Return True if *rel_path* (relative to lucifex root) should be skipped."""
     parts = rel_path.parts
 
     for part in parts:
@@ -297,11 +297,11 @@ def _format_size(nbytes: int) -> str:
 
 
 def run_backup(args) -> None:
-    """Create a zip backup of the Hermes home directory."""
+    """Create a zip backup of the Lucifex home directory."""
     hermes_root = get_default_lucifex_root()
 
     if not hermes_root.is_dir():
-        print(f"Error: Hermes home directory not found at {hermes_root}")
+        print(f"Error: Lucifex home directory not found at {hermes_root}")
         sys.exit(1)
 
     # Determine output path
@@ -310,10 +310,10 @@ def run_backup(args) -> None:
         # If user gave a directory, put the zip inside it
         if out_path.is_dir():
             stamp = datetime.now().strftime("%Y-%m-%d-%H%M%S")
-            out_path = out_path / f"hermes-backup-{stamp}.zip"
+            out_path = out_path / f"lucifex-backup-{stamp}.zip"
     else:
         stamp = datetime.now().strftime("%Y-%m-%d-%H%M%S")
-        out_path = Path.home() / f"hermes-backup-{stamp}.zip"
+        out_path = Path.home() / f"lucifex-backup-{stamp}.zip"
 
     # Ensure the suffix is .zip
     if out_path.suffix.lower() != ".zip":
@@ -472,7 +472,7 @@ def run_backup(args) -> None:
             print(f"  ... and {len(errors) - 10} more")
 
     if not errors:
-        print(f"\nRestore with: hermes import {out_path.name}")
+        print(f"\nRestore with: lucifex import {out_path.name}")
 
 
 # ---------------------------------------------------------------------------
@@ -480,7 +480,7 @@ def run_backup(args) -> None:
 # ---------------------------------------------------------------------------
 
 def _validate_backup_zip(zf: zipfile.ZipFile) -> tuple[bool, str]:
-    """Check that a zip looks like a Hermes backup.
+    """Check that a zip looks like a Lucifex backup.
 
     Returns (ok, reason).
     """
@@ -488,7 +488,7 @@ def _validate_backup_zip(zf: zipfile.ZipFile) -> tuple[bool, str]:
     if not names:
         return False, "zip archive is empty"
 
-    # Look for telltale files that a hermes home would have
+    # Look for telltale files that a lucifex home would have
     markers = {"config.yaml", ".env", "state.db"}
     found = set()
     for n in names:
@@ -499,7 +499,7 @@ def _validate_backup_zip(zf: zipfile.ZipFile) -> tuple[bool, str]:
 
     if not found:
         return False, (
-            "zip does not appear to be a Hermes backup "
+            "zip does not appear to be a Lucifex backup "
             "(no config.yaml, .env, or state databases found)"
         )
 
@@ -509,7 +509,7 @@ def _validate_backup_zip(zf: zipfile.ZipFile) -> tuple[bool, str]:
 def _detect_prefix(zf: zipfile.ZipFile) -> str:
     """Detect if the zip has a common directory prefix wrapping all entries.
 
-    Some tools zip as `.hermes/config.yaml` instead of `config.yaml`.
+    Some tools zip as `.lucifex/config.yaml` instead of `config.yaml`.
     Returns the prefix to strip (empty string if none).
     """
     names = [n for n in zf.namelist() if not n.endswith("/")]
@@ -523,15 +523,15 @@ def _detect_prefix(zf: zipfile.ZipFile) -> str:
     first_parts = {p[0] for p in parts_list if len(p) > 1}
     if len(first_parts) == 1:
         prefix = first_parts.pop()
-        # Only strip if it looks like a hermes dir name
-        if prefix in {".hermes", "hermes"}:
+        # Only strip if it looks like a lucifex dir name
+        if prefix in {".lucifex", "lucifex"}:
             return prefix + "/"
 
     return ""
 
 
 def run_import(args) -> None:
-    """Restore a Hermes backup from a zip file."""
+    """Restore a Lucifex backup from a zip file."""
     zip_path = Path(args.zipfile).expanduser().resolve()
 
     if not zip_path.is_file():
@@ -567,7 +567,7 @@ def run_import(args) -> None:
 
         if (has_config or has_env) and not args.force:
             print()
-            print("Warning: Target directory already has Hermes configuration.")
+            print("Warning: Target directory already has Lucifex configuration.")
             print("Importing will overwrite existing files with backup contents.")
             print()
             try:
@@ -733,25 +733,25 @@ def run_import(args) -> None:
                 # lucifex_cli.profiles might not be available (fresh install)
                 if any(profiles_dir.iterdir()):
                     print("\n  Profiles detected but aliases could not be created.")
-                    print("  Run: hermes profile list  (after installing hermes)")
+                    print("  Run: lucifex profile list  (after installing lucifex)")
 
         # Guidance
         print()
         if not (hermes_root / "lucifex-agent").is_dir():
             print("Note: The lucifex-agent codebase was not included in the backup.")
-            print("  If this is a fresh install, run: hermes update")
+            print("  If this is a fresh install, run: lucifex update")
 
         if restored_profiles:
             gw_profiles = [n for n, _ in restored_profiles]
             print("\nTo re-enable gateway services for profiles:")
             for pname in gw_profiles:
-                print(f"  hermes -p {pname} gateway install")
+                print(f"  lucifex -p {pname} gateway install")
 
-        print("Done. Your Hermes configuration has been restored.")
+        print("Done. Your Lucifex configuration has been restored.")
 
 
 # ---------------------------------------------------------------------------
-# Quick state snapshots (used by /snapshot slash command and hermes backup --quick)
+# Quick state snapshots (used by /snapshot slash command and lucifex backup --quick)
 # ---------------------------------------------------------------------------
 
 # Critical state files to include in quick snapshots (relative to LUCIFEX_HOME).
@@ -761,7 +761,7 @@ def run_import(args) -> None:
 # Entries may be individual files OR directories.  Directories are captured
 # recursively; missing entries are silently skipped.  Pairing data lives in
 # platform-specific JSON blobs outside state.db, so it's listed here explicitly
-# — `hermes update` snapshots this set before pulling so approved-user lists
+# — `lucifex update` snapshots this set before pulling so approved-user lists
 # are recoverable if anything goes wrong (issue #15733).
 _QUICK_STATE_FILES = (
     "state.db",
@@ -818,10 +818,10 @@ def create_quick_snapshot(
         max_file_size: When set, individual files larger than this many bytes
             are skipped (with a printed warning) instead of copied. Used by
             the pre-update safety snapshot so a multi-GB ``state.db`` can
-            never stall ``hermes update`` or silently eat disk — the small
+            never stall ``lucifex update`` or silently eat disk — the small
             pairing/cron/config files the snapshot exists to protect are
             always captured. ``None`` (default) copies everything, which
-            preserves manual ``/snapshot`` and ``hermes backup --quick``
+            preserves manual ``/snapshot`` and ``lucifex backup --quick``
             behavior.
 
     Returns:
@@ -1081,7 +1081,7 @@ def restore_cron_jobs_if_emptied(
     snapshot_id: str,
     LUCIFEX_HOME: Optional[Path] = None,
 ) -> Optional[Dict[str, Any]]:
-    """Safety net for silent cron-job loss across ``hermes update``.
+    """Safety net for silent cron-job loss across ``lucifex update``.
 
     Config-version migrations have been observed to leave ``cron/jobs.json``
     valid-but-empty after an update, silently dropping every scheduled job
@@ -1102,7 +1102,7 @@ def restore_cron_jobs_if_emptied(
     Args:
         snapshot_id: The pre-update quick-snapshot id (from
             :func:`create_quick_snapshot`).
-        LUCIFEX_HOME: Override for the Hermes home directory (tests).
+        LUCIFEX_HOME: Override for the Lucifex home directory (tests).
 
     Returns:
         ``None`` when no action was taken (the common, healthy path). On a
@@ -1184,7 +1184,7 @@ def prune_quick_snapshots(
 
 
 def run_quick_backup(args) -> None:
-    """CLI entry point for hermes backup --quick."""
+    """CLI entry point for lucifex backup --quick."""
     label = getattr(args, "label", None)
     snap_id = create_quick_snapshot(label=label)
     if snap_id:
@@ -1344,7 +1344,7 @@ def create_pre_update_backup(
 
     Returns the path to the created zip, or ``None`` if no files were
     found or the backup could not be created.  Never raises — the caller
-    (``hermes update``) should continue even if the backup fails.
+    (``lucifex update``) should continue even if the backup fails.
     """
     hermes_root = LUCIFEX_HOME or get_default_lucifex_root()
     if not hermes_root.is_dir():
@@ -1369,7 +1369,7 @@ def create_pre_update_backup(
 
 
 # ---------------------------------------------------------------------------
-# Pre-migration auto-backup (used by `hermes claw migrate`)
+# Pre-migration auto-backup (used by `lucifex claw migrate`)
 # ---------------------------------------------------------------------------
 
 _PRE_MIGRATION_PREFIX = "pre-migration-"
@@ -1409,11 +1409,11 @@ def create_pre_migration_backup(
     keep: int = _PRE_MIGRATION_DEFAULT_KEEP,
 ) -> Optional[Path]:
     """Create a full zip backup of LUCIFEX_HOME under ``backups/`` before a
-    ``hermes claw migrate`` apply.
+    ``lucifex claw migrate`` apply.
 
     Shares implementation with :func:`create_pre_update_backup` via
     ``_write_full_zip_backup`` — same exclusions, same SQLite safe-copy,
-    restorable with ``hermes import <archive>``.  Writes to
+    restorable with ``lucifex import <archive>``.  Writes to
     ``<LUCIFEX_HOME>/backups/pre-migration-<timestamp>.zip`` and auto-prunes
     old pre-migration backups.
 
@@ -1425,7 +1425,7 @@ def create_pre_migration_backup(
     if not hermes_root.is_dir():
         return None
 
-    # Reuses the shared backups/ directory so `hermes import` and the
+    # Reuses the shared backups/ directory so `lucifex import` and the
     # update-backup listing pick up pre-migration archives too.
     backup_dir = _pre_update_backup_dir(hermes_root)
     try:

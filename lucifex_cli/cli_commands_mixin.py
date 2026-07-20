@@ -1,4 +1,4 @@
-﻿"""Slash-command handlers for the interactive CLI (god-file decomposition Phase 4).
+"""Slash-command handlers for the interactive CLI (god-file decomposition Phase 4).
 
 This module hosts the ``_handle_*_command`` slash-command handlers lifted out of
 ``cli.py``'s ``LucifexCLI`` class. ``LucifexCLI`` inherits ``CLICommandsMixin`` so
@@ -66,7 +66,7 @@ class CLICommandsMixin:
         mgr = self.agent._checkpoint_mgr
         if not mgr.enabled:
             print("  Checkpoints are not enabled.")
-            print("  Enable with: hermes --checkpoints")
+            print("  Enable with: lucifex --checkpoints")
             print("  Or in config.yaml: checkpoints: { enabled: true }")
             return
 
@@ -143,7 +143,7 @@ class CLICommandsMixin:
             print(f"  ❌ {result['error']}")
 
     def _handle_snapshot_command(self, command: str):
-        """Handle /snapshot — lightweight state snapshots for Hermes config/state.
+        """Handle /snapshot — lightweight state snapshots for Lucifex config/state.
 
         Syntax:
             /snapshot                  — list recent snapshots
@@ -300,7 +300,7 @@ class CLICommandsMixin:
         _cprint(f"  Agent: {'running' if agent_running else 'idle'}")
 
     def _handle_journey_command(self, cmd_original: str) -> None:
-        """Handle /journey — the learning timeline (see `hermes journey`).
+        """Handle /journey — the learning timeline (see `lucifex journey`).
 
         The read-only views (default + ``list``) render Rich color, which
         patch_stdout would swallow as raw escapes; capture with forced ANSI and
@@ -424,7 +424,7 @@ class CLICommandsMixin:
         if _remainder:
             _cprint(f"  {_DIM}Now type your prompt (or use --image in single-query mode): {_remainder}{_RST}")
         elif _is_termux_environment():
-            _cprint(f"  {_DIM}Tip: type your next message, or run hermes chat -q --image {_termux_example_image_path(image_path.name)} \"What do you see?\"{_RST}")
+            _cprint(f"  {_DIM}Tip: type your next message, or run lucifex chat -q --image {_termux_example_image_path(image_path.name)} \"What do you see?\"{_RST}")
 
     def _handle_tools_command(self, cmd: str):
         """Handle /tools [list|disable|enable] slash commands.
@@ -666,7 +666,7 @@ class CLICommandsMixin:
             self._session_db.fail_handoff(self.session_id, "timed out waiting for gateway")
         except Exception:
             pass
-        _cprint("  Timed out waiting for the gateway. Is `hermes gateway` running?")
+        _cprint("  Timed out waiting for the gateway. Is `lucifex gateway` running?")
         _cprint("  Your CLI session is intact.")
         return True
 
@@ -836,7 +836,7 @@ class CLICommandsMixin:
 
         # Retarget the process + tool cwd to where the session was started, so a
         # mid-chat /resume (and /sessions <id>, which delegates here) lands in the
-        # same directory as a startup `hermes -c`/`--resume`. The startup resume
+        # same directory as a startup `lucifex -c`/`--resume`. The startup resume
         # paths already call this; without it, the terminal/code-exec tools and
         # relative-path resolution keep operating in the wrong repo. Idempotent
         # and a no-op when the session recorded no cwd. See #38562.
@@ -1496,7 +1496,7 @@ class CLICommandsMixin:
     def _handle_curator_command(self, cmd: str):
         """Handle /curator slash command.
 
-        Delegates to lucifex_cli.curator so the CLI and the `hermes curator`
+        Delegates to lucifex_cli.curator so the CLI and the `lucifex curator`
         subcommand share the same handler set.
         """
         import shlex
@@ -1719,11 +1719,11 @@ class CLICommandsMixin:
                     try:
                         from lucifex_cli.skin_engine import get_active_skin
                         _skin = get_active_skin()
-                        label = _skin.get_branding("response_label", "⚕ Hermes")
+                        label = _skin.get_branding("response_label", "⚕ Lucifex")
                         _resp_color = _maybe_remap_for_light_mode(_skin.get_color("response_border", "#CD7F32"))
                         _resp_text = _maybe_remap_for_light_mode(_skin.get_color("banner_text", "#FFF8DC"))
                     except Exception:
-                        label = "⚕ Hermes"
+                        label = "⚕ Lucifex"
                         _resp_color = "#CD7F32"
                         _resp_text = "#FFF8DC"
 
@@ -1774,7 +1774,7 @@ class CLICommandsMixin:
     def _handle_bundles_command(self, cmd: str) -> None:
         """In-session ``/bundles`` — show installed skill bundles.
 
-        Mirrors ``hermes bundles list`` but renders inside the running
+        Mirrors ``lucifex bundles list`` but renders inside the running
         CLI so users can discover what's available without dropping out
         of their session. Bundles are loaded via ``/<bundle-name>``.
         """
@@ -1789,7 +1789,7 @@ class CLICommandsMixin:
         if not bundles:
             _cprint("  No skill bundles installed.")
             _cprint(
-                f"  {_DIM}Create one with: hermes bundles create "
+                f"  {_DIM}Create one with: lucifex bundles create "
                 f"<name> --skill <s1> --skill <s2>{_RST}"
             )
             _cprint(f"  {_DIM}Directory: {_bundles_dir()}{_RST}")
@@ -1807,7 +1807,7 @@ class CLICommandsMixin:
                 ChatConsole().print(f"        [dim]· {_escape(s)}[/]")
         _cprint(
             f"\n  {_DIM}Invoke a bundle with /<slug>. "
-            f"Manage with `hermes bundles`.{_RST}"
+            f"Manage with `lucifex bundles`.{_RST}"
         )
 
     def _handle_browser_command(self, cmd: str):
@@ -1951,7 +1951,7 @@ class CLICommandsMixin:
                     "Your browser_navigate, browser_snapshot, browser_click, and other browser tools now "
                     "control that CDP browser. The command itself is a signal that using browser tools for "
                     "their current browser-related request is expected; do not wait for separate permission "
-                    "just because CDP is connected. This is typically a Hermes-managed isolated debug "
+                    "just because CDP is connected. This is typically a Lucifex-managed isolated debug "
                     "profile, not the user's main everyday browser. It is still user-visible and may contain "
                     "pages, logged-in sessions, or cookies in that debug profile, so avoid destructive actions, "
                     "closing tabs, or navigating away unless the user's task calls for it.]"
@@ -2159,7 +2159,7 @@ class CLICommandsMixin:
         _cprint(
             f"  {_DIM}After each turn, a judge model checks if the goal is done"
             f"{' against the contract above' if state.has_contract() else ''}. "
-            f"Hermes keeps working until it is, you pause/clear it, or the budget is "
+            f"Lucifex keeps working until it is, you pause/clear it, or the budget is "
             f"exhausted. Use /goal status, /goal show, /goal pause, /goal resume, /goal clear.{_RST}"
         )
         # Kick the loop off immediately so the user doesn't have to send a
@@ -2610,7 +2610,7 @@ class CLICommandsMixin:
             _cprint(f"  {_ACCENT}✓ Reasoning effort set to '{arg}' (this session — use --global to persist){_RST}")
 
     def _handle_busy_command(self, cmd: str):
-        """Handle /busy — control what Enter does while Hermes is working.
+        """Handle /busy — control what Enter does while Lucifex is working.
 
         Usage:
             /busy               Show current busy input mode
@@ -2642,11 +2642,11 @@ class CLICommandsMixin:
         self.busy_input_mode = arg
         if save_config_value("display.busy_input_mode", arg):
             if arg == "queue":
-                behavior = "Enter will queue follow-up input while Hermes is busy."
+                behavior = "Enter will queue follow-up input while Lucifex is busy."
             elif arg == "steer":
                 behavior = "Enter will steer your message into the current run (after the next tool call)."
             else:
-                behavior = "Enter will interrupt the current run while Hermes is busy."
+                behavior = "Enter will interrupt the current run while Lucifex is busy."
             _cprint(f"  {_ACCENT}✓ Busy input mode set to '{arg}' (saved to config){_RST}")
             _cprint(f"  {_DIM}{behavior}{_RST}")
         else:
@@ -2737,7 +2737,7 @@ class CLICommandsMixin:
         """Handle /update — update Lucifex Agent to the latest version.
 
         In the classic CLI this exits the session and relaunches as
-        ``hermes update`` so the user sees update output directly and gets
+        ``lucifex update`` so the user sees update output directly and gets
         the new version on next launch.
 
         Returns ``True`` when the update was confirmed (caller should trigger
@@ -2760,8 +2760,8 @@ class CLICommandsMixin:
             ("cancel", "Cancel", "keep the current session"),
         ]
         raw = self._prompt_text_input_modal(
-            title="⚕  Update Hermes Agent",
-            detail="This will exit the current session and run `hermes update`.",
+            title="⚕  Update Lucifex Agent",
+            detail="This will exit the current session and run `lucifex update`.",
             choices=choices,
         )
         if raw is None:

@@ -1,4 +1,4 @@
-﻿"""Agent-construction and session-resume display methods for ``LucifexCLI``.
+"""Agent-construction and session-resume display methods for ``LucifexCLI``.
 
 Extracted from ``cli.py`` as part of the god-file decomposition campaign
 (``~/.lucifex/plans/god-file-decomposition.md``, Phase 4 step 2). This mixin holds
@@ -112,11 +112,11 @@ class CLIAgentSetupMixin:
                 )
             else:
                 print("\n⚠️  Provider resolver returned an empty API key. "
-                      "Set OPENROUTER_API_KEY or run: hermes setup")
+                      "Set OPENROUTER_API_KEY or run: lucifex setup")
                 return False
         if not isinstance(base_url, str) or not base_url:
             print("\n⚠️  Provider resolver returned an empty base URL. "
-                  "Check your provider config or run: hermes setup")
+                  "Check your provider config or run: lucifex setup")
             return False
 
         credentials_changed = api_key != self.api_key or base_url != self.base_url
@@ -137,7 +137,7 @@ class CLIAgentSetupMixin:
 
         # When a custom_provider entry carries an explicit `model` field,
         # use it as the effective model name.  Without this, running
-        # `hermes chat --model <provider-name>` sends the provider name
+        # `lucifex chat --model <provider-name>` sends the provider name
         # (e.g. "my-provider") as the model string to the API instead of
         # the configured model (e.g. "qwen3.6-plus"), causing 400 errors.
         runtime_model = runtime.get("model")
@@ -151,8 +151,8 @@ class CLIAgentSetupMixin:
             if should_use_runtime_model:
                 self.model = runtime_model
 
-        # If model is still empty (e.g. user ran `hermes auth add openai-codex`
-        # without `hermes model`), fall back to the provider's first catalog
+        # If model is still empty (e.g. user ran `lucifex auth add openai-codex`
+        # without `lucifex model`), fall back to the provider's first catalog
         # model so the API call doesn't fail with "model must be non-empty".
         if not self.model and resolved_provider:
             try:
@@ -260,10 +260,10 @@ class CLIAgentSetupMixin:
         # is non-empty and we skip the DB round-trip.
         if self._resumed and self._session_db and not self.conversation_history:
             session_meta = self._session_db.get_session(self.session_id)
-            # In quiet mode (`hermes chat -Q` / --quiet, surfaced via
+            # In quiet mode (`lucifex chat -Q` / --quiet, surfaced via
             # tool_progress_mode == "off"), resume status lines go to stderr
             # so stdout stays machine-readable for automation wrappers that
-            # do `$(hermes chat -Q --resume <id> -q "...")`. Without this,
+            # do `$(lucifex chat -Q --resume <id> -q "...")`. Without this,
             # the resume banner pollutes captured stdout. See #11793.
             _quiet_mode = getattr(self, "tool_progress_mode", "full") == "off"
             if not session_meta:
@@ -682,13 +682,13 @@ class CLIAgentSetupMixin:
                     lines.append(f"         {ml}\n", style="dim")
             elif role == "assistant_last":
                 # Last assistant response shown in full, non-dim
-                lines.append("  ◆ Hermes: ", style=f"bold {_assistant_label_c}")
+                lines.append("  ◆ Lucifex: ", style=f"bold {_assistant_label_c}")
                 msg_lines = text.splitlines()
                 lines.append(msg_lines[0] + "\n", style="")
                 for ml in msg_lines[1:]:
                     lines.append(f"            {ml}\n", style="")
             else:
-                lines.append("  ◆ Hermes: ", style=f"dim bold {_assistant_label_c}")
+                lines.append("  ◆ Lucifex: ", style=f"dim bold {_assistant_label_c}")
                 msg_lines = text.splitlines()
                 lines.append(msg_lines[0] + "\n", style="dim")
                 for ml in msg_lines[1:]:

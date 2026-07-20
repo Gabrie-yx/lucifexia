@@ -89,7 +89,7 @@ def create_app(adapter: UpstreamAdapter) -> "web.Application":
     """Build the aiohttp application bound to a specific upstream adapter."""
     if not AIOHTTP_AVAILABLE:
         raise RuntimeError(
-            "aiohttp is required for `hermes proxy`. Install with: "
+            "aiohttp is required for `lucifex proxy`. Install with: "
             "pip install 'lucifex-agent[messaging]' or `pip install aiohttp`."
         )
 
@@ -256,7 +256,7 @@ async def run_server(
     """
     if not AIOHTTP_AVAILABLE:
         raise RuntimeError(
-            "aiohttp is required for `hermes proxy`. Install with: "
+            "aiohttp is required for `lucifex proxy`. Install with: "
             "pip install 'lucifex-agent[messaging]' or `pip install aiohttp`."
         )
 

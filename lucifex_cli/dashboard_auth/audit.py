@@ -55,10 +55,10 @@ def _resolve_log_path() -> Path:
     """``$LUCIFEX_HOME/logs/dashboard-auth.log`` with the standard fallback.
 
     Mirrors ``lucifex_constants.get_lucifex_home`` semantics: env var wins,
-    else ``~/.hermes``. A local copy avoids an import cycle with the
+    else ``~/.lucifex``. A local copy avoids an import cycle with the
     middleware which lives below ``lucifex_cli``.
     """
-    home = os.environ.get("LUCIFEX_HOME") or str(Path.home() / ".hermes")
+    home = os.environ.get("LUCIFEX_HOME") or str(Path.home() / ".lucifex")
     return Path(home) / "logs" / "dashboard-auth.log"
 
 

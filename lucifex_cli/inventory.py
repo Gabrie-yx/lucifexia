@@ -145,7 +145,7 @@ def build_models_payload(
     - ``pricing``: enrich each row with formatted per-model pricing and,
       for Nous, ``free_tier``/``unavailable_models`` so the GUI picker can
       show $/Mtok columns and gate paid models on free accounts —
-      mirroring the ``hermes model`` CLI picker. Adds network calls
+      mirroring the ``lucifex model`` CLI picker. Adds network calls
       (pricing fetch + Nous tier check); only set for interactive pickers.
     - ``capabilities``: add a per-row ``capabilities`` map
       ``{model: {fast, reasoning}}`` so pickers can gate the model-options
@@ -341,7 +341,7 @@ def _append_unconfigured_rows(
                 f"Configured provider missing usable credentials; paste {key_env} to reactivate. "
                 "Showing the saved model only."
                 if auth_type == "api_key" and key_env
-                else "Configured provider is not authenticated; run `hermes model` to reactivate. "
+                else "Configured provider is not authenticated; run `lucifex model` to reactivate. "
                 "Showing the saved model only."
             )
             extras.append(
@@ -379,7 +379,7 @@ def _filter_explicit_provider_rows(rows: list[dict], ctx: ConfigContext) -> list
 
     ``list_authenticated_providers`` intentionally discovers ambient / auto-
     seeded credentials (for example GitHub CLI -> Copilot). Desktop chat model
-    pickers want the narrower subset the user explicitly configured for Hermes.
+    pickers want the narrower subset the user explicitly configured for Lucifex.
     """
     from lucifex_cli.auth import is_provider_explicitly_configured
 
@@ -487,7 +487,7 @@ def _apply_picker_hints(rows: list[dict]) -> None:
         row["warning"] = (
             f"paste {key_env} to activate"
             if auth_type == "api_key" and key_env
-            else f"run `hermes model` to configure ({auth_type})"
+            else f"run `lucifex model` to configure ({auth_type})"
         )
 
 

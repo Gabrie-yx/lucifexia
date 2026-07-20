@@ -1,5 +1,5 @@
-﻿"""
-Shared platform registry for Hermes Agent.
+"""
+Shared platform registry for Lucifex Agent.
 
 Single source of truth for platform metadata consumed by both
 skills_config (label display) and tools_config (default toolset
@@ -39,8 +39,8 @@ PLATFORMS: OrderedDict[str, PlatformInfo] = OrderedDict([
     ("qqbot",          PlatformInfo(label="💬 QQBot",           default_toolset="lucifex-qqbot")),
     ("yuanbao",        PlatformInfo(label="🤖 Yuanbao",         default_toolset="lucifex-yuanbao")),
     ("webhook",        PlatformInfo(label="🔗 Webhook",         default_toolset="lucifex-webhook")),
-    ("api_server",     PlatformInfo(label="🌐 API Server",      default_toolset="hermes-api-server")),
-    ("cron",           PlatformInfo(label="⏰ Cron",            default_toolset="hermes-cron")),
+    ("api_server",     PlatformInfo(label="🌐 API Server",      default_toolset="lucifex-api-server")),
+    ("cron",           PlatformInfo(label="⏰ Cron",            default_toolset="lucifex-cron")),
 ])
 
 
@@ -77,7 +77,7 @@ def get_all_platforms() -> "OrderedDict[str, PlatformInfo]":
             if entry.name not in merged:
                 merged[entry.name] = PlatformInfo(
                     label=f"{entry.emoji}  {entry.label}" if entry.emoji else entry.label,
-                    default_toolset=f"hermes-{entry.name}",
+                    default_toolset=f"lucifex-{entry.name}",
                 )
     except Exception:
         pass

@@ -1,5 +1,5 @@
-﻿"""
-Hermes Agent — Web UI server.
+"""
+Lucifex Agent — Web UI server.
 
 Provides a FastAPI backend serving the Vite/React frontend and REST API
 endpoints for managing configuration, environment variables, and sessions.
@@ -105,7 +105,7 @@ try:
     from starlette.concurrency import run_in_threadpool
 except ImportError:
     # First try lazy-installing the dashboard extras. Only the user actually
-    # running `hermes dashboard` needs fastapi+uvicorn; lazy install keeps
+    # running `lucifex dashboard` needs fastapi+uvicorn; lazy install keeps
     # them out of every other install path. After install, re-import.
     try:
         from tools.lazy_deps import ensure as _lazy_ensure
@@ -144,7 +144,7 @@ def _start_desktop_cron_ticker(stop_event: "threading.Event", interval: int = 60
     """Tick the cron scheduler from inside the desktop dashboard backend.
 
     The scheduler tick loop normally lives in ``lucifex gateway run`` — but the
-    desktop app spawns a ``hermes dashboard`` backend, not a gateway, so a cron
+    desktop app spawns a ``lucifex dashboard`` backend, not a gateway, so a cron
     a user creates in the app would never fire. We run the resolved cron
     scheduler provider here (no live adapters; delivery falls back to the
     per-platform send path).
@@ -197,7 +197,7 @@ async def _lifespan(app: "FastAPI"):
     asyncio.get_event_loop().run_in_executor(None, _warm_gateway_module)
 
     # Desktop-spawned backends (HERMES_DESKTOP=1) fire cron jobs themselves,
-    # since the app has no gateway running the scheduler. Server `hermes
+    # since the app has no gateway running the scheduler. Server `lucifex
     # dashboard` is unaffected — it relies on its own gateway.
     cron_stop: "threading.Event | None" = None
     cron_thread: "threading.Thread | None" = None
@@ -263,7 +263,7 @@ def _get_pty_active_session_files(app: "FastAPI") -> dict[str, Path]:
         return app.state.pty_active_session_files
 
 
-app = FastAPI(title="Hermes Agent", version=__version__, lifespan=_lifespan)
+app = FastAPI(title="Lucifex Agent", version=__version__, lifespan=_lifespan)
 
 # Memory-provider OAuth connect routes live in the memory layer, not here.
 from lucifex_cli.memory_oauth import router as _memory_oauth_router  # noqa: E402
@@ -279,7 +279,7 @@ app.include_router(_memory_oauth_router)
 # injected into the SPA HTML so only the legitimate web UI can use it.
 # ---------------------------------------------------------------------------
 _SESSION_TOKEN = os.environ.get("HERMES_DASHBOARD_SESSION_TOKEN") or secrets.token_urlsafe(32)
-_SESSION_HEADER_NAME = "X-Hermes-Session-Token"
+_SESSION_HEADER_NAME = "X-Lucifex-Session-Token"
 
 # In-browser Chat tab (/chat, /api/pty, /api/ws, …).  Always enabled: the
 # desktop app and the dashboard's own Chat tab both drive the agent over the
@@ -363,7 +363,7 @@ def _require_token(request: Request) -> None:
 
     * **Loopback / ``--insecure`` mode** (``auth_required`` False): the
       ephemeral ``_SESSION_TOKEN`` is injected into the SPA HTML and echoed
-      back via ``X-Hermes-Session-Token`` (or the legacy ``Bearer`` header).
+      back via ``X-Lucifex-Session-Token`` (or the legacy ``Bearer`` header).
       Validate it here.
     * **Gated / OAuth mode** (``auth_required`` True): ``_SESSION_TOKEN`` is
       NOT injected (the SPA authenticates with a session cookie), so there is
@@ -412,7 +412,7 @@ def should_require_auth(host: str, allow_public: bool = False) -> bool:
     the gate. It is accepted for backward-compat with old launch scripts and
     desktop shells but is ignored: a non-loopback bind ALWAYS requires an auth
     provider (OAuth or the bundled password provider). This closes the
-    unauthenticated-public-dashboard hole behind the June 2026 ``hermes-0day``
+    unauthenticated-public-dashboard hole behind the June 2026 ``lucifex-0day``
     MCP-persistence campaign, where ``--insecure --host 0.0.0.0`` left the
     config/MCP/agent surface open to internet scanners.
     """
@@ -735,7 +735,7 @@ _SCHEMA_OVERRIDES: Dict[str, Dict[str, Any]] = {
     "updates.non_interactive_local_changes": {
         "type": "select",
         "description": (
-            "When the chat app / gateway updates Hermes (no terminal prompt), "
+            "When the chat app / gateway updates Lucifex (no terminal prompt), "
             "what to do with uncommitted local source edits. 'stash' keeps them "
             "and re-applies them after the update; 'discard' throws them away. "
             "Terminal updates always ask, regardless of this setting."
@@ -745,7 +745,7 @@ _SCHEMA_OVERRIDES: Dict[str, Dict[str, Any]] = {
     "updates.refresh_cua_driver": {
         "type": "bool",
         "description": (
-            "Refresh an already-installed cua-driver during hermes update. "
+            "Refresh an already-installed cua-driver during lucifex update. "
             "Disable this on non-admin macOS accounts where /Applications is "
             "not writable."
         ),
@@ -1160,7 +1160,7 @@ class ModelAssignment(BaseModel):
     # Optional API key for a custom/local endpoint. Persisted to
     # ``model.api_key`` (where the runtime resolver reads it) so a self-hosted
     # endpoint that requires auth works from the GUI — mirrors the key the
-    # ``hermes model`` custom flow collects. Honored only on the main slot for
+    # ``lucifex model`` custom flow collects. Honored only on the main slot for
     # custom/local providers.
     api_key: str = ""
     confirm_expensive_model: bool = False
@@ -1213,7 +1213,7 @@ def _normalize_main_model_assignment(provider: str, model: str) -> tuple[str, st
 
     The Models page has two assignment paths and only one of them was safe:
 
-    - The "Change" picker sends a real Hermes provider slug — fine.
+    - The "Change" picker sends a real Lucifex provider slug — fine.
     - The per-card "Use as → Main model" menu sends ``entry.provider``
       from the analytics rows, falling back to the model's VENDOR prefix
       (``modelVendor("anthropic/claude-opus-4.6") == "anthropic"``) when
@@ -1226,8 +1226,8 @@ def _normalize_main_model_assignment(provider: str, model: str) -> tuple[str, st
 
     Two repairs, both at this single chokepoint so every caller inherits:
 
-    1. Vendor-name → Hermes-provider mapping: when the provider string is
-       not a known Hermes provider/alias (e.g. ``moonshotai``, ``x-ai`` is
+    1. Vendor-name → Lucifex-provider mapping: when the provider string is
+       not a known Lucifex provider/alias (e.g. ``moonshotai``, ``x-ai`` is
        known but ``poolside`` isn't) but the model is a vendor-prefixed
        aggregator slug, keep the user's CURRENT aggregator if they're on
        one, else fall back to openrouter.
@@ -1421,7 +1421,7 @@ def _count_status_active_sessions() -> int:
 
     This is best-effort status garnish, not a critical path.  Use a read-only
     connection so /api/status never tries to initialise or migrate state.db
-    while another Hermes process is writing to it.
+    while another Lucifex process is writing to it.
     """
     from lucifex_state import DEFAULT_DB_PATH, SessionDB
 
@@ -1546,7 +1546,7 @@ def _is_sensitive_filename(name: str) -> bool:
     """Return True for a basename the managed-files API must never expose.
 
     Covers ``.env`` / ``.env.<suffix>`` / ``.envrc`` variants plus the
-    canonical Hermes credential-store basenames (see
+    canonical Lucifex credential-store basenames (see
     ``_SENSITIVE_MANAGED_FILE_BASENAMES`` above).
 
     Case-insensitive so ``.ENV`` / ``.Env.local`` / ``Auth.JSON`` on
@@ -1861,7 +1861,7 @@ def _default_hermes_root_is_opt_data() -> bool:
 
 
 def _dashboard_local_update_managed_externally() -> bool:
-    """Return true when the dashboard should not offer ``hermes update``.
+    """Return true when the dashboard should not offer ``lucifex update``.
 
     Containerized dashboards are updated by the outer launcher/image, not by an
     in-browser local update action. Keep this dashboard capability separate
@@ -1869,8 +1869,8 @@ def _dashboard_local_update_managed_externally() -> bool:
     still behave like their actual install method in the CLI.
 
     However, when the install method is ``git`` (a bind-mounted checkout inside
-    a container — e.g. the hermes-webui image sharing the Hermes source tree),
-    the dashboard's ``hermes update`` button is the correct update path and
+    a container — e.g. the lucifex-webui image sharing the Lucifex source tree),
+    the dashboard's ``lucifex update`` button is the correct update path and
     should not be suppressed. Other containerized install methods remain
     externally managed unless their apply path is proven safe inside the
     running container filesystem.
@@ -1907,7 +1907,7 @@ def _managed_files_policy(request: Request, *, create_root: bool = True) -> Mana
     # Remote/OAuth access does not imply a hosted container. Users can expose a
     # local dashboard through the auth gate (for example a macOS launchd install)
     # and still expect the Files page to browse their local home directory. Lock
-    # to /opt/data only when the installation's Hermes root is actually /opt/data
+    # to /opt/data only when the installation's Lucifex root is actually /opt/data
     # (the container/hosted layout) or when HERMES_DASHBOARD_FILES_ROOT is set.
     if _default_hermes_root_is_opt_data():
         root = _ensure_managed_root(_HOSTED_MANAGED_FILES_ROOT) if create_root else _HOSTED_MANAGED_FILES_ROOT
@@ -2052,7 +2052,7 @@ def _decode_chat_image_upload(payload: ChatImageUpload) -> tuple[bytes, str, str
 async def upload_chat_image(payload: ChatImageUpload, profile: Optional[str] = None):
     """Persist a browser-provided chat image where the embedded TUI can read it.
 
-    The dashboard /chat page runs Hermes inside an xterm.js PTY. Browser
+    The dashboard /chat page runs Lucifex inside an xterm.js PTY. Browser
     clipboard image bytes are not visible to the server-side clipboard, so the
     page uploads them here, then drives the TUI's ``/image <path>`` command
     with the returned gateway-visible path. Files land under
@@ -2398,7 +2398,7 @@ class FsWriteText(BaseModel):
 async def fs_write_text(payload: FsWriteText):
     """Overwrite (or create) a UTF-8 text file for the in-app spot editor.
 
-    Mirrors the local Electron ``hermes:fs:writeText`` hardening: the path is
+    Mirrors the local Electron ``lucifex:fs:writeText`` hardening: the path is
     resolved + validated by ``_fs_path``, the parent directory must already
     exist (we never build directory trees), only regular files may be replaced,
     and the payload is size-capped. The write is staged to a sibling temp file
@@ -2427,7 +2427,7 @@ async def fs_write_text(payload: FsWriteText):
     if not target.parent.is_dir():
         raise HTTPException(status_code=400, detail="Parent directory does not exist")
 
-    tmp = target.with_name(f".{target.name}.hermes-tmp-{os.getpid()}")
+    tmp = target.with_name(f".{target.name}.lucifex-tmp-{os.getpid()}")
     try:
         tmp.write_text(text, encoding="utf-8")
         os.replace(tmp, target)
@@ -2895,7 +2895,7 @@ async def get_status(profile: Optional[str] = None):
         )
 
         # Dashboard auth gate (Phase 7): surface whether the gate is engaged
-        # and which providers are registered so ``hermes status`` and the
+        # and which providers are registered so ``lucifex status`` and the
         # SPA's StatusPage can show "OAuth gate ON via Nous Research" or
         # "loopback only — no auth gate" with no extra round trips.
         auth_required = bool(getattr(app.state, "auth_required", False))
@@ -2954,7 +2954,7 @@ async def get_status(profile: Optional[str] = None):
         # process table, so keep it off the event loop.
         #
         # Split by sensitivity: profile NAMES (``profiles``) and the gateway
-        # ``gateway_mode`` are low-sensitivity PRODUCT surface — Hermes Cloud
+        # ``gateway_mode`` are low-sensitivity PRODUCT surface — Lucifex Cloud
         # renders the profile list in the Portal, which reads this endpoint over
         # the network (a gated bind), so they must survive the auth gate. The
         # per-gateway ``gateways[]`` detail carries host ports (deployment
@@ -3041,7 +3041,7 @@ async def get_system_stats():
 
     OS / Python / host identity from stdlib; CPU / memory / disk / uptime from
     psutil when available, with graceful degradation when it isn't.  Read-only
-    and non-sensitive (no env values, no paths beyond the hermes home root).
+    and non-sensitive (no env values, no paths beyond the lucifex home root).
     """
     import platform as _platform
 
@@ -3121,7 +3121,7 @@ async def get_system_stats():
 #
 # The curator periodically reviews skills (archive stale, prune, pin).  The
 # dashboard surfaces its state and the pause/resume/run-now controls that
-# `hermes curator` exposes.
+# `lucifex curator` exposes.
 # ---------------------------------------------------------------------------
 
 
@@ -3385,7 +3385,7 @@ _ACTION_LOG_FILES: Dict[str, str] = {
     "gateway-restart": "gateway-restart.log",
     "gateway-start": "gateway-start.log",
     "gateway-stop": "gateway-stop.log",
-    "hermes-update": "hermes-update.log",
+    "lucifex-update": "lucifex-update.log",
     "doctor": "action-doctor.log",
     "security-audit": "action-security-audit.log",
     "backup": "action-backup.log",
@@ -3441,7 +3441,7 @@ def _dashboard_spawn_executable() -> str:
 
 
 def _spawn_hermes_action(subcommand: List[str], name: str) -> subprocess.Popen:
-    """Spawn ``hermes <subcommand>`` detached and record the Popen handle.
+    """Spawn ``lucifex <subcommand>`` detached and record the Popen handle.
 
     Uses the running interpreter's ``lucifex_cli.main`` module so the action
     inherits the same venv/PYTHONPATH the web server is using.
@@ -3457,7 +3457,7 @@ def _spawn_hermes_action(subcommand: List[str], name: str) -> subprocess.Popen:
     cmd = [_dashboard_spawn_executable(), "-m", "lucifex_cli.main", *subcommand]
 
     # The dashboard runs *inside* the gateway process, so os.environ carries
-    # _HERMES_GATEWAY=1. Inheriting it makes a spawned `hermes gateway restart`
+    # _HERMES_GATEWAY=1. Inheriting it makes a spawned `lucifex gateway restart`
     # trip the in-process restart-loop guard and exit 1 — silently failing the
     # dashboard's auto-restart paths. The gateway's own restart watcher already
     # drops it (gateway/run.py); mirror that here (#52470).
@@ -3539,7 +3539,7 @@ def _gateway_subcommand(profile: Optional[str], verb: str) -> List[str]:
 
 
 def _gateway_display_command(profile: Optional[str], verb: str) -> str:
-    return " ".join(["hermes", *_gateway_subcommand(profile, verb)])
+    return " ".join(["lucifex", *_gateway_subcommand(profile, verb)])
 
 
 # Kept in sync with the corresponding frontend validation in ChannelsPage.tsx.
@@ -3599,12 +3599,12 @@ def _validate_messaging_env_value(platform_id: str, key: str, value: str) -> Non
 
 
 def _spawn_gateway_restart(profile: Optional[str] = None) -> Tuple[subprocess.Popen, bool]:
-    """Spawn ``hermes gateway restart``, reusing an in-flight restart.
+    """Spawn ``lucifex gateway restart``, reusing an in-flight restart.
 
     Multiple dashboard paths can request a restart in quick succession
     (restart button double-click, or a stale cached frontend firing its own
     restart after the server already auto-restarted post-onboarding). Two
-    concurrent ``hermes gateway restart`` children race each other on the
+    concurrent ``lucifex gateway restart`` children race each other on the
     manual kill-and-start path, so reuse the live one instead.
 
     Returns ``(proc, reused)``.
@@ -3643,7 +3643,7 @@ def _restart_gateway_after_webhook_enable(profile: Optional[str] = None) -> dict
 
 @app.post("/api/gateway/restart")
 async def restart_gateway(profile: Optional[str] = None):
-    """Kick off a ``hermes gateway restart`` in the background."""
+    """Kick off a ``lucifex gateway restart`` in the background."""
     try:
         proc, _reused = _spawn_gateway_restart(profile)
     except HTTPException:
@@ -3731,20 +3731,20 @@ async def gateway_drain(request: Request):
     }
 
 
-@app.post("/api/hermes/update")
+@app.post("/api/lucifex/update")
 async def update_hermes():
-    """Kick off ``hermes update`` in the background."""
+    """Kick off ``lucifex update`` in the background."""
     if _dashboard_local_update_managed_externally():
         message = (
-            "Hermes updates are managed outside this dashboard in "
+            "Lucifex updates are managed outside this dashboard in "
             "containerized environments. The built-in local updater is "
             "disabled here."
         )
-        _record_completed_action("hermes-update", message, exit_code=1)
+        _record_completed_action("lucifex-update", message, exit_code=1)
         return {
             "ok": False,
             "pid": None,
-            "name": "hermes-update",
+            "name": "lucifex-update",
             "error": "dashboard_update_managed_externally",
             "message": message,
             "update_command": "managed outside dashboard",
@@ -3753,25 +3753,25 @@ async def update_hermes():
     install_method = detect_install_method(PROJECT_ROOT)
     if install_method == "docker":
         message = format_docker_update_message()
-        _record_completed_action("hermes-update", message, exit_code=1)
+        _record_completed_action("lucifex-update", message, exit_code=1)
         return {
             "ok": False,
             "pid": None,
-            "name": "hermes-update",
+            "name": "lucifex-update",
             "error": "docker_update_unsupported",
             "message": message,
             "update_command": recommended_update_command_for_method(install_method),
         }
 
     try:
-        proc = _spawn_hermes_action(["update"], "hermes-update")
+        proc = _spawn_hermes_action(["update"], "lucifex-update")
     except Exception as exc:
-        _log.exception("Failed to spawn hermes update")
+        _log.exception("Failed to spawn lucifex update")
         raise HTTPException(status_code=500, detail=f"Failed to start update: {exc}")
     return {
         "ok": True,
         "pid": proc.pid,
-        "name": "hermes-update",
+        "name": "lucifex-update",
     }
 
 
@@ -3823,17 +3823,17 @@ def _recent_upstream_commits(n: int = 20) -> List[Dict[str, Any]]:
         return []
 
 
-@app.get("/api/hermes/update/check")
+@app.get("/api/lucifex/update/check")
 async def check_hermes_update(force: bool = False):
-    """Report whether a Hermes update is available, without applying it.
+    """Report whether a Lucifex update is available, without applying it.
 
     Powers the dashboard's "check before you update" flow: the System page
     shows the commit-behind count and asks the user to confirm before
-    ``POST /api/hermes/update`` actually runs ``hermes update``.
+    ``POST /api/lucifex/update`` actually runs ``lucifex update``.
 
     Returns:
         install_method: 'git' | 'pip' | 'docker' | 'nixos' | 'homebrew' | ...
-        current_version: installed Hermes version string
+        current_version: installed Lucifex version string
         behind: commits behind upstream (>=1), 0 if up to date,
                 -1 if behind by an unknown count (nix/pypi), or null if the
                 check could not run (offline, no remote, etc.)
@@ -3858,7 +3858,7 @@ async def check_hermes_update(force: bool = False):
             "can_apply": False,
             "update_command": "managed outside dashboard",
             "message": (
-                "Hermes updates are managed outside this dashboard in "
+                "Lucifex updates are managed outside this dashboard in "
                 "containerized environments."
             ),
         }
@@ -3951,7 +3951,7 @@ async def transcribe_audio_upload(payload: AudioTranscriptionRequest):
     try:
         suffix = _audio_extension_for_mime(mime_type)
         with tempfile.NamedTemporaryFile(
-            prefix="hermes-desktop-voice-",
+            prefix="lucifex-desktop-voice-",
             suffix=suffix,
             delete=False,
         ) as tmp:
@@ -4674,7 +4674,7 @@ async def search_sessions(q: str = "", limit: int = 20, profile: Optional[str] =
                 seen[root] = payload
 
             # Direct ID matches first: users often paste a session id from CLI,
-            # logs, or another Hermes surface. FTS can't find those unless the
+            # logs, or another Lucifex surface. FTS can't find those unless the
             # id happens to appear in message text. search_sessions_by_id is
             # SQL-bounded, so this stays cheap even with thousands of sessions.
             for row in db.search_sessions_by_id(q, limit=safe_limit, include_archived=True):
@@ -4734,7 +4734,7 @@ async def search_sessions(q: str = "", limit: int = 20, profile: Optional[str] =
 def _normalize_config_for_web(config: Dict[str, Any]) -> Dict[str, Any]:
     """Normalize config for the web UI.
 
-    Hermes supports ``model`` as either a bare string (``"anthropic/claude-sonnet-4"``)
+    Lucifex supports ``model`` as either a bare string (``"anthropic/claude-sonnet-4"``)
     or a dict (``{default: ..., provider: ..., base_url: ...}``).  The schema is built
     from DEFAULT_CONFIG where ``model`` is a string, but user configs often have the
     dict form.  Normalize to the string form so the frontend schema matches.
@@ -5557,10 +5557,10 @@ def _read_memory_provider_existing_values(name: str) -> Dict[str, Any]:
         if isinstance(legacy_cfg, dict):
             values = {**legacy_cfg, **values}
 
-    # Holographic stores under plugins.hermes-memory-store.
+    # Holographic stores under plugins.lucifex-memory-store.
     plugins_cfg = cfg.get("plugins") if isinstance(cfg, dict) else {}
     if name == "holographic" and isinstance(plugins_cfg, dict):
-        holographic_cfg = plugins_cfg.get("hermes-memory-store")
+        holographic_cfg = plugins_cfg.get("lucifex-memory-store")
         if isinstance(holographic_cfg, dict):
             values.update(holographic_cfg)
 
@@ -6130,7 +6130,7 @@ def get_model_options(
 def get_recommended_default_model(provider: str = ""):
     """Return the recommended default model for a freshly-authenticated provider.
 
-    Mirrors the model-curation `hermes model` does so GUI onboarding lands on a
+    Mirrors the model-curation `lucifex model` does so GUI onboarding lands on a
     sensible default instead of blindly taking the first curated entry. For
     Nous this honors the user's free/paid tier: free users get a free model,
     paid users get the full curated default. For any other provider it falls
@@ -6466,7 +6466,7 @@ def _apply_model_assignment_sync(
         save_config(cfg)
 
         # Register a named ``custom_providers`` entry for a custom/local
-        # endpoint, mirroring the ``hermes model`` custom flow
+        # endpoint, mirroring the ``lucifex model`` custom flow
         # (_save_custom_provider). Without this the endpoint only lives in
         # ``model.*`` and the picker has no proper ready row for it — the
         # GUI then surfaces a "needs setup" dead-end on the bare ``custom``
@@ -6730,7 +6730,7 @@ def _catalog_provider_env_metadata() -> dict:
 
     Returns ``{env_var: {provider, provider_label, description, url, is_password,
     advanced}}`` for every API-key provider in the unified ``provider_catalog()``
-    (i.e. the ``hermes model`` universe). This is what lets the desktop Keys tab
+    (i.e. the ``lucifex model`` universe). This is what lets the desktop Keys tab
     render a card for a provider even when its env var was never hand-added to
     ``OPTIONAL_ENV_VARS`` — closing the drift where CLI-configurable providers
     (openai-api, kilocode, novita, tencent-tokenhub, copilot, …) were missing
@@ -6796,7 +6796,7 @@ def _catalog_provider_env_metadata() -> dict:
         # AWS-SDK providers (Bedrock) authenticate via the AWS credential chain
         # rather than a pasted API key, so they have no api_key_env_vars. Tag
         # their AWS_* settings to the provider card so they still appear on the
-        # Keys tab (otherwise Bedrock — a `hermes model` provider — would be
+        # Keys tab (otherwise Bedrock — a `lucifex model` provider — would be
         # invisible in the desktop app).
         if d.auth_type == "aws_sdk":
             for aws_var in ("AWS_REGION", "AWS_PROFILE"):
@@ -6814,7 +6814,7 @@ def _catalog_provider_env_metadata() -> dict:
         # Vertex AI authenticates via OAuth2 (service-account JSON or ADC), not a
         # pasted API key, so it also has no api_key_env_vars. Tag its credential
         # env var to the provider card so it appears on the Keys tab (otherwise
-        # Vertex — a `hermes model` provider — would be invisible in the desktop
+        # Vertex — a `lucifex model` provider — would be invisible in the desktop
         # app). The value is a filesystem path, not a secret string, so it is
         # not a password field.
         if d.auth_type == "vertex":
@@ -6859,7 +6859,7 @@ async def get_env_vars(profile: Optional[str] = None):
             "channel_managed": var_name in channel_keys,
             # Provider grouping hints derived from the unified provider catalog
             # so the desktop Keys tab groups by the SAME provider identity the
-            # CLI `hermes model` picker uses (not desktop-only prefix guesses).
+            # CLI `lucifex model` picker uses (not desktop-only prefix guesses).
             "provider": cat_meta.get("provider", ""),
             "provider_label": cat_meta.get("provider_label", ""),
             # True when this key exists in the user's .env but is NOT in any
@@ -7325,14 +7325,14 @@ async def reveal_env_var(
 _PLATFORM_OVERRIDES: dict[str, dict[str, Any]] = {
     "telegram": {
         "name": "Telegram",
-        "description": "Run Hermes from Telegram DMs, groups, and topics.",
+        "description": "Run Lucifex from Telegram DMs, groups, and topics.",
         "docs_url": "https://core.telegram.org/bots/features#botfather",
         "env_vars": ("TELEGRAM_BOT_TOKEN", "TELEGRAM_ALLOWED_USERS", "TELEGRAM_PROXY"),
         "required_env": ("TELEGRAM_BOT_TOKEN",),
     },
     "discord": {
         "name": "Discord",
-        "description": "Connect Hermes to Discord DMs, channels, and threads.",
+        "description": "Connect Lucifex to Discord DMs, channels, and threads.",
         "docs_url": "https://discord.com/developers/applications",
         "env_vars": (
             "DISCORD_BOT_TOKEN",
@@ -7343,21 +7343,21 @@ _PLATFORM_OVERRIDES: dict[str, dict[str, Any]] = {
     },
     "slack": {
         "name": "Slack",
-        "description": "Use Hermes from Slack via Socket Mode. Add allowed Slack member IDs so connected bots can respond.",
+        "description": "Use Lucifex from Slack via Socket Mode. Add allowed Slack member IDs so connected bots can respond.",
         "docs_url": "https://api.slack.com/apps",
         "env_vars": ("SLACK_BOT_TOKEN", "SLACK_APP_TOKEN", "SLACK_ALLOWED_USERS"),
         "required_env": ("SLACK_BOT_TOKEN", "SLACK_APP_TOKEN"),
     },
     "mattermost": {
         "name": "Mattermost",
-        "description": "Connect Hermes to Mattermost channels and direct messages.",
+        "description": "Connect Lucifex to Mattermost channels and direct messages.",
         "docs_url": "https://mattermost.com/deploy/",
         "env_vars": ("MATTERMOST_URL", "MATTERMOST_TOKEN", "MATTERMOST_ALLOWED_USERS"),
         "required_env": ("MATTERMOST_URL", "MATTERMOST_TOKEN"),
     },
     "matrix": {
         "name": "Matrix",
-        "description": "Use Hermes in Matrix rooms and direct messages.",
+        "description": "Use Lucifex in Matrix rooms and direct messages.",
         "docs_url": "https://matrix.org/ecosystem/servers/",
         "env_vars": (
             "MATRIX_HOMESERVER",
@@ -7376,7 +7376,7 @@ _PLATFORM_OVERRIDES: dict[str, dict[str, Any]] = {
     },
     "whatsapp": {
         "name": "WhatsApp",
-        "description": "Use Hermes through the bundled WhatsApp bridge with QR-based auth.",
+        "description": "Use Lucifex through the bundled WhatsApp bridge with QR-based auth.",
         "docs_url": "https://github.com/tulir/whatsmeow",
         "env_vars": (
             "WHATSAPP_ENABLED",
@@ -7388,14 +7388,14 @@ _PLATFORM_OVERRIDES: dict[str, dict[str, Any]] = {
     },
     "homeassistant": {
         "name": "Home Assistant",
-        "description": "Control your smart home from Hermes via Home Assistant.",
+        "description": "Control your smart home from Lucifex via Home Assistant.",
         "docs_url": "https://www.home-assistant.io/docs/authentication/",
         "env_vars": ("HASS_URL", "HASS_TOKEN"),
         "required_env": ("HASS_URL", "HASS_TOKEN"),
     },
     "email": {
         "name": "Email",
-        "description": "Talk to Hermes through an IMAP/SMTP mailbox.",
+        "description": "Talk to Lucifex through an IMAP/SMTP mailbox.",
         "docs_url": "https://lucifex-agent.nousresearch.com/docs/user-guide/messaging/",
         "env_vars": (
             "EMAIL_ADDRESS",
@@ -7419,14 +7419,14 @@ _PLATFORM_OVERRIDES: dict[str, dict[str, Any]] = {
     },
     "dingtalk": {
         "name": "DingTalk",
-        "description": "Connect Hermes to DingTalk groups (钉钉).",
+        "description": "Connect Lucifex to DingTalk groups (钉钉).",
         "docs_url": "https://open.dingtalk.com/document/orgapp/the-robot-development-process",
         "env_vars": ("DINGTALK_CLIENT_ID", "DINGTALK_CLIENT_SECRET"),
         "required_env": ("DINGTALK_CLIENT_ID", "DINGTALK_CLIENT_SECRET"),
     },
     "feishu": {
         "name": "Feishu / Lark",
-        "description": "Use Hermes inside Feishu / Lark.",
+        "description": "Use Lucifex inside Feishu / Lark.",
         "docs_url": "https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/im-v1/intro",
         "env_vars": (
             "FEISHU_APP_ID",
@@ -7438,7 +7438,7 @@ _PLATFORM_OVERRIDES: dict[str, dict[str, Any]] = {
     },
     "google_chat": {
         "name": "Google Chat",
-        "description": "Connect Hermes to Google Chat via Cloud Pub/Sub.",
+        "description": "Connect Lucifex to Google Chat via Cloud Pub/Sub.",
         "docs_url": "https://lucifex-agent.nousresearch.com/docs/user-guide/messaging/google_chat",
     },
     "wecom": {
@@ -7474,7 +7474,7 @@ _PLATFORM_OVERRIDES: dict[str, dict[str, Any]] = {
     },
     "bluebubbles": {
         "name": "BlueBubbles (iMessage)",
-        "description": "Use Hermes through iMessage via a BlueBubbles server.",
+        "description": "Use Lucifex through iMessage via a BlueBubbles server.",
         "docs_url": "https://bluebubbles.app/",
         "env_vars": (
             "BLUEBUBBLES_SERVER_URL",
@@ -7485,7 +7485,7 @@ _PLATFORM_OVERRIDES: dict[str, dict[str, Any]] = {
     },
     "qqbot": {
         "name": "QQ Bot",
-        "description": "Connect Hermes to a QQ Bot from the QQ Open Platform.",
+        "description": "Connect Lucifex to a QQ Bot from the QQ Open Platform.",
         "docs_url": "https://q.qq.com",
         "env_vars": ("QQ_APP_ID", "QQ_CLIENT_SECRET", "QQ_ALLOWED_USERS"),
         "required_env": ("QQ_APP_ID", "QQ_CLIENT_SECRET"),
@@ -7498,13 +7498,13 @@ _PLATFORM_OVERRIDES: dict[str, dict[str, Any]] = {
     },
     "yuanbao": {
         "name": "Yuanbao (元宝)",
-        "description": "Connect Hermes to Tencent Yuanbao.",
+        "description": "Connect Lucifex to Tencent Yuanbao.",
         "docs_url": "",
         "required_env": (),
     },
     "api_server": {
         "name": "API server",
-        "description": "Expose Hermes as an OpenAI-compatible HTTP API for tools like Open WebUI.",
+        "description": "Expose Lucifex as an OpenAI-compatible HTTP API for tools like Open WebUI.",
         "docs_url": "https://lucifex-agent.nousresearch.com/docs/user-guide/messaging/",
         "env_vars": (
             "API_SERVER_ENABLED",
@@ -7651,11 +7651,11 @@ _MESSAGING_ENV_FALLBACKS: dict[str, dict[str, Any]] = {
         "password": True,
     },
     "WEIXIN_ACCOUNT_ID": {
-        "description": "iLink Bot account ID obtained through QR login in hermes gateway setup",
+        "description": "iLink Bot account ID obtained through QR login in lucifex gateway setup",
         "prompt": "iLink Bot account ID",
     },
     "WEIXIN_TOKEN": {
-        "description": "iLink Bot token obtained through QR login in hermes gateway setup",
+        "description": "iLink Bot token obtained through QR login in lucifex gateway setup",
         "prompt": "iLink Bot token",
         "password": True,
     },
@@ -8664,7 +8664,7 @@ async def _telegram_onboarding_request(
 
 @app.post("/api/messaging/telegram/onboarding/start")
 async def start_telegram_onboarding(body: TelegramOnboardingStart):
-    bot_name = (body.bot_name or "Hermes Agent").strip() or "Hermes Agent"
+    bot_name = (body.bot_name or "Lucifex Agent").strip() or "Lucifex Agent"
     payload = await _telegram_onboarding_request(
         "POST",
         "/v1/telegram/pairings",
@@ -8778,7 +8778,7 @@ def _restart_gateway_after_telegram_onboarding(profile: Optional[str] = None) ->
     """Best-effort gateway restart after saving Telegram QR onboarding.
 
     The QR flow naturally pulls users into Telegram on another device. If the
-    saved token waits on a separate dashboard restart click, Hermes appears
+    saved token waits on a separate dashboard restart click, Lucifex appears
     broken from the chat side. Keep the config save authoritative, but report
     restart failures so the UI can fall back to the existing manual banner.
     """
@@ -9078,7 +9078,7 @@ async def test_messaging_platform(platform_id: str, profile: Optional[str] = Non
 # connected, plus a disconnect button. The actual login flow (PKCE for
 # Anthropic, device-code for Nous/Codex) still runs in the CLI for now;
 # Phase 2 will add in-browser flows. For unconnected providers we return
-# the canonical ``hermes auth add <provider>`` command so the dashboard
+# the canonical ``lucifex auth add <provider>`` command so the dashboard
 # can surface a one-click copy.
 
 
@@ -9111,7 +9111,7 @@ def _anthropic_oauth_status() -> Dict[str, Any]:
     """Status for the "Anthropic API Key" catalog entry.
 
     Two sources, in priority order:
-    1. ``~/.lucifex/.anthropic_oauth.json`` — Hermes-managed PKCE flow (what
+    1. ``~/.lucifex/.anthropic_oauth.json`` — Lucifex-managed PKCE flow (what
        this entry's Connect button writes)
     2. ``ANTHROPIC_API_KEY`` → ``ANTHROPIC_TOKEN`` → ``CLAUDE_CODE_OAUTH_TOKEN``
        env vars (registry order) — from ``.env``, the shell, or an external
@@ -9142,7 +9142,7 @@ def _anthropic_oauth_status() -> Dict[str, Any]:
         return {
             "logged_in": True,
             "source": "hermes_pkce",
-            "source_label": f"Hermes PKCE ({_get_hermes_oauth_file() if _get_hermes_oauth_file else None})",
+            "source_label": f"Lucifex PKCE ({_get_hermes_oauth_file() if _get_hermes_oauth_file else None})",
             "token_preview": _truncate_token(hermes_creds.get("accessToken")),
             "expires_at": hermes_creds.get("expiresAt"),
             "has_refresh_token": bool(hermes_creds.get("refreshToken")),
@@ -9185,8 +9185,8 @@ def _claude_code_only_status() -> Dict[str, Any]:
     """Surface Claude Code CLI credentials as their own provider entry.
 
     Independent of the Anthropic entry above so users can see whether their
-    Claude Code subscription tokens are actively flowing into Hermes even
-    when they also have a separate Hermes-managed PKCE login.
+    Claude Code subscription tokens are actively flowing into Lucifex even
+    when they also have a separate Lucifex-managed PKCE login.
     """
     try:
         from agent.anthropic_adapter import read_claude_code_credentials
@@ -9210,7 +9210,7 @@ def _copilot_acp_status() -> Dict[str, Any]:
 
     There is no cheap programmatic credential probe for the ACP subprocess, so
     this is a read-only "managed by the Copilot CLI" card (like claude-code):
-    Hermes never claims a login state it can't verify.
+    Lucifex never claims a login state it can't verify.
     """
     return {
         "logged_in": False,
@@ -9240,7 +9240,7 @@ _OAUTH_PROVIDER_CATALOG: tuple[Dict[str, Any], ...] = (
         "id": "nous",
         "name": "Nous Portal",
         "flow": "device_code",
-        "cli_command": "hermes auth add nous",
+        "cli_command": "lucifex auth add nous",
         "docs_url": "https://portal.nousresearch.com",
         "status_fn": None,  # dispatched via auth.get_nous_auth_status
     },
@@ -9248,7 +9248,7 @@ _OAUTH_PROVIDER_CATALOG: tuple[Dict[str, Any], ...] = (
         "id": "openai-codex",
         "name": "OpenAI OAuth (ChatGPT)",
         "flow": "device_code",
-        "cli_command": "hermes auth add openai-codex",
+        "cli_command": "lucifex auth add openai-codex",
         "docs_url": "https://platform.openai.com/docs",
         "status_fn": None,  # dispatched via auth.get_codex_auth_status
     },
@@ -9256,7 +9256,7 @@ _OAUTH_PROVIDER_CATALOG: tuple[Dict[str, Any], ...] = (
         "id": "qwen-oauth",
         "name": "Qwen (via Qwen CLI)",
         "flow": "external",
-        "cli_command": "hermes auth add qwen-oauth",
+        "cli_command": "lucifex auth add qwen-oauth",
         "docs_url": "https://github.com/QwenLM/qwen-code",
         "status_fn": None,  # dispatched via auth.get_qwen_auth_status
     },
@@ -9269,7 +9269,7 @@ _OAUTH_PROVIDER_CATALOG: tuple[Dict[str, Any], ...] = (
         # as Nous's device-code flow; the PKCE bit is a security
         # extension that doesn't change the operator experience.
         "flow": "device_code",
-        "cli_command": "hermes auth add minimax-oauth",
+        "cli_command": "lucifex auth add minimax-oauth",
         "docs_url": "https://www.minimax.io",
         "status_fn": None,  # dispatched via auth.get_minimax_oauth_auth_status
     },
@@ -9280,7 +9280,7 @@ _OAUTH_PROVIDER_CATALOG: tuple[Dict[str, Any], ...] = (
         # containers, and desktop installs without requiring a reachable
         # 127.0.0.1 callback.
         "flow": "device_code",
-        "cli_command": "hermes auth add xai-oauth",
+        "cli_command": "lucifex auth add xai-oauth",
         "docs_url": "https://lucifex-agent.nousresearch.com/docs/guides/xai-grok-oauth",
         "status_fn": None,  # dispatched via auth.get_xai_oauth_auth_status
     },
@@ -9299,7 +9299,7 @@ _OAUTH_PROVIDER_CATALOG: tuple[Dict[str, Any], ...] = (
         "id": "anthropic",
         "name": "Anthropic API Key",
         "flow": "pkce",
-        "cli_command": "hermes auth add anthropic",
+        "cli_command": "lucifex auth add anthropic",
         "docs_url": "https://docs.claude.com/en/api/getting-started",
         "status_fn": _anthropic_oauth_status,
     },
@@ -9411,11 +9411,11 @@ def _resolve_provider_status(provider_id: str, status_fn) -> Dict[str, Any]:
 def _oauth_provider_disconnect_command(provider: Dict[str, Any]) -> Optional[str]:
     """Shell command that clears an external provider's credentials.
 
-    External providers store their credentials outside Hermes, so the disconnect
+    External providers store their credentials outside Lucifex, so the disconnect
     API deliberately refuses them (we never delete files another CLI owns on the
     user's behalf via a silent API call). For the ones we know how to clear we
     instead hand the GUI a command it can *run in the embedded terminal* — the
-    user sees exactly what executes, and Hermes then stops resolving the token.
+    user sees exactly what executes, and Lucifex then stops resolving the token.
 
     Claude Code has no scriptable logout (only the interactive ``/logout``), so
     we remove the credential the same way logout does: the macOS Keychain entry
@@ -9439,7 +9439,7 @@ def _oauth_provider_disconnect_hint(provider: Dict[str, Any], status: Dict[str, 
         if _oauth_provider_disconnect_command(provider):
             # The GUI offers a one-click "run in terminal" path; this hint is the
             # fallback wording for surfaces that only show text.
-            return "Managed outside Hermes — run the disconnect command to remove it."
+            return "Managed outside Lucifex — run the disconnect command to remove it."
         return "Managed by that provider's CLI; remove it there."
     if status.get("source") == "env_var":
         return "Remove the API key from Settings → Keys instead."
@@ -9455,14 +9455,14 @@ def _build_oauth_catalog() -> list[Dict[str, Any]]:
          PKCE card and the synthetic claude-code subscription row, which are not
          catalog providers), and
       2. every accounts-tab provider in the unified ``provider_catalog()`` (the
-         ``hermes model`` universe) — so any OAuth/external provider added as a
+         ``lucifex model`` universe) — so any OAuth/external provider added as a
          plugin appears automatically, with sensible defaults, even if no
          explicit card was written for it.
 
     The explicit catalog wins on metadata; the unified catalog guarantees we
     never silently drop a provider the CLI picker offers. Order: explicit cards
     first (their curated order), then any catalog-only providers appended in
-    ``hermes model`` order.
+    ``lucifex model`` order.
     """
     rows: list[Dict[str, Any]] = []
     seen: set[str] = set()
@@ -9475,7 +9475,7 @@ def _build_oauth_catalog() -> list[Dict[str, Any]]:
         rows.append(dict(entry))
 
     # 2. Catalog accounts-providers not already covered — keeps the Accounts tab
-    #    in lockstep with the `hermes model` universe (zero-edit for new plugins).
+    #    in lockstep with the `lucifex model` universe (zero-edit for new plugins).
     try:
         from lucifex_cli.provider_catalog import provider_catalog
         for d in provider_catalog():
@@ -9486,7 +9486,7 @@ def _build_oauth_catalog() -> list[Dict[str, Any]]:
                 "id": d.slug,
                 "name": d.label,
                 "flow": "external",
-                "cli_command": f"hermes auth add {d.slug}",
+                "cli_command": f"lucifex auth add {d.slug}",
                 "docs_url": d.signup_url or "",
                 "status_fn": None,
             })
@@ -9517,7 +9517,7 @@ async def list_oauth_providers(profile: Optional[str] = None):
           has_refresh_token bool
 
     Membership is derived from the unified provider_catalog() so this stays in
-    sync with the `hermes model` picker; _OAUTH_OVERRIDES supplies per-provider
+    sync with the `lucifex model` picker; _OAUTH_OVERRIDES supplies per-provider
     flow/status/cli metadata.
     """
     with _profile_scope(profile):
@@ -9573,7 +9573,7 @@ async def disconnect_oauth_provider(
                 detail=f"{provider['name']} cannot be disconnected automatically. {disconnect_hint}",
             )
 
-        # Anthropic clears only the Hermes-managed PKCE file and auth-store entry.
+        # Anthropic clears only the Lucifex-managed PKCE file and auth-store entry.
         # The separate claude-code catalog row is external/read-only and rejected
         # above so we never pretend to remove ~/.claude/* credentials owned by the CLI.
         if provider_id == "anthropic":
@@ -9648,7 +9648,7 @@ _oauth_sessions: Dict[str, Dict[str, Any]] = {}
 _oauth_sessions_lock = threading.Lock()
 
 # Import OAuth constants from canonical source instead of duplicating.
-# Guarded so hermes web still starts if anthropic_adapter is unavailable;
+# Guarded so lucifex web still starts if anthropic_adapter is unavailable;
 # Phase 2 endpoints will return 501 in that case.
 try:
     from agent.anthropic_adapter import (
@@ -9721,10 +9721,10 @@ def _oauth_session_profile(
 
 
 def _save_anthropic_oauth_creds(access_token: str, refresh_token: str, expires_at_ms: int) -> None:
-    """Persist Anthropic PKCE creds to both Hermes file AND credential pool.
+    """Persist Anthropic PKCE creds to both Lucifex file AND credential pool.
 
     Mirrors what auth_commands.add_command does so the dashboard flow leaves
-    the system in the same state as ``hermes auth add anthropic``.
+    the system in the same state as ``lucifex auth add anthropic``.
     """
     from agent.anthropic_adapter import _get_hermes_oauth_file
     oauth_file = _get_hermes_oauth_file()
@@ -9843,7 +9843,7 @@ def _submit_anthropic_pkce(
             data=exchange_data,
             headers={
                 "Content-Type": "application/json",
-                "User-Agent": "hermes-dashboard/1.0",
+                "User-Agent": "lucifex-dashboard/1.0",
             },
             method="POST",
         )
@@ -10169,7 +10169,7 @@ def _minimax_poller(session_id: str) -> None:
     auth_state dict that ``_minimax_oauth_login`` (the CLI flow) builds
     and persists via ``_minimax_save_auth_state`` — so the dashboard
     path leaves the system in the same state as
-    ``hermes auth add minimax-oauth``.
+    ``lucifex auth add minimax-oauth``.
     """
     from lucifex_cli.auth import (
         _minimax_poll_token,
@@ -10295,8 +10295,8 @@ def _xai_device_poller(session_id: str) -> None:
             # entries and triggers rotation churn / ``refresh_token_reused``.
             # An interactive dashboard login is also an explicit re-enable
             # signal, so clear any ``device_code`` suppression left by a
-            # prior ``hermes auth remove xai-oauth`` (mirrors auth_add_command
-            # and the ``hermes model`` re-login path in _login_xai_oauth).
+            # prior ``lucifex auth remove xai-oauth`` (mirrors auth_add_command
+            # and the ``lucifex model`` re-login path in _login_xai_oauth).
             unsuppress_credential_source("xai-oauth", "device_code")
         with _oauth_sessions_lock:
             sess["status"] = "approved"
@@ -10342,7 +10342,7 @@ def _codex_device_code_start_error(resp: Any) -> str:
     if "device" in lower and ("authori" in lower or "enable" in lower):
         message = (
             "OpenAI rejected the device-code login request. Your OpenAI "
-            "account may need device-code authorization enabled before Hermes "
+            "account may need device-code authorization enabled before Lucifex "
             "can start this dashboard login. Enable device-code authorization "
             "in OpenAI, then return here and click Login again."
         )
@@ -10763,7 +10763,7 @@ async def import_sessions_endpoint(request: Request):
     """Import one or more sessions exported from the dashboard or CLI.
 
     This is intentionally separate from ``/api/ops/import``: that endpoint
-    restores a whole Hermes backup archive, while this endpoint is scoped to
+    restores a whole Lucifex backup archive, while this endpoint is scoped to
     session rows/messages and is safe to use from the Sessions page.
     """
     try:
@@ -10835,7 +10835,7 @@ async def delete_empty_sessions_endpoint(profile: Optional[str] = None):
 
 @app.get("/api/sessions/stats")
 async def get_session_stats(profile: Optional[str] = None):
-    """Session-store statistics for the Sessions page (mirrors `hermes sessions stats`).
+    """Session-store statistics for the Sessions page (mirrors `lucifex sessions stats`).
 
     Registered before ``/api/sessions/{session_id}`` so the literal ``stats``
     path isn't captured as a session id by the parameterized route.
@@ -11068,7 +11068,7 @@ class SessionPrune(BaseModel):
 
 
 def _prune_sessions(body: SessionPrune):
-    """Delete ended sessions matching filters (mirrors `hermes sessions prune`)."""
+    """Delete ended sessions matching filters (mirrors `lucifex sessions prune`)."""
     has_window = (
         body.started_before is not None or body.started_after is not None
     )
@@ -11370,7 +11370,7 @@ def _cron_default_profile() -> str:
     A desktop pool backend runs one process per profile (LUCIFEX_HOME already
     scoped), but these cron endpoints deliberately route storage through the
     profiles tree via ``_cron_profile_home`` — so a hardcoded ``"default"``
-    fallback would write a non-default profile's job into ``~/.hermes``.
+    fallback would write a non-default profile's job into ``~/.lucifex``.
     Resolve the process's own profile instead. ``custom`` (an unrecognized
     LUCIFEX_HOME outside the profiles tree) has no profile-dir equivalent, so
     it keeps the legacy ``default`` fallback.
@@ -11721,7 +11721,7 @@ def _fire_cron_job_for_profile(profile: str, job_id: str) -> bool:
     """Run ONE due cron job end-to-end for ``profile`` via the resolved
     scheduler provider's ``fire_due`` (store CAS claim + ``run_one_job``).
 
-    Scope both cron storage and the runtime Hermes home so the job's store,
+    Scope both cron storage and the runtime Lucifex home so the job's store,
     config, credentials, scripts, skills, and output all belong to the selected
     profile. Runs with no live adapters; delivery falls back to the per-platform
     send path.
@@ -11879,7 +11879,7 @@ async def instantiate_blueprint(body: AutomationBlueprintInstantiate, profile: s
 # MCP server endpoints — list / add / remove / test.
 #
 # Wraps the same config data layer the CLI uses (lucifex_cli.mcp_config), so
-# servers managed here show up under `hermes mcp list` and vice versa.  Secrets
+# servers managed here show up under `lucifex mcp list` and vice versa.  Secrets
 # in stdio `env` blocks are redacted on read; the agent picks them up from
 # config.yaml at session start exactly as with CLI-added servers.
 # ---------------------------------------------------------------------------
@@ -12382,7 +12382,7 @@ async def mcp_oauth_callback(
         None,
     )
     if flow is None:
-        return HTMLResponse("<h1>OAuth flow expired</h1><p>Return to Hermes and try again.</p>", status_code=404)
+        return HTMLResponse("<h1>OAuth flow expired</h1><p>Return to Lucifex and try again.</p>", status_code=404)
     try:
         flow.deliver_callback(code=code, state=state, error=error)
     except ValueError as exc:
@@ -12394,8 +12394,8 @@ async def mcp_oauth_callback(
             status_code=status_code,
         )
     if error:
-        return HTMLResponse("<h1>Authorization failed</h1><p>Return to Hermes for details.</p>", status_code=400)
-    return HTMLResponse("<h1>Authorization received</h1><p>You can close this tab and return to Hermes.</p>")
+        return HTMLResponse("<h1>Authorization failed</h1><p>Return to Lucifex for details.</p>", status_code=400)
+    return HTMLResponse("<h1>Authorization received</h1><p>You can close this tab and return to Lucifex.</p>")
 
 
 class MCPEnabledToggle(BaseModel):
@@ -12431,7 +12431,7 @@ async def list_mcp_catalog(profile: Optional[str] = None):
 
     Each entry reports whether it's already installed and enabled so the UI
     can show install / enabled state inline.  This is the same catalog
-    `hermes mcp catalog` / `hermes mcp install` read.  ``profile`` scopes
+    `lucifex mcp catalog` / `lucifex mcp install` read.  ``profile`` scopes
     the installed/enabled annotations (the catalog itself is repo-shipped
     and identical for every profile).
     """
@@ -12839,7 +12839,7 @@ async def set_webhook_enabled(name: str, body: WebhookEnabledToggle):
 #
 # restart + update already exist above; these complete the lifecycle so a
 # remote admin can bring the gateway up or down without shell access.  Both
-# spawn the real `hermes gateway <verb>` so behaviour matches the CLI exactly.
+# spawn the real `lucifex gateway <verb>` so behaviour matches the CLI exactly.
 # Status is already surfaced by /api/status (gateway_running/state/platforms).
 # ---------------------------------------------------------------------------
 
@@ -12963,8 +12963,8 @@ async def add_credential_pool_entry(body: CredentialPoolAdd):
         pool.add_entry(entry)
         # Re-adding a credential is an explicit re-engagement signal: lift
         # every suppression for this provider so a source deleted earlier
-        # (via DELETE below or `hermes auth remove`) can seed again.
-        # Mirrors the `hermes auth add` behaviour in auth_commands.py.
+        # (via DELETE below or `lucifex auth remove`) can seed again.
+        # Mirrors the `lucifex auth add` behaviour in auth_commands.py.
         if not provider.startswith(CUSTOM_POOL_PREFIX):
             try:
                 from lucifex_cli.auth import (
@@ -12992,7 +12992,7 @@ async def remove_credential_pool_entry(provider: str, index: int):
     their backing source (.env var, OAuth singleton file, custom-provider
     config) on every call, so deleting only the pool row silently reverts on
     the next dashboard refresh.  We dispatch through the same RemovalStep
-    registry the CLI ``hermes auth remove`` uses: each source cleans up its
+    registry the CLI ``lucifex auth remove`` uses: each source cleans up its
     external state and suppresses ``(provider, source)`` so the seeders skip
     it.  Manual entries have no registered step — nothing external to clean,
     no suppression needed (they aren't re-seeded).
@@ -13165,7 +13165,7 @@ def _dashboard_backup_dir() -> Path:
 
 def _new_dashboard_backup_path() -> Path:
     stamp = datetime.now().strftime("%Y-%m-%d-%H%M%S")
-    return _dashboard_backup_dir() / f"hermes-backup-{stamp}-{secrets.token_hex(4)}.zip"
+    return _dashboard_backup_dir() / f"lucifex-backup-{stamp}-{secrets.token_hex(4)}.zip"
 
 
 @app.post("/api/ops/backup")
@@ -13221,7 +13221,7 @@ async def download_dashboard_backup(archive: str):
 
 class ImportRequest(BaseModel):
     archive: str
-    # Pass --force to `hermes import`. The spawned action runs with
+    # Pass --force to `lucifex import`. The spawned action runs with
     # stdin=DEVNULL, so the CLI's interactive "Continue? [y/N]" overwrite
     # prompt hits EOF and auto-aborts ("Aborted.", exit 1) whenever the
     # target already has a config — which it always does when the dashboard
@@ -13555,7 +13555,7 @@ class SkillInstallRequest(BaseModel):
 def _profile_cli_args(profile: Optional[str]) -> List[str]:
     """Return ``["-p", <name>]`` for a validated non-default profile.
 
-    Hub install/uninstall/update run in a fresh ``hermes`` subprocess, and
+    Hub install/uninstall/update run in a fresh ``lucifex`` subprocess, and
     ``_apply_profile_override()`` reads ``-p`` from argv in the child — the
     only mechanism that reaches import-time-bound globals like
     ``skills_hub.SKILLS_DIR``. Empty/"current" means the dashboard's own
@@ -13649,11 +13649,11 @@ async def update_skills_hub(
     return {"ok": True, "pid": proc.pid, "name": "skills-update"}
 
 
-# Human-readable labels for each hub source id (matches `hermes skills search`
+# Human-readable labels for each hub source id (matches `lucifex skills search`
 # provenance).  Keep in sync with create_source_router()'s source list.
 _SKILL_HUB_SOURCE_LABELS = {
     "official": "Official (Nous)",
-    "hermes-index": "Hermes Index",
+    "lucifex-index": "Lucifex Index",
     "skills-sh": "skills.sh",
     "well-known": "Well-Known",
     "url": "Direct URL",
@@ -13739,7 +13739,7 @@ async def list_skills_hub_sources(profile: Optional[str] = None):
                     entry["rate_limited"] = bool(getattr(src, "is_rate_limited", False))
                 except Exception:
                     entry["rate_limited"] = False
-            if sid == "hermes-index":
+            if sid == "lucifex-index":
                 try:
                     index_available = bool(getattr(src, "is_available", False))
                 except Exception:
@@ -14019,7 +14019,7 @@ class ProfileCreate(BaseModel):
     # Empty list = leave the seeded bundle untouched (legacy behaviour).
     keep_skills: List[str] = []
     # Skills-hub identifiers to install into the new profile. Installed async
-    # via a subprocess scoped to the profile (`hermes -p <name> skills install`)
+    # via a subprocess scoped to the profile (`lucifex -p <name> skills install`)
     # because skills_hub.SKILLS_DIR is import-time-bound and the LUCIFEX_HOME
     # override can't redirect it. Returns spawned PIDs for the UI to poll.
     hub_skills: List[str] = []
@@ -14145,7 +14145,7 @@ def _resolve_profile_dir(name: str) -> Path:
 def _profile_setup_command(name: str) -> str:
     """Return the shell command used to configure a profile in the CLI."""
     _resolve_profile_dir(name)
-    return "hermes setup" if name == "default" else f"{name} setup"
+    return "lucifex setup" if name == "default" else f"{name} setup"
 
 
 def _write_profile_model(profile_dir: Path, provider: str, model: str) -> None:
@@ -14382,7 +14382,7 @@ async def get_active_profile_endpoint():
     """Return the sticky active profile and the profile this dashboard
     process is currently running as.
 
-    ``active`` is the sticky default written by ``hermes profile use`` —
+    ``active`` is the sticky default written by ``lucifex profile use`` —
     the profile new CLI invocations pick up. ``current`` is the profile
     the running dashboard/gateway is scoped to (derived from LUCIFEX_HOME).
     """
@@ -14400,7 +14400,7 @@ async def get_active_profile_endpoint():
 
 @app.post("/api/profiles/active")
 async def set_active_profile_endpoint(body: ProfileActiveUpdate):
-    """Set the sticky active profile (mirrors ``hermes profile use``).
+    """Set the sticky active profile (mirrors ``lucifex profile use``).
 
     Note: this does not retarget the already-running dashboard process —
     it changes which profile subsequent CLI commands and gateways use.
@@ -14578,7 +14578,7 @@ async def update_profile_model_endpoint(name: str, body: ProfileModelUpdate):
 @app.post("/api/profiles/{name}/describe-auto")
 async def describe_profile_auto_endpoint(name: str, body: ProfileDescribeAuto):
     """Auto-generate a profile's description via the auxiliary LLM
-    (``auxiliary.profile_describer``). Mirrors ``hermes profile describe
+    (``auxiliary.profile_describer``). Mirrors ``lucifex profile describe
     <name> --auto``.
 
     A failed generation (no aux client, LLM error, …) is returned as
@@ -14946,7 +14946,7 @@ async def toggle_toolset(name: str, body: ToolsetToggle, profile: Optional[str] 
 async def get_toolset_config(name: str, profile: Optional[str] = None):
     """Return the provider matrix + key status for a toolset's config panel.
 
-    Surfaces the same provider rows the CLI ``hermes tools`` picker shows
+    Surfaces the same provider rows the CLI ``lucifex tools`` picker shows
     (via ``_visible_providers``), each with its ``env_vars`` annotated with
     current ``is_set`` state so the GUI can render provider selection + key
     entry. Toolsets without a ``TOOL_CATEGORIES`` entry return an empty
@@ -15123,7 +15123,7 @@ async def get_toolset_models(
 ):
     """Return the model catalog for a toolset backend (image/video gen).
 
-    The GUI counterpart of the model picker `hermes tools` runs after a
+    The GUI counterpart of the model picker `lucifex tools` runs after a
     backend is selected — e.g. FAL's multi-model catalog (speed / strengths /
     price per model). ``provider`` names a picker row; omitted, the currently
     active provider is used. Toolsets without model catalogs return
@@ -15237,7 +15237,7 @@ async def select_toolset_provider(
     """Persist a provider selection for a toolset (no key prompting).
 
     Delegates to ``apply_provider_selection`` — the shared, non-interactive
-    core extracted from the CLI configurator — so the GUI and ``hermes tools``
+    core extracted from the CLI configurator — so the GUI and ``lucifex tools``
     write identical config keys (``web.backend``, ``tts.provider``, etc.).
     API keys and post-setup flows are handled by separate endpoints. Returns
     400 for unknown toolset or provider names.
@@ -15373,7 +15373,7 @@ async def save_toolset_env(name: str, body: ToolsetEnvUpdate, profile: Optional[
     """Persist API keys for a toolset's provider env vars.
 
     Writes each ``key: value`` to ``~/.lucifex/.env`` via ``save_env_value`` —
-    the same store ``hermes tools`` writes when it prompts for keys. Keys are
+    the same store ``lucifex tools`` writes when it prompts for keys. Keys are
     validated against the env-var allowlist for the toolset's category (the
     union of every visible provider's ``env_vars``), so the GUI can't write an
     arbitrary env var through this endpoint. A blank value is treated as
@@ -15437,12 +15437,12 @@ async def run_toolset_post_setup(
     Post-setup hooks (npm install for browser/Camofox, pip install for
     KittenTTS/Piper/ddgs, cua-driver fetch, etc.) are long-running and
     text-output, so this follows the spawn-action pattern: it launches
-    ``hermes tools post-setup <key>`` and the frontend tails the log via
+    ``lucifex tools post-setup <key>`` and the frontend tails the log via
     ``GET /api/actions/tools-post-setup/status``. The ``key`` is validated
     against the declared post-setup allowlist before spawning. Returns 400
     for unknown toolset or post-setup key.
 
-    ``profile`` spawns the hook as ``hermes -p <profile> tools post-setup``.
+    ``profile`` spawns the hook as ``lucifex -p <profile> tools post-setup``.
     Most hooks install machine-level artifacts (repo node_modules, shared
     pip packages) where the scope is inert, but hooks that read config or
     write per-profile state must see the same LUCIFEX_HOME the rest of the
@@ -15713,7 +15713,7 @@ async def select_terminal_backend(
 #
 # cua-driver runs on macOS, Windows, and Linux. The desktop card reflects
 # per-OS readiness: on macOS the Accessibility + Screen Recording TCC grants
-# (which attach to cua-driver's OWN identity, com.trycua.driver — not Hermes,
+# (which attach to cua-driver's OWN identity, com.trycua.driver — not Lucifex,
 # so no app entitlement is involved); elsewhere, driver health from
 # `cua-driver doctor`. The grant flow is macOS-only (no TCC toggles to request
 # on Windows/Linux).
@@ -15736,7 +15736,7 @@ async def get_computer_use_status(profile: Optional[str] = None):
 
 @app.post("/api/tools/computer-use/permissions/grant")
 async def grant_computer_use_permissions(profile: Optional[str] = None):
-    """Spawn ``hermes computer-use permissions grant`` as a background action.
+    """Spawn ``lucifex computer-use permissions grant`` as a background action.
 
     macOS-only: ``cua-driver permissions grant`` launches CuaDriver via
     LaunchServices so the TCC dialog is attributed to com.trycua.driver, then
@@ -16191,7 +16191,7 @@ async def get_models_analytics(days: int = 30, profile: Optional[str] = None):
 # ---------------------------------------------------------------------------
 # /api/pty — PTY-over-WebSocket bridge for the dashboard "Chat" tab.
 #
-# The endpoint spawns the same ``hermes --tui`` binary the CLI uses, behind
+# The endpoint spawns the same ``lucifex --tui`` binary the CLI uses, behind
 # a POSIX pseudo-terminal, and forwards bytes + resize escapes across a
 # WebSocket.  The browser renders the ANSI through xterm.js (see
 # web/src/pages/ChatPage.tsx).
@@ -16576,7 +16576,7 @@ def _resolve_chat_argv(
 ) -> tuple[list[str], Optional[str], Optional[dict]]:
     """Resolve the argv + cwd + env for the chat PTY.
 
-    Default: whatever ``hermes --tui`` would run.  Tests monkeypatch this
+    Default: whatever ``lucifex --tui`` would run.  Tests monkeypatch this
     function to inject a tiny fake command (``cat``, ``sh -c 'printf …'``)
     so nothing has to build Node or the TUI bundle.
 
@@ -16604,7 +16604,7 @@ def _resolve_chat_argv(
     process (the TUI and the ``tui_gateway.entry`` it launches) resolves
     ``get_lucifex_home()`` from that env var at its own import, so the child
     binds the profile's config, skills, memory, and state.db from the start
-    — the same propagation ``hermes -p <name>`` performs. The in-process
+    — the same propagation ``lucifex -p <name>`` performs. The in-process
     ``HERMES_TUI_GATEWAY_URL`` attach is SKIPPED for scoped chats: the
     dashboard's in-memory gateway runs under the dashboard's own profile,
     so a profile-scoped chat must spawn its own gateway subprocess.
@@ -16845,7 +16845,7 @@ def _active_session_file_for_channel(app: "FastAPI", channel: str) -> Path:
     if existing is not None:
         return existing
 
-    fd, raw_path = tempfile.mkstemp(prefix="hermes-pty-active-", suffix=".json")
+    fd, raw_path = tempfile.mkstemp(prefix="lucifex-pty-active-", suffix=".json")
     os.close(fd)
     path = Path(raw_path)
     files[channel] = path
@@ -16883,14 +16883,14 @@ def _ws_close_reason(text: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# /api/console — safe Hermes Console command WebSocket.
+# /api/console — safe Lucifex Console command WebSocket.
 #
-# Unlike /api/pty, this endpoint never spawns a PTY, shell, or full Hermes CLI
+# Unlike /api/pty, this endpoint never spawns a PTY, shell, or full Lucifex CLI
 # subprocess. It runs the curated console engine in-process and exchanges
 # structured JSON frames with the dashboard xterm overlay.
 # ---------------------------------------------------------------------------
 
-_CONSOLE_PROMPT = "hermes> "
+_CONSOLE_PROMPT = "lucifex> "
 _CONSOLE_COMMAND_TIMEOUT_SECONDS = 60.0
 _CONSOLE_OUTPUT_LIMIT = 50000
 
@@ -16913,7 +16913,7 @@ def _get_console_executor() -> concurrent.futures.ThreadPoolExecutor:
             if _console_executor is None:
                 _console_executor = concurrent.futures.ThreadPoolExecutor(
                     max_workers=_CONSOLE_EXECUTOR_MAX_WORKERS,
-                    thread_name_prefix="hermes-console",
+                    thread_name_prefix="lucifex-console",
                 )
                 # Ensure the pool is torn down on interpreter exit. Don't wait on
                 # in-flight workers: a stuck 60s console command must not block
@@ -17215,7 +17215,7 @@ async def console_ws(ws: WebSocket) -> None:
                         "type": "error",
                         "id": command_id,
                         "message": (
-                            "Command timed out. Hermes Console returned to the prompt."
+                            "Command timed out. Lucifex Console returned to the prompt."
                         ),
                         "command": line,
                     },
@@ -17493,7 +17493,7 @@ async def pty_ws(ws: WebSocket) -> None:
         await ws.send_text(
             "\r\n\x1b[31mChat unavailable: the embedded terminal requires a "
             "POSIX PTY, which native Windows Python doesn't provide.\x1b[0m\r\n"
-            "\x1b[33mInstall Hermes inside WSL2 to use the dashboard's /chat "
+            "\x1b[33mInstall Lucifex inside WSL2 to use the dashboard's /chat "
             "tab — the rest of the dashboard works here.\x1b[0m\r\n"
         )
         await ws.close(code=1011)
@@ -17756,7 +17756,7 @@ def _render_active_theme_bootstrap_css() -> str:
     ``ThemeProvider.applyTheme()`` installs once the
     ``/api/dashboard/themes`` round-trip completes.  The goal is to
     eliminate the green flash where the first paint shows the bundle's
-    default Hermes Teal canvas before the SPA flips the configured user
+    default Lucifex Teal canvas before the SPA flips the configured user
     theme into place.
 
     Built-in themes return an empty string — their full definitions live
@@ -17801,7 +17801,7 @@ def _render_active_theme_bootstrap_css() -> str:
             # the cascade — the rule below re-resolves automatically and
             # never goes stale when the user picks a different theme.
             return (
-                '<style id="hermes-theme-bootstrap">'
+                '<style id="lucifex-theme-bootstrap">'
                 ":root{"
                 f"--background-base:{_esc(bg_hex)};"
                 f"--midground-base:{_esc(mg_hex)};"
@@ -17828,20 +17828,20 @@ def mount_spa(application: FastAPI):
     separate (unauthenticated) token-dispensing endpoint.
 
     When served behind a path-prefix reverse proxy (e.g.
-    ``mission-control.tilos.com/hermes/*`` -> local Caddy -> :9119), the
-    proxy injects ``X-Forwarded-Prefix: /hermes`` on every request. We
+    ``mission-control.tilos.com/lucifex/*`` -> local Caddy -> :9119), the
+    proxy injects ``X-Forwarded-Prefix: /lucifex`` on every request. We
     rewrite the served ``index.html`` so absolute asset URLs (``/assets/...``)
     and the SPA's runtime ``__HERMES_BASE_PATH__`` honour that prefix
     without rebuilding the bundle.
     """
-    # `hermes serve` is the headless backend: it must NEVER serve the browser
+    # `lucifex serve` is the headless backend: it must NEVER serve the browser
     # SPA, even if a dist is lying around from a prior `dashboard`/build. Take
     # the no-frontend path so only the JSON-RPC/WS/API surface is reachable.
     _headless = os.environ.get("HERMES_SERVE_HEADLESS") == "1"
     if _headless or not WEB_DIST.exists():
         _msg = (
-            "Headless backend (hermes serve): web UI disabled — use "
-            "`hermes dashboard` for the browser UI."
+            "Headless backend (lucifex serve): web UI disabled — use "
+            "`lucifex dashboard` for the browser UI."
             if _headless
             else "Frontend not built. Run: cd web && npm run build"
         )
@@ -17856,7 +17856,7 @@ def mount_spa(application: FastAPI):
     def _serve_index(prefix: str = ""):
         """Return index.html with the session token + base-path injected.
 
-        ``prefix`` is the normalised ``X-Forwarded-Prefix`` (e.g. ``/hermes``)
+        ``prefix`` is the normalised ``X-Forwarded-Prefix`` (e.g. ``/lucifex``)
         or empty string when served at root.
 
         When the OAuth auth gate is active (``app.state.auth_required``),
@@ -17897,7 +17897,7 @@ def mount_spa(application: FastAPI):
         # Theme flash mitigation: when the active theme is a user theme
         # (``LUCIFEX_HOME/dashboard-themes/<name>.yaml``), inject a minimal
         # critical-CSS block so the first paint uses the target palette.
-        # Without this the SPA paints the default Hermes Teal canvas, then
+        # Without this the SPA paints the default Lucifex Teal canvas, then
         # ``ThemeProvider`` flips the CSS variables once
         # ``/api/dashboard/themes`` resolves.  Built-in themes are already
         # in the bundle's ``presets.ts`` so no shim is needed for them.
@@ -17913,8 +17913,8 @@ def mount_spa(application: FastAPI):
     # When served behind a path-prefix proxy, the built CSS contains
     # absolute ``url(/fonts/...)`` and ``url(/ds-assets/...)`` references.
     # Browsers resolve those against the document origin, which means
-    # under ``/hermes`` they'd hit ``mission-control.tilos.com/fonts/...``
-    # (the MC Pages app), not the Hermes backend. Intercept CSS asset
+    # under ``/lucifex`` they'd hit ``mission-control.tilos.com/fonts/...``
+    # (the MC Pages app), not the Lucifex backend. Intercept CSS asset
     # requests BEFORE the StaticFiles mount and rewrite the absolute paths
     # when a prefix is in play.
     @application.get("/assets/{filename}.css")
@@ -17968,8 +17968,8 @@ def mount_spa(application: FastAPI):
 # Built-in dashboard themes — label + description only.  The actual color
 # definitions live in the frontend (web/src/themes/presets.ts).
 _BUILTIN_DASHBOARD_THEMES = [
-    {"name": "default",       "label": "Hermes Teal",         "description": "Classic dark teal — the canonical Hermes look"},
-    {"name": "default-large", "label": "Hermes Teal (Large)", "description": "Hermes Teal with bigger fonts and roomier spacing"},
+    {"name": "default",       "label": "Lucifex Teal",         "description": "Classic dark teal — the canonical Lucifex look"},
+    {"name": "default-large", "label": "Lucifex Teal (Large)", "description": "Lucifex Teal with bigger fonts and roomier spacing"},
     {"name": "nous-blue",     "label": "Nous Blue",           "description": "Light mode — vivid Nous-blue accents on cream canvas"},
     {"name": "midnight",      "label": "Midnight",            "description": "Deep blue-violet with cool accents"},
     {"name": "ember",     "label": "Ember",          "description": "Warm crimson and bronze — forge vibes"},
@@ -18358,7 +18358,7 @@ def _discover_dashboard_plugins() -> list:
     Checks three plugin sources (same as lucifex_cli.plugins):
     1. User plugins:    ~/.lucifex/plugins/<name>/dashboard/manifest.json
     2. Bundled plugins: <repo>/plugins/<name>/dashboard/manifest.json  (memory/, etc.)
-    3. Project plugins: ./.hermes/plugins/  (only if HERMES_ENABLE_PROJECT_PLUGINS)
+    3. Project plugins: ./.lucifex/plugins/  (only if HERMES_ENABLE_PROJECT_PLUGINS)
     """
     plugins = []
     seen_names: set = set()
@@ -18384,7 +18384,7 @@ def _discover_dashboard_plugins() -> list:
     # semantics (``1`` / ``true`` / ``yes`` / ``on``) so the gate matches
     # ``lucifex_cli/plugins.py`` and the documented user contract.
     if env_var_enabled("HERMES_ENABLE_PROJECT_PLUGINS"):
-        search_dirs.append((Path.cwd() / ".hermes" / "plugins", "project"))
+        search_dirs.append((Path.cwd() / ".lucifex" / "plugins", "project"))
 
     for plugins_root, source in search_dirs:
         if not plugins_root.is_dir():
@@ -18597,7 +18597,7 @@ def _merged_plugins_hub() -> Dict[str, Any]:
                     entry = registry.get_entry(tname)
                     if entry and entry.check_fn and not entry.check_fn():
                         auth_required = True
-                        auth_command = f"hermes auth {name}"
+                        auth_command = f"lucifex auth {name}"
                         break
             except Exception:
                 pass
@@ -18882,7 +18882,7 @@ def _mount_plugin_api_routes():
     ``/api/plugins/<name>/``.
 
     Backend import is restricted to ``bundled`` and ``user`` sources.
-    Project plugins (``./.hermes/plugins/``) ship with the CWD and are
+    Project plugins (``./.lucifex/plugins/``) ship with the CWD and are
     therefore attacker-controlled in any threat model where the user
     opens a malicious repo; they can extend the dashboard UI via
     static JS/CSS but their Python ``api`` file is never auto-imported
@@ -19131,7 +19131,7 @@ def start_server(
     app.state.auth_required = should_require_auth(host)
 
     # ``--insecure`` no longer disables the auth gate (June 2026 hardening:
-    # the hermes-0day MCP-persistence campaign abused unauthenticated public
+    # the lucifex-0day MCP-persistence campaign abused unauthenticated public
     # dashboards). If a caller still passes it, warn that it is now a no-op
     # rather than silently changing their expectation of an open bind.
     if allow_public and host not in _LOOPBACK_HOST_VALUES:
@@ -19151,7 +19151,7 @@ def start_server(
         if not list_providers():
             # Surface the *specific* reason any bundled provider declined
             # to register (e.g. missing HERMES_DASHBOARD_OAUTH_CLIENT_ID).
-            # Each provider plugin that ships with Hermes Agent exposes a
+            # Each provider plugin that ships with Lucifex Agent exposes a
             # module-level ``LAST_SKIP_REASON`` string for this purpose;
             # without it the operator would only see "no providers" which
             # is misleading when the provider IS installed but unconfigured.
@@ -19173,7 +19173,7 @@ def start_server(
                 "    (hash with: python -c \"from "
                 "plugins.dashboard_auth.basic import hash_password; "
                 "print(hash_password('your-password'))\")\n"
-                "  • OAuth: run `hermes dashboard register` (Nous Portal) or "
+                "  • OAuth: run `lucifex dashboard register` (Nous Portal) or "
                 "install a DashboardAuthProvider plugin.\n"
                 "There is no unauthenticated public-bind option — to keep it "
                 "local, bind 127.0.0.1 and tunnel in (SSH / Tailscale)."
@@ -19199,7 +19199,7 @@ def start_server(
                         "plugins.disabled but dashboard.basic_auth is "
                         "configured.\n"
                         "Remove 'basic' from plugins.disabled (or run "
-                        "`hermes plugins enable basic`), then restart the "
+                        "`lucifex plugins enable basic`), then restart the "
                         "dashboard.\n\n"
                     ) + _fix_hint
             except Exception:
@@ -19304,9 +19304,9 @@ def start_server(
             if headless:
                 # No SPA, and the JSON-RPC/WS endpoints are auth-gated — don't
                 # advertise a paste-and-connect URL, just announce the bind.
-                print(f"  Hermes backend listening on {host}:{actual_port}")
+                print(f"  Lucifex backend listening on {host}:{actual_port}")
             else:
-                print(f"  Hermes Web UI → http://{host}:{actual_port}")
+                print(f"  Lucifex Web UI → http://{host}:{actual_port}")
             _maybe_open_browser(host, actual_port, open_browser, initial_profile)
 
             # Collapse the peer-hangup teardown flood (#50005). When the Desktop

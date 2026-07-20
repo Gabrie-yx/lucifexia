@@ -1,15 +1,15 @@
-﻿"""
+"""
 CLI commands for the DM pairing system.
 
 Usage:
-    hermes pairing list              # Show all pending + approved users
-    hermes pairing approve <platform> <code>  # Approve a pairing code
-    hermes pairing revoke <platform> <user_id> # Revoke user access
-    hermes pairing clear-pending     # Clear all expired/pending codes
+    lucifex pairing list              # Show all pending + approved users
+    lucifex pairing approve <platform> <code>  # Approve a pairing code
+    lucifex pairing revoke <platform> <user_id> # Revoke user access
+    lucifex pairing clear-pending     # Clear all expired/pending codes
 """
 
 def pairing_command(args):
-    """Handle hermes pairing subcommands."""
+    """Handle lucifex pairing subcommands."""
     from gateway.pairing import PairingStore
 
     store = PairingStore()
@@ -24,8 +24,8 @@ def pairing_command(args):
     elif action == "clear-pending":
         _cmd_clear_pending(store)
     else:
-        print("Usage: hermes pairing {list|approve|revoke|clear-pending}")
-        print("Run 'hermes pairing --help' for details.")
+        print("Usage: lucifex pairing {list|approve|revoke|clear-pending}")
+        print("Run 'lucifex pairing --help' for details.")
 
 
 def _cmd_list(store):
@@ -93,7 +93,7 @@ def _cmd_approve(store, platform: str, code: str):
         )
     else:
         print(f"\n  Code '{code}' not found or expired for platform '{platform}'.")
-        print("  Run 'hermes pairing list' to see pending codes.\n")
+        print("  Run 'lucifex pairing list' to see pending codes.\n")
 
 
 def _cmd_revoke(store, platform: str, user_id: str):

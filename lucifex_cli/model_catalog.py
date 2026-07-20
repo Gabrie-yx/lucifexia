@@ -1,6 +1,6 @@
-﻿"""Remote model catalog fetcher.
+"""Remote model catalog fetcher.
 
-The Hermes docs site hosts a JSON manifest of curated models for providers
+The Lucifex docs site hosts a JSON manifest of curated models for providers
 we want to update without shipping a release (currently OpenRouter and
 Nous Portal). This module fetches, validates, and caches that manifest,
 falling back to the in-repo hardcoded lists when the network is unavailable.
@@ -77,7 +77,7 @@ DEFAULT_TTL_HOURS = 1
 DEFAULT_FETCH_TIMEOUT = 8.0
 SUPPORTED_SCHEMA_VERSION = 1
 
-_HERMES_USER_AGENT = f"hermes-cli/{_HERMES_VERSION}"
+_HERMES_USER_AGENT = f"lucifex-cli/{_HERMES_VERSION}"
 
 # In-process cache to avoid repeated disk + parse work across multiple
 # calls within the same session. Invalidated by TTL against the disk file's
@@ -372,11 +372,11 @@ def get_default_model_from_cache(provider: str) -> str | None:
     """Return the catalog's labeled default model for ``provider`` — cache only.
 
     The manifest marks exactly one model entry per provider with
-    ``"default": true``; that entry is the model Hermes silently lands on when
+    ``"default": true``; that entry is the model Lucifex silently lands on when
     the user never picked one. This accessor reads ONLY the in-process copy or
     the disk cache — it NEVER triggers a network fetch, so it is safe on hot
     resolution paths (agent build, gateway session setup) that must stay
-    network-free. The cache is kept fresh by the picker/`hermes update` paths;
+    network-free. The cache is kept fresh by the picker/`lucifex update` paths;
     when no cached manifest exists (fresh install, offline), returns None and
     the caller falls back to the in-repo constant.
     """
@@ -395,7 +395,7 @@ def get_default_model_from_cache(provider: str) -> str | None:
 def seed_cache_from_checkout(project_root: "Path | str") -> bool:
     """Overwrite the disk cache with the catalog shipped in a local checkout.
 
-    ``hermes update`` pulls the latest repo, so the freshly-pulled
+    ``lucifex update`` pulls the latest repo, so the freshly-pulled
     ``website/static/api/model-catalog.json`` IS the newest catalog — no
     network round-trip needed. Copying it straight over the disk cache keeps
     the model picker current even when the remote manifest fetch is bot-gated
@@ -424,7 +424,7 @@ def seed_cache_from_checkout(project_root: "Path | str") -> bool:
 
 
 def reset_cache() -> None:
-    """Clear the in-process cache. Used by tests and ``hermes model --refresh``."""
+    """Clear the in-process cache. Used by tests and ``lucifex model --refresh``."""
     global _catalog_cache, _catalog_cache_source_mtime
     _catalog_cache = None
     _catalog_cache_source_mtime = 0.0

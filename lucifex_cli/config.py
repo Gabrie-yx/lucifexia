@@ -1,17 +1,17 @@
-﻿"""
-Configuration management for Hermes Agent.
+"""
+Configuration management for Lucifex Agent.
 
 Config files are stored in ~/.lucifex/ for easy access:
 - ~/.lucifex/config.yaml  - All settings (model, toolsets, terminal, etc.)
 - ~/.lucifex/.env         - API keys and secrets
 
 This module provides:
-- hermes config          - Show current configuration
-- hermes config edit     - Open config in editor
-- hermes config get      - Print a resolved configuration value
-- hermes config set      - Set a specific value
-- hermes config unset    - Remove a user configuration value
-- hermes config wizard   - Re-run setup wizard
+- lucifex config          - Show current configuration
+- lucifex config edit     - Open config in editor
+- lucifex config get      - Print a resolved configuration value
+- lucifex config set      - Set a specific value
+- lucifex config unset    - Remove a user configuration value
+- lucifex config wizard   - Re-run setup wizard
 """
 
 import copy
@@ -53,7 +53,7 @@ def _backup_corrupt_config(config_path: Path) -> Optional[Path]:
     This snapshots the corrupted file to ``config.yaml.corrupt.<ts>.bak`` so
     the user can diff/repair it. Unlike Gemini CLI's policy-file recovery
     (which resets the live file to a clean state), we deliberately leave
-    ``config.yaml`` in place: hermes never silently mutates the user's config,
+    ``config.yaml`` in place: lucifex never silently mutates the user's config,
     and leaving it means a hand-fixed file is re-read on the next load. The
     backup is best-effort — any failure (permissions, symlink, disk full) is
     swallowed so config loading is never blocked by backup problems.
@@ -107,7 +107,7 @@ def _warn_config_parse_failure(
     scrolled off-screen on the first invocation and was never seen again.
 
     Now: warn once per (path, mtime_ns, size) on stderr **and** in
-    ``agent.log`` / ``errors.log`` at WARNING level so ``hermes logs``
+    ``agent.log`` / ``errors.log`` at WARNING level so ``lucifex logs``
     surfaces it. Re-warns automatically if the file changes (different
     mtime/size), so users editing the config see the next failure. On the
     first warning for a given broken file we also snapshot it to a
@@ -162,25 +162,25 @@ _ENV_VAR_NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 #
 # * ``LD_PRELOAD`` / ``LD_LIBRARY_PATH`` / ``LD_AUDIT`` — Linux dynamic
 #   loader. ``DYLD_*`` — macOS equivalent. Planting a path here means
-#   the next ``subprocess.run([...])`` Hermes makes loads attacker code
+#   the next ``subprocess.run([...])`` Lucifex makes loads attacker code
 #   before main().
 # * ``PYTHONPATH`` / ``PYTHONHOME`` / ``PYTHONSTARTUP`` /
-#   ``PYTHONUSERBASE`` — Python interpreter init. Hermes itself starts
+#   ``PYTHONUSERBASE`` — Python interpreter init. Lucifex itself starts
 #   from one of these on every restart.
 # * ``NODE_OPTIONS`` / ``NODE_PATH`` — Node interpreter; affects npm,
-#   ``hermes update``, the TUI build.
+#   ``lucifex update``, the TUI build.
 # * ``PATH`` — too broad to allow. The dashboard never needs to rewrite
 #   the operator's PATH; if a tool can't be found, the fix is to add an
 #   absolute path in the integration config, not to mutate PATH globally.
 # * ``GIT_SSH_COMMAND`` / ``GIT_EXEC_PATH`` — git rewrites that fire
-#   on every plugin install / ``hermes update``.
+#   on every plugin install / ``lucifex update``.
 # * ``BROWSER`` / ``EDITOR`` / ``VISUAL`` / ``PAGER`` — commands the
 #   shell or CLI invokes implicitly. Wrong values here = RCE on next
 #   ``$EDITOR``.
 # * ``SHELL`` — what subprocess uses with ``shell=True`` (we try to
 #   avoid that, but defense in depth).
 # * ``LUCIFEX_HOME`` / ``HERMES_PROFILE`` / ``HERMES_CONFIG`` /
-#   ``HERMES_ENV`` — Hermes runtime location flags. Writing these into
+#   ``HERMES_ENV`` — Lucifex runtime location flags. Writing these into
 #   ``.env`` would relocate state in ways the user did not request from
 #   the dashboard. ``config.yaml`` is the supported surface for these.
 #
@@ -208,7 +208,7 @@ _ENV_VAR_NAME_DENYLIST: frozenset[str] = frozenset({
     "PATH", "SHELL", "BROWSER", "EDITOR", "VISUAL", "PAGER",
     # Git
     "GIT_SSH_COMMAND", "GIT_EXEC_PATH", "GIT_SHELL",
-    # Hermes runtime location — never via dashboard env writer.
+    # Lucifex runtime location — never via dashboard env writer.
     # NOT a HERMES_* blanket: integration credentials (HERMES_GEMINI_*,
     # HERMES_LANGFUSE_*, HERMES_SPOTIFY_*, ...) ARE allowed.
     "LUCIFEX_HOME", "HERMES_PROFILE", "HERMES_CONFIG", "HERMES_ENV",
@@ -225,7 +225,7 @@ def _reject_denylisted_env_var(key: str) -> None:
         raise ValueError(
             f"Environment variable {key!r} is on the writer denylist. "
             "Names that influence subprocess execution (LD_PRELOAD, "
-            "PYTHONPATH, PATH, EDITOR, ...) or Hermes runtime location "
+            "PYTHONPATH, PATH, EDITOR, ...) or Lucifex runtime location "
             "(LUCIFEX_HOME, HERMES_PROFILE, ...) cannot be persisted via "
             "the env writer. If you really need this, edit "
             "~/.lucifex/.env directly."
@@ -302,8 +302,8 @@ _EXTRA_ENV_KEYS = frozenset({
     "MATRIX_REQUIRE_MENTION", "MATRIX_FREE_RESPONSE_ROOMS", "MATRIX_AUTO_THREAD", "MATRIX_DM_AUTO_THREAD",
     "MATRIX_RECOVERY_KEY",
     # Langfuse observability plugin — optional tuning keys + standard SDK vars.
-    # Activation is via plugins.enabled (opt-in through `hermes plugins enable
-    # observability/langfuse` or `hermes tools → Langfuse`); credentials gate
+    # Activation is via plugins.enabled (opt-in through `lucifex plugins enable
+    # observability/langfuse` or `lucifex tools → Langfuse`); credentials gate
     # the plugin at runtime.
     "HERMES_LANGFUSE_ENV",
     "HERMES_LANGFUSE_RELEASE",
@@ -349,7 +349,7 @@ def get_managed_system() -> Optional[str]:
 
 
 def is_managed() -> bool:
-    """Check if Hermes is running in package-manager-managed mode.
+    """Check if Lucifex is running in package-manager-managed mode.
 
     Two signals: the HERMES_MANAGED env var (set by the systemd service),
     or a .managed marker file in LUCIFEX_HOME (set by the NixOS activation
@@ -375,7 +375,7 @@ def _install_method_project_root(project_root: Optional[Path] = None) -> Path:
     """Resolve the directory that holds the *running code* (the install tree).
 
     This is the parent of ``lucifex_cli/`` — i.e. the git checkout for source
-    installs, ``/opt/hermes`` inside the published image, the venv's
+    installs, ``/opt/lucifex`` inside the published image, the venv's
     site-packages root for pip installs. It is a property of the running
     interpreter, NOT of ``$LUCIFEX_HOME``, which is why a code-scoped stamp
     here is immune to two installs sharing one data directory.
@@ -386,7 +386,7 @@ def _install_method_project_root(project_root: Optional[Path] = None) -> Path:
 
 
 def detect_install_method(project_root: Optional[Path] = None) -> str:
-    """Detect how Hermes was installed: 'docker', 'nixos', 'homebrew', 'git', or 'pip'.
+    """Detect how Lucifex was installed: 'docker', 'nixos', 'homebrew', 'git', or 'pip'.
 
     Resolution order:
     1. Code-scoped stamp ``<install tree>/.install_method`` (next to the
@@ -398,16 +398,16 @@ def detect_install_method(project_root: Optional[Path] = None) -> str:
     4. .git directory presence -> 'git'
     5. Fallback -> 'pip'
 
-    Why the stamp is code-scoped, not home-scoped (issue: shared ``~/.hermes``)
+    Why the stamp is code-scoped, not home-scoped (issue: shared ``~/.lucifex``)
     --------------------------------------------------------------------------
     The install method describes *the binary that is running*, but
     ``$LUCIFEX_HOME`` is a shared DATA directory — the Docker docs deliberately
-    bind-mount it (``~/.hermes:/opt/data``) so config/sessions/memory persist
+    bind-mount it (``~/.lucifex:/opt/data``) so config/sessions/memory persist
     and can be shared with a host-side Desktop/CLI install. When a
     containerised gateway and a host install share one ``$LUCIFEX_HOME``, a
     home-scoped stamp is a single slot describing two different installs:
     the container stamps ``docker`` on every boot, the host install then reads
-    ``docker`` and ``hermes update`` refuses to run ("doesn't apply inside the
+    ``docker`` and ``lucifex update`` refuses to run ("doesn't apply inside the
     Docker container") even though the host binary is a perfectly updatable
     git/pip install. Scoping the stamp to the install tree gives each install
     its own truthful marker.
@@ -423,7 +423,7 @@ def detect_install_method(project_root: Optional[Path] = None) -> str:
       - the curl installer (scripts/install.sh, the README/website install
         command) git-clones the repo and stamps ``git`` next to the code;
       - the published ``nousresearch/lucifex-agent`` image bakes a ``docker``
-        stamp into ``/opt/hermes`` at build time.
+        stamp into ``/opt/lucifex`` at build time.
     An unsupported manual install dropped into a container (no stamp) falls
     through to the ``.git``/pip checks and behaves like any off-path install.
     See issue #34397.
@@ -441,7 +441,7 @@ def detect_install_method(project_root: Optional[Path] = None) -> str:
     # 2. Legacy home-scoped stamp — back-compat. Ignore a ``docker`` value
     #    when we are not actually containerised: that is the signature of a
     #    host install whose shared $LUCIFEX_HOME was stamped by a co-located
-    #    container, and honouring it wrongly blocks ``hermes update``.
+    #    container, and honouring it wrongly blocks ``lucifex update``.
     try:
         method = (
             (get_lucifex_home() / ".install_method")
@@ -493,7 +493,7 @@ def stamp_install_method(method: str, project_root: Optional[Path] = None) -> No
     the full rationale.
 
     Best-effort: if the install tree is read-only (e.g. the immutable
-    ``/opt/hermes`` in the published image, which instead bakes the stamp at
+    ``/opt/lucifex`` in the published image, which instead bakes the stamp at
     build time) the write silently no-ops and detection falls back to its
     other signals.
     """
@@ -506,7 +506,7 @@ def stamp_install_method(method: str, project_root: Optional[Path] = None) -> No
 
 
 def is_uv_tool_install() -> bool:
-    """Return True when the *running* Hermes lives in a ``uv tool`` layout.
+    """Return True when the *running* Lucifex lives in a ``uv tool`` layout.
 
     ``uv tool install lucifex-agent`` places the install at
     ``.../uv/tools/lucifex-agent/...`` (default ``~/.local/share/uv/tools``,
@@ -518,8 +518,8 @@ def is_uv_tool_install() -> bool:
     interpreter (``sys.prefix`` / ``sys.executable``). We deliberately do
     NOT consult ``uv tool list``: it would also return True when
     ``lucifex-agent`` happens to be uv-tool-installed on the machine while
-    the *active* Hermes is a regular pip/venv install, causing
-    ``hermes update`` to upgrade the wrong copy. It would also block on a
+    the *active* Lucifex is a regular pip/venv install, causing
+    ``lucifex update`` to upgrade the wrong copy. It would also block on a
     subprocess call (~seconds) just to compute a recommendation string.
     """
     def _has_uv_tool_marker(path: str) -> bool:
@@ -548,7 +548,7 @@ def recommended_update_command_for_method(method: str) -> str:
         if shutil.which("uv"):
             return "uv pip install --upgrade lucifex-agent"
         return "pip install --upgrade lucifex-agent"
-    return "hermes update"
+    return "lucifex update"
 
 
 def recommended_update_command() -> str:
@@ -570,7 +570,7 @@ def recommended_update_command() -> str:
 # Homebrew is a legacy packaging path. Unlike NixOS/Homebrew "managed mode"
 # (which hard-blocks config writes), this is a warn-don't-block deprecation
 # notice surfaced everywhere the user might see install-method state: the CLI
-# banner, the TUI/desktop session info panel, and ``hermes update``. NixOS
+# banner, the TUI/desktop session info panel, and ``lucifex update``. NixOS
 # stays fully supported (Tier 2) and must never hit this path.
 
 PLATFORM_SUPPORT_DOCS_URL = "https://lucifex-agent.nousresearch.com/docs/getting-started/platform-support"
@@ -592,7 +592,7 @@ def format_unsupported_install_warning(method: str) -> str:
     """Plain-text (no markup) deprecation notice for pip/Homebrew installs.
 
     Shared verbatim across the CLI banner, TUI/desktop ``session.info``, and
-    ``hermes update`` / ``hermes update --check`` so the wording — and the
+    ``lucifex update`` / ``lucifex update --check`` so the wording — and the
     docs link — stays consistent across every surface instead of drifting
     into three slightly different warnings.
     """
@@ -604,7 +604,7 @@ def format_unsupported_install_warning(method: str) -> str:
     )
 
 
-# Long-form text for ``hermes update`` / ``--check`` when running inside the
+# Long-form text for ``lucifex update`` / ``--check`` when running inside the
 # Docker image.  Surfaced by ``cmd_update`` and ``_cmd_update_check`` in
 # lucifex_cli/main.py; lives here so the wording stays consistent and we
 # don't grow two slightly-different copies.
@@ -614,15 +614,15 @@ def format_unsupported_install_warning(method: str) -> str:
 #     git-based update path can never succeed inside the container.
 #   - The pre-existing fallback message ("✗ Not a git repository. Please
 #     reinstall: curl ... install.sh") is actively misleading inside Docker
-#     — that script installs a *new* host-side Hermes, it doesn't update
+#     — that script installs a *new* host-side Lucifex, it doesn't update
 #     the running container.
 #   - The right action is ``docker pull`` + restart the container; this
 #     helper spells that out, with notes on tag pinning and config
 #     persistence so users don't get blindsided.
 _DOCKER_UPDATE_MESSAGE = """\
-✗ ``hermes update`` doesn't apply inside the Docker container.
+✗ ``lucifex update`` doesn't apply inside the Docker container.
 
-Hermes Agent runs as a published image (nousresearch/lucifex-agent), not a
+Lucifex Agent runs as a published image (nousresearch/lucifex-agent), not a
 git checkout — the container has no working tree to pull into.  Update by
 pulling a fresh image and restarting your container instead:
 
@@ -647,7 +647,7 @@ Notes:
 
 
 def format_docker_update_message() -> str:
-    """Return the user-facing message for ``hermes update`` inside Docker.
+    """Return the user-facing message for ``lucifex update`` inside Docker.
 
     Centralised so ``cmd_update`` (the apply path) and ``_cmd_update_check``
     (the dry-run path) share the same wording.  See ``_DOCKER_UPDATE_MESSAGE``
@@ -656,7 +656,7 @@ def format_docker_update_message() -> str:
     return _DOCKER_UPDATE_MESSAGE
 
 
-def format_managed_message(action: str = "modify this Hermes installation") -> str:
+def format_managed_message(action: str = "modify this Lucifex installation") -> str:
     """Build a user-facing error for managed installs."""
     managed_system = get_managed_system() or "a package manager"
     raw = os.getenv("HERMES_MANAGED", "").strip().lower()
@@ -664,7 +664,7 @@ def format_managed_message(action: str = "modify this Hermes installation") -> s
     if managed_system == "NixOS":
         env_hint = "true" if raw in _MANAGED_TRUE_VALUES else raw or "true"
         return (
-            f"Cannot {action}: this Hermes installation is managed by NixOS "
+            f"Cannot {action}: this Lucifex installation is managed by NixOS "
             f"(HERMES_MANAGED={env_hint}).\n"
             "Edit services.lucifex-agent.settings in your configuration.nix and run:\n"
             "  sudo nixos-rebuild switch"
@@ -673,15 +673,15 @@ def format_managed_message(action: str = "modify this Hermes installation") -> s
     if managed_system == "Homebrew":
         env_hint = raw or "homebrew"
         return (
-            f"Cannot {action}: this Hermes installation is managed by Homebrew "
+            f"Cannot {action}: this Lucifex installation is managed by Homebrew "
             f"(HERMES_MANAGED={env_hint}).\n"
             "Use:\n"
             "  brew upgrade lucifex-agent"
         )
 
     return (
-        f"Cannot {action}: this Hermes installation is managed by {managed_system}.\n"
-        "Use your package manager to upgrade or reinstall Hermes."
+        f"Cannot {action}: this Lucifex installation is managed by {managed_system}.\n"
+        "Use your package manager to upgrade or reinstall Lucifex."
     )
 
 def managed_error(action: str = "modify configuration"):
@@ -727,8 +727,8 @@ def get_container_exec_info() -> Optional[dict]:
 
     backend = info.get("backend", "docker")
     container_name = info.get("container_name", "lucifex-agent")
-    exec_user = info.get("exec_user", "hermes")
-    hermes_bin = info.get("hermes_bin", "/data/current-package/bin/hermes")
+    exec_user = info.get("exec_user", "lucifex")
+    hermes_bin = info.get("hermes_bin", "/data/current-package/bin/lucifex")
 
     return {
         "backend": backend,
@@ -761,7 +761,7 @@ def get_project_root() -> Path:
 def _resolve_hermes_uid_gid() -> tuple[Optional[int], Optional[int]]:
     """Read the HERMES_UID / HERMES_GID env vars set by Docker deployments.
 
-    Docker containers running Hermes commonly set these to map the in-container
+    Docker containers running Lucifex commonly set these to map the in-container
     user to a host user so volume-mounted state files end up with the right
     ownership. The entrypoint chowns the top-level LUCIFEX_HOME once, but
     subdirectories created at runtime by ``ensure_LUCIFEX_HOME()`` (especially
@@ -821,7 +821,7 @@ def _secure_dir(path):
     """Set directory to owner-only access (0700 by default). No-op on Windows.
 
     Skipped in managed mode — the NixOS module sets group-readable
-    permissions (0750) so interactive users in the hermes group can
+    permissions (0750) so interactive users in the lucifex group can
     share state with the gateway service.
 
     The mode can be overridden via the LUCIFEX_HOME_MODE environment variable
@@ -852,7 +852,7 @@ def _secure_dir(path):
 def _is_container() -> bool:
     """Detect if we're running inside a Docker/Podman/LXC container.
 
-    When Hermes runs in a container with volume-mounted config files, forcing
+    When Lucifex runs in a container with volume-mounted config files, forcing
     0o600 permissions breaks multi-process setups where the gateway and
     dashboard run as different UIDs or the volume mount requires broader
     permissions.
@@ -920,7 +920,7 @@ _LUCIFEX_HOME_ENSURED: set = set()
 
 
 def ensure_LUCIFEX_HOME():
-    """Ensure ~/.hermes directory structure exists with secure permissions.
+    """Ensure ~/.lucifex directory structure exists with secure permissions.
 
     In managed mode (NixOS), dirs are created by the activation script with
     setgid + group-writable (2770). We skip mkdir and set umask(0o007) so
@@ -939,7 +939,7 @@ def ensure_LUCIFEX_HOME():
 
     if key in _LUCIFEX_HOME_ENSURED and home.is_dir():
         return
-    # Named profiles must be created explicitly (e.g. ``hermes profile create``).
+    # Named profiles must be created explicitly (e.g. ``lucifex profile create``).
     # If a stale process keeps running after the profile was renamed/deleted,
     # silently mkdir-ing the old LUCIFEX_HOME would resurrect an empty skeleton
     # and make the deleted profile reappear in Desktop/profile lists.
@@ -1035,7 +1035,7 @@ DEFAULT_CONFIG = {
         # provider timeouts, 5xx, etc.) before the agent surfaces the
         # failure.  The OpenAI SDK already does its own low-level retries
         # (max_retries=2 default) for transient network errors; this is
-        # the Hermes-level retry loop that wraps the whole call.  Lower
+        # the Lucifex-level retry loop that wraps the whole call.  Lower
         # this to 1 if you use fallback providers and want fast failover
         # on flaky primaries; raise it if you prefer to tolerate longer
         # provider hiccups on a single provider.
@@ -1081,14 +1081,14 @@ DEFAULT_CONFIG = {
         # disable entirely.
         "environment_probe": True,
         # Embedder-supplied environment description appended to the system
-        # prompt's environment-hints block. Lets a host that wraps Hermes
+        # prompt's environment-hints block. Lets a host that wraps Lucifex
         # (sandbox runner, managed platform) explain the runtime environment
         # — proxy, credential handling, mount layout — without editing the
         # identity slot (SOUL.md). Empty by default. The HERMES_ENVIRONMENT_HINT
         # env var overrides this (build-time/container mechanism).
         "environment_hint": "",
         # Coding posture — on interactive coding surfaces (CLI, TUI, desktop
-        # app, ACP) in a code workspace, Hermes adds a coding operating brief
+        # app, ACP) in a code workspace, Lucifex adds a coding operating brief
         # + a live git/workspace snapshot to the system prompt. See
         # agent/coding_context.py.
         #   "auto" (default) — prompt-only posture when the surface is
@@ -1225,13 +1225,13 @@ DEFAULT_CONFIG = {
         # (bash doesn't source bashrc in non-interactive login mode) or
         # zsh-specific files like ``~/.zshrc`` / ``~/.zprofile``.
         # Paths support ``~`` / ``${VAR}``. Missing files are silently
-        # skipped. When empty, Hermes auto-sources ``~/.profile``,
+        # skipped. When empty, Lucifex auto-sources ``~/.profile``,
         # ``~/.bash_profile``, and ``~/.bashrc`` (in that order) if the
         # snapshot shell is bash (this is the ``auto_source_bashrc``
         # behaviour — disable with that key if you want strict login-only
         # semantics).
         "shell_init_files": [],
-        # When true (default), Hermes sources the user's shell rc files
+        # When true (default), Lucifex sources the user's shell rc files
         # (``~/.profile``, ``~/.bash_profile``, ``~/.bashrc``) in the
         # login shell used to build the environment snapshot. This
         # captures PATH additions, shell functions, and aliases — which a
@@ -1248,7 +1248,7 @@ DEFAULT_CONFIG = {
         "docker_forward_env": [],
         # Explicit environment variables to set inside Docker containers.
         # Unlike docker_forward_env (which reads values from the host process),
-        # docker_env lets you specify exact key-value pairs — useful when Hermes
+        # docker_env lets you specify exact key-value pairs — useful when Lucifex
         # runs as a systemd service without access to the user's shell environment.
         # Example: {"SSH_AUTH_SOCK": "/run/user/1000/ssh-agent.sock"}
         "docker_env": {},
@@ -1264,7 +1264,7 @@ DEFAULT_CONFIG = {
         # Each entry is "host_path:container_path" (standard Docker -v syntax).
         # Example:
         # ["/home/user/projects:/workspace/projects",
-        #  "/home/user/.hermes/cache/documents:/output"]
+        #  "/home/user/.lucifex/cache/documents:/output"]
         # For gateway MEDIA delivery, write inside Docker to /output/... and emit
         # the host-visible path in MEDIA:, not the container path.
         "docker_volumes": [],
@@ -1281,7 +1281,7 @@ DEFAULT_CONFIG = {
         # are owned by your host user instead of root, which avoids needing
         # `sudo chown` after container runs. Default off to preserve behavior
         # for images whose entrypoints expect to start as root (e.g. the
-        # bundled Hermes image, which drops to the `hermes` user via
+        # bundled Lucifex image, which drops to the `lucifex` user via
         # s6-setuidgid inside each supervised service).
         # When on, SETUID/SETGID caps are omitted from the container since
         # no privilege drop is needed.
@@ -1324,12 +1324,12 @@ DEFAULT_CONFIG = {
         "dialog_policy": "must_respond",  # must_respond | auto_dismiss | auto_accept
         "dialog_timeout_s": 300,  # Safety auto-dismiss after N seconds under must_respond
         "camofox": {
-            # When true, Hermes sends a stable profile-scoped userId to Camofox
+            # When true, Lucifex sends a stable profile-scoped userId to Camofox
             # so the server maps it to a persistent Firefox profile automatically.
             # When false (default), each session gets a random userId (ephemeral).
             "managed_persistence": False,
             # Optional externally managed Camofox identity. Useful when another
-            # app owns the visible browser and Hermes should operate in it.
+            # app owns the visible browser and Lucifex should operate in it.
             "user_id": "",
             "session_key": "",
             # Rehydrate tab_id from Camofox before creating a new tab.
@@ -1351,7 +1351,7 @@ DEFAULT_CONFIG = {
     #   - enabled: True -> False   (opt-in; most users never use /rollback)
     #   - max_snapshots: 50 -> 20  (now actually enforced via ref rewrite)
     #   - auto_prune:   False -> True (orphans/stale pruned automatically)
-    # Opt in via ``hermes chat --checkpoints`` or set enabled=True here.
+    # Opt in via ``lucifex chat --checkpoints`` or set enabled=True here.
     "checkpoints": {
         "enabled": False,
         # Max checkpoints to keep per working directory.  Pre-v2 this only
@@ -1367,7 +1367,7 @@ DEFAULT_CONFIG = {
         # Prevents accidental snapshotting of datasets, model weights, and
         # other large generated assets.  0 disables the filter.
         "max_file_size_mb": 10,
-        # Auto-maintenance: hermes sweeps the checkpoint base at startup
+        # Auto-maintenance: lucifex sweeps the checkpoint base at startup
         # (at most once per ``min_interval_hours``) and:
         #   * deletes project entries whose workdir no longer exists (orphan)
         #   * deletes project entries whose last_touch is older than
@@ -1382,7 +1382,7 @@ DEFAULT_CONFIG = {
     },
 
     # Hard cap (chars) for a single automatic context file such as SOUL.md,
-    # AGENTS.md, CLAUDE.md, .hermes.md, or .cursorrules before Hermes applies
+    # AGENTS.md, CLAUDE.md, .lucifex.md, or .cursorrules before Lucifex applies
     # head/tail truncation. ``null`` (the default) lets the cap scale with the
     # model's context window (floor 20K, ceiling 500K) so large-context models
     # rarely truncate a project doc. Set a positive integer to pin a fixed cap
@@ -1424,7 +1424,7 @@ DEFAULT_CONFIG = {
     },
 
     # Tool-output truncation thresholds. When terminal output or a
-    # single read_file page exceeds these limits, Hermes truncates the
+    # single read_file page exceeds these limits, Lucifex truncates the
     # payload sent to the model (keeping head + tail for terminal,
     # enforcing pagination for read_file). Tuning these trades context
     # footprint against how much raw output the model can see in one
@@ -1506,10 +1506,10 @@ DEFAULT_CONFIG = {
                                       # user-facing notice in CLI/gateway output.
         "codex_app_server_auto": "native",  # Codex app-server (codex CLI runtime) thread
                                       # compaction mode. The codex agent owns the real
-                                      # thread context, so Hermes' summarizer cannot
+                                      # thread context, so Lucifex' summarizer cannot
                                       # shrink it (#36801). native = codex decides when
-                                      # to compact its own thread (default); hermes =
-                                      # Hermes' compression threshold triggers
+                                      # to compact its own thread (default); lucifex =
+                                      # Lucifex' compression threshold triggers
                                       # thread/compact/start; off = never auto-trigger
                                       # (codex may still compact natively).
         "in_place": True,             # When True, compaction rewrites the message
@@ -1533,7 +1533,7 @@ DEFAULT_CONFIG = {
     # Kanban subsystem (orchestrator workers + dispatcher-driven child tasks).
     # See tools/kanban_tools.py and lucifex_cli/kanban_db.py for the actual
     # implementations. Per-platform notification opt-out is handled by the
-    # kanban dashboard (see ``hermes dashboard`` -> Notifications).
+    # kanban dashboard (see ``lucifex dashboard`` -> Notifications).
     "kanban": {
         # Auto-subscribe the originating gateway/TUI session to task
         # completion + block events when ``kanban_create`` is called from
@@ -1715,7 +1715,7 @@ DEFAULT_CONFIG = {
         },
         # Triage specifier — flesh out a rough one-liner in the Kanban
         # Triage column into a concrete spec, then promote it to ``todo``.
-        # Invoked by ``hermes kanban specify`` (single id or --all). Set a
+        # Invoked by ``lucifex kanban specify`` (single id or --all). Set a
         # cheap, capable model here (gemini-flash works well); the main
         # model is overkill for short spec expansion.
         "triage_specifier": {
@@ -1729,7 +1729,7 @@ DEFAULT_CONFIG = {
         },
         # Kanban decomposer — decomposes a triage task into a graph of
         # child tasks routed to specialist profiles by description.
-        # Invoked by ``hermes kanban decompose`` and the kanban
+        # Invoked by ``lucifex kanban decompose`` and the kanban
         # auto-decompose dispatcher tick. Returns a JSON task graph;
         # uses more tokens than the specifier so allow more headroom.
         "kanban_decomposer": {
@@ -1743,7 +1743,7 @@ DEFAULT_CONFIG = {
         },
         # Profile describer — auto-generates a 1-2 sentence description
         # of what a profile is good at. Invoked by
-        # ``hermes profile describe <name> --auto`` and the dashboard's
+        # ``lucifex profile describe <name> --auto`` and the dashboard's
         # auto-generate button. Short, cheap call.
         "profile_describer": {
             "provider": "auto",
@@ -1769,7 +1769,7 @@ DEFAULT_CONFIG = {
         # Curator — skill-usage review fork. Timeout is generous because the
         # review pass can take several minutes on reasoning models (umbrella
         # building over hundreds of candidate skills). "auto" = use main chat
-        # model; override via `hermes model` → auxiliary → Curator to route
+        # model; override via `lucifex model` → auxiliary → Curator to route
         # to a cheaper aux model (e.g. openrouter google/gemini-3-flash-preview).
         "curator": {
             "provider": "auto",
@@ -1860,18 +1860,18 @@ DEFAULT_CONFIG = {
         # "Steered into current run" confirmation bubble by setting this false.
         # The mid-turn steering itself still happens.
         "busy_steer_ack_enabled": True,
-        # Which interface bare `hermes` (and `hermes chat`) launches by default:
+        # Which interface bare `lucifex` (and `lucifex chat`) launches by default:
         #   "cli" — the classic prompt_toolkit REPL (default, preserves prior behavior)
         #   "tui" — the modern Ink TUI (same as passing `--tui`)
         # Explicit flags always win over this setting: `--cli` forces the classic
         # REPL and `--tui` (or HERMES_TUI=1) forces the TUI regardless of config.
         "interface": "cli",
-        # When true, `hermes --tui` auto-resumes the most recent human-
+        # When true, `lucifex --tui` auto-resumes the most recent human-
         # facing session on launch instead of forging a fresh one.
-        # Mirrors `hermes -c` muscle memory.  Default off so existing
+        # Mirrors `lucifex -c` muscle memory.  Default off so existing
         # users aren't surprised.  HERMES_TUI_RESUME=<id> always wins.
         "tui_auto_resume_recent": False,
-        # When true (default), `hermes --tui` drops a one-time hint
+        # When true (default), `lucifex --tui` drops a one-time hint
         # ("subagents working · /agents to watch live") the first time a turn
         # starts delegating, nudging the user toward the live spawn-tree
         # dashboard. Set false to suppress the hint.
@@ -2015,7 +2015,7 @@ DEFAULT_CONFIG = {
         },
         # Gateway runtime-metadata footer appended to the FINAL message of a turn
         # (disabled by default to keep replies minimal). When enabled, renders
-        # e.g. `model · 68% · ~/projects/hermes`. Per-platform overrides go under
+        # e.g. `model · 68% · ~/projects/lucifex`. Per-platform overrides go under
         # display.platforms.<platform>.runtime_footer.
         "runtime_footer": {
             "enabled": False,
@@ -2024,7 +2024,7 @@ DEFAULT_CONFIG = {
         "copy_shortcut": "auto",  # "auto" (platform default) | "ctrl_c" | "ctrl_shift_c" | "disabled"
         # Petdex animated mascot (https://github.com/crafter-station/petdex).
         # A purely cosmetic sprite that reacts to agent activity across the
-        # CLI, TUI, and desktop app. Manage with `hermes pets`. Disabled until
+        # CLI, TUI, and desktop app. Manage with `lucifex pets`. Disabled until
         # a pet is installed + selected (no effect on prompt caching — this is
         # a display concern only).
         "pet": {
@@ -2135,7 +2135,7 @@ DEFAULT_CONFIG = {
         },
         # Public URL override (env: ``HERMES_DASHBOARD_PUBLIC_URL``).
         # When set, this is the complete authority — scheme + host +
-        # optional path prefix (e.g. ``https://example.com/hermes``) —
+        # optional path prefix (e.g. ``https://example.com/lucifex``) —
         # the OAuth ``redirect_uri`` is built from. Set this for deploys
         # behind reverse proxies that don't reliably forward
         # ``X-Forwarded-Host`` / ``X-Forwarded-Proto`` / ``X-Forwarded-Prefix``
@@ -2195,7 +2195,7 @@ DEFAULT_CONFIG = {
             # Optional local Markdown/text file with Gemini TTS performance
             # direction. It may include AUDIO PROFILE, SCENE, DIRECTOR'S NOTES,
             # SAMPLE CONTEXT, and either a `{transcript}` placeholder or no
-            # transcript section; Hermes appends the live transcript when absent.
+            # transcript section; Lucifex appends the live transcript when absent.
             "persona_prompt_file": "",
         },
         "xai": {
@@ -2398,13 +2398,13 @@ DEFAULT_CONFIG = {
     # Goals — persistent cross-turn goals (Ralph-style loop).
     # After every turn, a lightweight judge call asks the auxiliary model
     # whether the active /goal is satisfied by the assistant's last
-    # response. If not, Hermes feeds a continuation prompt back into the
+    # response. If not, Lucifex feeds a continuation prompt back into the
     # same session and keeps working until the goal is done, the turn
     # budget is exhausted, or the user pauses/clears it. Judge failures
     # fail OPEN (continue) so a flaky judge never wedges progress — the
     # turn budget is the real backstop.
     "goals": {
-        # Max continuation turns before Hermes auto-pauses the goal and
+        # Max continuation turns before Lucifex auto-pauses the goal and
         # asks the user to /goal resume. Protects against judge false
         # negatives (goal actually done but judge says continue) and
         # unbounded model spend on fuzzy / unachievable goals.
@@ -2491,7 +2491,7 @@ DEFAULT_CONFIG = {
     # and patch drift. Runs inactivity-triggered from session start — no
     # cron daemon.
     #
-    # See `hermes curator status` for the last run summary.
+    # See `lucifex curator status` for the last run summary.
     "curator": {
         "enabled": True,
         # How long to wait between curator runs (hours).  Default: 7 days.
@@ -2508,12 +2508,12 @@ DEFAULT_CONFIG = {
         # (mark stale / archive long-unused skills) and skips the forked
         # aux-model review entirely — no umbrella-building, no aux-model cost.
         # Set to true to opt back into merging overlapping skills into
-        # class-level umbrellas. `hermes curator run --consolidate` overrides
+        # class-level umbrellas. `lucifex curator run --consolidate` overrides
         # this for a single invocation.
         "consolidate": False,
         # Also prune (archive) bundled built-in skills after the inactivity
         # period, not just agent-created ones. ON by default. Built-ins are
-        # normally restored on every `hermes update`, so pruning them only
+        # normally restored on every `lucifex update`, so pruning them only
         # sticks because a suppression list tells the re-seeder to leave them
         # archived. Hub-installed skills are NEVER pruned here — they have an
         # external upstream owner. Built-ins accrue usage telemetry and their
@@ -2525,7 +2525,7 @@ DEFAULT_CONFIG = {
         # Pre-run backup: before every real curator pass (dry-run is
         # skipped), snapshot ~/.lucifex/skills/ into
         # ~/.lucifex/skills/.curator_backups/<utc-iso>/skills.tar.gz so the
-        # user can roll back with `hermes curator rollback`.
+        # user can roll back with `lucifex curator rollback`.
         "backup": {
             "enabled": True,
             "keep": 5,  # retain last N regular snapshots
@@ -2533,7 +2533,7 @@ DEFAULT_CONFIG = {
     },
 
     # Honcho AI-native memory -- reads ~/.honcho/config.json as single source of truth.
-    # This section is only needed for hermes-specific overrides; everything else
+    # This section is only needed for lucifex-specific overrides; everything else
     # (apiKey, workspace, peerName, sessions, enabled) comes from the global config.
     "honcho": {},
 
@@ -2633,7 +2633,7 @@ DEFAULT_CONFIG = {
     # WhatsApp platform settings (gateway mode)
     "whatsapp": {
         # Reply prefix prepended to every outgoing WhatsApp message.
-        # Default (None) uses the built-in "⚕ *Hermes Agent*" header.
+        # Default (None) uses the built-in "⚕ *Lucifex Agent*" header.
         # Set to "" (empty string) to disable the header entirely.
         # Supports \n for newlines, e.g. "🤖 *My Bot*\n──────\n"
     },
@@ -2711,7 +2711,7 @@ DEFAULT_CONFIG = {
     "quick_commands": {},
 
     # Per-platform system-prompt hint overrides. Lets an admin append to or
-    # replace Hermes' built-in platform hint for a single messaging platform
+    # replace Lucifex' built-in platform hint for a single messaging platform
     # (WhatsApp, Slack, Telegram, ...) without affecting other platforms.
     # Useful for enterprise/managed profiles that ship platform-aware skills.
     # Each key is a platform name; the value is either:
@@ -2761,11 +2761,11 @@ DEFAULT_CONFIG = {
         # Acknowledged supply-chain security advisories. Each entry is the
         # ID of an advisory the user has read and acted on (uninstalled the
         # compromised package, rotated credentials). Acked advisories no
-        # longer trigger the startup banner. Add via `hermes doctor --ack
+        # longer trigger the startup banner. Add via `lucifex doctor --ack
         # <id>`; remove by editing the list directly. See
         # ``lucifex_cli/security_advisories.py`` for the catalog.
         "acked_advisories": [],
-        # Allow Hermes to lazy-install opt-in backend packages from PyPI
+        # Allow Lucifex to lazy-install opt-in backend packages from PyPI
         # the first time the user enables a backend that needs them
         # (e.g. installing ``elevenlabs`` when the user picks ElevenLabs as
         # their TTS provider). Set to false to require explicit
@@ -2847,7 +2847,7 @@ DEFAULT_CONFIG = {
     # Kanban multi-agent coordination — controls the dispatcher loop that
     # spawns workers for ready tasks. The dispatcher ticks every N seconds
     # (default 60), reclaims stale claims, promotes dependency-satisfied
-    # todos to ready, and fires `hermes -p <assignee> chat -q ...` for
+    # todos to ready, and fires `lucifex -p <assignee> chat -q ...` for
     # each claimable ready task. One dispatcher per profile is sufficient;
     # running more than one on the same kanban.db will race for claims.
     "kanban": {
@@ -2871,7 +2871,7 @@ DEFAULT_CONFIG = {
         "worker_log_backup_count": 1,
         # Profile assigned to the root/orchestration task after Triage
         # decomposition. When unset, falls back to the default profile (the
-        # one `hermes` launches with no -p flag). This does not control the
+        # one `lucifex` launches with no -p flag). This does not control the
         # decomposer prompt, model, or skills; configure that LLM path under
         # auxiliary.kanban_decomposer.
         "orchestrator_profile": "",
@@ -2890,7 +2890,7 @@ DEFAULT_CONFIG = {
         "max_in_progress_per_profile": None,
         # When true, the kanban dispatcher auto-runs the decomposer on
         # tasks that land in Triage (every dispatcher tick). When false,
-        # decomposition is manual via `hermes kanban decompose <id>` or
+        # decomposition is manual via `lucifex kanban decompose <id>` or
         # the dashboard's Decompose button.
         "auto_decompose": True,
         # Max triage tasks to decompose per dispatcher tick. Prevents a
@@ -2926,7 +2926,7 @@ DEFAULT_CONFIG = {
     # in the model-facing tools array with three bridge tools —
     # tool_search / tool_describe / tool_call — and surfaced on demand.
     #
-    # Core Hermes tools (terminal, read_file, write_file, patch,
+    # Core Lucifex tools (terminal, read_file, write_file, patch,
     # search_files, todo, memory, browser_*, etc.) are NEVER deferred.
     # See tools/tool_search.py for full design notes and the
     # openclaw-tool-search-report PDF in this PR for the rationale.
@@ -2968,7 +2968,7 @@ DEFAULT_CONFIG = {
         "enabled": True,
         "url": "https://lucifex-agent.nousresearch.com/docs/api/model-catalog.json",
         # Disk cache TTL in hours.  Beyond this, the CLI refetches on the
-        # next /model or `hermes model` invocation; network failures
+        # next /model or `lucifex model` invocation; network failures
         # silently fall back to the stale cache.
         "ttl_hours": 1,
         # Optional per-provider override URLs for third parties that want
@@ -3035,7 +3035,7 @@ DEFAULT_CONFIG = {
         # (launchd KeepAlive / systemd Restart=), it auto-resumes the
         # restart-interrupted session on the next boot. If the resumed turn
         # keeps triggering another kill (e.g. the agent runs a raw
-        # `launchctl kickstart ai.hermes.gateway` that defenses 1-2 don't
+        # `launchctl kickstart ai.lucifex.gateway` that defenses 1-2 don't
         # cover), the result is a tight SIGTERM-respawn loop. This breaker
         # counts restart-interrupted boots in a rolling window and, once
         # `max_restarts` boots happen within `window_seconds`, SKIPS
@@ -3089,7 +3089,7 @@ DEFAULT_CONFIG = {
         # can hand back any file that isn't a credential.
         #
         # When true, fall back to the older allowlist+recency-window
-        # behavior: files must live under the Hermes cache, under
+        # behavior: files must live under the Lucifex cache, under
         # ``media_delivery_allow_dirs``, or be freshly produced inside the
         # ``trust_recent_files_seconds`` window. Recommended for
         # public-facing gateways where prompt injection from one user
@@ -3097,7 +3097,7 @@ DEFAULT_CONFIG = {
         # user. Bridged to HERMES_MEDIA_DELIVERY_STRICT.
         "strict": False,
         # Extra directories from which model-emitted bare file paths may be
-        # uploaded as native gateway attachments. Files inside the Hermes
+        # uploaded as native gateway attachments. Files inside the Lucifex
         # cache (~/.lucifex/cache/{documents,images,audio,video,screenshots})
         # are always trusted; this list adds operator-controlled roots
         # (project dirs, scratch dirs, mounted shares). Accepts a list of
@@ -3184,7 +3184,7 @@ DEFAULT_CONFIG = {
         # silently deleting it could surprise users.  Opt in explicitly.
         "auto_prune": False,
         # How many days of ended-session history to keep.  Matches the
-        # default of ``hermes sessions prune``.
+        # default of ``lucifex sessions prune``.
         "retention_days": 90,
         # VACUUM after a prune that actually deleted rows.  SQLite does not
         # reclaim disk space on DELETE — freed pages are just reused on
@@ -3221,7 +3221,7 @@ DEFAULT_CONFIG = {
         "profile_build": "ask",
     },
 
-    # ``hermes update`` behaviour.
+    # ``lucifex update`` behaviour.
     "updates": {
         # Pre-update safety backup — ONE consolidated mechanism, three modes:
         #
@@ -3232,9 +3232,9 @@ DEFAULT_CONFIG = {
         #     warning so the snapshot stays fast. Restore via ``/snapshot``.
         #     This is the #15733 (lost pairing data) / #34600 (emptied cron
         #     jobs) safety net.
-        #   full — the quick snapshot PLUS a full ``hermes backup``-style zip
+        #   full — the quick snapshot PLUS a full ``lucifex backup``-style zip
         #     of LUCIFEX_HOME into <LUCIFEX_HOME>/backups/, restorable with
-        #     ``hermes import``. Can add minutes on large homes. This is the
+        #     ``lucifex import``. Can add minutes on large homes. This is the
         #     #48200 (wrong-path wipe) safety net. ``--backup`` forces this
         #     for a single run.
         #   off — no pre-update backup of any kind. ``--no-backup`` forces
@@ -3247,7 +3247,7 @@ DEFAULT_CONFIG = {
         # Values below 1 are floored to 1 — the backup just created is
         # always preserved. The quick snapshot always keeps exactly 1.
         "backup_keep": 5,
-        # What `hermes update` does with uncommitted local changes to the
+        # What `lucifex update` does with uncommitted local changes to the
         # source tree when it runs NON-interactively — i.e. triggered from
         # the desktop/chat app or the gateway, where there's no TTY to answer
         # a restore prompt. Interactive (terminal) updates are unaffected:
@@ -3263,7 +3263,7 @@ DEFAULT_CONFIG = {
         #               ignored paths — node_modules, venv, build outputs —
         #               are never touched.
         "non_interactive_local_changes": "stash",
-        # Refresh an already-installed cua-driver during `hermes update`.
+        # Refresh an already-installed cua-driver during `lucifex update`.
         # The refresh is best-effort and macOS-only. Turn this off if the
         # upstream installer is not appropriate for the machine, for example
         # on non-admin accounts where `/Applications` is not writable.
@@ -3321,7 +3321,7 @@ DEFAULT_CONFIG = {
     # X (Twitter) Search via xAI's built-in x_search Responses tool.
     # The tool registers when xAI credentials are available (SuperGrok
     # OAuth or XAI_API_KEY) AND the x_search toolset is enabled in
-    # `hermes tools`. These settings tune the backing Responses API call.
+    # `lucifex tools`. These settings tune the backing Responses API call.
     "x_search": {
         # xAI model used for the Responses call. grok-4.5 is the
         # recommended default; any Grok model with x_search tool
@@ -3381,7 +3381,7 @@ DEFAULT_CONFIG = {
             # https://vault.bitwarden.eu for EU Cloud, or your own URL
             # for self-hosted Bitwarden.  Plumbed into the bws subprocess
             # as BWS_SERVER_URL.  Prompted for during
-            # `hermes secrets bitwarden setup`.
+            # `lucifex secrets bitwarden setup`.
             "server_url": "",
         },
         "onepassword": {
@@ -3438,16 +3438,16 @@ DEFAULT_CONFIG = {
     # Computer Use (cua-driver) toolset settings.
     "computer_use": {
         # cua-driver ships with anonymous usage telemetry (PostHog) ENABLED
-        # by default upstream. Hermes disables it for our users unless they
-        # explicitly opt in here. When false (default), Hermes sets
+        # by default upstream. Lucifex disables it for our users unless they
+        # explicitly opt in here. When false (default), Lucifex sets
         # CUA_DRIVER_RS_TELEMETRY_ENABLED=0 in the cua-driver child env for
         # every invocation (MCP backend, status, doctor, install). Set true
         # to let cua-driver use its own default (telemetry on).
         "cua_telemetry": False,
     },
 
-    # Hermes Desktop (Electron app) launch options. These only affect
-    # `hermes desktop`; they do not touch the CLI/gateway.
+    # Lucifex Desktop (Electron app) launch options. These only affect
+    # `lucifex desktop`; they do not touch the CLI/gateway.
     "desktop": {
         # Extra Electron command-line flags appended to every desktop launch,
         # e.g. ["--ozone-platform=x11"] on headless/VM X11 hosts that need an
@@ -3555,7 +3555,7 @@ OPTIONAL_ENV_VARS = {
     "VERTEX_CREDENTIALS_PATH": {
         "description": "Path to a Google Cloud service account JSON for Vertex AI (Gemini). "
                        "Vertex uses OAuth2, not a static API key — this points at the "
-                       "credentials Hermes mints short-lived tokens from. Falls back to "
+                       "credentials Lucifex mints short-lived tokens from. Falls back to "
                        "GOOGLE_APPLICATION_CREDENTIALS, then to ADC (gcloud auth "
                        "application-default login). Set project/region under vertex: in config.yaml.",
         "prompt": "Vertex service account JSON path (leave empty to use ADC / GOOGLE_APPLICATION_CREDENTIALS)",
@@ -3910,7 +3910,7 @@ OPTIONAL_ENV_VARS = {
         "category": "provider",
     },
     "AZURE_FOUNDRY_BASE_URL": {
-        "description": "Azure Foundry base URL (set via 'hermes model' for endpoint-specific config)",
+        "description": "Azure Foundry base URL (set via 'lucifex model' for endpoint-specific config)",
         "prompt": "Azure Foundry base URL",
         "url": None,
         "password": False,
@@ -3975,7 +3975,7 @@ OPTIONAL_ENV_VARS = {
         "advanced": True,
     },
     "TOOL_GATEWAY_USER_TOKEN": {
-        "description": "Explicit Nous Subscriber access token for tool-gateway requests (optional; otherwise read from the Hermes auth store)",
+        "description": "Explicit Nous Subscriber access token for tool-gateway requests (optional; otherwise read from the Lucifex auth store)",
         "prompt": "Tool-gateway user token",
         "url": None,
         "password": True,
@@ -4327,7 +4327,7 @@ OPTIONAL_ENV_VARS = {
         "category": "messaging",
     },
     "SLACK_ALLOWED_USERS": {
-        "description": "Comma-separated Slack member IDs allowed to use Hermes, e.g. U01ABC2DEF3. Without this, Slack may connect but deny messages by default.",
+        "description": "Comma-separated Slack member IDs allowed to use Lucifex, e.g. U01ABC2DEF3. Without this, Slack may connect but deny messages by default.",
         "prompt": "Allowed Slack member IDs",
         "help": "In Slack, open your profile, choose More or the three-dot menu, then Copy member ID. Add multiple IDs comma-separated.",
         "url": "https://api.slack.com/apps",
@@ -4384,7 +4384,7 @@ OPTIONAL_ENV_VARS = {
         "category": "messaging",
     },
     "MATRIX_USER_ID": {
-        "description": "Matrix user ID (e.g. @hermes:example.org)",
+        "description": "Matrix user ID (e.g. @lucifex:example.org)",
         "prompt": "Matrix user ID (@user:server)",
         "url": None,
         "password": False,
@@ -4521,14 +4521,14 @@ OPTIONAL_ENV_VARS = {
         "category": "messaging",
     },
     "IRC_CHANNEL": {
-        "description": "IRC channel to join (e.g. #hermes)",
+        "description": "IRC channel to join (e.g. #lucifex)",
         "prompt": "IRC channel",
         "url": None,
         "password": False,
         "category": "messaging",
     },
     "IRC_NICKNAME": {
-        "description": "Bot nickname on IRC (default: hermes-bot)",
+        "description": "Bot nickname on IRC (default: lucifex-bot)",
         "prompt": "IRC nickname",
         "url": None,
         "password": False,
@@ -4599,15 +4599,15 @@ OPTIONAL_ENV_VARS = {
         "advanced": True,
     },
     "GATEWAY_PROXY_URL": {
-        "description": "URL of a remote Hermes API server to forward messages to (proxy mode). When set, the gateway handles platform I/O only — all agent work is delegated to the remote server. Use for Docker E2EE containers that relay to a host agent. Also configurable via gateway.proxy_url in config.yaml.",
-        "prompt": "Remote Hermes API server URL (e.g. http://192.168.1.100:8642)",
+        "description": "URL of a remote Lucifex API server to forward messages to (proxy mode). When set, the gateway handles platform I/O only — all agent work is delegated to the remote server. Use for Docker E2EE containers that relay to a host agent. Also configurable via gateway.proxy_url in config.yaml.",
+        "prompt": "Remote Lucifex API server URL (e.g. http://192.168.1.100:8642)",
         "url": None,
         "password": False,
         "category": "messaging",
         "advanced": True,
     },
     "GATEWAY_PROXY_KEY": {
-        "description": "Bearer token for authenticating with the remote Hermes API server (proxy mode). Must match the API_SERVER_KEY on the remote host.",
+        "description": "Bearer token for authenticating with the remote Lucifex API server (proxy mode). Must match the API_SERVER_KEY on the remote host.",
         "prompt": "Remote API server auth key",
         "url": None,
         "password": True,
@@ -4923,7 +4923,7 @@ def get_missing_config_fields() -> List[Dict[str, Any]]:
 def get_missing_skill_config_vars() -> List[Dict[str, Any]]:
     """Return skill-declared config vars that are missing or empty in config.yaml.
 
-    Scans all enabled skills for ``metadata.hermes.config`` entries, then checks
+    Scans all enabled skills for ``metadata.lucifex.config`` entries, then checks
     which ones are absent or empty under ``skills.config.<key>`` in the user's
     config.yaml.  Returns a list of dicts suitable for prompting.
     """
@@ -4936,7 +4936,7 @@ def get_missing_skill_config_vars() -> List[Dict[str, Any]]:
         all_vars = discover_all_skill_config_vars()
     except Exception as e:
         # A malformed SKILL.md, unreadable external skill dir, or similar
-        # should never break `hermes update`.  Skill-config prompting is a
+        # should never break `lucifex update`.  Skill-config prompting is a
         # post-migration nicety, not a blocker.
         import logging
         logging.getLogger(__name__).debug(
@@ -5014,7 +5014,7 @@ def _normalize_custom_provider_entry(
         entry["key_env"] = entry["api_key_env"]
     _KNOWN_KEYS = {
         # ``provider`` duplicates the ``providers.<name>`` mapping key and is
-        # unused here, but Hermes' own config writer has historically emitted it
+        # unused here, but Lucifex' own config writer has historically emitted it
         # into provider entries. Accept it silently so those (self-written)
         # configs don't warn on every load.
         "provider",
@@ -5108,7 +5108,7 @@ def _normalize_custom_provider_entry(
     if isinstance(models, dict) and models:
         normalized["models"] = models
     elif isinstance(models, list) and models:
-        # Hand-edited configs (and older Hermes versions) may write
+        # Hand-edited configs (and older Lucifex versions) may write
         # ``models`` as a plain list of ids or as ``[{id: ...}]`` rows.
         # Preserve both by converting to the dict shape downstream code
         # expects; otherwise normalize silently drops the list and /model
@@ -5591,7 +5591,7 @@ def validate_config_structure(config: Optional[Dict[str, Any]] = None) -> List["
         try:
             config = load_config()
         except Exception:
-            return [ConfigIssue("error", "Could not load config.yaml", "Run 'hermes setup' to create a valid config")]
+            return [ConfigIssue("error", "Could not load config.yaml", "Run 'lucifex setup' to create a valid config")]
 
     issues: List[ConfigIssue] = []
 
@@ -5701,7 +5701,7 @@ def validate_config_structure(config: Optional[Dict[str, Any]] = None) -> List["
     if cp and not model_cfg:
         issues.append(ConfigIssue(
             "warning",
-            "custom_providers defined but no 'model' section — Hermes won't know which provider to use",
+            "custom_providers defined but no 'model' section — Lucifex won't know which provider to use",
             "Add a model section:\n"
             "  model:\n"
             "    provider: custom\n"
@@ -5712,7 +5712,7 @@ def validate_config_structure(config: Optional[Dict[str, Any]] = None) -> List["
     # ── Root-level keys that look misplaced ──────────────────────────────
     # Only provider-like fields (base_url, api_key, …) are flagged. Arbitrary
     # unknown top-level keys are deliberately NOT warned about: top-level
-    # scalars are bridged into os.environ (gateway/run.py, hermes send) so
+    # scalars are bridged into os.environ (gateway/run.py, lucifex send) so
     # users can feed skills and external apps env-style keys from config.yaml
     # — a closed-world allowlist can never enumerate those.
     for key in config:
@@ -5746,7 +5746,7 @@ def print_config_warnings(config: Optional[Dict[str, Any]] = None) -> None:
     for ci in issues:
         marker = "\033[31m✗\033[0m" if ci.severity == "error" else "\033[33m⚠\033[0m"
         lines.append(f"  {marker} {ci.message}")
-    lines.append("  \033[2mRun 'hermes doctor' for fix suggestions.\033[0m")
+    lines.append("  \033[2mRun 'lucifex doctor' for fix suggestions.\033[0m")
     sys.stderr.write("\n".join(lines) + "\n\n")
 
 
@@ -5783,7 +5783,7 @@ def warn_deprecated_cwd_env_vars(config: Optional[Dict[str, Any]] = None) -> Non
             f"this is deprecated."
         )
     if lines:
-        hint_path = os.environ.get("LUCIFEX_HOME", "~/.hermes")
+        hint_path = os.environ.get("LUCIFEX_HOME", "~/.lucifex")
         lines.insert(0, "\033[33m⚠ Deprecated .env settings detected:\033[0m")
         lines.append(
             "  \033[2mMove to config.yaml instead:  "
@@ -5805,7 +5805,7 @@ def _persist_migration(config: Dict[str, Any]) -> None:
     them at read time, so writing them adds nothing and actively shadows future
     default changes (see ``save_config``'s docstring). Materialising defaults on
     every version bump is what rewrote hand-curated configs into full
-    DEFAULT_CONFIG dumps (the "hermes update / hermes -p blows up my config"
+    DEFAULT_CONFIG dumps (the "lucifex update / lucifex -p blows up my config"
     reports).
 
     Every migration step MUST route its write through this helper instead of
@@ -6162,7 +6162,7 @@ def migrate_config(interactive: bool = True, quiet: bool = False) -> Dict[str, A
                 else:
                     print(
                         "  ✓ Plugins now opt-in: no existing plugins to grandfather. "
-                        "Use `hermes plugins enable <name>` to activate."
+                        "Use `lucifex plugins enable <name>` to activate."
                     )
 
     # ── Version 22 → 23: seed curator defaults + create logs/curator/ ──
@@ -6171,7 +6171,7 @@ def migrate_config(interactive: bool = True, quiet: bool = False) -> Dict[str, A
     # unification under `auxiliary.curator`) never wrote the curator section
     # to disk. The runtime deep-merge in `load_config()` fills defaults at
     # read time, so the curator *functions*; but users can't see/edit the
-    # settings in their `config.yaml`, and `hermes curator status` has no
+    # settings in their `config.yaml`, and `lucifex curator status` has no
     # stable logs dir to point at until the first run mkdir's it.
     #
     # This migration:
@@ -6527,7 +6527,7 @@ def migrate_config(interactive: bool = True, quiet: bool = False) -> Dict[str, A
                         print(f"  ✓ Saved {name}")
                     print()
             else:
-                print("  Set later with: hermes config set <key> <value>")
+                print("  Set later with: lucifex config set <key> <value>")
     
     # Check for missing config fields.
     #
@@ -6535,7 +6535,7 @@ def migrate_config(interactive: bool = True, quiet: bool = False) -> Dict[str, A
     # DEFAULT_CONFIG at read time, so a missing key already takes effect with
     # its default (see _persist_migration's invariant). We surface the list for
     # the informational "N new config option(s) available" display in
-    # `hermes update`, but only the version bump is persisted.
+    # `lucifex update`, but only the version bump is persisted.
     missing_config = get_missing_config_fields()
     if missing_config:
         results["config_added"].extend(field["key"] for field in missing_config)
@@ -6547,7 +6547,7 @@ def migrate_config(interactive: bool = True, quiet: bool = False) -> Dict[str, A
 
     # ── Skill-declared config vars ──────────────────────────────────────
     # Skills can declare config.yaml settings they need via
-    # metadata.hermes.config in their SKILL.md frontmatter.
+    # metadata.lucifex.config in their SKILL.md frontmatter.
     # Prompt for any that are missing/empty.
     missing_skill_config = get_missing_skill_config_vars()
     if missing_skill_config and interactive and not quiet:
@@ -6586,7 +6586,7 @@ def migrate_config(interactive: bool = True, quiet: bool = False) -> Dict[str, A
                 print()
             _persist_migration(config)
         else:
-            print("  Set later with: hermes config set <key> <value>")
+            print("  Set later with: lucifex config set <key> <value>")
 
     return results
 
@@ -6882,7 +6882,7 @@ def _normalize_root_model_keys(config: Dict[str, Any]) -> Dict[str, Any]:
     but ``model.name`` was not, so a custom-provider config like
     ``model: {name: <id>, provider: <custom>}`` resolved to an empty model and
     the API request went out with ``model=`` (HTTP 400 from OpenAI-compatible
-    backends) — while display paths (``hermes status``/``dump``) read ``name``
+    backends) — while display paths (``lucifex status``/``dump``) read ``name``
     and *showed* the model, making the failure silent. Normalizing here (the
     single load/save chokepoint) means every reader, present and future, sees a
     populated ``default`` and the stale alias is migrated out of config.yaml on
@@ -7303,7 +7303,7 @@ def _load_config_impl(*, want_deepcopy: bool) -> Dict[str, Any]:
             user_sig = None
 
         # Managed scope: fold the managed config file's (mtime, size) into the
-        # cache signature so editing /etc/hermes/config.yaml invalidates the
+        # cache signature so editing /etc/lucifex/config.yaml invalidates the
         # cached merged result. (0, 0) means "no managed config file".
         from lucifex_cli import managed_scope
 
@@ -7463,8 +7463,8 @@ _FALLBACK_COMMENT = """
 #
 # Supported providers:
 #   openrouter   (OPENROUTER_API_KEY)  — routes to any model
-#   openai-codex (OAuth — hermes auth) — OpenAI Codex
-#   nous         (OAuth — hermes auth) — Nous Portal
+#   openai-codex (OAuth — lucifex auth) — OpenAI Codex
+#   nous         (OAuth — lucifex auth) — Nous Portal
 #   zai          (ZAI_API_KEY)         — Z.AI / GLM
 #   kimi-coding  (KIMI_API_KEY)        — Kimi / Moonshot
 #   kimi-coding-cn (KIMI_CN_API_KEY)   — Kimi / Moonshot (China)
@@ -7495,8 +7495,8 @@ _COMMENTED_SECTIONS = """
 #
 # Supported providers:
 #   openrouter   (OPENROUTER_API_KEY)  — routes to any model
-#   openai-codex (OAuth — hermes auth) — OpenAI Codex
-#   nous         (OAuth — hermes auth) — Nous Portal
+#   openai-codex (OAuth — lucifex auth) — OpenAI Codex
+#   nous         (OAuth — lucifex auth) — Nous Portal
 #   zai          (ZAI_API_KEY)         — Z.AI / GLM
 #   kimi-coding  (KIMI_API_KEY)        — Kimi / Moonshot
 #   kimi-coding-cn (KIMI_CN_API_KEY)   — Kimi / Moonshot (China)
@@ -7629,7 +7629,7 @@ def save_config(
 
 
 def _parse_env_value(raw_value: str) -> str:
-    """Parse the small .env value subset Hermes writes itself."""
+    """Parse the small .env value subset Lucifex writes itself."""
     value = raw_value.strip()
     if len(value) >= 2 and value[0] == value[-1] == '"':
         quoted = value[1:-1]
@@ -7661,9 +7661,9 @@ def load_env() -> Dict[str, str]:
 
     The parsed dict is memoised keyed on the .env file mtime, because
     ``get_env_value()`` is called dozens-to-hundreds of times per
-    interactive menu render (`hermes tools`, `hermes setup`, status
+    interactive menu render (`lucifex tools`, `lucifex setup`, status
     panels). Sanitisation is O(lines × known-keys), so re-parsing the
-    same file on every call was burning ~300ms of CPU per `hermes tools`
+    same file on every call was burning ~300ms of CPU per `lucifex tools`
     menu paint on top of the OAuth-refresh slowness. The mtime check
     invalidates the cache when the user edits .env mid-process.
     """
@@ -7759,7 +7759,7 @@ def _sanitize_env_lines(lines: list) -> list:
     2. Stale ``KEY=***`` placeholder entries left by incomplete setup runs.
 
     Uses a known-keys set (OPTIONAL_ENV_VARS + _EXTRA_ENV_KEYS) so we only
-    split on real Hermes env var names, avoiding false positives from values
+    split on real Lucifex env var names, avoiding false positives from values
     that happen to contain uppercase text with ``=``.
     """
     # Build the known keys set lazily from OPTIONAL_ENV_VARS + extras.
@@ -8160,7 +8160,7 @@ def reload_env() -> int:
     """Re-read ~/.lucifex/.env into os.environ. Returns count of vars updated.
 
     Adds/updates vars that changed and removes vars that were deleted from
-    the .env file (but only vars known to Hermes — OPTIONAL_ENV_VARS and
+    the .env file (but only vars known to Lucifex — OPTIONAL_ENV_VARS and
     _EXTRA_ENV_KEYS — to avoid clobbering unrelated environment).
     """
     env_vars = load_env()
@@ -8170,7 +8170,7 @@ def reload_env() -> int:
         if os.environ.get(key) != value:
             os.environ[key] = value
             count += 1
-    # Remove known Hermes vars that are no longer in .env
+    # Remove known Lucifex vars that are no longer in .env
     for key in known_keys:
         if key not in env_vars and key in os.environ:
             del os.environ[key]
@@ -8192,7 +8192,7 @@ def get_env_value(key: str) -> Optional[str]:
 def get_env_value_prefer_dotenv(key: str) -> Optional[str]:
     """Resolve a credential env value, preferring ``~/.lucifex/.env`` over ``os.environ``.
 
-    Used for Hermes-managed credentials where a deliberate edit to ``.env``
+    Used for Lucifex-managed credentials where a deliberate edit to ``.env``
     must take precedence over a stale value inherited from the parent shell
     (Codex CLI, test scripts, login profile exports). Without this, rotating
     a key in ``.env`` mid-session leaves callers serving the stale shell
@@ -8289,7 +8289,7 @@ def show_config():
 
     print()
     print(color("┌─────────────────────────────────────────────────────────┐", Colors.CYAN))
-    print(color("│              ⚕ Hermes Configuration                    │", Colors.CYAN))
+    print(color("│              ⚕ Lucifex Configuration                    │", Colors.CYAN))
     print(color("└─────────────────────────────────────────────────────────┘", Colors.CYAN))
 
     # Managed scope: surface that some settings are administrator-pinned so the
@@ -8362,7 +8362,7 @@ def show_config():
         if _env_ghost is not None and str(_env_ghost).strip() != str(_cfg_max_turns).strip():
             print(color(
                 f"                ⚠ .env has stale HERMES_MAX_ITERATIONS={_env_ghost} "
-                f"(run 'hermes doctor --fix' to remove)",
+                f"(run 'lucifex doctor --fix' to remove)",
                 Colors.YELLOW,
             ))
     except Exception:
@@ -8484,9 +8484,9 @@ def show_config():
 
     print()
     print(color("─" * 60, Colors.DIM))
-    print(color("  hermes config edit     # Edit config file", Colors.DIM))
-    print(color("  hermes config set <key> <value>", Colors.DIM))
-    print(color("  hermes setup           # Run setup wizard", Colors.DIM))
+    print(color("  lucifex config edit     # Edit config file", Colors.DIM))
+    print(color("  lucifex config set <key> <value>", Colors.DIM))
+    print(color("  lucifex setup           # Run setup wizard", Colors.DIM))
     print()
 
 
@@ -8837,7 +8837,7 @@ def set_config_value(key: str, value: str, force: bool = False):
     if not is_known and not force:
         print(color(
             f"⚠ '{key}' is not a recognized config key — it was saved anyway, "
-            "but Hermes may not read it.",
+            "but Lucifex may not read it.",
             Colors.YELLOW,
         ))
         if suggestion:
@@ -8940,12 +8940,12 @@ def config_command(args):
     elif subcmd == "get":
         key = getattr(args, 'key', None)
         if not key:
-            print("Usage: hermes config get <key> [--json]")
+            print("Usage: lucifex config get <key> [--json]")
             print()
             print("Examples:")
-            print("  hermes config get model")
-            print("  hermes config get terminal.backend")
-            print("  hermes config get skills.config --json")
+            print("  lucifex config get model")
+            print("  lucifex config get terminal.backend")
+            print("  lucifex config get skills.config --json")
             sys.exit(1)
         get_config_value(key, as_json=getattr(args, 'json', False))
 
@@ -8954,12 +8954,12 @@ def config_command(args):
         value = getattr(args, 'value', None)
         force = bool(getattr(args, 'force', False))
         if not key or value is None:
-            print("Usage: hermes config set [--force] <key> <value>")
+            print("Usage: lucifex config set [--force] <key> <value>")
             print()
             print("Examples:")
-            print("  hermes config set model anthropic/claude-sonnet-4")
-            print("  hermes config set terminal.backend docker")
-            print("  hermes config set OPENROUTER_API_KEY sk-or-...")
+            print("  lucifex config set model anthropic/claude-sonnet-4")
+            print("  lucifex config set terminal.backend docker")
+            print("  lucifex config set OPENROUTER_API_KEY sk-or-...")
             print()
             print("  --force: skip the unknown-key notice for unrecognized keys")
             sys.exit(1)
@@ -8968,12 +8968,12 @@ def config_command(args):
     elif subcmd == "unset":
         key = getattr(args, 'key', None)
         if not key:
-            print("Usage: hermes config unset <key>")
+            print("Usage: lucifex config unset <key>")
             print()
             print("Examples:")
-            print("  hermes config unset model")
-            print("  hermes config unset terminal.backend")
-            print("  hermes config unset OPENROUTER_API_KEY")
+            print("  lucifex config unset model")
+            print("  lucifex config unset terminal.backend")
+            print("  lucifex config unset OPENROUTER_API_KEY")
             sys.exit(1)
         unset_config_value(key)
     
@@ -9073,7 +9073,7 @@ def config_command(args):
         if missing_config:
             print()
             print(color(f"  {len(missing_config)} new config option(s) available", Colors.YELLOW))
-            print("    Run 'hermes config migrate' to add them")
+            print("    Run 'lucifex config migrate' to add them")
         
         print()
     
@@ -9081,15 +9081,15 @@ def config_command(args):
         print(f"Unknown config command: {subcmd}")
         print()
         print("Available commands:")
-        print("  hermes config           Show current configuration")
-        print("  hermes config edit      Open config in editor")
-        print("  hermes config get <key>          Print a resolved config value")
-        print("  hermes config set <key> <value>   Set a config value")
-        print("  hermes config unset <key>        Remove a config value")
-        print("  hermes config check     Check for missing/outdated config")
-        print("  hermes config migrate   Update config with new options")
-        print("  hermes config path      Show config file path")
-        print("  hermes config env-path  Show .env file path")
+        print("  lucifex config           Show current configuration")
+        print("  lucifex config edit      Open config in editor")
+        print("  lucifex config get <key>          Print a resolved config value")
+        print("  lucifex config set <key> <value>   Set a config value")
+        print("  lucifex config unset <key>        Remove a config value")
+        print("  lucifex config check     Check for missing/outdated config")
+        print("  lucifex config migrate   Update config with new options")
+        print("  lucifex config path      Show config file path")
+        print("  lucifex config env-path  Show .env file path")
         sys.exit(1)
 
 

@@ -1,4 +1,4 @@
-"""``hermes model`` subcommand parser.
+"""``lucifex model`` subcommand parser.
 
 Extracted verbatim from ``lucifex_cli/main.py:main()`` (god-file Phase 2).
 Handler injected to avoid importing ``main``.
@@ -35,7 +35,7 @@ def build_model_parser(subparsers, *, cmd_model: Callable) -> None:
     model_parser.add_argument(
         "--client-id",
         default=None,
-        help="OAuth client id to use for Nous login (default: hermes-cli)",
+        help="OAuth client id to use for Nous login (default: lucifex-cli)",
     )
     model_parser.add_argument(
         "--scope", default=None, help="OAuth scope to request for Nous login"
