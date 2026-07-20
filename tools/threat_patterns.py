@@ -126,9 +126,9 @@ _PATTERNS: List[Tuple[str, str, str]] = [
     # ── Persistence / SSH backdoor (strict scope — memory + skills) ──
     (r'authorized_keys', "ssh_backdoor", "strict"),
     (r'\$HOME/\.ssh|\~/\.ssh', "ssh_access", "strict"),
-    (r'\$HOME/\.lucifex/\.env|\~/lucifexifex/\.envlucifexucifex_env", "strict"),
+    (r'\$HOME/\.lucifex/\.env|\~/\.lucifex/\.env', "lucifex_env", "strict"),
     (r'(update|modify|edit|write|change|append|add\s+to)\s+[^\n]{0,2048}(?:AGENTS\.md|CLAUDE\.md|\.cursorrules|\.clinerules)', "agent_config_mod", "strict"),
-    (r'(update|modify|edit|write|change|append|add\s+to)\s+[^\n]{0,2048}\.lucifex/(config\.yaml|SOUL\.md)',lucifexifex_config_mod", "strict"),
+    (r'(update|modify|edit|write|change|append|add\s+to)\s+[^\n]{0,2048}\.lucifex/(config\.yaml|SOUL\.md)', "lucifex_config_mod", "strict"),
 
     # ── Hardcoded secrets ────────────────────────────────────────────
     (r'(?:api[_-]?key|token|secret|password)\s*[=:]\s*["\'][A-Za-z0-9+/=_-]{20,}', "hardcoded_secret", "strict"),

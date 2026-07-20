@@ -716,7 +716,7 @@ class GitHubSource(SkillSource):
         tags = []
         metadata = fm.get("metadata", {})
         if isinstance(metadata, dict):
-            lucifex_meta = metadata.getlucifexifex", {})
+            lucifex_meta = metadata.get("lucifex", {})
             if isinstance(lucifex_meta, dict):
                 tags = lucifex_meta.get("tags", [])
         if not tags:
@@ -1469,7 +1469,7 @@ class UrlSource(SkillSource):
         tags: List[str] = []
         metadata = fm.get("metadata", {})
         if isinstance(metadata, dict):
-            lucifex_meta = metadata.getlucifexifex", {})
+            lucifex_meta = metadata.get("lucifex", {})
             if isinstance(lucifex_meta, dict):
                 raw_tags = lucifex_meta.get("tags", [])
                 if isinstance(raw_tags, list):
@@ -3295,7 +3295,7 @@ class OptionalSkillSource(SkillSource):
             tags = []
             meta_block = fm.get("metadata", {})
             if isinstance(meta_block, dict):
-                lucifex_meta = meta_block.getlucifexifex", {})
+                lucifex_meta = meta_block.get("lucifex", {})
                 if isinstance(lucifex_meta, dict):
                     tags = lucifex_meta.get("tags", [])
 

@@ -548,8 +548,8 @@ def _resolve_tirith_path(configured_path: str) -> str:
         _clear_install_failed()
         return found
 
-    lucifex_bin = os.path.joinlucifexifex_bin_dir(), "tirith")
-    if os.path.isfile(lucifex_bin) and os.acceslucifexifex_bin, os.X_OK):
+    lucifex_bin = os.path.join(_lucifex_bin_dir(), "tirith")
+    if os.path.isfile(lucifex_bin) and os.access(lucifex_bin, os.X_OK):
         _resolved_path = lucifex_bin
         _install_failure_reason = ""
         _clear_install_failed()
@@ -612,8 +612,8 @@ def _background_install(*, log_failures: bool = True):
             _install_failure_reason = ""
             return
 
-        lucifex_bin = os.path.joinlucifexifex_bin_dir(), "tirith")
-        if os.path.isfile(lucifex_bin) and os.acceslucifexifex_bin, os.X_OK):
+        lucifex_bin = os.path.join(_lucifex_bin_dir(), "tirith")
+        if os.path.isfile(lucifex_bin) and os.access(lucifex_bin, os.X_OK):
             _resolved_path = lucifex_bin
             _install_failure_reason = ""
             return
@@ -682,8 +682,8 @@ def ensure_installed(*, log_failures: bool = True):
         _clear_install_failed()
         return found
 
-    lucifex_bin = os.path.joinlucifexifex_bin_dir(), "tirith")
-    if os.path.isfile(lucifex_bin) and os.acceslucifexifex_bin, os.X_OK):
+    lucifex_bin = os.path.join(_lucifex_bin_dir(), "tirith")
+    if os.path.isfile(lucifex_bin) and os.access(lucifex_bin, os.X_OK):
         _resolved_path = lucifex_bin
         _install_failure_reason = ""
         _clear_install_failed()

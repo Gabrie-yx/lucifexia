@@ -613,8 +613,8 @@ def _check_sensitive_path(filepath: str, task_id: str = "default") -> str | None
     # approvals.mode and other security settings live here; a malicious or
     # prompt-injected agent could silently disable exec approval by writing to
     # this file.
-    lucifex_config = _gelucifexifex_config_resolved()
-    if lucifex_config and (resolved =lucifexifex_config or normalizedlucifexucifex_config):
+    lucifex_config = _get_lucifex_config_resolved()
+    if lucifex_config and (resolved == lucifex_config or normalized == lucifex_config):
         return (
             f"Refusing to write to lucifex config file: {filepath}\n"
             "Agent cannot modify security-sensitive configuration. "

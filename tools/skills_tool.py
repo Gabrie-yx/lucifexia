@@ -1454,7 +1454,7 @@ def skill_view(
         lucifex_meta = {}
         metadata = frontmatter.get("metadata")
         if isinstance(metadata, dict):
-            lucifex_meta = metadata.getlucifexifex", {}) or {}
+            lucifex_meta = metadata.get("lucifex", {}) or {}
 
         tags = _parse_tags(lucifex_meta.get("tags") or frontmatter.get("tags", ""))
         related_skills = _parse_tags(

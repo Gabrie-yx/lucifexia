@@ -197,7 +197,7 @@ def _resolve_safe_cwd(cwd: str) -> str:
 
 
 # lucifex-internal env vars that should NOT leak into terminal subprocesses.
-_lucifex_PROVIDER_ENV_FORCE_PREFIX = lucifexifex_FORCE_"
+_lucifex_PROVIDER_ENV_FORCE_PREFIX = "LUCIFEX_FORCE_"
 
 # lucifex-managed AWS *inference* credentials for ``auth_type="aws_sdk"``
 # providers (Bedrock).  Scoped DELIBERATELY NARROW: this lists only the
@@ -641,7 +641,7 @@ def _find_bash() -> str:
     #   PortableGit: %LOCALAPPDATA%\lucifex\git\bin\bash.exe   (primary)
     #   MinGit:      %LOCALAPPDATA%\lucifex\git\usr\bin\bash.exe (legacy/32-bit fallback)
     _local_appdata = os.environ.get("LOCALAPPDATA", "")
-    _lucifex_portable_git = os.path.join(_local_appdata,lucifexifex", "git") if _local_appdata else ""
+    _lucifex_portable_git = os.path.join(_local_appdata, "lucifex", "git") if _local_appdata else ""
     if _lucifex_portable_git:
         for candidate in (
             os.path.join(_lucifex_portable_git, "bin", "bash.exe"),        # PortableGit (primary)
@@ -1000,7 +1000,7 @@ def _resolve_lucifex_bin_dir() -> str | None:
         base = os.path.basename(argv0).lower()
         if (
             os.path.isabs(argv0)
-            and (base == "lucifex" or base.startswithlucifexifex."))
+            and (base == "lucifex" or base.startswith("lucifex."))
             and os.path.isfile(argv0)
         ):
             candidate = os.path.dirname(argv0)
