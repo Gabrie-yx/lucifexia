@@ -1,23 +1,25 @@
 ---
-name: hermes-desktop-plugins
-description: Write desktop app plugins that add UI panes and commands.
-version: 1.0.0
+name: lucifex-desktop-plugins
+description: Write desktop app plugins that add UI panes and commands to the Lucifex Desktop app.
+version: 1.1.0
+author: Lucifex Agent
+license: MIT
 platforms: [linux, macos, windows]
 metadata:
-  hermes:
-    tags: [desktop, plugins, ui, extension]
+  lucifex:
+    tags: [desktop, plugins, ui, extension, panes, statusbar]
     category: productivity
-    related_skills: []
+    related_skills: [lucifex-agent-skill-authoring]
 ---
 
-# Hermes Desktop Plugins Skill
+# Lucifex Desktop Plugins Skill
 
-Write plugins for the Hermes desktop app: statusbar items, layout panes,
+Write plugins for the Lucifex desktop app: statusbar items, layout panes,
 command-palette commands, keybinds, routes, and themes. A plugin is a single
 plain-JavaScript ESM file the app loads at runtime — no build step, no repo
 changes. A plugin can also talk to its own Python backend namespace
 (`ctx.rest`/`ctx.socket` → `/api/plugins/<id>`); the general Python plugin
-system (`~/.hermes/plugins/`) is otherwise documented separately.
+system (`~/.lucifex/plugins/`) is otherwise documented separately.
 
 Full human reference (every export, area payloads, backend, security):
 `website/docs/developer-guide/desktop-plugin-sdk.md`.
@@ -30,15 +32,15 @@ Full human reference (every export, area payloads, backend, security):
 
 ## Prerequisites
 
-- The Hermes desktop app (it loads plugins; the CLI/gateway alone does not).
-- Write access to `$HERMES_HOME/desktop-plugins/` (usually
-  `~/.hermes/desktop-plugins/`).
+- The Lucifex desktop app (it loads plugins; the CLI/gateway alone does not).
+- Write access to `$LUCIFEX_HOME/desktop-plugins/` (usually
+  `~/.lucifex/desktop-plugins/`).
 
 ## How to Run
 
-1. Create `$HERMES_HOME/desktop-plugins/<name>/plugin.js` from
+1. Create `$LUCIFEX_HOME/desktop-plugins/<name>/plugin.js` from
    `templates/plugin.js` (relative to this skill directory) — that's
-   `~/.hermes/...` by default, or `~/.hermes/profiles/<profile>/...` under a
+   `~/.lucifex/...` by default, or `~/.lucifex/profiles/<profile>/...` under a
    named profile. Keep `<name>` equal to the plugin `id`.
 2. The desktop app watches that directory: the plugin loads within a few
    seconds of the file landing, and every later save hot-reloads it in
@@ -49,7 +51,7 @@ Full human reference (every export, area payloads, backend, security):
 
 ## Quick Reference
 
-The ONLY import surface is `@hermes/plugin-sdk` (plus `react` /
+The ONLY import surface is `@lucifex/plugin-sdk` (plus `react` /
 `react/jsx-runtime`, which resolve to the app's own React — write UI with
 `jsx()` calls, not JSX syntax; the file is not compiled).
 
@@ -93,7 +95,7 @@ The ONLY import surface is `@hermes/plugin-sdk` (plus `react` /
   React Query client — cache, dedupe, `refetchInterval`, invalidate like core;
   never hand-roll a poll loop), plus `atom`/`computed` for plugin-local state.
 - Backend: if the plugin ships a Python `plugin_api.py` (under
-  `~/.hermes/plugins/<id>/dashboard/`, manifest `"api": "plugin_api.py"`), reach
+  `~/.lucifex/plugins/<id>/dashboard/`, manifest `"api": "plugin_api.py"`), reach
   it with `ctx.rest('/path', { method?, body?, timeoutMs? })` and its live twin
   `ctx.socket('/events', onMessage)` — both scoped to `/api/plugins/<id>` by
   construction (traversal rejected). `ctx.socket` is a **no-op on OAuth
@@ -149,7 +151,7 @@ The ONLY import surface is `@hermes/plugin-sdk` (plus `react` /
   blank space or blurry scaling.
 - JSX syntax will not parse — the file loads uncompiled. Use
   `jsx('div', { children: ... })` from `react/jsx-runtime`.
-- Do not import anything except `@hermes/plugin-sdk`, `react`, and
+- Do not import anything except `@lucifex/plugin-sdk`, `react`, and
   `react/jsx-runtime`; other specifiers fail to resolve.
 - Handlers must read state imperatively (`$atom.get()`), never from render
   closures — rapid events will otherwise see stale values.
@@ -160,5 +162,5 @@ The ONLY import surface is `@hermes/plugin-sdk` (plus `react` /
 
 - The plugin's UI appears after **Reload desktop plugins**.
 - No error toast ("Plugin <name> failed to load") appears; if it does, the
-  message names the failure — fix and reload.
+  message names the failure — fix the file and reload.
 - For panes: the new zone is visible and draggable like any core pane.
