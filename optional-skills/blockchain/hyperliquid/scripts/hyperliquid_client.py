@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Hyperliquid CLI Tool for Hermes Agent
 -------------------------------------

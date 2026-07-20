@@ -1,4 +1,4 @@
-﻿import random
+import random
 
 from gateway.status_phrases import (
     classify_status_context,

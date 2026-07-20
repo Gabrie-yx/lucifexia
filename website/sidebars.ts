@@ -1,4 +1,4 @@
-import type {SidebarsConfig} from '@docusaurus/plugin-content-docs';
+import type { SidebarsConfig } from '@docusaurus/plugin-content-docs';
 
 const sidebars: SidebarsConfig = {
   docs: [
@@ -19,7 +19,7 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
-      label: 'Using Hermes',
+      label: 'Using llucifex',
       collapsed: true,
       items: [
         'user-guide/cli',
@@ -399,7 +399,7 @@ const sidebars: SidebarsConfig = {
                   items: [
                     'user-guide/skills/optional/devops/devops-cli',
                     'user-guide/skills/optional/devops/devops-docker-management',
-                    'user-guide/skills/optional/devops/devops-hermes-s6-container-supervision',
+                    'user-guide/skills/optional/devops/devops-llucifex-s6-container-supervision',
                     'user-guide/skills/optional/devops/devops-pinggy-tunnel',
                     'user-guide/skills/optional/devops/devops-watchers',
                   ],
@@ -683,15 +683,15 @@ const sidebars: SidebarsConfig = {
       collapsed: true,
       items: [
         'guides/run-nemotron-3-ultra-free',
-        'guides/run-hermes-with-nous-portal',
+        'guides/run-llucifex-with-nous-portal',
         'guides/tips',
         'guides/local-llm-on-mac',
         'guides/daily-briefing-bot',
         'guides/team-telegram-assistant',
         'guides/python-library',
-        'guides/use-mcp-with-hermes',
-        'guides/use-soul-with-hermes',
-        'guides/use-voice-mode-with-hermes',
+        'guides/use-mcp-with-llucifex',
+        'guides/use-soul-with-llucifex',
+        'guides/use-voice-mode-with-llucifex',
         'guides/automate-with-cron',
         'guides/cron-script-only',
         'guides/automation-blueprints',
@@ -741,7 +741,7 @@ const sidebars: SidebarsConfig = {
             {
               type: 'category',
               label: 'Plugins',
-              link: {type: 'doc', id: 'developer-guide/plugins/index'},
+              link: { type: 'doc', id: 'developer-guide/plugins/index' },
               items: [
                 'developer-guide/plugin-llm-access',
                 'developer-guide/desktop-plugin-sdk',

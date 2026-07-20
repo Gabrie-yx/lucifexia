@@ -1,4 +1,4 @@
-﻿"""langfuse — Hermes plugin for Langfuse observability.
+"""langfuse — Hermes plugin for Langfuse observability.
 
 Traces Hermes conversations, LLM calls, and tool usage to Langfuse.
 

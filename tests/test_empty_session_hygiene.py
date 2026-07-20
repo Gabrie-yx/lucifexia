@@ -1,4 +1,4 @@
-﻿"""Tests for empty-session hygiene — gemini-cli#27770 port.
+"""Tests for empty-session hygiene — gemini-cli#27770 port.
 
 Starting the CLI and immediately quitting (or rotating sessions with /new)
 used to leave empty untitled rows in the session DB that clutter /resume

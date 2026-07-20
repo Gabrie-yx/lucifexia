@@ -1,4 +1,4 @@
-﻿"""Generic webhook platform adapter.
+"""Generic webhook platform adapter.
 
 Runs an aiohttp HTTP server that receives webhook POSTs from external
 services (GitHub, GitLab, JIRA, Stripe, etc.), validates HMAC signatures,

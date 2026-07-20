@@ -1,4 +1,4 @@
-﻿"""Tests for the shell-hooks subprocess bridge (agent.shell_hooks).
+"""Tests for the shell-hooks subprocess bridge (agent.shell_hooks).
 
 These tests focus on the pure translation layer — JSON serialisation,
 JSON parsing, matcher behaviour, block-schema correctness, and the

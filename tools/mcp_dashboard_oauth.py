@@ -1,4 +1,4 @@
-﻿"""Dashboard-mediated callback bridge for MCP OAuth.
+"""Dashboard-mediated callback bridge for MCP OAuth.
 
 The MCP SDK remains responsible for discovery, DCR, PKCE, state validation and
 token exchange. This module only moves the two human/browser callbacks from a

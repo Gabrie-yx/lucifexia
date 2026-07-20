@@ -1,4 +1,4 @@
-﻿"""Filesystem paths for the unbroker skill (stdlib only).
+"""Filesystem paths for the unbroker skill (stdlib only).
 
 All per-subject data lives under PDD_DATA_DIR (default: $LUCIFEX_HOME/unbroker),
 which is the same trust boundary Hermes uses for .env and OAuth tokens.

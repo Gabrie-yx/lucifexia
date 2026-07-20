@@ -1,4 +1,4 @@
-﻿export interface ConfigFieldSchema {
+export interface ConfigFieldSchema {
   category?: string
   description?: string
   options?: unknown[]

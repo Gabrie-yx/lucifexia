@@ -1,4 +1,4 @@
-﻿"""Behavior contracts for incremental tool-call persistence (#49045).
+"""Behavior contracts for incremental tool-call persistence (#49045).
 
 A destructive or process-terminating tool that runs during tool execution
 must not lose the just-executed assistant(tool_calls) block or the tool
@@ -47,7 +47,7 @@ def _make_tool_defs(*names: str) -> list:
 
 
 def _make_agent():
-    LUCIFEX_HOME = Path(tempfile.mkdtemp(prefix="hermes-test-home-"))
+    LUCIFEX_HOME = Path(tempfile.mkdtemp(prefix="lucifexex-test-home-"))
     (LUCIFEX_HOME / "logs").mkdir(parents=True, exist_ok=True)
     with (
         patch(

@@ -1,4 +1,4 @@
-﻿"""Direct tests for ``agent.image_gen_provider.save_url_image`` (#26942).
+"""Direct tests for ``agent.image_gen_provider.save_url_image`` (#26942).
 
 These exercise the helper against a real in-process HTTP server — no
 ``requests.get`` mocking — so we catch the kinds of issues a mocked

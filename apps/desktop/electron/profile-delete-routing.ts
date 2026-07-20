@@ -1,4 +1,4 @@
-﻿// Profile-delete routing logic for the `hermes:api` IPC handler.
+// Profile-delete routing logic for the `hermes:api` IPC handler.
 //
 // When the renderer issues DELETE /api/profiles/<name>, the handler must
 // tear down that profile's backend (primary window backend or pool backend)

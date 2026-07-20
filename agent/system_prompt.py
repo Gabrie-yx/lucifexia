@@ -1,4 +1,4 @@
-﻿"""System-prompt assembly for :class:`AIAgent`.
+"""System-prompt assembly for :class:`AIAgent`.
 
 The agent's system prompt is built once per session and reused across all
 turns — only context compression triggers a rebuild.  This keeps the

@@ -1,4 +1,4 @@
-﻿"""ACP session manager — maps ACP sessions to Hermes AIAgent instances.
+"""ACP session manager — maps ACP sessions to Hermes AIAgent instances.
 
 Sessions are persisted to the shared SessionDB (``~/.lucifex/state.db``) so they
 survive process restarts and appear in ``session_search``.  When the editor

@@ -1,4 +1,4 @@
-﻿"""Gateway typed ``/model <name>`` must route through the expensive-model
+"""Gateway typed ``/model <name>`` must route through the expensive-model
 confirmation gate.
 
 The pickers (Telegram/Discord inline keyboards, TUI, dashboard) confirm

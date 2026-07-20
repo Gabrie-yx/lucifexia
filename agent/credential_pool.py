@@ -1,4 +1,4 @@
-﻿"""Persistent multi-credential pool for same-provider failover."""
+"""Persistent multi-credential pool for same-provider failover."""
 
 from __future__ import annotations
 

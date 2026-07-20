@@ -1,8 +1,8 @@
-﻿"""Regression tests for #60955: gateway must not freeze fallback_providers.
+"""Regression tests for #60955: gateway must not freeze fallback_providers.
 
 Cron reloads ``fallback_providers`` from disk on every job. The gateway used to
 freeze ``self._fallback_model`` at process start, so a chain configured (or
-edited) after ``hermes gateway`` was already running never reached messaging
+edited) after ``lucifexex gateway`` was already running never reached messaging
 sessions — even though cron in the same process fell back correctly.
 
 These tests pin the reload + cached-agent apply helpers without driving the
@@ -229,11 +229,11 @@ def test_load_fallback_model_static_unchanged_contract(tmp_path, monkeypatch):
         "    model: deepseek-v4-flash\n"
         "fallback_model:\n"
         "  provider: nous\n"
-        "  model: Hermes-4\n"
+        "  model: lucifexex-4\n"
     )
 
     chain = GatewayRunner._load_fallback_model()
     assert chain == [
         {"provider": "deepseek", "model": "deepseek-v4-flash"},
-        {"provider": "nous", "model": "Hermes-4"},
+        {"provider": "nous", "model": "lucifexex-4"},
     ]

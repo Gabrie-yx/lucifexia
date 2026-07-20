@@ -1,4 +1,4 @@
-﻿"""Tests for /undo handling in tui_gateway.
+"""Tests for /undo handling in tui_gateway.
 
 The TUI routes ``/undo`` through ``command.dispatch`` (it's in
 ``_PENDING_INPUT_COMMANDS`` because the CLI handler queues input the
@@ -25,7 +25,7 @@ from lucifex_state import SessionDB
 
 @pytest.fixture()
 def LUCIFEX_HOME(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".lucifexex"
     home.mkdir()
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     monkeypatch.setenv("LUCIFEX_HOME", str(home))

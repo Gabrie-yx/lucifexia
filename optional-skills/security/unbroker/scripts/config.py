@@ -1,4 +1,4 @@
-﻿"""Install-wide configuration with easiest-first defaults.
+"""Install-wide configuration with easiest-first defaults.
 
 Everything works zero-config. `setup --auto` (the autonomous path) detects what
 this environment can do and picks the MOST AUTONOMOUS valid configuration without

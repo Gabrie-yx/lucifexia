@@ -1,4 +1,4 @@
-﻿"""Tests for tools/threat_patterns.py — shared threat-pattern library.
+"""Tests for tools/threat_patterns.py — shared threat-pattern library.
 
 Covers the scope split (all/context/strict), the Brainworm payload as the
 gold standard, false-positive guards on borderline patterns, and the

@@ -1,4 +1,4 @@
-﻿"""Tests for /goal handling in tui_gateway.
+"""Tests for /goal handling in tui_gateway.
 
 The TUI routes ``/goal`` through ``command.dispatch`` (not ``slash.exec``)
 because the CLI's ``_handle_goal_command`` queues the kickoff message onto
@@ -20,7 +20,7 @@ import pytest
 
 @pytest.fixture()
 def LUCIFEX_HOME(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".lucifexex"
     home.mkdir()
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     monkeypatch.setenv("LUCIFEX_HOME", str(home))

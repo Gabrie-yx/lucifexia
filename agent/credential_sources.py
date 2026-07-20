@@ -1,4 +1,4 @@
-﻿"""Unified removal contract for every credential source Hermes reads from.
+"""Unified removal contract for every credential source Hermes reads from.
 
 Hermes seeds its credential pool from many places:
 

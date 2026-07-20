@@ -1,4 +1,4 @@
-﻿"""
+"""
 Telegram platform adapter.
 
 Uses python-telegram-bot library for:

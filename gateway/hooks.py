@@ -1,4 +1,4 @@
-﻿"""
+"""
 Event Hook System
 
 A lightweight event-driven system that fires handlers at key lifecycle points.

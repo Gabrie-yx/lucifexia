@@ -1,4 +1,4 @@
-﻿"""Supermemory memory plugin using the MemoryProvider interface.
+"""Supermemory memory plugin using the MemoryProvider interface.
 
 Provides semantic long-term memory with profile recall, semantic search,
 explicit memory tools, cleaned turn capture, and session-end conversation ingest.

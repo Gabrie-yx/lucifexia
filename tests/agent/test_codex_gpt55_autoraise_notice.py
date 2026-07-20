@@ -1,4 +1,4 @@
-﻿"""Regression tests for the Codex gpt-5.x autoraise notice gate.
+"""Regression tests for the Codex gpt-5.x autoraise notice gate.
 
 Covers two layers:
 

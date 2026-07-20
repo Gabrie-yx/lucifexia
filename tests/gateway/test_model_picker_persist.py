@@ -1,4 +1,4 @@
-﻿"""Regression tests for gateway inline-keyboard model-picker persistence.
+"""Regression tests for gateway inline-keyboard model-picker persistence.
 
 #49066 made the typed ``/model <name>`` command persist the selected model to
 ``config.yaml`` by default. But the inline-keyboard picker callback

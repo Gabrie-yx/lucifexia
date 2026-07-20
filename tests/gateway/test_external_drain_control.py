@@ -1,4 +1,4 @@
-﻿"""Tests for the external drain-control marker contract + gateway state machine.
+"""Tests for the external drain-control marker contract + gateway state machine.
 
 Task 2.2/2.3. Two layers:
   * drain_control.py — the presence-based marker contract (write/clear/read,

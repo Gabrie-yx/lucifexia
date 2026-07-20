@@ -1,4 +1,4 @@
-﻿"""1Password (`op` CLI) secret source.
+"""1Password (`op` CLI) secret source.
 
 Resolve provider credentials from 1Password ``op://vault/item/field``
 references at process startup so they don't have to live in plaintext in

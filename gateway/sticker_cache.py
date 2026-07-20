@@ -1,4 +1,4 @@
-﻿"""
+"""
 Sticker description cache for Telegram.
 
 When users send stickers, we describe them via the vision tool and cache

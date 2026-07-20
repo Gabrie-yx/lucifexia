@@ -1,4 +1,4 @@
-﻿"""Microsoft Entra ID adapter for Microsoft Foundry.
+"""Microsoft Entra ID adapter for Microsoft Foundry.
 
 Provides keyless authentication for Microsoft Foundry deployments using the
 `azure-identity` SDK's `DefaultAzureCredential` chain (env service principal

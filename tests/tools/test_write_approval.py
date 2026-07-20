@@ -1,4 +1,4 @@
-﻿"""Tests for the memory/skill write-approval gate (tools/write_approval.py)
+"""Tests for the memory/skill write-approval gate (tools/write_approval.py)
 and the shared slash-command handlers (lucifex_cli/write_approval_commands.py).
 
 Covers the boolean write_approval gate (off by default = write freely; on =
@@ -17,8 +17,8 @@ import pytest
 
 @pytest.fixture
 def LUCIFEX_HOME(monkeypatch):
-    d = tempfile.mkdtemp(prefix="hermes_wa_test_")
-    home = os.path.join(d, ".hermes")
+    d = tempfile.mkdtemp(prefix="lucifexex_wa_test_")
+    home = os.path.join(d, ".lucifexex")
     os.makedirs(home)
     monkeypatch.setenv("LUCIFEX_HOME", home)
     yield home
@@ -402,7 +402,7 @@ def test_gateway_context_stages_not_prompts(LUCIFEX_HOME, monkeypatch):
     from tools.memory_tool import memory_tool, MemoryStore
     from tools import write_approval as wa
     _set_approval("memory", True)
-    monkeypatch.setenv("HERMES_GATEWAY_SESSION", "1")
+    monkeypatch.setenv("lucifexex_GATEWAY_SESSION", "1")
 
     store = MemoryStore(); store.load_from_disk()
     r = json.loads(memory_tool("add", "memory", "gateway fact", store=store))

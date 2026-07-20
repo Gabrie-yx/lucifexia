@@ -1,4 +1,4 @@
-﻿"""Tests for multi-credential runtime pooling and rotation."""
+"""Tests for multi-credential runtime pooling and rotation."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-﻿"""
+"""
 Photon Dashboard API client + device-code login flow.
 
 This module is pure Python — it intentionally does not depend on

@@ -1,4 +1,4 @@
-﻿"""
+"""
 Feishu document comment access-control rules.
 
 3-tier rule resolution: exact doc > wildcard "*" > top-level > code defaults.

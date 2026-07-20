@@ -1,4 +1,4 @@
-﻿"""Regression guard: skill content loaded at cron runtime must be scanned.
+"""Regression guard: skill content loaded at cron runtime must be scanned.
 
 #3968 attack chain: `_scan_cron_prompt` runs on the user-supplied prompt
 at cron-create/cron-update time but the skill content loaded inside
@@ -34,14 +34,14 @@ def cron_env(tmp_path, monkeypatch):
     after that reload and defeat ``pytest.raises(...)`` checks. Each test
     re-imports via this fixture's return value instead.
     """
-    LUCIFEX_HOME = tmp_path / ".hermes"
+    LUCIFEX_HOME = tmp_path / ".lucifexex"
     LUCIFEX_HOME.mkdir()
     skills_dir = LUCIFEX_HOME / "skills"
     skills_dir.mkdir()
     (LUCIFEX_HOME / "cron").mkdir()
     (LUCIFEX_HOME / "cron" / "output").mkdir()
     monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
-    monkeypatch.setenv("HERMES_BUNDLES_DIR", str(LUCIFEX_HOME / "skill-bundles"))
+    monkeypatch.setenv("lucifexex_BUNDLES_DIR", str(LUCIFEX_HOME / "skill-bundles"))
 
     # Patch the module-level SKILLS_DIR snapshots that `skill_view()`
     # uses. Without this, the tool resolves against the real
@@ -334,7 +334,7 @@ class TestScriptOutputNotStrictScanned:
     code — same trust class as install-vetted skill markdown — and must be
     scanned with the looser assembled-content tier instead.
 
-    Live incident: the ``hermes-triage`` cron was blocked every 5 minutes
+    Live incident: the ``lucifexex-triage`` cron was blocked every 5 minutes
     once an open security issue containing the root-delete pattern entered
     its ingest queue (112 such rows in the triage corpus — dangerous-command
     quotes are *normal* for triage data).

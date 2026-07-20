@@ -1,4 +1,4 @@
-﻿"""Curator — background skill maintenance orchestrator.
+"""Curator — background skill maintenance orchestrator.
 
 The curator is an auxiliary-model task that periodically reviews agent-created
 skills and maintains the collection. It runs inactivity-triggered (no cron

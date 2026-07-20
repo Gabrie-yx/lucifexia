@@ -1,4 +1,4 @@
-﻿"""
+"""
 Microsoft Teams platform adapter for Hermes Agent.
 
 Uses the microsoft-teams-apps SDK for authentication and activity processing.

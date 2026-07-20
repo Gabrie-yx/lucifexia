@@ -1,4 +1,4 @@
-﻿"""Tests for cron job context_from feature (issue #5439 Option C)."""
+"""Tests for cron job context_from feature (issue #5439 Option C)."""
 
 import logging
 import sys
@@ -12,14 +12,14 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 @pytest.fixture
 def cron_env(tmp_path, monkeypatch):
     """Isolated cron environment with temp LUCIFEX_HOME."""
-    LUCIFEX_HOME = tmp_path / ".hermes"
+    LUCIFEX_HOME = tmp_path / ".lucifexex"
     LUCIFEX_HOME.mkdir()
     (LUCIFEX_HOME / "cron").mkdir()
     (LUCIFEX_HOME / "cron" / "output").mkdir()
     monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
 
     import cron.jobs as jobs_mod
-    monkeypatch.setattr(jobs_mod, "HERMES_DIR", LUCIFEX_HOME)
+    monkeypatch.setattr(jobs_mod, "lucifexex_DIR", LUCIFEX_HOME)
     monkeypatch.setattr(jobs_mod, "CRON_DIR", LUCIFEX_HOME / "cron")
     monkeypatch.setattr(jobs_mod, "JOBS_FILE", LUCIFEX_HOME / "cron" / "jobs.json")
     monkeypatch.setattr(jobs_mod, "OUTPUT_DIR", LUCIFEX_HOME / "cron" / "output")

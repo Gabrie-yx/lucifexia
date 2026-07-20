@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Lucifex Agent CLI - Interactive Terminal Interface
 

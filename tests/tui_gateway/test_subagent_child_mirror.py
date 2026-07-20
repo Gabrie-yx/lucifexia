@@ -21,7 +21,7 @@ def server():
         "sys.modules",
         {
             "lucifex_constants": MagicMock(
-                get_lucifex_home=MagicMock(return_value="/tmp/hermes_test_child_mirror")
+                get_lucifex_home=MagicMock(return_value="/tmp/lucifexex_test_child_mirror")
             ),
             "lucifex_cli.env_loader": MagicMock(),
             "lucifex_cli.banner": MagicMock(),

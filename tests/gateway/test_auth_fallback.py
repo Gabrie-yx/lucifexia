@@ -1,4 +1,4 @@
-﻿"""Test that AuthError triggers fallback provider resolution (#7230)."""
+"""Test that AuthError triggers fallback provider resolution (#7230)."""
 
 from unittest.mock import patch
 

@@ -1,4 +1,4 @@
-﻿"""Tests for agent/file_safety.py read guards — env file blocking.
+"""Tests for agent/file_safety.py read guards — env file blocking.
 
 Run with:  python -m pytest tests/agent/test_file_safety.py -v
 """

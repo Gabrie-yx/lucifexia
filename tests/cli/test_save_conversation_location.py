@@ -1,4 +1,4 @@
-﻿"""Tests for /save — the conversation snapshot slash command.
+"""Tests for /save — the conversation snapshot slash command.
 
 Regression: the old implementation wrote ``hermes_conversation_<ts>.json``
 to the current working directory (CWD). Users who ran /save expected the

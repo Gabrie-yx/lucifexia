@@ -1,4 +1,4 @@
-﻿"""Tests for LUCIFEX_HOME credential-file read blocking in file_safety.
+"""Tests for LUCIFEX_HOME credential-file read blocking in file_safety.
 
 Regression for https://github.com/NousResearch/lucifex-agent/issues/17656 —
 ``read_file`` was previously only sandboxed against ``LUCIFEX_HOME`` itself,

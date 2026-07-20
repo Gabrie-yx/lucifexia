@@ -1,4 +1,4 @@
-﻿"""Tests for plugins/memory/honcho/client.py — Honcho client configuration."""
+"""Tests for plugins/memory/honcho/client.py — Honcho client configuration."""
 
 import importlib.util
 import json

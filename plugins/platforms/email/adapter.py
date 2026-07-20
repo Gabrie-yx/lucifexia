@@ -1,4 +1,4 @@
-﻿"""
+"""
 Email platform adapter for the Hermes gateway.
 
 Allows users to interact with Hermes by sending emails.

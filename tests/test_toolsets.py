@@ -1,4 +1,4 @@
-﻿"""Tests for toolsets.py — toolset resolution, validation, and composition."""
+"""Tests for toolsets.py — toolset resolution, validation, and composition."""
 
 from tools.registry import ToolRegistry
 from toolsets import (
@@ -211,8 +211,8 @@ class TestToolsetConsistency:
             for inc in ts["includes"]:
                 assert inc in TOOLSETS, f"{name} includes unknown toolset '{inc}'"
 
-    def test_hermes_platforms_share_core_tools(self):
-        """All hermes-* platform toolsets share the same core tools.
+    def test_lucifexex_platforms_share_core_tools(self):
+        """All lucifexex-* platform toolsets share the same core tools.
 
         Platform-specific additions (e.g. ``discord`` / ``discord_admin``
         on lucifex-discord, gated on DISCORD_BOT_TOKEN) are allowed on top —
@@ -248,11 +248,11 @@ class TestPluginToolsets:
 
 
 class TestDefaultPlatformWebSearchCoverage:
-    def test_hermes_whatsapp_toolset_includes_web_search(self):
+    def test_lucifexex_whatsapp_toolset_includes_web_search(self):
         assert "web_search" in resolve_toolset("lucifex-whatsapp")
 
-    def test_hermes_api_server_toolset_includes_web_search(self):
-        assert "web_search" in resolve_toolset("hermes-api-server")
+    def test_lucifexex_api_server_toolset_includes_web_search(self):
+        assert "web_search" in resolve_toolset("lucifexex-api-server")
 
 
 class TestResolveToolsetIncludeRegistry:

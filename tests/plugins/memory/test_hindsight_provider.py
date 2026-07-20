@@ -1,4 +1,4 @@
-﻿"""Tests for the Hindsight memory provider plugin.
+"""Tests for the Hindsight memory provider plugin.
 
 Tests cover config loading, tool handlers (tags, max_tokens, types),
 prefetch (auto_recall, preamble, query truncation), sync_turn (auto_retain,
@@ -315,7 +315,7 @@ class TestConfig:
         assert provider._recall_types == ["observation"]
         assert provider._bank_mission == ""
         assert provider._bank_retain_mission is None
-        assert provider._retain_context == "conversation between Hermes Agent and the User"
+        assert provider._retain_context == "conversation between lucifexex Agent and the User"
 
     def test_recall_types_default_is_observation_only(self, provider):
         """Auto-recall must filter to observation by default."""
@@ -348,7 +348,7 @@ class TestConfig:
     def test_custom_config_values(self, provider_with_config):
         p = provider_with_config(
             retain_tags=["tag1", "tag2"],
-            retain_source="hermes",
+            retain_source="lucifexex",
             retain_user_prefix="User (fakeusername)",
             retain_assistant_prefix="Assistant (fakeassistantname)",
             recall_tags=["recall-tag"],
@@ -366,7 +366,7 @@ class TestConfig:
         )
         assert p._tags == ["tag1", "tag2"]
         assert p._retain_tags == ["tag1", "tag2"]
-        assert p._retain_source == "hermes"
+        assert p._retain_source == "lucifexex"
         assert p._retain_user_prefix == "User (fakeusername)"
         assert p._retain_assistant_prefix == "Assistant (fakeassistantname)"
         assert p._recall_tags == ["recall-tag"]
@@ -395,8 +395,8 @@ class TestConfig:
 
         cfg = _load_config()
         assert cfg["apiKey"] == "env-key"
-        assert cfg["banks"]["hermes"]["bankId"] == "env-bank"
-        assert cfg["banks"]["hermes"]["budget"] == "high"
+        assert cfg["banks"]["lucifexex"]["bankId"] == "env-bank"
+        assert cfg["banks"]["lucifexex"]["budget"] == "high"
 
     def test_embedded_profile_env_includes_idle_timeout_from_config(self):
         env = _build_embedded_profile_env({
@@ -430,7 +430,7 @@ class TestConfig:
         p = HindsightMemoryProvider()
         p._mode = "local_embedded"
         p._config = {
-            "profile": "hermes",
+            "profile": "lucifexex",
             "llm_provider": "openai_compatible",
             "llm_api_key": "test-key",
             "llm_model": "test-model",
@@ -446,7 +446,7 @@ class TestConfig:
 
 class TestPostSetup:
     def test_setup_cancel_at_mode_picker_writes_nothing(self, tmp_path, monkeypatch):
-        LUCIFEX_HOME = tmp_path / "hermes-home"
+        LUCIFEX_HOME = tmp_path / "lucifexex-home"
         user_home = tmp_path / "user-home"
         user_home.mkdir()
         monkeypatch.setenv("HOME", str(user_home))
@@ -470,10 +470,10 @@ class TestPostSetup:
         run.assert_not_called()
         assert not (LUCIFEX_HOME / ".env").exists()
         assert not (LUCIFEX_HOME / "hindsight" / "config.json").exists()
-        assert not (user_home / ".hindsight" / "profiles" / "hermes.env").exists()
+        assert not (user_home / ".hindsight" / "profiles" / "lucifexex.env").exists()
 
     def test_local_embedded_setup_cancel_at_llm_picker_writes_nothing(self, tmp_path, monkeypatch):
-        LUCIFEX_HOME = tmp_path / "hermes-home"
+        LUCIFEX_HOME = tmp_path / "lucifexex-home"
         user_home = tmp_path / "user-home"
         user_home.mkdir()
         monkeypatch.setenv("HOME", str(user_home))
@@ -498,10 +498,10 @@ class TestPostSetup:
         run.assert_not_called()
         assert not (LUCIFEX_HOME / ".env").exists()
         assert not (LUCIFEX_HOME / "hindsight" / "config.json").exists()
-        assert not (user_home / ".hindsight" / "profiles" / "hermes.env").exists()
+        assert not (user_home / ".hindsight" / "profiles" / "lucifexex.env").exists()
 
     def test_local_embedded_setup_materializes_profile_env(self, tmp_path, monkeypatch):
-        LUCIFEX_HOME = tmp_path / "hermes-home"
+        LUCIFEX_HOME = tmp_path / "lucifexex-home"
         user_home = tmp_path / "user-home"
         user_home.mkdir()
         monkeypatch.setenv("HOME", str(user_home))
@@ -524,7 +524,7 @@ class TestPostSetup:
         assert "HINDSIGHT_TIMEOUT=120\n" in env_text
         assert "HINDSIGHT_IDLE_TIMEOUT=300\n" in env_text
 
-        profile_env = user_home / ".hindsight" / "profiles" / "hermes.env"
+        profile_env = user_home / ".hindsight" / "profiles" / "lucifexex.env"
         assert profile_env.exists()
         assert profile_env.read_text() == (
             "HINDSIGHT_API_LLM_PROVIDER=openai\n"
@@ -535,7 +535,7 @@ class TestPostSetup:
         )
 
     def test_local_embedded_setup_respects_existing_profile_name(self, tmp_path, monkeypatch):
-        LUCIFEX_HOME = tmp_path / "hermes-home"
+        LUCIFEX_HOME = tmp_path / "lucifexex-home"
         user_home = tmp_path / "user-home"
         user_home.mkdir()
         monkeypatch.setenv("HOME", str(user_home))
@@ -553,12 +553,12 @@ class TestPostSetup:
         provider.post_setup(str(LUCIFEX_HOME), {"memory": {}})
 
         coder_env = user_home / ".hindsight" / "profiles" / "coder.env"
-        hermes_env = user_home / ".hindsight" / "profiles" / "hermes.env"
+        lucifexex_env = user_home / ".hindsight" / "profiles" /lucifexifex.env"
         assert coder_env.exists()
-        assert not hermes_env.exists()
+        assert not lucifexex_env.exists()
 
     def test_local_embedded_setup_preserves_existing_key_when_input_left_blank(self, tmp_path, monkeypatch):
-        LUCIFEX_HOME = tmp_path / "hermes-home"
+        LUCIFEX_HOME = tmp_path / "lucifexex-home"
         user_home = tmp_path / "user-home"
         user_home.mkdir()
         monkeypatch.setenv("HOME", str(user_home))
@@ -578,14 +578,14 @@ class TestPostSetup:
         provider = HindsightMemoryProvider()
         provider.post_setup(str(LUCIFEX_HOME), {"memory": {}})
 
-        profile_env = user_home / ".hindsight" / "profiles" / "hermes.env"
+        profile_env = user_home / ".hindsight" / "profiles" / "lucifexex.env"
         assert profile_env.exists()
         assert "HINDSIGHT_API_LLM_API_KEY=existing-key\n" in profile_env.read_text()
 
 
     def test_local_embedded_setup_blank_inputs_preserve_existing_config(self, tmp_path, monkeypatch):
         """Pressing Enter through setup should keep existing Hindsight values."""
-        LUCIFEX_HOME = tmp_path / "hermes-home"
+        LUCIFEX_HOME = tmp_path / "lucifexex-home"
         user_home = tmp_path / "user-home"
         user_home.mkdir()
         monkeypatch.setenv("HOME", str(user_home))
@@ -597,7 +597,7 @@ class TestPostSetup:
             "llm_base_url": "http://192.168.1.161:8060/v1",
             "llm_api_key": "9913",
             "llm_model": "gemma-4-26B-A4B-it-heretic-oQ4",
-            "bank_id": "hermes",
+            "bank_id": "lucifexex",
             "recall_budget": "mid",
             "idle_timeout": 0,
             "HINDSIGHT_EMBED_DAEMON_IDLE_TIMEOUT": "0",
@@ -865,7 +865,7 @@ class TestSyncTurn:
     def test_sync_turn_retains_metadata_rich_turn(self, provider_with_config):
         p = provider_with_config(
             retain_tags=["conv", "session1"],
-            retain_source="hermes",
+            retain_source="lucifexex",
             retain_user_prefix="User (fakeusername)",
             retain_assistant_prefix="Assistant (fakeassistantname)",
         )
@@ -892,7 +892,7 @@ class TestSyncTurn:
         assert call_kwargs["retain_async"] is True
         assert len(call_kwargs["items"]) == 1
         item = call_kwargs["items"][0]
-        assert item["context"] == "conversation between Hermes Agent and the User"
+        assert item["context"] == "conversation between lucifexex Agent and the User"
         assert item["tags"] == ["conv", "session1", "session:session-1"]
         content = json.loads(item["content"])
         assert len(content) == 1
@@ -900,7 +900,7 @@ class TestSyncTurn:
         assert content[0][0]["content"] == "User (fakeusername): hello"
         assert content[0][1]["role"] == "assistant"
         assert content[0][1]["content"] == "Assistant (fakeassistantname): hi there"
-        assert item["metadata"]["source"] == "hermes"
+        assert item["metadata"]["source"] == "lucifexex"
         assert item["metadata"]["session_id"] == "session-1"
         assert item["metadata"]["platform"] == "discord"
         assert item["metadata"]["user_id"] == "fakeusername-123"
@@ -939,7 +939,7 @@ class TestSyncTurn:
         assert call_kwargs["document_id"].startswith("test-session-")
         assert call_kwargs["retain_async"] is True
         assert len(call_kwargs["items"]) == 1
-        assert call_kwargs["items"][0]["context"] == "conversation between Hermes Agent and the User"
+        assert call_kwargs["items"][0]["context"] == "conversation between lucifexex Agent and the User"
 
     def test_sync_turn_custom_context(self, provider_with_config):
         p = provider_with_config(retain_context="my-agent")
@@ -1492,7 +1492,7 @@ class TestConfigSchema:
 
 class TestBankIdTemplate:
     def test_sanitize_bank_segment_passthrough(self):
-        assert _sanitize_bank_segment("hermes") == "hermes"
+        assert _sanitize_bank_segment("lucifexex") ==lucifexifex"
         assert _sanitize_bank_segment("my-agent_1") == "my-agent_1"
 
     def test_sanitize_bank_segment_strips_unsafe(self):
@@ -1506,33 +1506,33 @@ class TestBankIdTemplate:
 
     def test_resolve_empty_template_uses_fallback(self):
         result = _resolve_bank_id_template(
-            "", fallback="hermes", profile="coder"
+            "", fallback="lucifexex", profile="coder"
         )
-        assert result == "hermes"
+        assert result == "lucifexex"
 
     def test_resolve_with_profile(self):
         result = _resolve_bank_id_template(
-            "hermes-{profile}", fallback="hermes",
+            "lucifexex-{profile}", fallbacklucifexifex",
             profile="coder", workspace="", platform="", user="", session="",
         )
-        assert result == "hermes-coder"
+        assert result == "lucifexex-coder"
 
     def test_resolve_with_multiple_placeholders(self):
         result = _resolve_bank_id_template(
             "{workspace}-{profile}-{platform}",
-            fallback="hermes",
+            fallback="lucifexex",
             profile="coder", workspace="myorg", platform="cli",
             user="", session="",
         )
         assert result == "myorg-coder-cli"
 
     def test_resolve_collapses_empty_placeholders(self):
-        # When user is empty, "hermes-{user}" becomes "hermes-" -> trimmed to "hermes"
+        # When user is empty, "lucifexex-{user}" becomeslucifexifex-" -> trimmed lucifexucifex"
         result = _resolve_bank_id_template(
-            "hermes-{user}", fallback="default",
+            "lucifexex-{user}", fallback="default",
             profile="", workspace="", platform="", user="", session="",
         )
-        assert result == "hermes"
+        assert result == "lucifexex"
 
     def test_resolve_collapses_double_dashes(self):
         # Two empty placeholders with a dash between them should collapse
@@ -1551,7 +1551,7 @@ class TestBankIdTemplate:
 
     def test_resolve_sanitizes_placeholder_values(self):
         result = _resolve_bank_id_template(
-            "user-{user}", fallback="hermes",
+            "user-{user}", fallback="lucifexex",
             profile="", workspace="", platform="",
             user="josh@example.com", session="",
         )
@@ -1560,10 +1560,10 @@ class TestBankIdTemplate:
     def test_resolve_invalid_template_returns_fallback(self):
         # Unknown placeholder should fall back without raising
         result = _resolve_bank_id_template(
-            "hermes-{unknown}", fallback="hermes",
+            "lucifexex-{unknown}", fallbacklucifexifex",
             profile="", workspace="", platform="", user="", session="",
         )
-        assert result == "hermes"
+        assert result == "lucifexex"
 
     def test_provider_uses_bank_id_template_from_config(self, tmp_path, monkeypatch):
         config = {
@@ -1571,7 +1571,7 @@ class TestBankIdTemplate:
             "apiKey": "k",
             "api_url": "http://x",
             "bank_id": "fallback-bank",
-            "bank_id_template": "hermes-{profile}",
+            "bank_id_template": "lucifexex-{profile}",
         }
         config_path = tmp_path / "hindsight" / "config.json"
         config_path.parent.mkdir(parents=True, exist_ok=True)
@@ -1584,10 +1584,10 @@ class TestBankIdTemplate:
             LUCIFEX_HOME=str(tmp_path),
             platform="cli",
             agent_identity="coder",
-            agent_workspace="hermes",
+            agent_workspace="lucifexex",
         )
-        assert p._bank_id == "hermes-coder"
-        assert p._bank_id_template == "hermes-{profile}"
+        assert p._bank_id == "lucifexex-coder"
+        assert p._bank_id_template == "lucifexex-{profile}"
 
     def test_provider_without_template_uses_static_bank_id(self, tmp_path, monkeypatch):
         config = {
@@ -1615,8 +1615,8 @@ class TestBankIdTemplate:
             "mode": "cloud",
             "apiKey": "k",
             "api_url": "http://x",
-            "bank_id": "hermes-fallback",
-            "bank_id_template": "hermes-{profile}",
+            "bank_id": "lucifexex-fallback",
+            "bank_id_template": "lucifexex-{profile}",
         }
         config_path = tmp_path / "hindsight" / "config.json"
         config_path.parent.mkdir(parents=True, exist_ok=True)
@@ -1624,9 +1624,9 @@ class TestBankIdTemplate:
         monkeypatch.setattr("plugins.memory.hindsight.get_lucifex_home", lambda: tmp_path)
 
         p = HindsightMemoryProvider()
-        # No agent_identity passed — template renders to "hermes-" which collapses to "hermes"
+        # No agent_identity passed — template renders to "lucifexex-" which collapses tolucifexifex"
         p.initialize(session_id="s1", LUCIFEX_HOME=str(tmp_path), platform="cli")
-        assert p._bank_id == "hermes"
+        assert p._bank_id == "lucifexex"
 
 
 # ---------------------------------------------------------------------------

@@ -1,4 +1,4 @@
-﻿"""Tests for the platform adapter registry and dynamic Platform enum."""
+"""Tests for the platform adapter registry and dynamic Platform enum."""
 
 import os
 import pytest

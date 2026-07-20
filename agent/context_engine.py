@@ -1,4 +1,4 @@
-﻿"""Abstract base class for pluggable context engines.
+"""Abstract base class for pluggable context engines.
 
 A context engine controls how conversation context is managed when
 approaching the model's token limit. The built-in ContextCompressor

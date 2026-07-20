@@ -1,4 +1,4 @@
-﻿"""
+"""
 Google Chat platform adapter.
 
 Uses authenticated HTTP callbacks or Google Cloud Pub/Sub for inbound

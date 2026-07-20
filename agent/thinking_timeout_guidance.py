@@ -1,4 +1,4 @@
-﻿"""Thinking-timeout detection and user-facing guidance for reasoning models.
+"""Thinking-timeout detection and user-facing guidance for reasoning models.
 
 When a known reasoning model (NVIDIA Nemotron 3 Ultra, OpenAI o1/o3,
 Anthropic Opus 4.x thinking, DeepSeek R1, Qwen QwQ, xAI Grok reasoning)

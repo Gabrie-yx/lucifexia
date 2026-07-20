@@ -1,4 +1,4 @@
-﻿"""Post-loop turn finalization for ``run_conversation``.
+"""Post-loop turn finalization for ``run_conversation``.
 
 Extracted from ``agent/conversation_loop.py`` as part of the god-file
 decomposition campaign (``~/.lucifex/plans/god-file-decomposition.md``, Phase 1

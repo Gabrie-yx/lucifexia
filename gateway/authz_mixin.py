@@ -1,4 +1,4 @@
-﻿"""User-authorization methods for ``GatewayRunner``.
+"""User-authorization methods for ``GatewayRunner``.
 
 Extracted from ``gateway/run.py`` as part of the god-file decomposition campaign
 (``~/.lucifex/plans/god-file-decomposition.md``, Phase 3 mechanical mixin lifts).

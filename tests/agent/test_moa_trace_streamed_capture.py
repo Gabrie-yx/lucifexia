@@ -1,4 +1,4 @@
-﻿"""Tests for MoA trace aggregator-output capture across streaming modes.
+"""Tests for MoA trace aggregator-output capture across streaming modes.
 
 The MoA full-turn trace (opt-in ``moa.save_traces``) must record the
 aggregator's acting output whether the aggregator ran non-streaming (inline

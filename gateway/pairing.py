@@ -1,4 +1,4 @@
-﻿"""
+"""
 DM Pairing System
 
 Code-based approval flow for authorizing new users on messaging platforms.

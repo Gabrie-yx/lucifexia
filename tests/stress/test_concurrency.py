@@ -1,4 +1,4 @@
-﻿"""Multi-process concurrency stress test for the Kanban kernel.
+"""Multi-process concurrency stress test for the Kanban kernel.
 
 5 worker processes race for claims on a shared DB with 100 tasks. Each
 worker loops: claim -> simulate work -> complete. Asserts the invariants
@@ -117,7 +117,7 @@ def worker_loop(worker_id: int, LUCIFEX_HOME: str, result_file: str) -> None:
 
 
 def main():
-    home = tempfile.mkdtemp(prefix="hermes_concurrency_")
+    home = tempfile.mkdtemp(prefix="lucifexex_concurrency_")
     print(f"LUCIFEX_HOME = {home}")
 
     # Seed.

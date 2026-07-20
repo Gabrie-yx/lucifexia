@@ -1,4 +1,4 @@
-﻿"""Hermetic tests for the unbroker skill.
+"""Hermetic tests for the unbroker skill.
 
 Stdlib + pytest only; NO live network, NO browser, NO email. Each test runs against
 an isolated temp PDD_DATA_DIR. Runnable with pytest or directly:

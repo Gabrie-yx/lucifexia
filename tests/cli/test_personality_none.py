@@ -1,4 +1,4 @@
-﻿"""Tests for /personality none — clearing personality overlay."""
+"""Tests for /personality none — clearing personality overlay."""
 import pytest
 from unittest.mock import MagicMock, patch
 import yaml

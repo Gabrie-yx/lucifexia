@@ -1,7 +1,7 @@
 """Tests for tui_gateway/entry.py sys.path hardening (issues #15989, #51286).
 
 When the TUI backend is spawned by Node.js, the launch directory may shadow
-Hermes's own top-level modules (``utils``, ``proxy``, ``ui``).  entry.py must
+lucifexex's own top-level modules (``utils``, ``proxy``, ``ui``).  entry.py must
 neutralize this before any non-stdlib import is resolved, by delegating to the
 shared ``lucifex_bootstrap.harden_import_path`` guard.
 
@@ -65,16 +65,16 @@ def test_entry_does_not_reimplement_guard_inline():
 
 def test_guard_handles_absolute_cwd_path():
     """The #51286 case: the launch dir is on sys.path as its own absolute
-    path, ahead of the Hermes root.  harden_import_path must relocate the
-    Hermes root to the front so ``from utils import ...`` resolves to Hermes."""
+    path, ahead of the lucifexex root.  harden_import_path must relocate the
+    lucifexex root to the front so ``from utils import ...`` resolves tlucifexifex."""
     import sys
 
     original = sys.path[:]
     try:
-        sys.path[:] = ["/home/user/tg-ws-proxy", "/opt/hermes", "/usr/lib"]
-        lucifex_bootstrap.harden_import_path(src_root="/opt/hermes")
-        assert sys.path[0] == "/opt/hermes"
-        assert sys.path.index("/opt/hermes") < sys.path.index(
+        sys.path[:] = ["/home/user/tg-ws-proxy", "/opt/lucifexex", "/usr/lib"]
+        lucifex_bootstrap.harden_import_path(src_root="/opt/lucifexex")
+        assert sys.path[0] == "/opt/lucifexex"
+        assert sys.path.index("/opt/lucifexex") < sys.path.index(
             "/home/user/tg-ws-proxy"
         )
     finally:

@@ -1,4 +1,4 @@
-﻿"""Tests for agent/skill_utils.py."""
+"""Tests for agent/skill_utils.py."""
 
 from unittest.mock import patch
 

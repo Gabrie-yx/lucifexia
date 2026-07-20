@@ -1,4 +1,4 @@
-﻿"""Setup wizard for Mem0 plugin — interactive and flag-based modes."""
+"""Setup wizard for Mem0 plugin — interactive and flag-based modes."""
 
 from __future__ import annotations
 

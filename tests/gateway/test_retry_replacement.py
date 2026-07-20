@@ -1,4 +1,4 @@
-﻿"""Regression tests for /retry replacement semantics."""
+"""Regression tests for /retry replacement semantics."""
 
 from unittest.mock import AsyncMock, MagicMock
 

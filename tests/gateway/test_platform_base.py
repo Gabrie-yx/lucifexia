@@ -1,4 +1,4 @@
-﻿"""Tests for gateway/platforms/base.py — MessageEvent, media extraction, message truncation."""
+"""Tests for gateway/platforms/base.py — MessageEvent, media extraction, message truncation."""
 
 import os
 import time

@@ -1,4 +1,4 @@
-﻿"""Regression tests for the docker-exec privilege-drop shim.
+"""Regression tests for the docker-exec privilege-drop shim.
 
 The shim (docker/lucifex-exec-shim.sh, installed at /opt/hermes/bin/hermes)
 exists to prevent the auth.json ownership-mismatch bug where

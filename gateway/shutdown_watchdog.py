@@ -1,4 +1,4 @@
-﻿"""Out-of-loop shutdown backstop + event-loop liveness heartbeat (#66892).
+"""Out-of-loop shutdown backstop + event-loop liveness heartbeat (#66892).
 
 When the asyncio loop freezes mid-drain, every asyncio-based recovery path is
 structurally unable to fire: the drain deadline, status rewrites, and forensics

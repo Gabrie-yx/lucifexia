@@ -1,4 +1,4 @@
-﻿"""MemoryManager — orchestrates memory providers for the agent.
+"""MemoryManager — orchestrates memory providers for the agent.
 
 Single integration point in run_agent.py. Replaces scattered per-backend
 code with one manager that delegates to registered providers.

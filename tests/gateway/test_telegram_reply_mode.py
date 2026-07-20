@@ -1,4 +1,4 @@
-﻿"""Tests for Telegram reply_to_mode functionality.
+"""Tests for Telegram reply_to_mode functionality.
 
 Covers the threading behavior control for multi-chunk replies:
 - "off": Never thread replies to original message

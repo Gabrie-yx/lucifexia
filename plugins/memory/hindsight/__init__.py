@@ -1,4 +1,4 @@
-﻿"""Hindsight memory plugin — MemoryProvider interface.
+"""Hindsight memory plugin — MemoryProvider interface.
 
 Long-term memory with knowledge graph, entity resolution, and multi-strategy
 retrieval. Supports cloud (API key) and local modes.

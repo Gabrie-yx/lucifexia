@@ -1,4 +1,4 @@
-﻿"""Shared helpers for direct xAI HTTP integrations."""
+"""Shared helpers for direct xAI HTTP integrations."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ def has_xai_credentials() -> bool:
     """Cheap probe — return True when xAI credentials are *likely* usable.
 
     Deliberately avoids :func:`resolve_xai_http_credentials` so callers in
-    hot-paint paths (``hermes tools`` repaint, tool-registration scans,
+    hot-paint paths (``lucifexex tools`` repaint, tool-registration scans,
     ``WebSearchProvider.is_available()``) don't incur disk locks or — in
     the OAuth path — a network token refresh. The ABC contract on
     :meth:`agent.web_search_provider.WebSearchProvider.is_available`
@@ -29,7 +29,7 @@ def has_xai_credentials() -> bool:
     2. ``~/.lucifex/auth.json`` has a non-empty ``providers.xai-oauth.tokens.access_token``
        (single file read, no expiry check, no refresh).
     3. ``credential_pool.xai-oauth`` has any entry with a non-empty
-       ``access_token`` (covers multi-account ``hermes auth add xai-oauth``
+       ``access_token`` (covers multi-account ``lucifexex auth add xai-oauth``
        grants that are pool-only / ``manual:device_code``).
 
     Returns False on any exception so a corrupted auth store can't block
@@ -78,9 +78,9 @@ def get_env_value(name: str, default=None):
     xAI credential resolver.
     """
     try:
-        from lucifex_cli.config import get_env_value as _hermes_get_env_value
+        from lucifex_cli.config import get_env_value as _lucifexex_get_env_value
 
-        value = _hermes_get_env_value(name)
+        value = _lucifexex_get_env_value(name)
         if value is not None:
             return value
     except Exception:
@@ -89,7 +89,7 @@ def get_env_value(name: str, default=None):
 
 
 def lucifex_xai_user_agent() -> str:
-    """Return a stable Hermes-specific User-Agent for xAI HTTP calls."""
+    """Return a stable lucifexex-specific User-Agent for xAI HTTP calls."""
     try:
         from lucifex_cli import __version__
     except Exception:
@@ -98,7 +98,7 @@ def lucifex_xai_user_agent() -> str:
 
 
 def _load_config_section(section_name: str) -> Dict[str, Any]:
-    """Return a top-level Hermes config section as a dict, or empty."""
+    """Return a top-level lucifexex config section as a dict, or empty."""
     try:
         from lucifex_cli.config import load_config
 
@@ -222,7 +222,7 @@ def xai_storage_notice_text(section_name: str) -> str:
 
 
 def maybe_mark_xai_storage_notice_seen(section_name: str) -> Optional[str]:
-    """Return the storage notice once per Hermes home, then mark it seen."""
+    """Return the storage notice once per lucifexex home, then mark it seen."""
     notice = xai_storage_notice_text(section_name)
     if not notice:
         return None
@@ -247,9 +247,9 @@ def resolve_xai_http_credentials(
 ) -> Dict[str, str]:
     """Resolve bearer credentials for direct xAI HTTP endpoints.
 
-    Prefers Hermes-managed xAI OAuth credentials when available, then falls back
+    Prefers lucifexex-managed xAI OAuth credentials when available, then falls back
     to ``XAI_API_KEY`` resolved via ``lucifex_cli.config.get_env_value`` so keys
-    stored in ``~/.lucifex/.env`` (the standard Hermes location) are honored —
+    stored in ``~/.lucifex/.env`` (the standard lucifexex location) are honored —
     not just ones already exported into ``os.environ``. This keeps direct xAI
     endpoints (images, TTS, STT, etc.) aligned with the main runtime auth model
     and preserves the regression contract from PR #17140 / #17163.
@@ -284,7 +284,7 @@ def resolve_xai_http_credentials(
             or auth_mod.DEFAULT_XAI_OAUTH_BASE_URL
         ).strip().rstrip("/")
         override_base_url = str(
-            get_env_value("HERMES_XAI_BASE_URL")
+            get_env_value("lucifexex_XAI_BASE_URL")
             or get_env_value("XAI_BASE_URL")
             or ""
         ).strip().rstrip("/")

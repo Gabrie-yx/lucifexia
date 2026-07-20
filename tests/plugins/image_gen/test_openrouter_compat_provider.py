@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """Tests for the OpenRouter-compatible image gen provider (OpenRouter + Nous)."""
 
 from __future__ import annotations
@@ -172,7 +172,7 @@ class TestHelpers:
     def test_to_image_url_part_blocks_credential_store(self, tmp_path, monkeypatch):
         from plugins.image_gen.openrouter import _to_image_url_part
 
-        LUCIFEX_HOME = tmp_path / ".hermes"
+        LUCIFEX_HOME = tmp_path / ".lucifexex"
         LUCIFEX_HOME.mkdir()
         auth_json = LUCIFEX_HOME / "auth.json"
         auth_json.write_text('{"api_key":"sk-secret"}', encoding="utf-8")
@@ -188,7 +188,7 @@ class TestHelpers:
 
         from plugins.image_gen.openrouter import _to_image_url_part
 
-        LUCIFEX_HOME = tmp_path / ".hermes"
+        LUCIFEX_HOME = tmp_path / ".lucifexex"
         LUCIFEX_HOME.mkdir()
         auth_json = LUCIFEX_HOME / "auth.json"
         auth_json.write_text('{"api_key":"sk-secret"}', encoding="utf-8")

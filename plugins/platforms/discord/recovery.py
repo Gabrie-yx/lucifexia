@@ -1,4 +1,4 @@
-﻿"""Durable state for Discord reconnect message recovery."""
+"""Durable state for Discord reconnect message recovery."""
 
 from __future__ import annotations
 

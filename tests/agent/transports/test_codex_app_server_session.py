@@ -1,4 +1,4 @@
-﻿"""Tests for CodexAppServerSession — drive turns through a mock client.
+"""Tests for CodexAppServerSession — drive turns through a mock client.
 
 The session adapter has the most complex behavior of the three new modules:
 notification draining, server-request handling (approvals), interrupt,

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * backend-probes.ts
  *
  * Cheap "does this candidate backend actually work" checks used by

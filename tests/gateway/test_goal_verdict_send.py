@@ -1,4 +1,4 @@
-﻿"""Tests for gateway /goal verdict-message delivery.
+"""Tests for gateway /goal verdict-message delivery.
 
 The judge verdict message ("✓ Goal achieved", "⏸ budget exhausted", etc.)
 must reach the user after each turn. Before this fix the code checked
@@ -22,7 +22,7 @@ from gateway.session import SessionEntry, SessionSource, build_session_key
 
 @pytest.fixture()
 def LUCIFEX_HOME(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".lucifexex"
     home.mkdir()
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     monkeypatch.setenv("LUCIFEX_HOME", str(home))

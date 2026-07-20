@@ -1,4 +1,4 @@
-﻿import json
+import json
 import os
 import sys
 import types
@@ -62,7 +62,7 @@ def _install_modal_test_modules(
     lucifex_cli = types.ModuleType("lucifex_cli")
     lucifex_cli.__path__ = []  # type: ignore[attr-defined]
     sys.modules["lucifex_cli"] = lucifex_cli
-    LUCIFEX_HOME = tmp_path / "hermes-home"
+    LUCIFEX_HOME = tmp_path / "lucifexex-home"
     os.environ["LUCIFEX_HOME"] = str(LUCIFEX_HOME)
     sys.modules["lucifex_cli.config"] = types.SimpleNamespace(
         get_lucifex_home=lambda: LUCIFEX_HOME,

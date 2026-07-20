@@ -1,4 +1,4 @@
-﻿"""Models.dev registry integration — primary database for providers and models.
+"""Models.dev registry integration — primary database for providers and models.
 
 Fetches from https://models.dev/api.json — a community-maintained database
 of 4000+ models across 109+ providers.  Provides:

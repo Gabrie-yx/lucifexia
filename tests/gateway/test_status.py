@@ -1,4 +1,4 @@
-﻿"""Tests for gateway runtime status tracking."""
+"""Tests for gateway runtime status tracking."""
 
 import json
 import os

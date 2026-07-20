@@ -1,4 +1,4 @@
-﻿"""Live, tail-able transcripts for delegated subagents.
+"""Live, tail-able transcripts for delegated subagents.
 
 Every ``delegate_task`` dispatch creates one append-only, human-readable log
 per child under::
@@ -59,10 +59,10 @@ _STREAM_BUFFER_FLUSH_CHARS = 4000
 
 
 def live_transcript_root() -> Path:
-    """Root directory for live transcripts (profile-safe, never ~/.hermes)."""
-    from lucifex_constants import get_hermes_dir
+    """Root directory for live transcripts (profile-safe, never ~/.lucifexex)."""
+    from lucifex_constants import get_lucifexex_dir
 
-    return get_hermes_dir("cache/delegation", "delegation_cache") / "live"
+    return get_lucifexex_dir("cache/delegation", "delegation_cache") / "live"
 
 
 def new_live_delegation_id() -> str:
@@ -130,7 +130,7 @@ class LiveTranscriptWriter:
             d.mkdir(parents=True, exist_ok=True)
             self.path: Optional[Path] = d / f"task-{task_index}.log"
             header = [
-                "=== Hermes subagent live transcript ===",
+                "=== lucifexex subagent live transcript ===",
                 f"delegation: {delegation_id}   task: {task_index}",
                 # Header bypasses event(), so redact here too — a goal string
                 # can carry a key the caller pasted into the task.

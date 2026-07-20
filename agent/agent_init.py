@@ -1,4 +1,4 @@
-﻿"""Implementation of :meth:`AIAgent.__init__` — extracted as a module function.
+"""Implementation of :meth:`AIAgent.__init__` — extracted as a module function.
 
 ``AIAgent.__init__`` is one of the longest methods in the codebase (60+
 parameters, ~1,400 lines of attribute initialization, provider

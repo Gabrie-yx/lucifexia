@@ -1,4 +1,4 @@
-﻿"""Tests for the Discord server introspection and management tool."""
+"""Tests for the Discord server introspection and management tool."""
 
 import json
 import urllib.error
@@ -653,15 +653,15 @@ class TestRegistration:
 # ---------------------------------------------------------------------------
 
 class TestToolsetInclusion:
-    def test_discord_tools_in_hermes_discord_toolset(self):
+    def test_discord_tools_in_lucifexex_discord_toolset(self):
         from toolsets import TOOLSETS
         assert "discord" in TOOLSETS["lucifex-discord"]["tools"]
         assert "discord_admin" in TOOLSETS["lucifex-discord"]["tools"]
 
     def test_discord_tools_not_in_core_tools(self):
-        from toolsets import _HERMES_CORE_TOOLS
-        assert "discord" not in _HERMES_CORE_TOOLS
-        assert "discord_admin" not in _HERMES_CORE_TOOLS
+        from toolsets import _lucifexex_CORE_TOOLS
+        assert "discord" not in _lucifexex_CORE_TOOLS
+        assert "discord_admin" not in _lucifexex_CORE_TOOLS
 
     def test_discord_tools_not_in_other_toolsets(self):
         from toolsets import TOOLSETS

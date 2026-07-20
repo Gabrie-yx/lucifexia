@@ -1,4 +1,4 @@
-﻿"""Smoke tests for the xAI video gen plugin — load & register surface."""
+"""Smoke tests for the xAI video gen plugin — load & register surface."""
 
 from __future__ import annotations
 
@@ -191,7 +191,7 @@ def test_video_input_from_public_url_rejects_bare_file_id():
 def test_xai_video_image_input_blocks_credential_store_symlink(tmp_path, monkeypatch):
     from plugins.video_gen.xai import _image_ref_to_xai_input
 
-    LUCIFEX_HOME = tmp_path / ".hermes"
+    LUCIFEX_HOME = tmp_path / ".lucifexex"
     LUCIFEX_HOME.mkdir()
     auth_json = LUCIFEX_HOME / "auth.json"
     auth_json.write_text('{"api_key":"sk-secret"}', encoding="utf-8")
@@ -210,7 +210,7 @@ def test_xai_video_image_input_blocks_credential_store_symlink(tmp_path, monkeyp
 def test_xai_video_file_input_blocks_credential_store_symlink(tmp_path, monkeypatch):
     from plugins.video_gen.xai import _video_ref_to_xai_url
 
-    LUCIFEX_HOME = tmp_path / ".hermes"
+    LUCIFEX_HOME = tmp_path / ".lucifexex"
     LUCIFEX_HOME.mkdir()
     auth_json = LUCIFEX_HOME / "auth.json"
     auth_json.write_text('{"api_key":"sk-secret"}', encoding="utf-8")

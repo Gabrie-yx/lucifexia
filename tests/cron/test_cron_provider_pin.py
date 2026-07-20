@@ -1,4 +1,4 @@
-﻿"""Provider-drift fail-closed guard for cron jobs (#44585).
+"""Provider-drift fail-closed guard for cron jobs (#44585).
 
 Background: an UNPINNED cron job follows the global default provider. If that
 global state is changed (e.g. a temporary switch to a paid provider like

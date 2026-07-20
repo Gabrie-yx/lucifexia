@@ -1,4 +1,4 @@
-﻿"""Guards for ``get_external_skills_dirs`` mtime-based memo.
+"""Guards for ``get_external_skills_dirs`` mtime-based memo.
 
 ``get_external_skills_dirs()`` is called once per skill during banner
 construction and tool registration — on a typical install that's 120+

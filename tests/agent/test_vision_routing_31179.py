@@ -1,4 +1,4 @@
-﻿"""Regression tests for issue #31179.
+"""Regression tests for issue #31179.
 
 Before the fix:
   - ``auxiliary.vision.provider: openai`` silently failed to resolve because

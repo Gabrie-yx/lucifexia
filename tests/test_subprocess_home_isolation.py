@@ -1,6 +1,6 @@
-﻿"""Tests for subprocess HOME handling in profile mode.
+"""Tests for subprocess HOME handling in profile mode.
 
-Hermes state stays profile-scoped through LUCIFEX_HOME. Host subprocesses should
+lucifexex state stays profile-scoped through LUCIFEX_HOME. Host subprocesses should
 keep the user's real HOME by default so external CLIs find existing credentials.
 Containers still use the profile home for persistence, and users can explicitly
 opt into profile HOME isolation on the host.
@@ -28,12 +28,12 @@ class TestGetSubprocessHome:
     def _host_mode(self, monkeypatch):
         monkeypatch.setattr(lucifex_constants, "is_container", lambda: False)
         monkeypatch.delenv("TERMINAL_HOME_MODE", raising=False)
-        monkeypatch.delenv("HERMES_REAL_HOME", raising=False)
+        monkeypatch.delenv("lucifexex_REAL_HOME", raising=False)
 
     def _container_mode(self, monkeypatch):
         monkeypatch.setattr(lucifex_constants, "is_container", lambda: True)
         monkeypatch.delenv("TERMINAL_HOME_MODE", raising=False)
-        monkeypatch.delenv("HERMES_REAL_HOME", raising=False)
+        monkeypatch.delenv("lucifexex_REAL_HOME", raising=False)
 
     def test_returns_none_when_LUCIFEX_HOME_unset(self, monkeypatch):
         monkeypatch.delenv("LUCIFEX_HOME", raising=False)
@@ -41,7 +41,7 @@ class TestGetSubprocessHome:
         assert get_subprocess_home() is None
 
     def test_returns_none_when_home_dir_missing(self, tmp_path, monkeypatch):
-        LUCIFEX_HOME = tmp_path / ".hermes"
+        LUCIFEX_HOME = tmp_path / ".lucifexex"
         LUCIFEX_HOME.mkdir()
         monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
         # No home/ subdirectory created
@@ -52,7 +52,7 @@ class TestGetSubprocessHome:
         """Host installs should not hide real ~/.ssh, ~/.gitconfig, ~/.azure, etc."""
         self._host_mode(monkeypatch)
         real_home = tmp_path / "real-home"
-        LUCIFEX_HOME = real_home / ".hermes" / "profiles" / "coder"
+        LUCIFEX_HOME = real_home / ".lucifexex" / "profiles" / "coder"
         profile_home = LUCIFEX_HOME / "home"
         profile_home.mkdir(parents=True)
         monkeypatch.setenv("HOME", str(real_home))
@@ -62,7 +62,7 @@ class TestGetSubprocessHome:
 
     def test_container_auto_uses_profile_home_when_home_dir_exists(self, tmp_path, monkeypatch):
         self._container_mode(monkeypatch)
-        LUCIFEX_HOME = tmp_path / ".hermes"
+        LUCIFEX_HOME = tmp_path / ".lucifexex"
         profile_home = LUCIFEX_HOME / "home"
         profile_home.mkdir(parents=True)
         monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
@@ -72,7 +72,7 @@ class TestGetSubprocessHome:
     def test_returns_profile_specific_path(self, tmp_path, monkeypatch):
         """Explicit profile mode keeps the old per-profile HOME behavior."""
         self._host_mode(monkeypatch)
-        profile_dir = tmp_path / ".hermes" / "profiles" / "coder"
+        profile_dir = tmp_path / ".lucifexex" / "profiles" / "coder"
         profile_dir.mkdir(parents=True)
         profile_home = profile_dir / "home"
         profile_home.mkdir()
@@ -83,7 +83,7 @@ class TestGetSubprocessHome:
 
     def test_real_mode_repairs_parent_home_already_pointing_at_profile(self, tmp_path, monkeypatch):
         self._host_mode(monkeypatch)
-        profile_dir = tmp_path / ".hermes" / "profiles" / "coder"
+        profile_dir = tmp_path / ".lucifexex" / "profiles" / "coder"
         profile_home = profile_dir / "home"
         profile_home.mkdir(parents=True)
         real_home = tmp_path / "real-home"
@@ -91,7 +91,7 @@ class TestGetSubprocessHome:
         monkeypatch.setenv("TERMINAL_HOME_MODE", "real")
         monkeypatch.setenv("LUCIFEX_HOME", str(profile_dir))
         monkeypatch.setenv("HOME", str(profile_home))
-        monkeypatch.setenv("HERMES_REAL_HOME", str(real_home))
+        monkeypatch.setenv("lucifexex_REAL_HOME", str(real_home))
 
         from lucifex_constants import get_subprocess_home, get_real_home
 
@@ -100,7 +100,7 @@ class TestGetSubprocessHome:
 
     def test_real_home_falls_back_to_os_account_when_home_is_profile(self, tmp_path, monkeypatch):
         self._host_mode(monkeypatch)
-        profile_dir = tmp_path / ".hermes" / "profiles" / "coder"
+        profile_dir = tmp_path / ".lucifexex" / "profiles" / "coder"
         profile_home = profile_dir / "home"
         profile_home.mkdir(parents=True)
         monkeypatch.setenv("LUCIFEX_HOME", str(profile_dir))
@@ -112,7 +112,7 @@ class TestGetSubprocessHome:
 
     def test_two_profiles_get_different_homes(self, tmp_path, monkeypatch):
         self._container_mode(monkeypatch)
-        base = tmp_path / ".hermes" / "profiles"
+        base = tmp_path / ".lucifexex" / "profiles"
         for name in ("alpha", "beta"):
             p = base / name
             p.mkdir(parents=True)
@@ -179,7 +179,7 @@ class TestMakeRunEnvHomeInjection:
     """Verify _make_run_env() applies the subprocess HOME policy."""
 
     def test_host_auto_preserves_real_home_when_profile_home_exists(self, tmp_path, monkeypatch):
-        LUCIFEX_HOME = tmp_path / "hermes"
+        LUCIFEX_HOME = tmp_path / "lucifexex"
         LUCIFEX_HOME.mkdir()
         (LUCIFEX_HOME / "home").mkdir()
         real_home = tmp_path / "real-home"
@@ -193,10 +193,10 @@ class TestMakeRunEnvHomeInjection:
         result = _make_run_env({})
 
         assert result["HOME"] == str(real_home)
-        assert result["HERMES_REAL_HOME"] == str(real_home)
+        assert result["lucifexex_REAL_HOME"] == str(real_home)
 
     def test_profile_mode_injects_profile_home_when_profile_home_exists(self, tmp_path, monkeypatch):
-        LUCIFEX_HOME = tmp_path / "hermes"
+        LUCIFEX_HOME = tmp_path / "lucifexex"
         LUCIFEX_HOME.mkdir()
         (LUCIFEX_HOME / "home").mkdir()
         real_home = tmp_path / "real-home"
@@ -211,10 +211,10 @@ class TestMakeRunEnvHomeInjection:
         result = _make_run_env({})
 
         assert result["HOME"] == str(LUCIFEX_HOME / "home")
-        assert result["HERMES_REAL_HOME"] == str(real_home)
+        assert result["lucifexex_REAL_HOME"] == str(real_home)
 
     def test_no_injection_when_home_dir_missing(self, tmp_path, monkeypatch):
-        LUCIFEX_HOME = tmp_path / "hermes"
+        LUCIFEX_HOME = tmp_path / "lucifexex"
         LUCIFEX_HOME.mkdir()
         # No home/ subdirectory
         monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
@@ -268,7 +268,7 @@ class TestSanitizeSubprocessEnvHomeInjection:
     """Verify _sanitize_subprocess_env() applies the subprocess HOME policy."""
 
     def test_host_auto_preserves_real_home_when_profile_home_exists(self, tmp_path, monkeypatch):
-        LUCIFEX_HOME = tmp_path / "hermes"
+        LUCIFEX_HOME = tmp_path / "lucifexex"
         LUCIFEX_HOME.mkdir()
         (LUCIFEX_HOME / "home").mkdir()
         real_home = tmp_path / "real-home"
@@ -281,10 +281,10 @@ class TestSanitizeSubprocessEnvHomeInjection:
         result = _sanitize_subprocess_env(base_env)
 
         assert result["HOME"] == str(real_home)
-        assert result["HERMES_REAL_HOME"] == str(real_home)
+        assert result["lucifexex_REAL_HOME"] == str(real_home)
 
     def test_profile_mode_injects_profile_home_when_profile_home_exists(self, tmp_path, monkeypatch):
-        LUCIFEX_HOME = tmp_path / "hermes"
+        LUCIFEX_HOME = tmp_path / "lucifexex"
         LUCIFEX_HOME.mkdir()
         (LUCIFEX_HOME / "home").mkdir()
         real_home = tmp_path / "real-home"
@@ -298,10 +298,10 @@ class TestSanitizeSubprocessEnvHomeInjection:
         result = _sanitize_subprocess_env(base_env)
 
         assert result["HOME"] == str(LUCIFEX_HOME / "home")
-        assert result["HERMES_REAL_HOME"] == str(real_home)
+        assert result["lucifexex_REAL_HOME"] == str(real_home)
 
     def test_no_injection_when_home_dir_missing(self, tmp_path, monkeypatch):
-        LUCIFEX_HOME = tmp_path / "hermes"
+        LUCIFEX_HOME = tmp_path / "lucifexex"
         LUCIFEX_HOME.mkdir()
         monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
 
@@ -347,7 +347,7 @@ class TestProfileBootstrap:
 
     def test_create_profile_bootstraps_home_dir(self, tmp_path, monkeypatch):
         """create_profile() should create home/ inside the profile dir."""
-        home = tmp_path / ".hermes"
+        home = tmp_path / ".lucifexex"
         home.mkdir()
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
         monkeypatch.setenv("LUCIFEX_HOME", str(home))
@@ -367,7 +367,7 @@ class TestPythonProcessUnchanged:
     def test_path_home_unchanged_after_subprocess_home_resolved(
         self, tmp_path, monkeypatch
     ):
-        LUCIFEX_HOME = tmp_path / "hermes"
+        LUCIFEX_HOME = tmp_path / "lucifexex"
         LUCIFEX_HOME.mkdir()
         (LUCIFEX_HOME / "home").mkdir()
         monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))

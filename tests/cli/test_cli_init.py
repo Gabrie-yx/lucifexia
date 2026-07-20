@@ -1,4 +1,4 @@
-﻿"""Tests for LucifexCLI initialization -- catches configuration bugs
+"""Tests for LucifexCLI initialization -- catches configuration bugs
 that only manifest at runtime (not in mocked unit tests)."""
 
 import os

@@ -1,4 +1,4 @@
-﻿"""DeepInfra image generation backend.
+"""DeepInfra image generation backend.
 
 Exposes DeepInfra's image-gen catalog (FLUX, Qwen-Image-Edit, …) through
 the OpenAI-compatible ``/v1/openai/images/generations`` endpoint as an

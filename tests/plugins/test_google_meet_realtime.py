@@ -1,4 +1,4 @@
-﻿"""Tests for plugins.google_meet.realtime.openai_client (v2).
+"""Tests for plugins.google_meet.realtime.openai_client (v2).
 
 Uses a scripted fake WebSocket — no network, no API key required.
 """
@@ -15,7 +15,7 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def _isolate_home(tmp_path, monkeypatch):
-    LUCIFEX_HOME = tmp_path / ".hermes"
+    LUCIFEX_HOME = tmp_path / ".lucifexex"
     LUCIFEX_HOME.mkdir()
     monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
     yield LUCIFEX_HOME

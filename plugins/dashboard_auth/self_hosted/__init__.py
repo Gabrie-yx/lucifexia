@@ -1,4 +1,4 @@
-﻿"""SelfHostedOIDCProvider — generic self-hosted OpenID Connect dashboard auth.
+"""SelfHostedOIDCProvider — generic self-hosted OpenID Connect dashboard auth.
 
 A standards-compliant OpenID Connect Relying Party for the ``hermes dashboard``
 OAuth gate. Unlike the bundled ``nous`` provider (which encodes Nous Portal's

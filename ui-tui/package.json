@@ -1,5 +1,5 @@
 {
-  "name": "hermes-tui",
+  "name": "lucifexex-tui",
   "version": "0.0.1",
   "private": true,
   "type": "module",
@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@lucifex/ink": "file:./packages/lucifex-ink",
-    "@hermes/shared": "file:../apps/shared",
+    "@lucifexex/shared": "file:../apps/shared",
     "@nanostores/react": "^1.1.0",
     "ink": "^6.8.0",
     "ink-text-input": "^6.0.0",

@@ -1,4 +1,4 @@
-﻿"""Honcho client initialization and configuration.
+"""Honcho client initialization and configuration.
 
 Resolution order for config file:
   1. $LUCIFEX_HOME/honcho.json  (instance-local, enables isolated Hermes instances)

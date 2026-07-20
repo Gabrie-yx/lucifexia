@@ -1,4 +1,4 @@
-﻿"""Tests for SessionStore.prune_old_entries and the gateway watcher that calls it.
+"""Tests for SessionStore.prune_old_entries and the gateway watcher that calls it.
 
 The SessionStore in-memory dict (and its backing sessions.json) grew
 unbounded — every unique (platform, chat_id, thread_id, user_id) tuple

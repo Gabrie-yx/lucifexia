@@ -1,4 +1,4 @@
-﻿"""Tests for the cross-Hermes-profile write guard in agent/file_safety.
+"""Tests for the cross-Hermes-profile write guard in agent/file_safety.
 
 The guard fires when a tool tries to write into another Hermes profile's
 skills/plugins/cron/memories directory. It's a soft guard — defense in

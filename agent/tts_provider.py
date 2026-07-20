@@ -1,4 +1,4 @@
-﻿"""
+"""
 Text-to-Speech Provider ABC
 ============================
 

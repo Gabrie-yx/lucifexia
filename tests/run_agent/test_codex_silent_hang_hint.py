@@ -1,4 +1,4 @@
-﻿"""Tests for the ``_codex_silent_hang_hint`` heuristic.
+"""Tests for the ``_codex_silent_hang_hint`` heuristic.
 
 The helper substitutes an actionable hint into the stale-call timeout
 warning when the request matches a known Codex silent-reject pattern

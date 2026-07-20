@@ -1,4 +1,4 @@
-﻿"""xAI Web Search — plugin form.
+"""xAI Web Search — plugin form.
 
 Routes ``web_search`` tool calls through xAI's agentic Web Search tool
 (server-side ``web_search`` on the Responses API). Grok runs the actual

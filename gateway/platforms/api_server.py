@@ -1,4 +1,4 @@
-﻿"""
+"""
 OpenAI-compatible API server platform adapter.
 
 Exposes an HTTP server with endpoints:

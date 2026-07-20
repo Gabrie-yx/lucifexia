@@ -1,4 +1,4 @@
-﻿"""Configurable tool-output truncation limits.
+"""Configurable tool-output truncation limits.
 
 Ported from anomalyco/opencode PR #23770 (``feat(truncate): allow
 configuring tool output truncation limits``).

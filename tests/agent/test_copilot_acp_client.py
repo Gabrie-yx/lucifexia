@@ -1,4 +1,4 @@
-﻿"""Focused regressions for the Copilot ACP shim safety layer."""
+"""Focused regressions for the Copilot ACP shim safety layer."""
 
 from __future__ import annotations
 

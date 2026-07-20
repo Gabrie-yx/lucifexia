@@ -1,4 +1,4 @@
-﻿"""Tests for `/reload-skills` resyncing the Discord ``/skill`` autocomplete.
+"""Tests for `/reload-skills` resyncing the Discord ``/skill`` autocomplete.
 
 Before this change, ``_register_skill_group`` captured the skill catalog
 in closure variables (``entries`` and ``skill_lookup``) so that the one

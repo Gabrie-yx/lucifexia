@@ -1,4 +1,4 @@
-﻿"""
+"""
 Template: a custom darwinian-evolver problem.
 
 Copy this file, fill in the THREE marked spots (Organism, Evaluator, Mutator),

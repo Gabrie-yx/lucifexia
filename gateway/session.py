@@ -1,4 +1,4 @@
-﻿"""
+"""
 Session management for the gateway.
 
 Handles:

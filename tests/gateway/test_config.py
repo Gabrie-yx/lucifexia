@@ -1,4 +1,4 @@
-﻿"""Tests for gateway configuration management."""
+"""Tests for gateway configuration management."""
 
 import logging
 import os

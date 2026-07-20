@@ -1,4 +1,4 @@
-﻿"""Lifecycle-scoped gateway delivery regressions for terminal completions.
+"""Lifecycle-scoped gateway delivery regressions for terminal completions.
 
 The gateway contract here is deliberately narrower than exactly-once: one live
 GatewayRunner suppresses concurrent/replayed copies after successful adapter

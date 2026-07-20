@@ -1,4 +1,4 @@
-﻿"""Phase 0 foundations for multi-profile gateway multiplexing.
+"""Phase 0 foundations for multi-profile gateway multiplexing.
 
 Covers the three Phase 0 deliverables:
   1. ``gateway.multiplex_profiles`` config flag (default False, round-trips).

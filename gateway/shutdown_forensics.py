@@ -1,4 +1,4 @@
-﻿"""Shutdown forensics — capture context when the gateway receives SIGTERM/SIGINT.
+"""Shutdown forensics — capture context when the gateway receives SIGTERM/SIGINT.
 
 The gateway's ``shutdown_signal_handler`` runs synchronously inside the
 asyncio event loop.  We can't safely block it for long, but we DO want a

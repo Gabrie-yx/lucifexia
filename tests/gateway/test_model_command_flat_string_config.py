@@ -1,4 +1,4 @@
-﻿"""Regression tests for gateway /model --global persistence when config.yaml
+"""Regression tests for gateway /model --global persistence when config.yaml
 has a flat-string ``model:`` value instead of a nested dict.
 
 Before fix: ``cfg.setdefault("model", {})`` returned the existing string and

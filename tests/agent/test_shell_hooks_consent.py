@@ -1,4 +1,4 @@
-﻿"""Consent-flow tests for the shell-hook allowlist.
+"""Consent-flow tests for the shell-hook allowlist.
 
 Covers the prompt/non-prompt decision tree: TTY vs non-TTY, and the
 three accept-hooks channels (--accept-hooks, HERMES_ACCEPT_HOOKS env,

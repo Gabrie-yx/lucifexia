@@ -1,4 +1,4 @@
-﻿"""Regression tests for max_tokens propagation from config.yaml to AIAgent.
+"""Regression tests for max_tokens propagation from config.yaml to AIAgent.
 
 Covers #20741: `model.max_tokens` was silently dropped before reaching the
 gateway-spawned agent, so providers without a hardcoded default (OpenRouter

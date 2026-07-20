@@ -1,4 +1,4 @@
-﻿"""Regression: output-only SDK fields must not leak into Anthropic request input.
+"""Regression: output-only SDK fields must not leak into Anthropic request input.
 
 Reproduces HTTP 400 `messages.N.content.M.text.parsed_output: Extra inputs are
 not permitted`. Anthropic SDK response blocks carry output-only attributes

@@ -1,4 +1,4 @@
-﻿import json
+import json
 import os
 import stat
 import time
@@ -298,7 +298,7 @@ def test_link_ovcli_profile_removes_stale_inline_config(tmp_path):
 
 def test_post_setup_existing_profile_picker_validates_and_links_saved_profile(tmp_path, monkeypatch):
     _clear_openviking_env(monkeypatch)
-    LUCIFEX_HOME = tmp_path / "hermes"
+    LUCIFEX_HOME = tmp_path / "lucifexex"
     LUCIFEX_HOME.mkdir()
     env_path = LUCIFEX_HOME / ".env"
     env_path.write_text("OPENVIKING_ENDPOINT=http://old.local\nOTHER_KEY=keep\n", encoding="utf-8")
@@ -354,7 +354,7 @@ def test_post_setup_existing_profile_picker_validates_and_links_saved_profile(tm
 
 def test_post_setup_create_remote_user_profile_can_mirror_to_openviking_store(tmp_path, monkeypatch):
     _clear_openviking_env(monkeypatch)
-    LUCIFEX_HOME = tmp_path / "hermes"
+    LUCIFEX_HOME = tmp_path / "lucifexex"
     LUCIFEX_HOME.mkdir()
     monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
     monkeypatch.setattr(openviking_module.Path, "home", staticmethod(lambda: tmp_path))
@@ -370,7 +370,7 @@ def test_post_setup_create_remote_user_profile_can_mirror_to_openviking_store(tm
         _prompt_from_values({
             "OpenViking server URL": "https://openviking.example",
             "OpenViking user API key": "user-secret",
-            "Hermes peer ID in OpenViking": "hermes",
+            "lucifexex peer ID in OpenViking":lucifexifex",
             "OpenViking profile name": "VPS",
         }),
     )
@@ -383,7 +383,7 @@ def test_post_setup_create_remote_user_profile_can_mirror_to_openviking_store(tm
     assert json.loads(mirrored_path.read_text(encoding="utf-8")) == {
         "url": "https://openviking.example",
         "api_key": "user-secret",
-        "actor_peer_id": "hermes",
+        "actor_peer_id": "lucifexex",
     }
     assert config["memory"]["provider"] == "openviking"
     assert config["memory"]["openviking"] == {
@@ -395,9 +395,9 @@ def test_post_setup_create_remote_user_profile_can_mirror_to_openviking_store(tm
         assert "OPENVIKING_" not in env_path.read_text(encoding="utf-8")
 
 
-def test_post_setup_create_remote_user_can_keep_hermes_only(tmp_path, monkeypatch):
+def test_post_setup_create_remote_user_can_keep_lucifexex_only(tmp_path, monkeypatch):
     _clear_openviking_env(monkeypatch)
-    LUCIFEX_HOME = tmp_path / "hermes"
+    LUCIFEX_HOME = tmp_path / "lucifexex"
     LUCIFEX_HOME.mkdir()
     monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
     _allow_setup_validation(monkeypatch)
@@ -412,7 +412,7 @@ def test_post_setup_create_remote_user_can_keep_hermes_only(tmp_path, monkeypatc
         _prompt_from_values({
             "OpenViking server URL": "https://openviking.example",
             "OpenViking user API key": "user-secret",
-            "Hermes peer ID in OpenViking": "agent",
+            "lucifexex peer ID in OpenViking": "agent",
         }),
     )
     config = {"memory": {}}
@@ -430,7 +430,7 @@ def test_post_setup_create_remote_user_can_keep_hermes_only(tmp_path, monkeypatc
 
 def test_post_setup_create_openviking_service_validates_after_api_key(tmp_path, monkeypatch):
     _clear_openviking_env(monkeypatch)
-    LUCIFEX_HOME = tmp_path / "hermes"
+    LUCIFEX_HOME = tmp_path / "lucifexex"
     LUCIFEX_HOME.mkdir()
     monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
 
@@ -456,7 +456,7 @@ def test_post_setup_create_openviking_service_validates_after_api_key(tmp_path, 
         _prompt_from_values(
             {
                 "OpenViking API key": "service-secret",
-                "Hermes peer ID in OpenViking": "agent",
+                "lucifexex peer ID in OpenViking": "agent",
             },
             forbidden={"OpenViking server URL", "OpenViking user API key", "OpenViking root API key"},
         ),
@@ -485,16 +485,16 @@ def test_post_setup_create_openviking_service_validates_after_api_key(tmp_path, 
 
 def test_post_setup_remote_blank_api_key_cancels_without_saving(tmp_path, monkeypatch):
     _clear_openviking_env(monkeypatch)
-    LUCIFEX_HOME = tmp_path / "hermes"
+    LUCIFEX_HOME = tmp_path / "lucifexex"
     LUCIFEX_HOME.mkdir()
     monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
     monkeypatch.setattr(openviking_module, "_validate_openviking_reachability", lambda endpoint: (True, ""))
 
-    from lucifex_cli import config as hermes_config
+    from lucifex_cli import config as lucifexex_config
     from lucifex_cli import memory_setup
 
     save_config = MagicMock()
-    monkeypatch.setattr(hermes_config, "save_config", save_config)
+    monkeypatch.setattr(lucifexex_config, "save_config", save_config)
     choices = iter([1, 0, 1])
     monkeypatch.setattr(memory_setup, "_curses_select", lambda *args, **kwargs: next(choices))
     monkeypatch.setattr(
@@ -516,7 +516,7 @@ def test_post_setup_remote_blank_api_key_cancels_without_saving(tmp_path, monkey
 
 def test_post_setup_user_key_path_can_route_detected_root_key_to_root_setup(tmp_path, monkeypatch):
     _clear_openviking_env(monkeypatch)
-    LUCIFEX_HOME = tmp_path / "hermes"
+    LUCIFEX_HOME = tmp_path / "lucifexex"
     LUCIFEX_HOME.mkdir()
     monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
 
@@ -541,7 +541,7 @@ def test_post_setup_user_key_path_can_route_detected_root_key_to_root_setup(tmp_
             "OpenViking user API key": "root-secret",
             "OpenViking account": "acct",
             "OpenViking user": "alice",
-            "Hermes peer ID in OpenViking": "agent",
+            "lucifexex peer ID in OpenViking": "agent",
         }
         return values.get(label, default or "")
 
@@ -550,7 +550,7 @@ def test_post_setup_user_key_path_can_route_detected_root_key_to_root_setup(tmp_
 
     OpenVikingMemoryProvider().post_setup(str(LUCIFEX_HOME), config)
 
-    assert prompt_events.count("Hermes peer ID in OpenViking") == 1
+    assert prompt_events.count("lucifexex peer ID in OpenViking") == 1
     env_text = (LUCIFEX_HOME / ".env").read_text(encoding="utf-8")
     assert "OPENVIKING_API_KEY=root-secret" in env_text
     assert "OPENVIKING_ACCOUNT=acct" in env_text
@@ -560,7 +560,7 @@ def test_post_setup_user_key_path_can_route_detected_root_key_to_root_setup(tmp_
 
 def test_post_setup_root_key_path_can_route_detected_user_key_to_user_setup(tmp_path, monkeypatch):
     _clear_openviking_env(monkeypatch)
-    LUCIFEX_HOME = tmp_path / "hermes"
+    LUCIFEX_HOME = tmp_path / "lucifexex"
     LUCIFEX_HOME.mkdir()
     monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
 
@@ -581,7 +581,7 @@ def test_post_setup_root_key_path_can_route_detected_user_key_to_user_setup(tmp_
             {
                 "OpenViking server URL": "https://openviking.example",
                 "OpenViking root API key": "user-secret",
-                "Hermes peer ID in OpenViking": "agent",
+                "lucifexex peer ID in OpenViking": "agent",
             },
             forbidden={"OpenViking user API key", "OpenViking account", "OpenViking user"},
         ),
@@ -617,7 +617,7 @@ def test_manual_root_key_flow_prints_validation_progress(monkeypatch, capsys):
             "OpenViking root API key": "root-secret",
             "OpenViking account": "acct",
             "OpenViking user": "alice",
-            "Hermes peer ID in OpenViking": "agent",
+            "lucifexex peer ID in OpenViking": "agent",
         }),
         lambda *args, **kwargs: next(choices),
         -1,
@@ -651,7 +651,7 @@ def test_start_local_openviking_server_uses_endpoint_host_and_port(monkeypatch):
 
 
 def test_start_local_openviking_server_writes_output_to_log(tmp_path, monkeypatch):
-    LUCIFEX_HOME = tmp_path / "hermes"
+    LUCIFEX_HOME = tmp_path / "lucifexex"
     monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
     popen_calls = []
 
@@ -700,7 +700,7 @@ def test_https_local_endpoint_is_not_runtime_autostart_eligible(monkeypatch):
     assert provider._client is None
     assert warnings == [
         "Remote OpenViking server at https://localhost:1934 is not reachable; "
-        "OpenViking memory disabled for this Hermes run. "
+        "OpenViking memory disabled for this lucifexex run. "
         "Check the configured endpoint and network connectivity."
     ]
 
@@ -733,7 +733,7 @@ def test_runtime_does_not_autostart_when_local_server_reports_unhealthy(monkeypa
     assert provider._client is None
     assert warnings == [
         "OpenViking server at http://localhost:1934 responded but reported unhealthy status. "
-        "OpenViking memory disabled for this Hermes run."
+        "OpenViking memory disabled for this lucifexex run."
     ]
 
 
@@ -901,7 +901,7 @@ def test_runtime_openviking_waiter_attaches_client_after_health_recovers(monkeyp
     provider._api_key = "secret"
     provider._account = "acct"
     provider._user = "alice"
-    provider._agent = "hermes"
+    provider._agent = "lucifexex"
     statuses = []
 
     provider._finish_runtime_openviking_start(
@@ -945,7 +945,7 @@ def test_runtime_openviking_waiter_warns_when_background_start_times_out(monkeyp
     assert warnings == [
         "Local OpenViking server at http://127.0.0.1:1934 is not reachable. "
         "Tried to start openviking-server, but it did not become reachable "
-        "within 60 seconds. OpenViking memory disabled for this Hermes run."
+        "within 60 seconds. OpenViking memory disabled for this lucifexex run."
     ]
 
 
@@ -1038,7 +1038,7 @@ def test_initialize_emits_cli_warning_when_local_runtime_autostart_fails(monkeyp
     assert warnings == [
         "Local OpenViking server at http://localhost:1934 is not reachable. "
         "openviking-server was not found on PATH. "
-        "OpenViking memory disabled for this Hermes run."
+        "OpenViking memory disabled for this lucifexex run."
     ]
 
 
@@ -1068,7 +1068,7 @@ def test_initialize_does_not_emit_cli_warning_when_callback_absent(monkeypatch):
 
 def test_post_setup_local_server_down_can_offer_autostart(tmp_path, monkeypatch):
     _clear_openviking_env(monkeypatch)
-    LUCIFEX_HOME = tmp_path / "hermes"
+    LUCIFEX_HOME = tmp_path / "lucifexex"
     LUCIFEX_HOME.mkdir()
     monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
     monkeypatch.setattr(openviking_module, "_validate_openviking_setup_values", lambda values, *, require_api_key=False: (True, "", None))
@@ -1092,7 +1092,7 @@ def test_post_setup_local_server_down_can_offer_autostart(tmp_path, monkeypatch)
         "_prompt",
         _prompt_from_values({
             "OpenViking server URL": "localhost",
-            "Hermes peer ID in OpenViking": "agent",
+            "lucifexex peer ID in OpenViking": "agent",
         }),
     )
     config = {"memory": {}}
@@ -1108,7 +1108,7 @@ def test_post_setup_local_server_down_can_offer_autostart(tmp_path, monkeypatch)
 
 def test_post_setup_invalid_env_profile_can_create_new_config(tmp_path, monkeypatch):
     _clear_openviking_env(monkeypatch)
-    LUCIFEX_HOME = tmp_path / "hermes"
+    LUCIFEX_HOME = tmp_path / "lucifexex"
     LUCIFEX_HOME.mkdir()
     ovcli_path = tmp_path / "broken" / "ovcli.conf"
     ovcli_path.parent.mkdir()
@@ -1127,7 +1127,7 @@ def test_post_setup_invalid_env_profile_can_create_new_config(tmp_path, monkeypa
         _prompt_from_values({
             "OpenViking server URL": "https://openviking.example",
             "OpenViking user API key": "user-secret",
-            "Hermes peer ID in OpenViking": "agent",
+            "lucifexex peer ID in OpenViking": "agent",
         }),
     )
     config = {"memory": {}}
@@ -1298,7 +1298,7 @@ def test_tool_add_resource_uploads_file_uri(tmp_path):
     assert result["root_uri"] == "viking://resources/sample"
 
 
-def test_tool_add_resource_rejects_hermes_credential_file_upload(tmp_path, monkeypatch):
+def test_tool_add_resource_rejects_lucifexex_credential_file_upload(tmp_path, monkeypatch):
     import agent.file_safety as fs
 
     LUCIFEX_HOME = tmp_path / "LUCIFEX_HOME"
@@ -1392,7 +1392,7 @@ def test_tool_add_resource_directory_zip_skips_symlink_escape(tmp_path):
     assert b"do not upload" not in b"".join(archive_entries["payloads"].values())
 
 
-def test_tool_add_resource_directory_zip_skips_hermes_credential_files(tmp_path, monkeypatch):
+def test_tool_add_resource_directory_zip_skips_lucifexex_credential_files(tmp_path, monkeypatch):
     import agent.file_safety as fs
 
     LUCIFEX_HOME = tmp_path / "LUCIFEX_HOME"
@@ -1530,7 +1530,7 @@ def test_get_tool_schemas_includes_narrow_forget_tool():
 
 
 def test_handle_tool_call_forget_deletes_exact_memory_file_uri():
-    uri = "viking://user/peers/hermes/memories/preferences/mem_abc123.md"
+    uri = "viking://user/peers/lucifexex/memories/preferences/mem_abc123.md"
     provider = OpenVikingMemoryProvider()
     provider._client = MagicMock()
     provider._client.delete.return_value = {
@@ -1602,7 +1602,7 @@ def test_handle_tool_call_forget_allows_non_generated_dot_md_memory_file():
     "viking://resources/project/doc.md",
     "viking://resources/project/memories/mem_abc123.md",
     "viking://memories/preferences/mem_abc123.md",
-    "viking://agent/hermes/memories/preferences/mem_abc123.md",
+    "viking://agent/lucifexex/memories/preferences/mem_abc123.md",
     "viking://user/skills/example/SKILL.md",
     "viking://user/sessions/session-1/messages.jsonl",
     "viking://user/memories/preferences/",
@@ -1626,7 +1626,7 @@ def test_viking_client_delete_uses_identity_headers(monkeypatch):
         api_key="test-key",
         account="acct",
         user="alice",
-        agent="hermes",
+        agent="lucifexex",
     )
     captured = {}
 
@@ -1649,7 +1649,7 @@ def test_viking_client_delete_uses_identity_headers(monkeypatch):
     assert captured["url"] == "https://example.com/api/v1/fs"
     assert captured["kwargs"]["params"] == {"uri": "viking://user/memories/x.md"}
     assert captured["kwargs"]["headers"]["Authorization"] == "Bearer test-key"
-    assert captured["kwargs"]["headers"]["X-OpenViking-Actor-Peer"] == "hermes"
+    assert captured["kwargs"]["headers"]["X-OpenViking-Actor-Peer"] == "lucifexex"
 
 
 def test_viking_client_post_allows_per_request_timeout(monkeypatch):
@@ -1658,7 +1658,7 @@ def test_viking_client_post_allows_per_request_timeout(monkeypatch):
         api_key="test-key",
         account="acct",
         user="alice",
-        agent="hermes",
+        agent="lucifexex",
     )
     captured = {}
 
@@ -1765,12 +1765,12 @@ def test_viking_client_headers_include_bearer_when_api_key_set():
         api_key="test-key",
         account="acct",
         user="usr",
-        agent="hermes",
+        agent="lucifexex",
     )
     headers = client._headers()
     assert headers["X-API-Key"] == "test-key"
     assert headers["Authorization"] == "Bearer test-key"
-    assert headers["X-OpenViking-Actor-Peer"] == "hermes"
+    assert headers["X-OpenViking-Actor-Peer"] == "lucifexex"
     assert "X-OpenViking-Agent" not in headers
     assert "X-OpenViking-Account" not in headers
     assert "X-OpenViking-User" not in headers
@@ -1783,12 +1783,12 @@ def test_viking_client_headers_send_tenant_in_local_mode():
         api_key="",
         account="default",
         user="default",
-        agent="hermes",
+        agent="lucifexex",
     )
     headers = client._headers()
     assert headers["X-OpenViking-Account"] == "default"
     assert headers["X-OpenViking-User"] == "default"
-    assert headers["X-OpenViking-Actor-Peer"] == "hermes"
+    assert headers["X-OpenViking-Actor-Peer"] == "lucifexex"
     assert "X-OpenViking-Agent" not in headers
     assert "Authorization" not in headers
 
@@ -1801,12 +1801,12 @@ def test_viking_client_headers_send_tenant_when_empty_falls_back_to_default(monk
         api_key="",
         account="",
         user="",
-        agent="hermes",
+        agent="lucifexex",
     )
     headers = client._headers()
     assert headers["X-OpenViking-Account"] == "default"
     assert headers["X-OpenViking-User"] == "default"
-    assert headers["X-OpenViking-Actor-Peer"] == "hermes"
+    assert headers["X-OpenViking-Actor-Peer"] == "lucifexex"
     assert "X-OpenViking-Agent" not in headers
     assert "Authorization" not in headers
     assert "X-API-Key" not in headers
@@ -1818,7 +1818,7 @@ def test_viking_client_headers_can_include_tenant_for_trusted_retry():
         api_key="test-key",
         account="real-account",
         user="real-user",
-        agent="hermes",
+        agent="lucifexex",
     )
     headers = client._headers(include_tenant=True)
     assert headers["X-OpenViking-Account"] == "real-account"
@@ -1832,7 +1832,7 @@ def test_viking_client_retries_with_tenant_headers_for_trusted_mode(monkeypatch)
         api_key="test-key",
         account="acct",
         user="usr",
-        agent="hermes",
+        agent="lucifexex",
     )
     captured_headers = []
 
@@ -1877,7 +1877,7 @@ def test_viking_client_health_sends_auth_headers(monkeypatch):
         api_key="test-key",
         account="",
         user="",
-        agent="hermes",
+        agent="lucifexex",
     )
     captured = {}
 
@@ -1890,7 +1890,7 @@ def test_viking_client_health_sends_auth_headers(monkeypatch):
     assert client.health() is True
     assert captured["url"] == "https://example.com/health"
     assert captured["headers"]["Authorization"] == "Bearer test-key"
-    assert captured["headers"]["X-OpenViking-Actor-Peer"] == "hermes"
+    assert captured["headers"]["X-OpenViking-Actor-Peer"] == "lucifexex"
     assert "X-OpenViking-Agent" not in captured["headers"]
     assert "X-OpenViking-Account" not in captured["headers"]
     assert "X-OpenViking-User" not in captured["headers"]
@@ -1902,7 +1902,7 @@ def test_viking_client_validate_auth_uses_authenticated_system_status(monkeypatc
         api_key="test-key",
         account="acct",
         user="alice",
-        agent="hermes",
+        agent="lucifexex",
     )
     captured = {}
 
@@ -1924,7 +1924,7 @@ def test_viking_client_validate_auth_uses_authenticated_system_status(monkeypatc
     }
     assert captured["url"] == "https://example.com/api/v1/system/status"
     assert captured["headers"]["Authorization"] == "Bearer test-key"
-    assert captured["headers"]["X-OpenViking-Actor-Peer"] == "hermes"
+    assert captured["headers"]["X-OpenViking-Actor-Peer"] == "lucifexex"
     assert "X-OpenViking-Account" not in captured["headers"]
     assert "X-OpenViking-User" not in captured["headers"]
 
@@ -1936,7 +1936,7 @@ def test_viking_client_validate_root_access_uses_admin_accounts(monkeypatch):
         api_key="root-key",
         account="",
         user="",
-        agent="hermes",
+        agent="lucifexex",
     )
     captured = {}
 
@@ -1955,7 +1955,7 @@ def test_viking_client_validate_root_access_uses_admin_accounts(monkeypatch):
     assert client.validate_root_access() == {"status": "ok", "result": []}
     assert captured["url"] == "https://example.com/api/v1/admin/accounts"
     assert captured["headers"]["Authorization"] == "Bearer root-key"
-    assert captured["headers"]["X-OpenViking-Actor-Peer"] == "hermes"
+    assert captured["headers"]["X-OpenViking-Actor-Peer"] == "lucifexex"
     assert "X-OpenViking-Account" not in captured["headers"]
     assert "X-OpenViking-User" not in captured["headers"]
 
@@ -1992,7 +1992,7 @@ def test_validate_openviking_auth_uses_status_without_health(monkeypatch):
             assert api_key == "test-key"
             assert account == "acct"
             assert user == "alice"
-            assert agent == "hermes"
+            assert agent == "lucifexex"
 
         def validate_auth(self):
             events.append("status")
@@ -2005,7 +2005,7 @@ def test_validate_openviking_auth_uses_status_without_health(monkeypatch):
         "api_key": "test-key",
         "account": "acct",
         "user": "alice",
-        "agent": "hermes",
+        "agent": "lucifexex",
     })
 
     assert ok is True
@@ -2022,7 +2022,7 @@ def test_validate_openviking_root_access_uses_admin_endpoint(monkeypatch):
             assert api_key == "root-key"
             assert account == ""
             assert user == ""
-            assert agent == "hermes"
+            assert agent == "lucifexex"
 
         def validate_root_access(self):
             events.append("admin")
@@ -2078,7 +2078,7 @@ def test_validate_openviking_setup_values_local_dev_no_key_uses_health_only(monk
     monkeypatch.setattr(openviking_module, "_VikingClient", FakeVikingClient)
 
     ok, message, role = openviking_module._validate_openviking_setup_values(
-        {"endpoint": "localhost", "agent": "hermes"}
+        {"endpoint": "localhost", "agent": "lucifexex"}
     )
 
     assert ok is True
@@ -2310,7 +2310,7 @@ def test_sync_turn_captures_session_id_before_worker_runs():
     provider._api_key = ""
     provider._account = "acct"
     provider._user = "usr"
-    provider._agent = "hermes"
+    provider._agent = "lucifexex"
     provider._session_id = "old-sid"
 
     started = threading.Event()
@@ -2355,7 +2355,7 @@ def test_sync_turn_captures_session_id_before_worker_runs():
     assert captured_payloads == [{
         "messages": [
             {"role": "user", "parts": [{"type": "text", "text": "u"}]},
-            {"role": "assistant", "parts": [{"type": "text", "text": "a"}], "peer_id": "hermes"},
+            {"role": "assistant", "parts": [{"type": "text", "text": "a"}], "peer_id": "lucifexex"},
         ]
     }]
 
@@ -2367,7 +2367,7 @@ def test_sync_turn_retries_batch_write_with_fresh_client():
     provider._api_key = ""
     provider._account = "acct"
     provider._user = "usr"
-    provider._agent = "hermes"
+    provider._agent = "lucifexex"
     provider._session_id = "sid-1"
 
     clients = []
@@ -2399,7 +2399,7 @@ def test_sync_turn_retries_batch_write_with_fresh_client():
         {
             "messages": [
                 {"role": "user", "parts": [{"type": "text", "text": "u"}]},
-                {"role": "assistant", "parts": [{"type": "text", "text": "a"}], "peer_id": "hermes"},
+                {"role": "assistant", "parts": [{"type": "text", "text": "a"}], "peer_id": "lucifexex"},
             ]
         },
     )]
@@ -2412,7 +2412,7 @@ def test_sync_turn_structured_messages_include_assistant_peer_id():
     provider._api_key = ""
     provider._account = "acct"
     provider._user = "usr"
-    provider._agent = "hermes"
+    provider._agent = "lucifexex"
     provider._session_id = "sid-structured"
 
     captured = []
@@ -2456,7 +2456,7 @@ def test_sync_turn_structured_messages_include_assistant_peer_id():
         {
             "messages": [
                 {"role": "user", "parts": [{"type": "text", "text": "u"}]},
-                {"role": "assistant", "parts": [{"type": "text", "text": "Looking."}], "peer_id": "hermes"},
+                {"role": "assistant", "parts": [{"type": "text", "text": "Looking."}], "peer_id": "lucifexex"},
                 {
                     "role": "assistant",
                     "parts": [
@@ -2469,9 +2469,9 @@ def test_sync_turn_structured_messages_include_assistant_peer_id():
                             "tool_status": "completed",
                         }
                     ],
-                    "peer_id": "hermes",
+                    "peer_id": "lucifexex",
                 },
-                {"role": "assistant", "parts": [{"type": "text", "text": "a"}], "peer_id": "hermes"},
+                {"role": "assistant", "parts": [{"type": "text", "text": "a"}], "peer_id": "lucifexex"},
             ]
         },
     )]
@@ -2759,7 +2759,7 @@ def test_sync_turn_tracks_writer_under_session_id():
     provider._api_key = ""
     provider._account = "acct"
     provider._user = "usr"
-    provider._agent = "hermes"
+    provider._agent = "lucifexex"
     provider._session_id = "sid-1"
 
     release = threading.Event()
@@ -2805,7 +2805,7 @@ def test_on_memory_write_uses_content_write_independent_of_session_rotation():
     provider._api_key = ""
     provider._account = "acct"
     provider._user = "usr"
-    provider._agent = "hermes"
+    provider._agent = "lucifexex"
     provider._session_id = "old-sid"
 
     in_ctor = threading.Event()
@@ -2843,7 +2843,7 @@ def test_on_memory_write_uses_content_write_independent_of_session_rotation():
     assert captured_payloads[0]["content"] == "remember this"
     assert captured_payloads[0]["mode"] == "create"
     assert captured_payloads[0]["uri"].startswith(
-        "viking://user/peers/hermes/memories/preferences/mem_"
+        "viking://user/peers/lucifexex/memories/preferences/mem_"
     )
 
 
@@ -2856,7 +2856,7 @@ def test_shutdown_waits_for_memory_write_worker(monkeypatch):
     provider._api_key = ""
     provider._account = "acct"
     provider._user = "usr"
-    provider._agent = "hermes"
+    provider._agent = "lucifexex"
 
     worker_started = threading.Event()
     release_worker = threading.Event()
@@ -2911,8 +2911,8 @@ def test_on_memory_write_ignores_non_add_actions(action, content, monkeypatch):
     provider._api_key = ""
     provider._account = "acct"
     provider._user = "usr"
-    provider._agent = "hermes"
-    uri = "viking://user/peers/hermes/memories/preferences/mem_abc123.md"
+    provider._agent = "lucifexex"
+    uri = "viking://user/peers/lucifexex/memories/preferences/mem_abc123.md"
     spawned = []
 
     class StubThread:
@@ -2942,7 +2942,7 @@ def _make_prefetch_provider() -> OpenVikingMemoryProvider:
     provider._api_key = ""
     provider._account = "acct"
     provider._user = "usr"
-    provider._agent = "hermes"
+    provider._agent = "lucifexex"
     return provider
 
 
@@ -3010,7 +3010,7 @@ def test_prefetch_uses_session_search_when_session_id_available(monkeypatch):
                 "result": {
                     "memories": [
                         {
-                            "uri": "viking://user/peers/hermes/memories/events/mem_1.md",
+                            "uri": "viking://user/peers/lucifexex/memories/events/mem_1.md",
                             "score": 0.9,
                             "abstract": "session-aware memory",
                         },
@@ -3060,7 +3060,7 @@ def test_prefetch_falls_back_to_find_when_session_search_fails(monkeypatch):
                 "result": {
                     "memories": [
                         {
-                            "uri": "viking://user/peers/hermes/memories/events/mem_2.md",
+                            "uri": "viking://user/peers/lucifexex/memories/events/mem_2.md",
                             "score": 0.8,
                             "abstract": "non-session fallback",
                         },
@@ -3136,7 +3136,7 @@ def test_prefetch_reads_l2_content_and_ignores_skills_by_default(monkeypatch):
                 "result": {
                     "memories": [
                         {
-                            "uri": "viking://user/peers/hermes/memories/events/mem_3.md",
+                            "uri": "viking://user/peers/lucifexex/memories/events/mem_3.md",
                             "score": 0.9,
                             "level": 2,
                             "category": "events",
@@ -3165,7 +3165,7 @@ def test_prefetch_reads_l2_content_and_ignores_skills_by_default(monkeypatch):
     assert captured_reads == [
         (
             "/api/v1/content/read",
-            {"uri": "viking://user/peers/hermes/memories/events/mem_3.md"},
+            {"uri": "viking://user/peers/lucifexex/memories/events/mem_3.md"},
         )
     ]
     assert "full memory content" in context
@@ -3187,7 +3187,7 @@ def test_prefetch_reads_empty_abstract_content_within_budget(monkeypatch):
                 "result": {
                     "memories": [
                         {
-                            "uri": "viking://user/peers/hermes/memories/one.md",
+                            "uri": "viking://user/peers/lucifexex/memories/one.md",
                             "score": 0.9,
                             "abstract": "",
                         },
@@ -3207,10 +3207,10 @@ def test_prefetch_reads_empty_abstract_content_within_budget(monkeypatch):
     context = provider.prefetch("anything")
 
     assert [params["uri"] for _path, params in captured_reads] == [
-        "viking://user/peers/hermes/memories/one.md",
+        "viking://user/peers/lucifexex/memories/one.md",
     ]
     assert (
-        "content for viking://user/peers/hermes/memories/one.md"
+        "content for viking://user/peers/lucifexex/memories/one.md"
         in context
     )
 
@@ -3229,7 +3229,7 @@ def test_prefetch_caps_full_content_reads(monkeypatch):
                 "result": {
                     "memories": [
                         {
-                            "uri": f"viking://user/peers/hermes/memories/events/mem_{idx}.md",
+                            "uri": f"viking://user/peers/lucifexex/memories/events/mem_{idx}.md",
                             "score": 0.9 - (idx * 0.01),
                             "level": 2,
                             "category": "events",
@@ -3252,8 +3252,8 @@ def test_prefetch_caps_full_content_reads(monkeypatch):
     context = provider.prefetch("anything")
 
     assert len(captured_reads) == 2
-    assert "full content for viking://user/peers/hermes/memories/events/mem_0.md" in context
-    assert "full content for viking://user/peers/hermes/memories/events/mem_1.md" in context
+    assert "full content for viking://user/peers/lucifexex/memories/events/mem_0.md" in context
+    assert "full content for viking://user/peers/lucifexex/memories/events/mem_1.md" in context
     assert "short abstract 2" in context
 
 
@@ -3273,7 +3273,7 @@ def test_prefetch_uses_bounded_http_timeouts(monkeypatch):
                 "result": {
                     "memories": [
                         {
-                            "uri": "viking://user/peers/hermes/memories/events/mem_timeout.md",
+                            "uri": "viking://user/peers/lucifexex/memories/events/mem_timeout.md",
                             "score": 0.9,
                             "level": 2,
                             "category": "events",

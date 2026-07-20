@@ -1,4 +1,4 @@
-﻿"""
+"""
 Cron job scheduler - executes due jobs.
 
 Provides tick() which checks for due jobs and runs them. The gateway

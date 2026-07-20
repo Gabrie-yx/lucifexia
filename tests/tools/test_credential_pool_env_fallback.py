@@ -1,9 +1,9 @@
-﻿"""Tests for credential_pool .env fallback and auth credential_pool lookup.
+"""Tests for credential_pool .env fallback and auth credential_pool lookup.
 
 Covers the fix from #15914 / PR #15920 and the rotation fix from #20591:
 - _seed_from_env reads API keys from ~/.lucifex/.env when not in os.environ
 - _resolve_api_key_provider_secret falls back to credential_pool when env vars are empty
-- ~/.lucifex/.env takes priority over os.environ for Hermes-managed credentials
+- ~/.lucifex/.env takes priority over os.environ for lucifexex-managed credentials
   (so a deliberate rotation in .env wins over a stale shell export)
 - env / dotenv values take priority over credential pool (pool fires only when both are empty)
 """
@@ -36,7 +36,7 @@ def isolated_LUCIFEX_HOME(tmp_path, monkeypatch):
 
     Also invalidates any cached get_env_value state by patching Path.home().
     """
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".lucifexex"
     home.mkdir()
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     monkeypatch.setenv("LUCIFEX_HOME", str(home))

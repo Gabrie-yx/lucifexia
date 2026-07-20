@@ -1,4 +1,4 @@
-﻿"""Tests that gateway /model switch persists across messages.
+"""Tests that gateway /model switch persists across messages.
 
 The gateway /model command stores session overrides in
 ``_session_model_overrides``.  These must:

@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """Telephony helper for the Hermes optional telephony skill.
 
 Capabilities:

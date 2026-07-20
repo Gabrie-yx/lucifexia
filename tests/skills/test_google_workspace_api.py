@@ -1,4 +1,4 @@
-﻿"""Tests for Google Workspace gws bridge and CLI wrapper."""
+"""Tests for Google Workspace gws bridge and CLI wrapper."""
 
 import importlib.util
 import json
@@ -24,7 +24,7 @@ API_PATH = (
 
 @pytest.fixture
 def bridge_module(monkeypatch, tmp_path):
-    LUCIFEX_HOME = tmp_path / ".hermes"
+    LUCIFEX_HOME = tmp_path / ".lucifexex"
     LUCIFEX_HOME.mkdir()
     monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
 
@@ -37,7 +37,7 @@ def bridge_module(monkeypatch, tmp_path):
 
 @pytest.fixture
 def api_module(monkeypatch, tmp_path):
-    LUCIFEX_HOME = tmp_path / ".hermes"
+    LUCIFEX_HOME = tmp_path / ".lucifexex"
     LUCIFEX_HOME.mkdir()
     monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
 

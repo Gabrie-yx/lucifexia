@@ -1,4 +1,4 @@
-﻿"""Regression tests for the list-shape AttributeError guards in
+"""Regression tests for the list-shape AttributeError guards in
 ``agent.background_review.summarize_background_review_actions`` (#59437).
 
 The outer ``_run_review_in_thread`` used to crash with
@@ -47,7 +47,7 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 def _isolate_LUCIFEX_HOME():
-    os.environ.setdefault("LUCIFEX_HOME", "/tmp/hermes-bg-review-test")
+    os.environ.setdefault("LUCIFEX_HOME", "/tmp/lucifexex-bg-review-test")
 
 
 def _load_module():

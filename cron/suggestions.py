@@ -1,4 +1,4 @@
-﻿"""Suggested cron jobs — proposed automations the user accepts with one tap.
+"""Suggested cron jobs — proposed automations the user accepts with one tap.
 
 A *suggestion* is a ready-to-run cron job spec that Hermes surfaces to the
 user, who accepts it (creates the real cron job) or dismisses it (latched so

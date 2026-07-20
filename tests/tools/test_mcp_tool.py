@@ -1,4 +1,4 @@
-﻿"""Tests for the MCP (Model Context Protocol) client support.
+"""Tests for the MCP (Model Context Protocol) client support.
 
 All tests use mocks -- no real MCP servers or subprocesses are started.
 """
@@ -228,7 +228,7 @@ class TestLifecycleConfig:
 # ---------------------------------------------------------------------------
 
 class TestSchemaConversion:
-    def test_converts_mcp_tool_to_hermes_schema(self):
+    def test_converts_mcp_tool_to_lucifexex_schema(self):
         from tools.mcp_tool import _convert_mcp_schema
 
         mcp_tool = _make_mcp_tool(name="read_file", description="Read a file")

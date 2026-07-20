@@ -1,4 +1,4 @@
-﻿"""Tests for tools/mcp_oauth.py — OAuth 2.1 PKCE support for MCP servers."""
+"""Tests for tools/mcp_oauth.py — OAuth 2.1 PKCE support for MCP servers."""
 
 import json
 import os
@@ -101,7 +101,7 @@ class TestLucifexTokenStorage:
 
         mock_client = MagicMock()
         mock_client.model_dump.return_value = {
-            "client_id": "hermes-123",
+            "client_id": "lucifexex-123",
             "client_secret": "secret",
         }
         asyncio.run(storage.set_client_info(mock_client))
@@ -853,17 +853,17 @@ class TestNonInteractiveFailFastAtCallbackBoundary:
         err = capsys.readouterr().err
         assert "https://idp.example.com/authorize" not in err
 
-    def test_boundary_errors_point_at_hermes_mcp_login(self, monkeypatch):
+    def test_boundary_errors_point_at_lucifexex_mcp_login(self, monkeypatch):
         """Both boundaries emit an actionable next step."""
         import tools.mcp_oauth as mod
         import asyncio
 
         monkeypatch.setattr(mod, "_is_interactive", lambda: False)
-        with pytest.raises(OAuthNonInteractiveError, match="hermes mcp login"):
+        with pytest.raises(OAuthNonInteractiveError, match="lucifexex mcp login"):
             asyncio.run(mod._make_redirect_handler(49301)("https://idp.example.com/authorize"))
 
         mod._oauth_port = _find_free_port()
-        with pytest.raises(OAuthNonInteractiveError, match="hermes mcp login"):
+        with pytest.raises(OAuthNonInteractiveError, match="lucifexex mcp login"):
             asyncio.run(mod._wait_for_callback())
 
     def test_guard_does_not_fire_on_interactive_redirect(self, monkeypatch, capsys):
@@ -1166,7 +1166,7 @@ def test_build_oauth_auth_preserves_server_url_path():
     breaking RFC 9728 protected-resource validation against servers whose PRM
     advertises a path-scoped resource (Notion). The MCP SDK strips the path
     itself for authorization-server discovery via
-    ``OAuthContext.get_authorization_base_url``; Hermes must not pre-strip.
+    ``OAuthContext.get_authorization_base_url``; lucifexex must not pre-strip.
     """
     from tools import mcp_oauth
 
@@ -1499,7 +1499,7 @@ class TestPasteCallbackSkipToken:
         _paste_callback_reader(result)
         err = capsys.readouterr().err
         assert "OAuth skipped" in err
-        assert "hermes mcp login" in err
+        assert "lucifexex mcp login" in err
 
     def test_skip_does_not_overwrite_http_winner(self, monkeypatch):
         """If HTTP listener already wrote a code, `skip` must not stomp it."""

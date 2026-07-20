@@ -1,4 +1,4 @@
-﻿"""Tests for the xAI Web Search provider (plugins/web/xai/).
+"""Tests for the xAI Web Search provider (plugins/web/xai/).
 
 Covers:
 - XAIWebSearchProvider.is_available() — cheap probe (env var + auth.json)
@@ -74,7 +74,7 @@ class TestXAIProviderIdentity:
 
 class TestXAIProviderIsAvailable:
     """``is_available()`` MUST be cheap — no network, no token refresh, no
-    auth-store lock. It runs on every ``hermes tools`` repaint and at
+    auth-store lock. It runs on every ``lucifexex tools`` repaint and at
     tool-registration time, so any I/O regression here would surface as
     visible CLI latency.
     """
@@ -679,7 +679,7 @@ class TestXAIBackendWiring:
 
     def test_is_backend_available_does_not_call_resolver(self, monkeypatch):
         """Regression guard — `_is_backend_available` runs on every web_search
-        dispatch and every `hermes tools` repaint. It must not invoke the
+        dispatch and every `lucifexex tools` repaint. It must not invoke the
         OAuth resolver (which can trigger a network refresh)."""
         from tools import web_tools
 
@@ -698,7 +698,7 @@ class TestXAIBackendWiring:
     def test_xai_not_in_legacy_backend_candidate_chain(self, monkeypatch):
         """The hardcoded ``backend_candidates`` tuple in ``_get_backend()``
         does not include xAI — by design, since the no-config legacy
-        chain is for users who set env vars but never ran ``hermes tools``,
+        chain is for users who set env vars but never ran ``lucifexex tools``,
         and we don't want a stray ``XAI_API_KEY`` (perhaps set for chat
         inference) to silently re-route web_search through Grok.
 
@@ -729,7 +729,7 @@ class TestXAIBackendWiring:
 
 class TestXAIProviderOAuthPath:
     """Verifies the provider works when credentials come from the OAuth
-    credential pool (``hermes auth`` sign-in) rather than an env-var key.
+    credential pool (``lucifexex auth`` sign-in) rather than an env-var key.
     The full ``tools.xai_http.resolve_xai_http_credentials`` chain is exercised
     against a temporary auth store.
     """
@@ -740,7 +740,7 @@ class TestXAIProviderOAuthPath:
         # Force the env-var fallback to fail so resolution must go via OAuth.
         monkeypatch.delenv("XAI_API_KEY", raising=False)
         monkeypatch.setenv("LUCIFEX_HOME", str(tmp_path))
-        monkeypatch.setenv("HERMES_XAI_BASE_URL", "https://proxy.x.ai/v1/")
+        monkeypatch.setenv("lucifexex_XAI_BASE_URL", "https://proxy.x.ai/v1/")
         (tmp_path / "auth.json").write_text(json.dumps({
             "version": 1,
             "active_provider": "xai-oauth",

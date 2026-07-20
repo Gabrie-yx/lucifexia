@@ -1,4 +1,4 @@
-﻿"""
+"""
 LINE Messaging API platform adapter for Hermes Agent.
 
 A bundled platform plugin that runs an aiohttp webhook server, accepts LINE

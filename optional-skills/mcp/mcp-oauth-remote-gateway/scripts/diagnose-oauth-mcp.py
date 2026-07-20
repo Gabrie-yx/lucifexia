@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """Diagnose an OAuth-gated remote MCP server's connection state.
 
 Decides which recovery branch you're in WITHOUT mutating disk by default:

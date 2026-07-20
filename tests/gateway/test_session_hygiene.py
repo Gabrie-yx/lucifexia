@@ -1,4 +1,4 @@
-﻿"""Tests for gateway session hygiene — auto-compression of large sessions.
+"""Tests for gateway session hygiene — auto-compression of large sessions.
 
 Verifies that the gateway detects pathologically large transcripts and
 triggers auto-compression before running the agent.  (#628)

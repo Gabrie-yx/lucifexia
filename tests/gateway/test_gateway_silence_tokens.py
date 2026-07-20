@@ -1,4 +1,4 @@
-﻿"""Gateway intentional-silence token behavior."""
+"""Gateway intentional-silence token behavior."""
 
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock

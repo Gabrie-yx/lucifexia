@@ -1,4 +1,4 @@
-﻿"""
+"""
 Channel directory -- cached map of reachable channels/contacts per platform.
 
 Built on gateway startup, refreshed periodically (every 5 min), and saved to

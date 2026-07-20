@@ -148,11 +148,11 @@ export interface Translations {
     starting: string;
     startedInBackground: string;
     stopped: string;
-    updateHermes: string;
-    updateHermesConfirmMessage?: string;
-    updateHermesConfirmNow?: string;
-    updateHermesConfirmTitle?: string;
-    updatingHermes: string;
+    updatelucifexex: string;
+    updatelucifexexConfirmMessage?: string;
+    updatelucifexexConfirmNow?: string;
+    updatelucifexexConfirmTitle?: string;
+    updatinglucifexex: string;
     waitingForOutput: string;
   };
 
@@ -576,7 +576,7 @@ export interface Translations {
     fontMono?: string;
   };
 
-  // ── Achievements plugin (plugins/hermes-achievements) ──
+  // ── Achievements plugin (plugins/lucifexex-achievements) ──
   achievements: {
     hero: {
       kicker: string;

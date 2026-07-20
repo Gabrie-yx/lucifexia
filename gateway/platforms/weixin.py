@@ -1,4 +1,4 @@
-﻿"""
+"""
 Weixin platform adapter.
 
 Connects Hermes Agent to WeChat personal accounts via Tencent's iLink Bot API.

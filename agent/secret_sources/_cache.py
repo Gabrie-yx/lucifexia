@@ -1,4 +1,4 @@
-﻿"""Shared substrate for external secret-source backends.
+"""Shared substrate for external secret-source backends.
 
 Every backend (Bitwarden, 1Password, …) needs the same handful of
 security-sensitive primitives:

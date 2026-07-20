@@ -1,4 +1,4 @@
-﻿"""Regression tests for gateway /model support of config.yaml custom_providers."""
+"""Regression tests for gateway /model support of config.yaml custom_providers."""
 
 import yaml
 import pytest

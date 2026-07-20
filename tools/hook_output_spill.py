@@ -121,8 +121,8 @@ def _resolve_spill_dir(directory_override: Optional[str], session_id: Optional[s
             from lucifex_constants import get_lucifex_home
             base = Path(get_lucifex_home()) / "hook_outputs"
         except Exception:
-            # Last-resort fallback: LUCIFEX_HOME env var, then ~/.hermes
-            home = os.environ.get("LUCIFEX_HOME") or os.path.expanduser("~/.hermes")
+            # Last-resort fallback: LUCIFEX_HOME env var, then ~/.lucifexex
+            home = os.environ.get("LUCIFEX_HOME") or os.path.expanduser("~/.lucifexex")
             base = Path(home) / "hook_outputs"
 
     # Group by session so spills are contained per conversation.

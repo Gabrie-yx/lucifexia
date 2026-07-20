@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from unittest.mock import MagicMock
 
@@ -7,7 +7,7 @@ import agent.file_safety as fs
 from plugins.memory.retaindb import RetainDBMemoryProvider
 
 
-def test_upload_file_rejects_hermes_credential_store(tmp_path, monkeypatch):
+def test_upload_file_rejects_lucifexex_credential_store(tmp_path, monkeypatch):
     LUCIFEX_HOME = tmp_path / "LUCIFEX_HOME"
     LUCIFEX_HOME.mkdir()
     auth_json = LUCIFEX_HOME / "auth.json"

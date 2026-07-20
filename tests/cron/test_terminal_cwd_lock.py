@@ -1,4 +1,4 @@
-﻿"""Tests for the TERMINAL_CWD readers-writer lock in cron/scheduler.py.
+"""Tests for the TERMINAL_CWD readers-writer lock in cron/scheduler.py.
 
 Workdir cron jobs override the process-global ``os.environ["TERMINAL_CWD"]``
 for their whole agent run.  Workdir-less jobs run concurrently on a separate

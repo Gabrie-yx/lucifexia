@@ -1,4 +1,4 @@
-﻿"""Dangerous command approval -- detection, prompting, and per-session state.
+"""Dangerous command approval -- detection, prompting, and per-session state.
 
 This module is the single source of truth for the dangerous command system:
 - Pattern detection (DANGEROUS_PATTERNS, detect_dangerous_command)

@@ -1,12 +1,12 @@
-﻿// Perf instrumentation for the full render pipeline.
+// Perf instrumentation for the full render pipeline.
 //
 //   PerfPane (React.Profiler)  → per-pane commit times
 //   logFrameEvent (ink.onFrame) → yoga / renderer / diff / optimize / write
 //                                 phases + yoga counters + scroll fast-path
 //
-// Both gate on HERMES_DEV_PERF=1 and dump JSON-lines (default ~/.lucifex/perf.log,
-// override HERMES_DEV_PERF_LOG). Tagged { src: 'react' | 'frame' } for jq.
-// HERMES_DEV_PERF_MS (default 2) skips sub-ms idle frames; set 0 to capture all.
+// Both gate on lucifexex_DEV_PERF=1 and dump JSON-lines (default ~/.lucifex/perf.log,
+// override lucifexex_DEV_PERF_LOG). Tagged { src: 'react' | 'frame' } for jq.
+// lucifexex_DEV_PERF_MS (default 2) skips sub-ms idle frames; set 0 to capture all.
 //
 // Zero cost when unset: PerfPane returns children directly, logFrameEvent is
 // undefined so ink doesn't pay the timing cost.
@@ -19,9 +19,9 @@ import type { FrameEvent } from '@lucifex/ink'
 import { scrollFastPathStats } from '@lucifex/ink'
 import { Profiler, type ProfilerOnRenderCallback, type ReactNode } from 'react'
 
-const ENABLED = /^(?:1|true|yes|on)$/i.test((process.env.HERMES_DEV_PERF ?? '').trim())
-const THRESHOLD_MS = Number(process.env.HERMES_DEV_PERF_MS ?? '2') || 0
-const LOG_PATH = process.env.HERMES_DEV_PERF_LOG?.trim() || join(homedir(), '.hermes', 'perf.log')
+const ENABLED = /^(?:1|true|yes|on)$/i.test((process.env.lucifexex_DEV_PERF ?? '').trim())
+const THRESHOLD_MS = Number(process.env.lucifexex_DEV_PERF_MS ?? '2') || 0
+const LOG_PATH = process.env.lucifexex_DEV_PERF_LOG?.trim() || join(homedir(), lucifexifex', 'perf.log')
 
 let logReady = false
 

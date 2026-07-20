@@ -1,4 +1,4 @@
-﻿"""Tests for tools/skills_sync.py — manifest-based skill seeding and updating."""
+"""Tests for tools/skills_sync.py — manifest-based skill seeding and updating."""
 
 import shutil
 import json
@@ -214,12 +214,12 @@ class TestRmtreeWritableScopeGuard:
         """``~/.lucifex/`` itself is what the #48200 wipe destroyed."""
         from tools.skills_sync import _rmtree_writable
 
-        hermes = tmp_path / "home"
-        hermes.mkdir()
-        (hermes / "skills").mkdir()
-        with patch("tools.skills_sync.SKILLS_DIR", hermes / "skills"):
+        lucifexex = tmp_path / "home"
+        lucifexex.mkdir()
+        (lucifexex / "skills").mkdir()
+        with patch("tools.skills_sync.SKILLS_DIR", lucifexex / "skills"):
             with pytest.raises(ValueError, match="refusing to rmtree"):
-                _rmtree_writable(hermes)
+                _rmtree_writable(lucifexex)
 
     def test_refuses_sibling_directory(self, tmp_path):
         """A directory that is a sibling of SKILLS_DIR (e.g. a wrong
@@ -227,11 +227,11 @@ class TestRmtreeWritableScopeGuard:
         """
         from tools.skills_sync import _rmtree_writable
 
-        hermes = tmp_path / "home"
-        hermes.mkdir()
-        skills = hermes / "skills"
+        lucifexex = tmp_path / "home"
+        lucifexex.mkdir()
+        skills = lucifexex / "skills"
         skills.mkdir()
-        not_skills = hermes / "kanban.db"  # any non-skills path
+        not_skills = lucifexex / "kanban.db"  # any non-skills path
         not_skills.mkdir()
         with patch("tools.skills_sync.SKILLS_DIR", skills):
             with pytest.raises(ValueError, match="refusing to rmtree"):
@@ -717,7 +717,7 @@ class TestSyncSkills:
 
         captured = capsys.readouterr().out
         assert "new-skill" in captured
-        assert "hermes skills reset new-skill" in captured
+        assert "lucifexex skills reset new-skill" in captured
 
     def test_backfills_official_optional_provenance_for_existing_identical_skill(self, tmp_path):
         bundled = self._setup_bundled(tmp_path)
@@ -933,21 +933,21 @@ class TestSyncSkills:
 
 class TestGetBundledDir:
     def test_env_var_override(self, tmp_path, monkeypatch):
-        """HERMES_BUNDLED_SKILLS env var overrides the default path resolution."""
+        """lucifexex_BUNDLED_SKILLS env var overrides the default path resolution."""
         custom_dir = tmp_path / "custom_skills"
         custom_dir.mkdir()
-        monkeypatch.setenv("HERMES_BUNDLED_SKILLS", str(custom_dir))
+        monkeypatch.setenv("lucifexex_BUNDLED_SKILLS", str(custom_dir))
         assert _get_bundled_dir() == custom_dir
 
     def test_default_without_env_var(self, monkeypatch):
         """Without the env var, falls back to relative path from __file__."""
-        monkeypatch.delenv("HERMES_BUNDLED_SKILLS", raising=False)
+        monkeypatch.delenv("lucifexex_BUNDLED_SKILLS", raising=False)
         result = _get_bundled_dir()
         assert result.name == "skills"
 
     def test_env_var_empty_string_ignored(self, monkeypatch):
-        """Empty HERMES_BUNDLED_SKILLS should fall back to default."""
-        monkeypatch.setenv("HERMES_BUNDLED_SKILLS", "")
+        """Empty lucifexex_BUNDLED_SKILLS should fall back to default."""
+        monkeypatch.setenv("lucifexex_BUNDLED_SKILLS", "")
         result = _get_bundled_dir()
         assert result.name == "skills"
 
@@ -1168,9 +1168,9 @@ class TestResetBundledSkill:
 class TestNoBundledSkillsOptOut:
     """The .no-bundled-skills marker makes sync_skills() a no-op.
 
-    This is what `hermes profile create --no-skills` (named profiles) and the
-    installer's `--no-skills` flag (default ~/.hermes) rely on so bundled
-    skills are never seeded at install time NOR re-injected by `hermes update`.
+    This is what `lucifexex profile create --no-skills` (named profiles) and the
+    installer's `--no-skills` flag (default ~/.lucifexex) rely on so bundled
+    skills are never seeded at install time NOR re-injected by `lucifexex update`.
     """
 
     def _setup_bundled(self, tmp_path):
@@ -1221,7 +1221,7 @@ class TestNoBundledSkillsOptOut:
 
 
 class TestOptOutToggleAndRemove:
-    """`hermes skills opt-out/opt-in` core: marker toggle + safe removal."""
+    """`lucifexex skills opt-out/opt-in` core: marker toggle + safe removal."""
 
     def _setup_bundled(self, tmp_path):
         bundled = tmp_path / "bundled"

@@ -1,4 +1,4 @@
-﻿// Unit tests for the pure Windows `hermes` resolution helpers extracted from
+// Unit tests for the pure Windows `hermes` resolution helpers extracted from
 // main.ts's findOnPath(), handOffWindowsBootstrapRecovery(), and
 // unwrapWindowsVenvHermesCommand(). These pin the two Windows resolution bugs
 // that caused desktop reinstall loops:

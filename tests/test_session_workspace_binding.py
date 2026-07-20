@@ -1,4 +1,4 @@
-﻿"""Session <-> workspace grouping key (lucifex_state.workspace_key).
+"""Session <-> workspace grouping key (lucifex_state.workspace_key).
 
 The key is what `lucifex sessions list --workspace` groups/filters on. It is a
 coarse workspace identity derived from fields already recorded on sessions

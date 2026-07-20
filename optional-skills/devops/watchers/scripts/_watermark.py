@@ -1,4 +1,4 @@
-﻿"""Shared watermark helper used by the three watcher scripts.
+"""Shared watermark helper used by the three watcher scripts.
 
 A watermark is just a JSON file that records the IDs we've seen on previous
 runs, so the next run only emits items we haven't seen before.

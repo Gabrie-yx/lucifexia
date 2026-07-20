@@ -1,4 +1,4 @@
-﻿"""Tests for DM thread session isolation.
+"""Tests for DM thread session isolation.
 
 DM thread sessions must start empty — no parent transcript seeding.
 Thread context is handled by platform adapters (e.g. Slack's

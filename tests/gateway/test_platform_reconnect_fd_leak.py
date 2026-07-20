@@ -1,4 +1,4 @@
-﻿"""Regression tests for the gateway platform fd-leak fix (#37011).
+"""Regression tests for the gateway platform fd-leak fix (#37011).
 
 Without an explicit ``disconnect()`` on adapters that fail to connect in
 the reconnect watcher, every retry leaks the resources the adapter

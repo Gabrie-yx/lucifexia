@@ -1,4 +1,4 @@
-﻿"""
+"""
 Video Generation Provider ABC
 =============================
 

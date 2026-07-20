@@ -1,4 +1,4 @@
-﻿"""Regression tests for hidden-reasoning-only incomplete gateway turns."""
+"""Regression tests for hidden-reasoning-only incomplete gateway turns."""
 
 import asyncio
 from datetime import datetime

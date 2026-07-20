@@ -1,4 +1,4 @@
-﻿"""CLI commands for Honcho integration management.
+"""CLI commands for Honcho integration management.
 
 Handles: hermes honcho setup | status | sessions | map | peer
 """

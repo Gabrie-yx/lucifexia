@@ -1,4 +1,4 @@
-﻿"""RetainDB memory plugin — MemoryProvider interface.
+"""RetainDB memory plugin — MemoryProvider interface.
 
 Cross-session memory via RetainDB cloud API.
 

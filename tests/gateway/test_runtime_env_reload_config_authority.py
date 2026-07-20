@@ -1,4 +1,4 @@
-﻿"""Regression tests for gateway per-turn env reload preserving config authority.
+"""Regression tests for gateway per-turn env reload preserving config authority.
 
 Issue #19158: startup bridges config.yaml agent.max_turns into
 HERMES_MAX_ITERATIONS, but a later per-turn load_dotenv(..., override=True)

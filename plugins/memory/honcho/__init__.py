@@ -1,4 +1,4 @@
-﻿"""Honcho memory plugin — MemoryProvider for Honcho AI-native memory.
+"""Honcho memory plugin — MemoryProvider for Honcho AI-native memory.
 
 Provides cross-session user modeling with dialectic Q&A, semantic search,
 peer cards, and persistent conclusions via the Honcho SDK. Honcho provides AI-native cross-session user

@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "lucifex-agent",
   "version": "1.0.0",
   "description": "An AI agent with advanced tool-calling capabilities, featuring a flexible toolsets system for organizing and managing tools.",

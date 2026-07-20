@@ -1,4 +1,4 @@
-﻿"""Tests for /restart notification — the gateway notifies the requester on comeback."""
+"""Tests for /restart notification — the gateway notifies the requester on comeback."""
 
 import json
 from pathlib import Path

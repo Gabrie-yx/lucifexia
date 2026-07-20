@@ -1,4 +1,4 @@
-﻿"""Tests for Discord thread participation persistence.
+"""Tests for Discord thread participation persistence.
 
 Verifies that _threads (ThreadParticipationTracker) survives adapter restarts by
 being persisted to ~/.lucifex/discord_threads.json.

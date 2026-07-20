@@ -1,4 +1,4 @@
-﻿"""Shared helpers for tool backend selection."""
+"""Shared helpers for tool backend selection."""
 
 from __future__ import annotations
 
@@ -63,7 +63,7 @@ def nous_tool_gateway_unavailable_message(
     except Exception:
         pass
     return (
-        f"{capability} is unavailable. Run `hermes model` to refresh your "
+        f"{capability} is unavailable. Run `lucifexex model` to refresh your "
         "Nous Portal login and billing status."
     )
 

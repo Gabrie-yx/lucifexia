@@ -1,4 +1,4 @@
-﻿"""#64674 — multiplex primary gateway must not fail forever without bot tokens.
+"""#64674 — multiplex primary gateway must not fail forever without bot tokens.
 
 When gateway.multiplex_profiles is on and TELEGRAM_BOT_TOKEN lives only in a
 secondary profile's .env, the default-profile primary adapter used to start

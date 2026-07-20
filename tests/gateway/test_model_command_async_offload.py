@@ -1,4 +1,4 @@
-﻿"""Regression tests for #41289: the Discord/Telegram ``/model`` slash command
+"""Regression tests for #41289: the Discord/Telegram ``/model`` slash command
 must not run the blocking provider-listing on the gateway's async event loop.
 
 ``list_picker_providers`` / ``list_authenticated_providers`` are synchronous and

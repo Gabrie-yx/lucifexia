@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """Google Workspace OAuth2 setup for Hermes Agent.
 
 Fully non-interactive — designed to be driven by the agent via terminal commands.

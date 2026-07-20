@@ -1,4 +1,4 @@
-﻿"""Kanban dashboard plugin — backend API routes.
+"""Kanban dashboard plugin — backend API routes.
 
 Mounted at /api/plugins/kanban/ by the dashboard plugin system.
 

@@ -1,4 +1,4 @@
-﻿"""Tests for #42039 — user messages stored twice in state.db.
+"""Tests for #42039 — user messages stored twice in state.db.
 
 When the agent has its own SessionDB reference (``_session_db is not None``),
 ``_flush_messages_to_session_db()`` persists messages to SQLite during the

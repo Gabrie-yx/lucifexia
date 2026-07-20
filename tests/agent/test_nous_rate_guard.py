@@ -1,4 +1,4 @@
-﻿"""Tests for agent/nous_rate_guard.py — cross-session Nous Portal rate limit guard."""
+"""Tests for agent/nous_rate_guard.py — cross-session Nous Portal rate limit guard."""
 
 import json
 import os

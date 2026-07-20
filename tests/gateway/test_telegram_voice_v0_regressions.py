@@ -1,4 +1,4 @@
-﻿import asyncio
+import asyncio
 import sys
 import threading
 import types

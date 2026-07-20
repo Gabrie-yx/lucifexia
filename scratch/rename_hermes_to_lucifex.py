@@ -3,16 +3,16 @@ import os
 replacements = [
     # Order from most specific to least specific
     ("LUCIFEX_HOME", "LUCIFEX_HOME"),
-    ("HermesHome", "LucifexHome"),
+    ("lucifexexHome", "LucifexHome"),
     ("lucifex-agent", "lucifex-agent"),
-    ("hermes-setup", "lucifex-setup"),
-    ("Hermes-Setup", "Lucifex-Setup"),
+    ("lucifexex-setup", "lucifex-setup"),
+    ("lucifexex-Setup", "Lucifex-Setup"),
     ("lucifex_cli", "lucifex_cli"),
-    ("com.nousresearch.hermes", "com.nousresearch.lucifex"),
+    ("com.nousresearch.lucifexex", "com.nousresearch.lucifex"),
     ("com.nousresearch.LUCIFEX", "com.nousresearch.lucifex"),
     ("com.lucifex.agent", "com.nousresearch.lucifex"),
-    ("Hermes", "Lucifex"),
-    ("hermes", "lucifex"),
+    ("lucifexex", "Lucifex"),
+    ("lucifexex", "lucifex"),
 ]
 
 files_to_update = [

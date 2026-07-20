@@ -1,4 +1,4 @@
-﻿"""External secret source integrations.
+"""External secret source integrations.
 
 A secret source is anything that can supply environment-variable-shaped
 credentials at process startup, _after_ ~/.lucifex/.env has loaded.

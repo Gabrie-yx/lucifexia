@@ -1,4 +1,4 @@
-﻿import { readDesktopFileDataUrl } from '@/lib/desktop-fs'
+import { readDesktopFileDataUrl } from '@/lib/desktop-fs'
 import { capitalize } from '@/lib/text'
 import { $connection } from '@/store/session'
 

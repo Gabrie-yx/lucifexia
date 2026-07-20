@@ -1,4 +1,4 @@
-﻿"""Bitwarden Secrets Manager (`bws` CLI) integration.
+"""Bitwarden Secrets Manager (`bws` CLI) integration.
 
 Hermes pulls API keys from Bitwarden Secrets Manager at process startup
 so they don't have to live in plaintext in ``~/.lucifex/.env``.

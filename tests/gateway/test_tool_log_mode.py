@@ -1,4 +1,4 @@
-﻿"""Tests for the `log` tool_progress mode (salvage of #3459 / #3458).
+"""Tests for the `log` tool_progress mode (salvage of #3459 / #3458).
 
 `display.tool_progress: log` keeps the chat silent and appends tool-call
 lines to ~/.lucifex/logs/tool_calls.log via write_tool_log's rotating handler.

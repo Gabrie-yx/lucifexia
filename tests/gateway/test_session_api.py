@@ -1,4 +1,4 @@
-﻿"""Focused tests for API server session-control endpoints."""
+"""Focused tests for API server session-control endpoints."""
 
 from unittest.mock import AsyncMock, patch
 

@@ -1,4 +1,4 @@
-﻿"""Tests for agent/context_compressor.py — compression logic, thresholds, truncation fallback."""
+"""Tests for agent/context_compressor.py — compression logic, thresholds, truncation fallback."""
 
 import json
 import pytest

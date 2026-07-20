@@ -1,4 +1,4 @@
-﻿import asyncio
+import asyncio
 import json
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock

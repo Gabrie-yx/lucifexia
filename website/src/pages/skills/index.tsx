@@ -254,7 +254,7 @@ function CopyButton({ text }: { text: string }) {
           setCopied(true);
           setTimeout(() => setCopied(false), 1500);
         },
-        () => {},
+        () => { },
       );
     },
     [text],
@@ -423,9 +423,9 @@ function SkillCard({
               </div>
             )}
             <div className={styles.installHint}>
-              <code>{skill.installCmd || `hermes skills install ${skill.name}`}</code>
+              <code>{skill.installCmd || `llucifex skills install ${skill.name}`}</code>
               <CopyButton
-                text={skill.installCmd || `hermes skills install ${skill.name}`}
+                text={skill.installCmd || `llucifex skills install ${skill.name}`}
               />
             </div>
             <div className={styles.cardLinks}>
@@ -642,13 +642,13 @@ export default function SkillsDashboard() {
   return (
     <Layout
       title="Skills Hub"
-      description="Browse all skills and plugins available for Hermes Agent"
+      description="Browse all skills and plugins available for llucifex Agent"
     >
       <div className={styles.page}>
         <header className={styles.hero}>
           <div className={styles.heroGlow} />
           <div className={styles.heroContent}>
-            <p className={styles.heroEyebrow}>Hermes Agent</p>
+            <p className={styles.heroEyebrow}>llucifex Agent</p>
             <h1 className={styles.heroTitle}>Skills Hub</h1>
             <p className={styles.heroSub}>
               Discover, search, and install from{" "}
@@ -749,10 +749,10 @@ export default function SkillsDashboard() {
                   style={
                     active && conf
                       ? ({
-                          "--pill-color": conf.color,
-                          "--pill-bg": conf.bg,
-                          "--pill-border": conf.border,
-                        } as React.CSSProperties)
+                        "--pill-color": conf.color,
+                        "--pill-bg": conf.bg,
+                        "--pill-border": conf.border,
+                      } as React.CSSProperties)
                       : undefined
                   }
                 >

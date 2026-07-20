@@ -1,4 +1,4 @@
-﻿"""
+"""
 Shell-script hooks bridge.
 
 Reads the ``hooks:`` block from ``cli-config.yaml``, prompts the user for

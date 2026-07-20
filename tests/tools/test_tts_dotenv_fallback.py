@@ -1,4 +1,4 @@
-﻿"""Regression tests for #17140.
+"""Regression tests for #17140.
 
 TTS provider tools must resolve API keys from ``~/.lucifex/.env`` (via
 ``lucifex_cli.config.get_env_value``) and not only from ``os.environ`` —

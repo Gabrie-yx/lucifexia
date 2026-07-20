@@ -1,4 +1,4 @@
-﻿"""Tests for file permissions hardening on sensitive files."""
+"""Tests for file permissions hardening on sensitive files."""
 
 import os
 import stat
@@ -105,7 +105,7 @@ class TestConfigFilePermissions(unittest.TestCase):
             self.assertEqual(file_mode, 0o600)
 
     def test_ensure_LUCIFEX_HOME_sets_0700(self):
-        home = Path(self.tmpdir) / ".hermes"
+        home = Path(self.tmpdir) / ".lucifexex"
         with patch("lucifex_cli.config.get_lucifex_home", return_value=home):
             from lucifex_cli.config import ensure_LUCIFEX_HOME
             ensure_LUCIFEX_HOME()

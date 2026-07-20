@@ -1,4 +1,4 @@
-﻿"""Regression: first-turn ``session_meta`` row must be re-baselined into the
+"""Regression: first-turn ``session_meta`` row must be re-baselined into the
 agent cache's message_count snapshot.
 
 Bug

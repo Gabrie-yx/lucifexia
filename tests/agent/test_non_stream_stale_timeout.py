@@ -1,4 +1,4 @@
-﻿"""Tests for the non-stream stale-call detector context estimator.
+"""Tests for the non-stream stale-call detector context estimator.
 
 Covers:
 - ``estimate_request_context_tokens`` for Chat Completions, Responses API,

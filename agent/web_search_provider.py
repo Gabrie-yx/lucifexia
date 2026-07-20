@@ -1,4 +1,4 @@
-﻿"""
+"""
 Web Search Provider ABC
 =======================
 

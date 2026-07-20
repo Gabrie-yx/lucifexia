@@ -1,4 +1,4 @@
-﻿"""Tests for busy-session acknowledgment when user sends messages during active agent runs.
+"""Tests for busy-session acknowledgment when user sends messages during active agent runs.
 
 Verifies that users get an immediate status response instead of total silence
 when the agent is working on a task. See PR fix for the @Lonely__MH report.

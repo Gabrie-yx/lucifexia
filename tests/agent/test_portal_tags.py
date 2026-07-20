@@ -1,4 +1,4 @@
-﻿"""Tests for agent.portal_tags — Nous Portal request tag contract."""
+"""Tests for agent.portal_tags — Nous Portal request tag contract."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-﻿"""User OAuth helper for the Google Chat gateway adapter.
+"""User OAuth helper for the Google Chat gateway adapter.
 
 Google Chat's ``media.upload`` REST endpoint hard-rejects service-account
 authentication:

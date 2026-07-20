@@ -1,4 +1,4 @@
-﻿"""Curator snapshot + rollback.
+"""Curator snapshot + rollback.
 
 A pre-run snapshot of ``~/.lucifex/skills/`` (excluding ``.curator_backups/``
 itself) is taken before any mutating curator pass. Snapshots are tar.gz

@@ -1,4 +1,4 @@
-﻿"""Tests for interrupt-aware tool-progress suppression in gateway.
+"""Tests for interrupt-aware tool-progress suppression in gateway.
 
 When a user sends `stop` while the agent is executing a batch of parallel
 tool calls, the gateway's progress_callback should stop queuing 🔍 bubbles

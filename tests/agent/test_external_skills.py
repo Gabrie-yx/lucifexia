@@ -1,4 +1,4 @@
-﻿"""Tests for external skill directories (skills.external_dirs config)."""
+"""Tests for external skill directories (skills.external_dirs config)."""
 
 import json
 import os

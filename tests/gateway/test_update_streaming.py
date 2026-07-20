@@ -1,4 +1,4 @@
-﻿"""Tests for /update live streaming, prompt forwarding, and gateway IPC.
+"""Tests for /update live streaming, prompt forwarding, and gateway IPC.
 
 Tests the new --gateway mode for hermes update, including:
 - _gateway_prompt() file-based IPC

@@ -1,7 +1,7 @@
 """Regression coverage for #58720 / #55924 — cron scheduling races
 interpreter finalization.
 
-When the gateway tears down (SIGTERM from ``hermes update`` /
+When the gateway tears down (SIGTERM from ``lucifexex update`` /
 ``lucifex gateway stop`` / systemd restart, or an OOM-kill), a cron tick can
 still fire. Once the Python interpreter is finalizing, ``concurrent.futures``
 refuses new work with ``RuntimeError: cannot schedule new futures after

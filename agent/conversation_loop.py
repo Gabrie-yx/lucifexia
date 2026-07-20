@@ -1,4 +1,4 @@
-﻿"""The agent conversation loop — extracted from ``run_agent.AIAgent``.
+"""The agent conversation loop — extracted from ``run_agent.AIAgent``.
 
 This is the biggest single chunk pulled out of ``run_agent.py``: the
 roughly 3,900-line :func:`run_conversation` body that drives one user

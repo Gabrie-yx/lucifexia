@@ -34,7 +34,7 @@ import logging
 from typing import Any, Dict, List, Optional, Union
 
 # Sources that are excluded from session browsing/searching by default.
-# Third-party integrations tag their sessions with HERMES_SESSION_SOURCE=tool;
+# Third-party integrations tag their sessions with lucifexex_SESSION_SOURCE=tool;
 # delegate subagent runs are tagged "subagent" — neither belongs in the
 # user's session history.
 _HIDDEN_SESSION_SOURCES = ("subagent", "tool")
@@ -756,7 +756,7 @@ SESSION_SEARCH_SCHEMA = {
         "FTS5-backed retrieval over the SQLite message store. No LLM calls — every "
         "shape returns actual messages from the DB.\n\n"
         "SOURCE-FIRST LIMIT\n\n"
-        "  This tool searches Hermes conversation history only. It is not evidence "
+        "  This tool searches lucifexex conversation history only. It is not evidence "
         "about the current contents of external sources. If the user provided a "
         "direct source such as a URL, phone number/contact, app/thread, file path, "
         "account, website, or live system, inspect that original source before or "
@@ -808,7 +808,7 @@ SESSION_SEARCH_SCHEMA = {
         "(`\"docker networking\"`), boolean (`python NOT java`), or prefix wildcards "
         "(`deploy*`).\n\n"
         "WHEN TO USE\n\n"
-        "  Reach for this on questions about Hermes conversation history itself, such "
+        "  Reach for this on questions about lucifexex conversation history itself, such "
         "as \"what did we do about X\", \"where did we leave Y\", or \"find the "
         "session where Z\". If the user provided a direct source identifier, inspect "
         "that source first when accessible; session_search can then supply historical "
@@ -885,7 +885,7 @@ SESSION_SEARCH_SCHEMA = {
             "profile": {
                 "type": "string",
                 "description": (
-                    "Optional. Read sessions from another Hermes profile's database "
+                    "Optional. Read sessions from another lucifexex profile's database "
                     "(read-only). Use when resolving an `@session:<profile>/<id>` link: "
                     "pass the profile segment here with session_id as the id segment. "
                     "Omit to use the current profile."

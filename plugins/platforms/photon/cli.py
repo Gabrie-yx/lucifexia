@@ -1,4 +1,4 @@
-﻿"""
+"""
 ``hermes photon ...`` CLI subcommands — registered by the plugin via
 ``ctx.register_cli_command()``.
 

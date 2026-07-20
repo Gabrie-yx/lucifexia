@@ -1,4 +1,4 @@
-﻿"""
+"""
 Cron job storage and management.
 
 Jobs are stored in ~/.lucifex/cron/jobs.json

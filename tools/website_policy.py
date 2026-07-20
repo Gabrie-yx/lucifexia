@@ -1,4 +1,4 @@
-﻿"""Website access policy helpers for URL-capable tools.
+"""Website access policy helpers for URL-capable tools.
 
 This module loads a user-managed website blocklist from ~/.lucifex/config.yaml
 and optional shared list files. It is intentionally lightweight so web/browser

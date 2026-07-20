@@ -1,4 +1,4 @@
-﻿"""Regression tests for session-scoped model/provider overrides in gateway agents.
+"""Regression tests for session-scoped model/provider overrides in gateway agents.
 
 These cover the bug where `/model ...` stored a session override, but fresh
 agent constructions still resolved model/provider from global config/runtime.

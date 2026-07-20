@@ -1,4 +1,4 @@
-﻿"""OpenViking memory plugin — full bidirectional MemoryProvider interface.
+"""OpenViking memory plugin — full bidirectional MemoryProvider interface.
 
 Context database by Volcengine (ByteDance) that organizes agent knowledge
 into a filesystem hierarchy (viking:// URIs) with tiered context loading,

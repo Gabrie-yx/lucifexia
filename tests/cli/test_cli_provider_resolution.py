@@ -1,4 +1,4 @@
-﻿import importlib
+import importlib
 import sys
 import types
 from contextlib import nullcontext

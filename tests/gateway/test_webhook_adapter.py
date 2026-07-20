@@ -1,4 +1,4 @@
-﻿"""Unit tests for the generic webhook platform adapter.
+"""Unit tests for the generic webhook platform adapter.
 
 Covers:
 - HMAC signature validation (GitHub, GitLab, generic)

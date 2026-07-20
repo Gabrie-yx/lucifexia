@@ -1,4 +1,4 @@
-﻿"""Tests for web backend client configuration and singleton behavior.
+"""Tests for web backend client configuration and singleton behavior.
 
 Coverage:
   _get_firecrawl_client() — configuration matrix, singleton caching,
@@ -140,9 +140,9 @@ class TestFirecrawlClientConfig:
     def test_nous_auth_token_respects_LUCIFEX_HOME_override(self, tmp_path):
         """Auth lookup should read from LUCIFEX_HOME/auth.json, not ~/.lucifex/auth.json."""
         real_home = tmp_path / "real-home"
-        (real_home / ".hermes").mkdir(parents=True)
+        (real_home / ".lucifexex").mkdir(parents=True)
 
-        LUCIFEX_HOME = tmp_path / "hermes-home"
+        LUCIFEX_HOME = tmp_path / "lucifexex-home"
         LUCIFEX_HOME.mkdir()
         (LUCIFEX_HOME / "auth.json").write_text(json.dumps({
             "providers": {
@@ -204,7 +204,7 @@ class TestBackendSelection:
     """Test suite for _get_backend() backend selection logic.
 
     The backend is configured via config.yaml (web.backend), set by
-    ``hermes tools``.  Falls back to key-based detection for legacy/manual
+    ``lucifexex tools``.  Falls back to key-based detection for legacy/manual
     setups.
     """
 

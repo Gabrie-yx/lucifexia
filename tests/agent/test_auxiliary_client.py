@@ -1,4 +1,4 @@
-﻿"""Tests for agent.auxiliary_client resolution chain, provider overrides, and model overrides."""
+"""Tests for agent.auxiliary_client resolution chain, provider overrides, and model overrides."""
 
 import base64
 import json

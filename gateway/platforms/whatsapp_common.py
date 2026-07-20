@@ -1,4 +1,4 @@
-﻿"""
+"""
 Transport-agnostic WhatsApp behavior shared by the Baileys bridge adapter
 and the official WhatsApp Cloud API adapter.
 

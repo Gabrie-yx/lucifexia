@@ -1,4 +1,4 @@
-﻿"""Tests for named custom provider and 'main' alias resolution in auxiliary_client."""
+"""Tests for named custom provider and 'main' alias resolution in auxiliary_client."""
 
 from unittest.mock import patch, MagicMock
 

@@ -1,4 +1,4 @@
-﻿"""CLI entry point for the lucifex-agent ACP adapter.
+"""CLI entry point for the lucifex-agent ACP adapter.
 
 Loads environment variables from ``~/.lucifex/.env``, configures logging
 to write to stderr (so stdout is reserved for ACP JSON-RPC transport),

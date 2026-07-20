@@ -1,4 +1,4 @@
-﻿"""Tests for the QQ Bot platform adapter."""
+"""Tests for the QQ Bot platform adapter."""
 
 import asyncio
 import os

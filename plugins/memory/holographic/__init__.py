@@ -1,4 +1,4 @@
-﻿"""hermes-memory-store — holographic memory plugin using MemoryProvider interface.
+"""hermes-memory-store — holographic memory plugin using MemoryProvider interface.
 
 Registers as a MemoryProvider plugin, giving the agent structured fact storage
 with entity resolution, trust scoring, and HRR-based compositional retrieval.

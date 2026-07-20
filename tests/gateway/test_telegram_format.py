@@ -1,4 +1,4 @@
-﻿"""Tests for Telegram MarkdownV2 formatting in gateway/platforms/telegram.py.
+"""Tests for Telegram MarkdownV2 formatting in gateway/platforms/telegram.py.
 
 Covers: _escape_mdv2 (pure function), format_message (markdown-to-MarkdownV2
 conversion pipeline), and edge cases that could produce invalid MarkdownV2

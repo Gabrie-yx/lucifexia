@@ -1,4 +1,4 @@
-﻿"""OSS provider definitions for LLM, embedder, and vector store."""
+"""OSS provider definitions for LLM, embedder, and vector store."""
 
 from __future__ import annotations
 

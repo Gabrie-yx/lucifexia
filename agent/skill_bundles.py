@@ -1,4 +1,4 @@
-﻿"""Skill bundles — aliases that load multiple skills under one slash command.
+"""Skill bundles — aliases that load multiple skills under one slash command.
 
 A skill bundle is a small YAML file that names a set of skills to load
 together. Invoking ``/<bundle-name>`` from the CLI or gateway loads every

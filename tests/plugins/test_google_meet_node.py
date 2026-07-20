@@ -1,4 +1,4 @@
-﻿"""Tests for the google_meet node primitive.
+"""Tests for the google_meet node primitive.
 
 Covers protocol helpers, the file-backed registry, the server's
 token-and-dispatch machinery, a mocked client, and the CLI plumbing.
@@ -18,7 +18,7 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def _isolate_home(tmp_path, monkeypatch):
-    LUCIFEX_HOME = tmp_path / ".hermes"
+    LUCIFEX_HOME = tmp_path / ".lucifexex"
     LUCIFEX_HOME.mkdir()
     monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
     yield LUCIFEX_HOME
@@ -214,11 +214,11 @@ def test_registry_resolve_by_name(tmp_path):
 def test_registry_defaults_to_LUCIFEX_HOME(tmp_path, monkeypatch):
     from plugins.google_meet.node.registry import NodeRegistry
 
-    # _isolate_home already set LUCIFEX_HOME to tmp_path/.hermes; the
+    # _isolate_home already set LUCIFEX_HOME to tmp_path/.lucifexex; the
     # registry default path must live inside that tree.
     r = NodeRegistry()
     r.add("x", "ws://x", "t")
-    expected = Path(tmp_path) / ".hermes" / "workspace" / "meetings" / "nodes.json"
+    expected = Path(tmp_path) / ".lucifexex" / "workspace" / "meetings" / "nodes.json"
     assert expected.is_file()
 
 
@@ -629,7 +629,7 @@ def test_cli_status_pings_via_node_client(capsys, monkeypatch):
             assert token == "tok"
 
         def ping(self):
-            return {"type": "pong", "display_name": "hermes-meet-node"}
+            return {"type": "pong", "display_name": "lucifexex-meet-node"}
 
     monkeypatch.setattr(node_cli, "NodeClient", _FakeClient)
 

@@ -1,4 +1,4 @@
-﻿"""Tests for topic-aware gateway progress updates."""
+"""Tests for topic-aware gateway progress updates."""
 
 import asyncio
 import importlib

@@ -1,4 +1,4 @@
-﻿"""Gateway lifecycle guard for cron job creation (#30719).
+"""Gateway lifecycle guard for cron job creation (#30719).
 
 An agent running inside a gateway can schedule a cron job that calls
 ``hermes gateway restart`` (or ``launchctl kickstart ai.hermes.gateway``

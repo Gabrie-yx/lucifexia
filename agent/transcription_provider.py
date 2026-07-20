@@ -1,4 +1,4 @@
-﻿"""
+"""
 Transcription Provider ABC
 ==========================
 

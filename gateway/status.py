@@ -1,4 +1,4 @@
-﻿"""
+"""
 Gateway runtime status helpers.
 
 Provides PID-file based detection of whether the gateway daemon is running,

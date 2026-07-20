@@ -1,4 +1,4 @@
-﻿"""End-to-end test for the zero-CLI Honcho OAuth flow against a fake AS.
+"""End-to-end test for the zero-CLI Honcho OAuth flow against a fake AS.
 
 Stands up a real local authorization server (no network, no browser) and drives
 the full path: begin → /authorize 302 → loopback :8765 callback → token

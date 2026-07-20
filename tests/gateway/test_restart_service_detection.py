@@ -1,4 +1,4 @@
-﻿"""Tests for /restart service-manager detection (launchd vs interactive).
+"""Tests for /restart service-manager detection (launchd vs interactive).
 
 The /restart handler routes through ``request_restart(via_service=True)``
 when a service manager supervises the gateway, so the process exits with

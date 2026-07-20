@@ -1,4 +1,4 @@
-﻿"""Behavior-parity check for the browser-provider plugin migration (#25214).
+"""Behavior-parity check for the browser-provider plugin migration (#25214).
 
 Spawns one subprocess per (version, scenario) cell — pinned to either
 origin/main (legacy in-tree providers + class-instantiation lookup) or

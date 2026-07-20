@@ -1,4 +1,4 @@
-﻿"""Harder concurrency stress: mixed operations + larger scale.
+"""Harder concurrency stress: mixed operations + larger scale.
 
 Scales to 500 tasks, 10 workers, 60s runtime. Each worker randomly:
   - claims + completes (70%)
@@ -170,7 +170,7 @@ def reclaimer_loop(LUCIFEX_HOME: str, result_file: str) -> None:
 
 
 def main():
-    home = tempfile.mkdtemp(prefix="hermes_mixed_stress_")
+    home = tempfile.mkdtemp(prefix="lucifexex_mixed_stress_")
     print(f"LUCIFEX_HOME = {home}")
 
     os.environ["LUCIFEX_HOME"] = home

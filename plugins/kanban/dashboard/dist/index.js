@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Hermes Kanban — Dashboard Plugin
  *
  * Board view for the multi-agent collaboration board backed by

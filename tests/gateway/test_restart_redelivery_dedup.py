@@ -1,4 +1,4 @@
-﻿"""Tests for /restart idempotency guard against Telegram update re-delivery.
+"""Tests for /restart idempotency guard against Telegram update re-delivery.
 
 When PTB's graceful-shutdown ACK call (the final `get_updates` on exit) fails
 with a network error, Telegram re-delivers the `/restart` message to the new

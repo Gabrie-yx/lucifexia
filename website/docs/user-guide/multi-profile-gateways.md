@@ -10,12 +10,12 @@ covers the operational concerns: starting them all together, viewing logs
 across profiles, preventing the host from sleeping, and recovering from common
 launchd/systemd quirks.
 
-If you only run one Hermes agent, you don't need this page — see
+If you only run one lucifexex agent, you don't need this page — see
 [Profiles](./profiles.md) for the basics.
 
 ## When to use this
 
-You want this setup when you have two or more Hermes agents that should all
+You want this setup when you have two or more lucifexex agents that should all
 be online at the same time. Common reasons:
 
 - A personal assistant on one Telegram bot and a coding agent on another
@@ -25,7 +25,7 @@ be online at the same time. Common reasons:
   memory and skills
 
 Every profile already gets its own per-platform LaunchAgent
-(`ai.hermes.gateway-<name>.plist`) or systemd user service
+(`ai.lucifexex.gateway-<name>.plist`) or systemd user service
 (`lucifex-gateway-<name>.service`). This guide adds the patterns for managing
 them collectively.
 
@@ -33,9 +33,9 @@ them collectively.
 
 ```bash
 # Create profiles (once)
-hermes profile create coder
-hermes profile create personal-bot
-hermes profile create research
+lucifexex profile create coder
+lucifexex profile create personal-bot
+lucifexex profile create research
 
 # Configure each
 coder setup
@@ -85,8 +85,8 @@ Set the flag on the **default profile** (it owns the multiplexer) and restart
 its gateway:
 
 ```bash
-hermes config set gateway.multiplex_profiles true
-hermes gateway restart
+lucifexex config set gateway.multiplex_profiles true
+lucifexex gateway restart
 ```
 
 Equivalently, in the default profile's `~/.lucifex/config.yaml`:
@@ -183,8 +183,8 @@ migration, no orphaned history.
 #### 5. One PID/lock and one status surface
 
 There is a single process-level PID and lock (the multiplexer, under the default
-home). `hermes status` reports the multiplexer and the profiles it serves;
-`hermes status -p <name>` slices to one profile. Each profile still writes its
+home). `lucifexex status` reports the multiplexer and the profiles it serves;
+`lucifexex status -p <name>` slices to one profile. Each profile still writes its
 own `runtime_status.json` under its own home, so existing per-profile readers
 keep working.
 
@@ -262,9 +262,9 @@ run_for_profile() {
   profile="$1"
   action="$2"
   if [ "$profile" = "default" ]; then
-    hermes gateway "$action"
+    lucifexex gateway "$action"
   else
-    hermes -p "$profile" gateway "$action"
+    lucifexex -p "$profile" gateway "$action"
   fi
 }
 
@@ -277,7 +277,7 @@ case "$action" in
     done
     ;;
   list)
-    hermes gateway list
+    lucifexex gateway list
     ;;
   *)
     usage
@@ -293,12 +293,12 @@ lucifex-gateways start      # start every configured profile
 lucifex-gateways stop       # stop every configured profile
 lucifex-gateways restart    # restart all
 lucifex-gateways status     # status across all
-lucifex-gateways list       # delegates to `hermes gateway list`
+lucifex-gateways list       # delegates to `lucifexex gateway list`
 ```
 
 :::tip
-The `default` profile is targeted with `hermes gateway <action>` (no `-p`),
-not `hermes -p default gateway <action>`. The wrapper above handles both forms.
+The `default` profile is targeted with `lucifexex gateway <action>` (no `-p`),
+not `lucifexex -p default gateway <action>`. The wrapper above handles both forms.
 :::
 
 ## Manage one profile
@@ -315,7 +315,7 @@ coder gateway install    # create the LaunchAgent / systemd unit
 coder gateway uninstall  # remove the service file
 ```
 
-These are equivalent to `hermes -p coder gateway <action>` — useful if a
+These are equivalent to `lucifexex -p coder gateway <action>` — useful if a
 profile alias is not on `PATH` or if you target profiles dynamically from a
 script.
 
@@ -326,10 +326,10 @@ never clash:
 
 | Platform | Path                                                              |
 | -------- | ----------------------------------------------------------------- |
-| macOS    | `~/Library/LaunchAgents/ai.hermes.gateway-<profile>.plist`        |
+| macOS    | `~/Library/LaunchAgents/ai.lucifexex.gateway-<profile>.plist`        |
 | Linux    | `~/.config/systemd/user/lucifex-gateway-<profile>.service`         |
 
-The default profile keeps the historical names: `ai.hermes.gateway.plist` /
+The default profile keeps the historical names: `ai.lucifexex.gateway.plist` /
 `lucifex-gateway.service`.
 
 ## Viewing logs
@@ -355,17 +355,17 @@ tail -f ~/.lucifex/logs/gateway.log ~/.lucifex/profiles/*/logs/gateway.log
 The CLI also has a structured log viewer:
 
 ```bash
-hermes logs -f                  # follow default profile
-hermes -p coder logs -f         # follow one profile
-hermes logs --help              # filters, levels, JSON output
+lucifexex logs -f                  # follow default profile
+lucifexex -p coder logs -f         # follow one profile
+lucifexex logs --help              # filters, levels, JSON output
 ```
 
 ## Identify what's actually running
 
 ```bash
-hermes profile list             # profiles + model + gateway state
+lucifexex profile list             # profiles + model + gateway state
 lucifex-gateways status          # full status across every profile
-launchctl list | grep hermes    # macOS — PIDs and labels
+launchctl list | grep lucifexex    # macOS — PIDs and labels
 systemctl --user list-units 'lucifex-gateway-*'   # Linux — units
 ```
 
@@ -385,7 +385,7 @@ The default profile uses `~/.lucifex/` directly with the same three files.
 Edit them with any editor or via the CLI:
 
 ```bash
-hermes config set model.model anthropic/claude-sonnet-4    # default profile
+lucifexex config set model.model anthropic/claude-sonnet-4    # default profile
 coder config set model.model openai/gpt-5                  # named profile
 ```
 
@@ -440,7 +440,7 @@ use a third-party tool.
 
 ```bash
 # Inhibit suspend while a command runs
-systemd-inhibit --what=idle:sleep --who=hermes --why="gateways running" \
+systemd-inhibit --what=idle:sleep --who=lucifexex --why="gateways running" \
   sleep infinity &
 
 # Allow user services to keep running after logout (recommended)
@@ -466,11 +466,11 @@ grep -H 'TELEGRAM_BOT_TOKEN\|DISCORD_BOT_TOKEN' \
 
 ## Updating the code
 
-`hermes update` pulls the latest code once and syncs new bundled skills into
+`lucifexex update` pulls the latest code once and syncs new bundled skills into
 every profile:
 
 ```bash
-hermes update
+lucifexex update
 lucifex-gateways restart
 ```
 
@@ -502,8 +502,8 @@ kill -KILL <pid>          # if that fails after a few seconds
 
 ```bash
 # macOS
-launchctl unload ~/Library/LaunchAgents/ai.hermes.gateway-<profile>.plist
-launchctl load   ~/Library/LaunchAgents/ai.hermes.gateway-<profile>.plist
+launchctl unload ~/Library/LaunchAgents/ai.lucifexex.gateway-<profile>.plist
+launchctl load   ~/Library/LaunchAgents/ai.lucifexex.gateway-<profile>.plist
 
 # Linux
 systemctl --user restart lucifex-gateway-<profile>.service
@@ -512,6 +512,6 @@ systemctl --user restart lucifex-gateway-<profile>.service
 ### Health check
 
 ```bash
-hermes doctor                  # default profile
-hermes -p <profile> doctor     # one profile
+lucifexex doctor                  # default profile
+lucifexex -p <profile> doctor     # one profile
 ```

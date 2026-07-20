@@ -1,4 +1,4 @@
-﻿"""Gateway slash-command handlers for GatewayRunner.
+"""Gateway slash-command handlers for GatewayRunner.
 
 Extracted from ``gateway/run.py`` (god-file decomposition Phase 3b). These are
 the in-session slash commands (/model, /reset, /usage, /compress, ...) the

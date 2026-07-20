@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """unbroker - deterministic CLI helper.
 
 The Hermes agent orchestrates scanning and opt-out submission with native tools

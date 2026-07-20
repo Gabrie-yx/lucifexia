@@ -1,4 +1,4 @@
-﻿/**
+/**
  * bootstrap-runner.ts
  *
  * Drives apps/desktop's first-launch install of Hermes Agent by spawning

@@ -1,4 +1,4 @@
-﻿"""
+"""
 Gateway configuration management.
 
 Handles loading and validating configuration for:

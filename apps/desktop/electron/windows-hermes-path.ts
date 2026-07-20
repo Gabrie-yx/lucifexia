@@ -1,4 +1,4 @@
-﻿/**
+/**
  * windows-hermes-path.ts
  *
  * Pure, dependency-injected pieces of Windows `hermes` resolution pulled out

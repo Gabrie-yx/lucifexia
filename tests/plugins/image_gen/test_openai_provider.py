@@ -1,4 +1,4 @@
-﻿"""Tests for the bundled OpenAI image_gen plugin (gpt-image-2, three tiers)."""
+"""Tests for the bundled OpenAI image_gen plugin (gpt-image-2, three tiers)."""
 
 from __future__ import annotations
 
@@ -126,7 +126,7 @@ class TestModelResolution:
 
 class TestSourceImageLoading:
     def test_load_image_bytes_blocks_credential_store(self, tmp_path, monkeypatch):
-        LUCIFEX_HOME = tmp_path / ".hermes"
+        LUCIFEX_HOME = tmp_path / ".lucifexex"
         LUCIFEX_HOME.mkdir()
         auth_json = LUCIFEX_HOME / "auth.json"
         auth_json.write_text('{"api_key":"sk-secret"}', encoding="utf-8")
@@ -139,7 +139,7 @@ class TestSourceImageLoading:
         """The guard must fire BEFORE the file is opened — a credential store
         must never be read into memory (#57698). Spy builtins.open and assert
         it is never called for the blocked path."""
-        LUCIFEX_HOME = tmp_path / ".hermes"
+        LUCIFEX_HOME = tmp_path / ".lucifexex"
         LUCIFEX_HOME.mkdir()
         auth_json = LUCIFEX_HOME / "auth.json"
         auth_json.write_text('{"api_key":"sk-secret"}', encoding="utf-8")
@@ -162,7 +162,7 @@ class TestSourceImageLoading:
     def test_load_image_bytes_allows_legit_local_image(self, tmp_path, monkeypatch):
         """Negative control: a legitimate local image path is NOT blocked and
         loads normally — proves the guard doesn't over-fire on everything."""
-        LUCIFEX_HOME = tmp_path / ".hermes"
+        LUCIFEX_HOME = tmp_path / ".lucifexex"
         LUCIFEX_HOME.mkdir()
         monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
         img = tmp_path / "pic.png"
@@ -177,7 +177,7 @@ class TestSourceImageLoading:
         local-path guard (the guard only applies to local file reads)."""
         import base64
 
-        LUCIFEX_HOME = tmp_path / ".hermes"
+        LUCIFEX_HOME = tmp_path / ".lucifexex"
         LUCIFEX_HOME.mkdir()
         monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
         b64 = base64.b64encode(b"xyz").decode("ascii")

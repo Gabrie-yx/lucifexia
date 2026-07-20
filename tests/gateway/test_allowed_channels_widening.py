@@ -1,4 +1,4 @@
-﻿"""Tests for the allowed_{channels,chats,rooms} whitelist extension
+"""Tests for the allowed_{channels,chats,rooms} whitelist extension
 added alongside PR #7401 (Slack).
 
 Covers: Telegram, Matrix, Mattermost, DingTalk.
@@ -35,7 +35,7 @@ def _make_telegram_adapter(*, allowed_chats=None, require_mention=None, guest_mo
     adapter = object.__new__(TelegramAdapter)
     adapter.platform = Platform.TELEGRAM
     adapter.config = PlatformConfig(enabled=True, token="***", extra=extra)
-    adapter._bot = SimpleNamespace(id=999, username="hermes_bot")
+    adapter._bot = SimpleNamespace(id=999, username="lucifexex_bot")
     adapter._message_handler = AsyncMock()
     adapter._mention_patterns = adapter._compile_mention_patterns()
     # PR db50af910 added a TELEGRAM_ALLOWED_USERS allowlist gate to
@@ -104,9 +104,9 @@ class TestTelegramAllowedChats:
     def test_mention_cannot_bypass_whitelist(self):
         """@mention in a non-allowed chat is still ignored."""
         adapter = _make_telegram_adapter(allowed_chats=["-100"])
-        msg = _tg_group_message(-999, text="@hermes_bot hello")
+        msg = _tg_group_message(-999, text="@lucifexex_bot hello")
         msg.entities = [SimpleNamespace(
-            type="mention", offset=0, length=len("@hermes_bot"),
+            type="mention", offset=0, length=len("@lucifexex_bot"),
         )]
         assert adapter._should_process_message(msg) is False
 
@@ -119,7 +119,7 @@ class TestTelegramAllowedChats:
         """slack-style config.yaml → env var bridge works."""
         from gateway.config import load_gateway_config
 
-        LUCIFEX_HOME = tmp_path / ".hermes"
+        LUCIFEX_HOME = tmp_path / ".lucifexex"
         LUCIFEX_HOME.mkdir()
         (LUCIFEX_HOME / "config.yaml").write_text(
             "telegram:\n"
@@ -140,7 +140,7 @@ class TestTelegramAllowedChats:
     def test_config_bridge_env_takes_precedence(self, monkeypatch, tmp_path):
         from gateway.config import load_gateway_config
 
-        LUCIFEX_HOME = tmp_path / ".hermes"
+        LUCIFEX_HOME = tmp_path / ".lucifexex"
         LUCIFEX_HOME.mkdir()
         (LUCIFEX_HOME / "config.yaml").write_text(
             "telegram:\n"
@@ -212,7 +212,7 @@ class TestDingTalkAllowedChats:
     def test_config_bridge(self, monkeypatch, tmp_path):
         from gateway.config import load_gateway_config
 
-        LUCIFEX_HOME = tmp_path / ".hermes"
+        LUCIFEX_HOME = tmp_path / ".lucifexex"
         LUCIFEX_HOME.mkdir()
         (LUCIFEX_HOME / "config.yaml").write_text(
             "dingtalk:\n"
@@ -283,7 +283,7 @@ class TestMattermostAllowedChannels:
     def test_config_bridge(self, monkeypatch, tmp_path):
         from gateway.config import load_gateway_config
 
-        LUCIFEX_HOME = tmp_path / ".hermes"
+        LUCIFEX_HOME = tmp_path / ".lucifexex"
         LUCIFEX_HOME.mkdir()
         (LUCIFEX_HOME / "config.yaml").write_text(
             "mattermost:\n"
@@ -348,7 +348,7 @@ class TestMatrixAllowedRooms:
     def test_config_bridge(self, monkeypatch, tmp_path):
         from gateway.config import load_gateway_config
 
-        LUCIFEX_HOME = tmp_path / ".hermes"
+        LUCIFEX_HOME = tmp_path / ".lucifexex"
         LUCIFEX_HOME.mkdir()
         (LUCIFEX_HOME / "config.yaml").write_text(
             "matrix:\n"

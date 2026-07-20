@@ -1,4 +1,4 @@
-﻿import { useStore } from '@nanostores/react'
+import { useStore } from '@nanostores/react'
 
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'

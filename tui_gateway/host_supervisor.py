@@ -1,4 +1,4 @@
-﻿"""Supervisor for the dashboard compute-host child process.
+"""Supervisor for the dashboard compute-host child process.
 
 The dashboard process owns sockets and JSON-RPC dispatch.  When
 ``dashboard.turn_isolation`` is enabled, agent turns move behind one persistent
@@ -314,7 +314,7 @@ class HostSupervisor:
         env.update(os.environ)
         if self.env:
             env.update(self.env)
-        env["HERMES_COMPUTE_HOST_HEARTBEAT_SECS"] = str(self.heartbeat_secs)
+        env["lucifexex_COMPUTE_HOST_HEARTBEAT_SECS"] = str(self.heartbeat_secs)
         env.setdefault("PYTHONPATH", str(_repo_root()))
         if str(_repo_root()) not in env["PYTHONPATH"].split(os.pathsep):
             env["PYTHONPATH"] = str(_repo_root()) + os.pathsep + env["PYTHONPATH"]

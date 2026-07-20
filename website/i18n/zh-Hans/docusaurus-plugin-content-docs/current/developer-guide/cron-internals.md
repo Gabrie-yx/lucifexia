@@ -1,7 +1,7 @@
 ﻿---
 sidebar_position: 11
 title: "Cron 内部机制"
-description: "Hermes 如何存储、调度、编辑、暂停、加载技能以及投递 cron 任务"
+description: "lucifexex 如何存储、调度、编辑、暂停、加载技能以及投递 cron 任务"
 ---
 
 # Cron 内部机制
@@ -16,7 +16,7 @@ cron 子系统提供定时任务执行能力——从简单的单次延迟到带
 | `cron/scheduler.py` | 调度器循环——到期任务检测、执行、重复计数跟踪 |
 | `tools/cronjob_tools.py` | 面向模型的 `cronjob` 工具注册与处理器 |
 | `gateway/run.py` | Gateway 集成——在长运行循环中触发 cron tick |
-| `lucifex_cli/cron.py` | CLI `hermes cron` 子命令 |
+| `lucifex_cli/cron.py` | CLI `lucifexex cron` 子命令 |
 
 ## 调度模型
 
@@ -104,7 +104,7 @@ tick()
 
 在 gateway 模式下，调度器运行在专用后台线程中（`gateway/run.py` 中的 `_start_cron_ticker`），每 60 秒调用一次 `scheduler.tick()`，与消息处理并行运行。
 
-在 CLI 模式下，cron 任务仅在运行 `hermes cron` 命令或活跃 CLI 会话期间触发。
+在 CLI 模式下，cron 任务仅在运行 `lucifexex cron` 命令或活跃 CLI 会话期间触发。
 
 ### 全新会话隔离
 
@@ -144,7 +144,7 @@ import requests, json
 脚本超时默认为 120 秒。`_get_script_timeout()` 通过三层链路解析限制：
 
 1. **模块级覆盖** — `_SCRIPT_TIMEOUT`（用于测试/monkeypatching）。仅在与默认值不同时使用。
-2. **环境变量** — `HERMES_CRON_SCRIPT_TIMEOUT`
+2. **环境变量** — `lucifexex_CRON_SCRIPT_TIMEOUT`
 3. **配置** — `config.yaml` 中的 `cron.script_timeout_seconds`（通过 `load_config()` 读取）
 4. **默认值** — 120 秒
 
@@ -213,20 +213,20 @@ Cron 运行的会话已禁用 `cronjob` 工具集。这可防止：
 
 ## 锁机制
 
-调度器使用跨进程文件锁（Unix 上的 `fcntl.flock`，Windows 上的 `msvcrt.locking`）防止重叠的 tick 对同一批到期任务执行两次——即使在 gateway 的进程内 ticker 与独立的 `hermes cron` / 手动 `tick()` 调用之间也如此。若无法获取锁，`tick()` 立即返回 0。
+调度器使用跨进程文件锁（Unix 上的 `fcntl.flock`，Windows 上的 `msvcrt.locking`）防止重叠的 tick 对同一批到期任务执行两次——即使在 gateway 的进程内 ticker 与独立的 `lucifexex cron` / 手动 `tick()` 调用之间也如此。若无法获取锁，`tick()` 立即返回 0。
 
 ## CLI 接口
 
-`hermes cron` CLI 提供直接的任务管理功能：
+`lucifexex cron` CLI 提供直接的任务管理功能：
 
 ```bash
-hermes cron list                    # 显示所有任务
-hermes cron create                  # 交互式创建任务（别名：add）
-hermes cron edit <job_id>           # 编辑任务配置
-hermes cron pause <job_id>          # 暂停运行中的任务
-hermes cron resume <job_id>         # 恢复已暂停的任务
-hermes cron run <job_id>            # 触发立即执行
-hermes cron remove <job_id>         # 删除任务
+lucifexex cron list                    # 显示所有任务
+lucifexex cron create                  # 交互式创建任务（别名：add）
+lucifexex cron edit <job_id>           # 编辑任务配置
+lucifexex cron pause <job_id>          # 暂停运行中的任务
+lucifexex cron resume <job_id>         # 恢复已暂停的任务
+lucifexex cron run <job_id>            # 触发立即执行
+lucifexex cron remove <job_id>         # 删除任务
 ```
 
 ## 相关文档

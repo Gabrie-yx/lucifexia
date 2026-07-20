@@ -1,4 +1,4 @@
-﻿"""Tests for user-configured ``model.default_headers`` in the auxiliary client.
+"""Tests for user-configured ``model.default_headers`` in the auxiliary client.
 
 Companion to ``tests/run_agent/test_provider_attribution_headers.py`` (which
 covers the main agent client). The main agent turn and the auxiliary client

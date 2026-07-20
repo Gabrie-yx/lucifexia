@@ -1,4 +1,4 @@
-﻿"""Tests for the dangerous command approval module."""
+"""Tests for the dangerous command approval module."""
 
 import ast
 import os
@@ -82,9 +82,9 @@ class TestSmartApproval:
         dangerous, pattern_key, _ = detect_dangerous_command(command)
         assert dangerous is True
 
-        monkeypatch.setenv("HERMES_SESSION_KEY", session_key)
-        monkeypatch.setenv("HERMES_EXEC_ASK", "1")
-        monkeypatch.delenv("HERMES_CRON_SESSION", raising=False)
+        monkeypatch.setenv("lucifexex_SESSION_KEY", session_key)
+        monkeypatch.setenv("lucifexex_EXEC_ASK", "1")
+        monkeypatch.delenv("lucifexex_CRON_SESSION", raising=False)
         monkeypatch.setattr(
             approval_module,
             "_get_approval_config",
@@ -121,7 +121,7 @@ class TestDetectDangerousRm:
 
     def test_nonrecursive_verification_artifact_cleanup_is_not_dangerous(self):
         with mock_patch("tempfile.gettempdir", return_value="/tmp"):
-            for prefix in ("hermes-verify-", "hermes-ad-hoc-"):
+            for prefix in ("lucifexex-verify-",lucifexifex-ad-hoc-"):
                 assert detect_dangerous_command(f"rm -f /tmp/{prefix}example.py") == (
                     False,
                     None,
@@ -133,7 +133,7 @@ class TestDetectDangerousRm:
         real_temp.mkdir()
         linked_temp = tmp_path / "linked-temp"
         linked_temp.symlink_to(real_temp, target_is_directory=True)
-        basename = "hermes-verify-example.py"
+        basename = "lucifexex-verify-example.py"
 
         with mock_patch("tempfile.gettempdir", return_value=str(linked_temp)):
             assert detect_dangerous_command(f"rm -f {linked_temp / basename}")[0] is True
@@ -145,19 +145,19 @@ class TestDetectDangerousRm:
 
     def test_verification_cleanup_exemption_rejects_broader_deletions(self):
         commands = (
-            "rm -rf /tmp/hermes-verify-example.py",
-            "rm -f /tmp/hermes-verify-example.py /tmp/other.py",
-            "rm -f /tmp/nested/hermes-verify-example.py",
-            "rm -f /tmp/nested/../hermes-verify-example.py",
-            "rm -f /tmp/./hermes-verify-example.py",
-            "rm -f /tmp//hermes-verify-example.py",
-            "rm -f /tmp/a/../../tmp/hermes-verify-example.py",
-            "rm -f /var/tmp/hermes-verify-example.py",
+            "rm -rf /tmp/lucifexex-verify-example.py",
+            "rm -f /tmp/lucifexex-verify-example.py /tmp/other.py",
+            "rm -f /tmp/nested/lucifexex-verify-example.py",
+            "rm -f /tmp/nested/../lucifexex-verify-example.py",
+            "rm -f /tmp/./lucifexex-verify-example.py",
+            "rm -f /tmp//lucifexex-verify-example.py",
+            "rm -f /tmp/a/../../tmp/lucifexex-verify-example.py",
+            "rm -f /var/tmp/lucifexex-verify-example.py",
             "rm -f /tmp/unrelated.py",
-            "rm -f /tmp/hermes-verify-*",
-            "rm -f /tmp/hermes-verify-$(touch>/tmp/pwned).py",
-            "rm -f /tmp/hermes-ad-hoc-`touch>/tmp/pwned`.py",
-            "rm -f /tmp/hermes-verify-example.py; touch /tmp/pwned",
+            "rm -f /tmp/lucifexex-verify-*",
+            "rm -f /tmp/lucifexex-verify-$(touch>/tmp/pwned).py",
+            "rm -f /tmp/lucifexex-ad-hoc-`touch>/tmp/pwned`.py",
+            "rm -f /tmp/lucifexex-verify-example.py; touch /tmp/pwned",
         )
         with mock_patch("tempfile.gettempdir", return_value="/tmp"):
             for command in commands:
@@ -170,7 +170,7 @@ class TestDetectDangerousRm:
 class TestWindowsShellDestructiveCommands:
     def test_cmd_del_requires_approval(self):
         dangerous, key, desc = detect_dangerous_command(
-            r"cmd /c del /f /q C:\tmp\hermes-victim\file.txt"
+            r"cmd /c del /f /q C:\tmp\lucifexex-victim\file.txt"
         )
         assert dangerous is True
         assert key is not None
@@ -178,7 +178,7 @@ class TestWindowsShellDestructiveCommands:
 
     def test_cmd_rmdir_requires_approval(self):
         dangerous, key, desc = detect_dangerous_command(
-            r"cmd.exe /k rmdir /s /q C:\tmp\hermes-victim"
+            r"cmd.exe /k rmdir /s /q C:\tmp\lucifexex-victim"
         )
         assert dangerous is True
         assert key is not None
@@ -186,7 +186,7 @@ class TestWindowsShellDestructiveCommands:
 
     def test_powershell_remove_item_requires_approval(self):
         dangerous, key, desc = detect_dangerous_command(
-            r"powershell -NoProfile -Command Remove-Item -Recurse -Force C:\tmp\hermes-victim"
+            r"powershell -NoProfile -Command Remove-Item -Recurse -Force C:\tmp\lucifexex-victim"
         )
         assert dangerous is True
         assert key is not None
@@ -194,7 +194,7 @@ class TestWindowsShellDestructiveCommands:
 
     def test_pwsh_rm_alias_requires_approval(self):
         dangerous, key, desc = detect_dangerous_command(
-            r"pwsh -c rm -Recurse -Force C:\tmp\hermes-victim"
+            r"pwsh -c rm -Recurse -Force C:\tmp\lucifexex-victim"
         )
         assert dangerous is True
         assert key is not None
@@ -213,7 +213,7 @@ class TestWindowsShellDestructiveCommands:
         # so `powershell Remove-Item ...` with NO explicit -Command must still
         # be gated (the original pattern required -Command and missed this).
         dangerous, key, desc = detect_dangerous_command(
-            r"powershell Remove-Item -Recurse -Force C:\tmp\hermes-victim"
+            r"powershell Remove-Item -Recurse -Force C:\tmp\lucifexex-victim"
         )
         assert dangerous is True
         assert key is not None
@@ -342,7 +342,7 @@ class TestSessionKeyContext:
     def test_context_session_key_overrides_process_env(self):
         token = approval_module.set_current_session_key("alice")
         try:
-            with mock_patch.dict("os.environ", {"HERMES_SESSION_KEY": "bob"}, clear=False):
+            with mock_patch.dict("os.environ", {"lucifexex_SESSION_KEY": "bob"}, clear=False):
                 assert approval_module.get_current_session_key() == "alice"
         finally:
             approval_module.reset_current_session_key(token)
@@ -556,7 +556,7 @@ class TestTeePattern:
         assert dangerous is True
         assert key is not None
 
-    def test_tee_hermes_env(self):
+    def test_tee_lucifexex_env(self):
         dangerous, key, desc = detect_dangerous_command("echo x | tee ~/.lucifex/.env")
         assert dangerous is True
         assert key is not None
@@ -588,7 +588,7 @@ class TestTeePattern:
         assert key is None
 
 
-class TestHermesConfigWriteProtection:
+class TestlucifexexConfigWriteProtection:
     """Terminal-side pairing for the file_tools write_file/patch deny on
     ~/.lucifex/config.yaml (#14639). config.yaml IS the security policy
     (approvals.mode/yolo live there, mtime-keyed cache reloads mid-session),
@@ -708,7 +708,7 @@ class TestHermesConfigWriteProtection:
             "perl -wne 'print' ~/.lucifex/config.yaml"
         )
         assert dangerous is True
-        assert key != "in-place edit of Hermes config/env (perl/ruby)"
+        assert key != "in-place edit of lucifexex config/env (perl/ruby)"
 
     def test_read_is_safe(self):
         # Reading config is not a write — must not trip.
@@ -716,7 +716,7 @@ class TestHermesConfigWriteProtection:
         assert dangerous is False
 
     def test_normal_yaml_write_safe(self):
-        # A non-Hermes config.yaml in a project dir is handled by the project
+        # A non-lucifexex config.yaml in a project dir is handled by the project
         # patterns, but a plain temp write must not false-positive.
         dangerous, key, desc = detect_dangerous_command("echo data > /tmp/scratch.txt")
         assert dangerous is False
@@ -935,7 +935,7 @@ class TestSensitiveCopyMovePattern:
         dangerous, key, desc = detect_dangerous_command("cp /tmp/e ~/.bashrc")
         assert dangerous is True
 
-    def test_cp_to_hermes_config(self):
+    def test_cp_to_lucifexex_config(self):
         dangerous, key, desc = detect_dangerous_command("cp /tmp/evil.yaml ~/.lucifex/config.yaml")
         assert dangerous is True
 
@@ -985,13 +985,13 @@ class TestSensitiveInPlaceEditPattern:
 
 
 class TestWindowsAbsolutePathFolding:
-    """Windows absolute home / Hermes-home prefixes must fold to ~/ and
+    """Windows absolute home / lucifexex-home prefixes must fold to ~/ and
     ~/.lucifex/ in dangerous-command detection.
 
     Regression: on native Windows the home prefix uses backslash separators
     (``C:\\Users\\alice\\.ssh\\authorized_keys``). Detection stripped backslash
     escapes *before* folding, dissolving those separators, so writes to startup,
-    SSH, and Hermes config/env files returned "safe" without an approval prompt.
+    SSH, and lucifexex config/env files returned "safe" without an approval prompt.
     The OS-specific ``Path.home()`` / ``get_lucifex_home()`` tests above only
     exercise this branch on a Windows host; these monkeypatch a Windows-style
     HOME/LUCIFEX_HOME so the fold is verified on the POSIX CI runner too."""
@@ -1023,12 +1023,12 @@ class TestWindowsAbsolutePathFolding:
         assert key is not None
 
     def test_windows_LUCIFEX_HOME_config_folds(self, monkeypatch):
-        # Hermes home nests under the user home on Windows; it must fold before
+        # lucifexex home nests under the user home on Windows; it must fold before
         # the user-home rewrite eats its prefix.
         monkeypatch.setenv("HOME", r"C:\Users\tester")
-        monkeypatch.setenv("LUCIFEX_HOME", r"C:\Users\tester\.hermes")
+        monkeypatch.setenv("LUCIFEX_HOME", r"C:\Users\tester\.lucifexex")
         dangerous, key, _ = detect_dangerous_command(
-            r"sed -i 's/manual/off/' C:\Users\tester\.hermes\config.yaml"
+            r"sed -i 's/manual/off/' C:\Users\tester\.lucifexex\config.yaml"
         )
         assert dangerous is True
         assert key is not None
@@ -1204,7 +1204,7 @@ class TestSmartDeniedPrompt:
     def test_smart_deny_uses_locale_specific_once_deny_choices(
         self, monkeypatch, capsys, lang, once_key, deny_key, once_label, deny_label,
     ):
-        monkeypatch.setenv("HERMES_LANGUAGE", lang)
+        monkeypatch.setenv("lucifexex_LANGUAGE", lang)
         from agent import i18n
         i18n.reset_language_cache()
         prompts = []
@@ -1233,7 +1233,7 @@ class TestSmartDeniedPrompt:
     def test_smart_deny_rejects_localized_session_or_always_shortcuts(
         self, monkeypatch, lang, forbidden,
     ):
-        monkeypatch.setenv("HERMES_LANGUAGE", lang)
+        monkeypatch.setenv("lucifexex_LANGUAGE", lang)
         from agent import i18n
         i18n.reset_language_cache()
         try:
@@ -1301,50 +1301,50 @@ class TestGatewayProtection:
         assert dangerous is True
         assert "stop/restart" in desc
 
-    def test_hermes_gateway_stop_detected(self):
+    def test_lucifexex_gateway_stop_detected(self):
         cmd = "lucifex gateway stop"
         dangerous, key, desc = detect_dangerous_command(cmd)
         assert dangerous is True
         assert "gateway" in desc.lower()
 
-    def test_hermes_gateway_restart_with_profile_flag_detected(self):
-        """A profile flag between `hermes` and `gateway` must not slip past
+    def test_lucifexex_gateway_restart_with_profile_flag_detected(self):
+        """A profile flag between `lucifexex` and `gateway` must not slip past
         the guard. See the 2026-04-11 ade-profile self-kill incident."""
-        cmd = "hermes -p ade gateway restart"
+        cmd = "lucifexex -p ade gateway restart"
         dangerous, key, desc = detect_dangerous_command(cmd)
         assert dangerous is True
         assert "gateway" in desc.lower()
 
-    def test_hermes_gateway_stop_with_long_profile_flag_detected(self):
-        cmd = "hermes --profile ade gateway stop"
+    def test_lucifexex_gateway_stop_with_long_profile_flag_detected(self):
+        cmd = "lucifexex --profile ade gateway stop"
         dangerous, key, desc = detect_dangerous_command(cmd)
         assert dangerous is True
 
-    def test_hermes_gateway_multiple_flags_detected(self):
-        cmd = "hermes -p cocoa --verbose gateway restart"
+    def test_lucifexex_gateway_multiple_flags_detected(self):
+        cmd = "lucifexex -p cocoa --verbose gateway restart"
         dangerous, key, desc = detect_dangerous_command(cmd)
         assert dangerous is True
 
-    def test_hermes_gateway_status_with_profile_flag_not_flagged(self):
+    def test_lucifexex_gateway_status_with_profile_flag_not_flagged(self):
         """Read-only subcommands stay allowed even with a profile flag."""
-        cmd = "hermes -p ade gateway status"
+        cmd = "lucifexex -p ade gateway status"
         dangerous, key, desc = detect_dangerous_command(cmd)
         assert dangerous is False
 
-    def test_hermes_gateway_start_not_flagged(self):
+    def test_lucifexex_gateway_start_not_flagged(self):
         cmd = "lucifex gateway start"
         dangerous, key, desc = detect_dangerous_command(cmd)
         assert dangerous is False
 
-    def test_pkill_hermes_detected(self):
-        """pkill targeting hermes/gateway processes must be caught."""
+    def test_pkill_lucifexex_detected(self):
+        """pkill targeting lucifexex/gateway processes must be caught."""
         cmd = 'pkill -f "cli.py --gateway"'
         dangerous, key, desc = detect_dangerous_command(cmd)
         assert dangerous is True
         assert "self-termination" in desc
 
-    def test_killall_hermes_detected(self):
-        cmd = "killall hermes"
+    def test_killall_lucifexex_detected(self):
+        cmd = "killall lucifexex"
         dangerous, key, desc = detect_dangerous_command(cmd)
         assert dangerous is True
         assert "self-termination" in desc
@@ -1478,7 +1478,7 @@ class TestIFSWhitespaceBypass:
         assert dangerous is True
 
     def test_ifs_sed_config_dangerous(self):
-        """In-place edit of the Hermes security config via IFS must be caught."""
+        """In-place edit of the lucifexex security config via IFS must be caught."""
         cmd = "sed${IFS}-i ~/.lucifex/config.yaml"
         dangerous, key, desc = detect_dangerous_command(cmd)
         assert dangerous is True
@@ -1565,20 +1565,20 @@ class TestHeredocScriptExecution:
 
 
 class TestPgrepKillExpansion:
-    """kill -9 $(pgrep hermes) bypasses the pkill/killall name-matching
+    """kill -9 $(pgrep lucifexex) bypasses the pkill/killall name-matching
     pattern because the command substitution is opaque to regex.
 
     See security audit Test 7.
     """
 
     def test_kill_dollar_pgrep_detected(self):
-        cmd = 'kill -9 $(pgrep -f "hermes.*gateway")'
+        cmd = 'kill -9 $(pgrep -f "lucifexex.*gateway")'
         dangerous, _, desc = detect_dangerous_command(cmd)
         assert dangerous is True
         assert "pgrep" in desc.lower()
 
     def test_kill_backtick_pgrep_detected(self):
-        cmd = "kill -9 `pgrep hermes`"
+        cmd = "kill -9 `pgrep lucifexex`"
         dangerous, _, desc = detect_dangerous_command(cmd)
         assert dangerous is True
 
@@ -1587,9 +1587,9 @@ class TestPgrepKillExpansion:
         dangerous, _, _ = detect_dangerous_command(cmd)
         assert dangerous is True
 
-    def test_pkill_hermes_still_detected(self):
+    def test_pkill_lucifexex_still_detected(self):
         """Existing pkill pattern must not regress."""
-        cmd = "pkill -9 hermes"
+        cmd = "pkill -9 lucifexex"
         dangerous, _, _ = detect_dangerous_command(cmd)
         assert dangerous is True
 
@@ -1600,7 +1600,7 @@ class TestPgrepKillExpansion:
         assert dangerous is False
 
     def test_kill_dollar_pidof_detected(self):
-        """`kill $(pidof hermes)` is the BSD/Linux equivalent of the
+        """`kill $(pidof lucifexex)` is the BSD/Linux equivalent of the
         pgrep expansion and bypasses the pkill/killall name pattern
         in the same way. See issue #33071."""
         cmd = "kill -TERM $(pidof lucifex_cli.main)"
@@ -1609,35 +1609,35 @@ class TestPgrepKillExpansion:
         assert "pidof" in desc.lower() or "pgrep" in desc.lower()
 
     def test_kill_backtick_pidof_detected(self):
-        cmd = "kill -9 `pidof hermes`"
+        cmd = "kill -9 `pidof lucifexex`"
         dangerous, _, _ = detect_dangerous_command(cmd)
         assert dangerous is True
 
 
 class TestLaunchctlGatewayLifecycle:
-    """launchctl stop/kickstart/bootout/unload against the Hermes service
+    """launchctl stop/kickstart/bootout/unload against the lucifexex service
     label achieves the same effect as `lucifex gateway stop|restart` and
     must require the same approval. See issue #33071.
     """
 
-    def test_launchctl_stop_hermes_detected(self):
-        cmd = "launchctl stop ai.hermes.gateway"
+    def test_launchctl_stop_lucifexex_detected(self):
+        cmd = "launchctl stop ai.lucifexex.gateway"
         dangerous, _, desc = detect_dangerous_command(cmd)
         assert dangerous is True
-        assert "launchd" in desc.lower() or "hermes" in desc.lower()
+        assert "launchd" in desc.lower() or "lucifexex" in desc.lower()
 
-    def test_launchctl_kickstart_hermes_detected(self):
-        cmd = "launchctl kickstart -k system/ai.hermes.gateway"
+    def test_launchctl_kickstart_lucifexex_detected(self):
+        cmd = "launchctl kickstart -k system/ai.lucifexex.gateway"
         dangerous, _, _ = detect_dangerous_command(cmd)
         assert dangerous is True
 
-    def test_launchctl_bootout_hermes_detected(self):
-        cmd = "launchctl bootout system/ai.hermes.gateway"
+    def test_launchctl_bootout_lucifexex_detected(self):
+        cmd = "launchctl bootout system/ai.lucifexex.gateway"
         dangerous, _, _ = detect_dangerous_command(cmd)
         assert dangerous is True
 
-    def test_launchctl_unload_hermes_detected(self):
-        cmd = "launchctl unload ~/Library/LaunchAgents/ai.hermes.gateway.plist"
+    def test_launchctl_unload_lucifexex_detected(self):
+        cmd = "launchctl unload ~/Library/LaunchAgents/ai.lucifexex.gateway.plist"
         dangerous, _, _ = detect_dangerous_command(cmd)
         assert dangerous is True
 
@@ -1648,7 +1648,7 @@ class TestLaunchctlGatewayLifecycle:
         assert dangerous is False
 
     def test_launchctl_stop_unrelated_not_flagged(self):
-        """`launchctl stop` on a non-Hermes label is out of scope for the
+        """`launchctl stop` on a non-lucifexex label is out of scope for the
         gateway-lifecycle guard."""
         cmd = "launchctl stop com.example.unrelated"
         dangerous, _, _ = detect_dangerous_command(cmd)
@@ -2259,18 +2259,18 @@ class TestApprovalTimeoutIsNotConsent:
 
         self._saved_env = {
             k: os.environ.get(k)
-            for k in ("HERMES_GATEWAY_SESSION", "HERMES_CRON_SESSION",
-                      "HERMES_YOLO_MODE",
-                      "HERMES_SESSION_KEY", "HERMES_INTERACTIVE")
+            for k in ("lucifexex_GATEWAY_SESSION",lucifexifex_CRON_SESSION",
+                      "lucifexex_YOLO_MODE",
+                      "lucifexex_SESSION_KEY",lucifexifex_INTERACTIVE")
         }
-        os.environ.pop("HERMES_YOLO_MODE", None)
-        os.environ.pop("HERMES_INTERACTIVE", None)
-        # HERMES_CRON_SESSION takes priority over HERMES_GATEWAY_SESSION in
+        os.environ.pop("lucifexex_YOLO_MODE", None)
+        os.environ.pop("lucifexex_INTERACTIVE", None)
+        # lucifexex_CRON_SESSION takes priority ovelucifexifex_GATEWAY_SESSION in
         # _is_gateway_approval_context(); a leaked value from a parent cron
         # process would force the cron path and break these gateway tests.
-        os.environ.pop("HERMES_CRON_SESSION", None)
-        os.environ["HERMES_GATEWAY_SESSION"] = "1"
-        os.environ["HERMES_SESSION_KEY"] = self.SESSION_KEY
+        os.environ.pop("lucifexex_CRON_SESSION", None)
+        os.environ["lucifexex_GATEWAY_SESSION"] = "1"
+        os.environ["lucifexex_SESSION_KEY"] = self.SESSION_KEY
 
     def teardown_method(self):
         from tools import approval as mod
@@ -2426,7 +2426,7 @@ class TestTirithImportErrorFailOpenPolicy:
         with _patch("builtins.__import__", side_effect=self._make_failing_import(real_import)):
             with _patch("lucifex_cli.config.load_config", return_value=cfg):
                 with _patch("tools.approval.detect_dangerous_command", return_value=(False, None, None)):
-                    with mock_patch.dict("os.environ", {"HERMES_INTERACTIVE": "1"}, clear=False):
+                    with mock_patch.dict("os.environ", {"lucifexex_INTERACTIVE": "1"}, clear=False):
                         result = check_all_command_guards("echo hello", "local")
 
         assert result.get("approved") is True
@@ -2451,7 +2451,7 @@ class TestTirithImportErrorFailOpenPolicy:
         with _patch("builtins.__import__", side_effect=self._make_failing_import(real_import)):
             with _patch("lucifex_cli.config.load_config", return_value=cfg):
                 with _patch("tools.approval.detect_dangerous_command", return_value=(False, None, None)):
-                    with mock_patch.dict("os.environ", {"HERMES_INTERACTIVE": "1"}, clear=False):
+                    with mock_patch.dict("os.environ", {"lucifexex_INTERACTIVE": "1"}, clear=False):
                         result = check_all_command_guards(
                             "echo hello",
                             "local",
@@ -2482,7 +2482,7 @@ class TestTirithImportErrorFailOpenPolicy:
         with _patch("builtins.__import__", side_effect=self._make_failing_import(real_import)):
             with _patch("lucifex_cli.config.load_config", return_value=cfg):
                 with _patch("tools.approval.detect_dangerous_command", return_value=(False, None, None)):
-                    with mock_patch.dict("os.environ", {"HERMES_INTERACTIVE": "1"}, clear=False):
+                    with mock_patch.dict("os.environ", {"lucifexex_INTERACTIVE": "1"}, clear=False):
                         result = check_all_command_guards("echo hello", "local")
 
         assert result.get("approved") is True

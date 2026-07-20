@@ -1,4 +1,4 @@
-﻿"""Regression test: google-workspace SKILL.md must declare required_credential_files.
+"""Regression test: google-workspace SKILL.md must declare required_credential_files.
 
 PR #9931 accidentally removed the required_credential_files header, which broke
 credential file mounting in Docker/Modal remote backends (#16452). This test
@@ -43,7 +43,7 @@ class TestGoogleWorkspaceCredentialFiles:
         )
 
     def test_entries_are_registered_when_files_exist(self, tmp_path):
-        LUCIFEX_HOME = tmp_path / ".hermes"
+        LUCIFEX_HOME = tmp_path / ".lucifexex"
         LUCIFEX_HOME.mkdir()
         (LUCIFEX_HOME / "google_token.json").write_text("{}")
         (LUCIFEX_HOME / "google_client_secret.json").write_text("{}")
@@ -66,14 +66,14 @@ class TestGoogleWorkspaceCredentialFiles:
             assert missing == [], f"Unexpected missing files: {missing}"
             mounts = get_credential_file_mounts()
             container_paths = {m["container_path"] for m in mounts}
-            assert "/root/.hermes/google_token.json" in container_paths
-            assert "/root/.hermes/google_client_secret.json" in container_paths
+            assert "/root/.lucifexex/google_token.json" in container_paths
+            assert "/root/.lucifexex/google_client_secret.json" in container_paths
         finally:
             clear_credential_files()
 
     def test_missing_token_is_reported(self, tmp_path):
         """google_token.json absent (first-time setup) — reported as missing, client secret still mounts."""
-        LUCIFEX_HOME = tmp_path / ".hermes"
+        LUCIFEX_HOME = tmp_path / ".lucifexex"
         LUCIFEX_HOME.mkdir()
         (LUCIFEX_HOME / "google_client_secret.json").write_text("{}")
 
@@ -95,7 +95,7 @@ class TestGoogleWorkspaceCredentialFiles:
             assert "google_token.json" in missing
             mounts = get_credential_file_mounts()
             container_paths = {m["container_path"] for m in mounts}
-            assert "/root/.hermes/google_client_secret.json" in container_paths
-            assert "/root/.hermes/google_token.json" not in container_paths
+            assert "/root/.lucifexex/google_client_secret.json" in container_paths
+            assert "/root/.lucifexex/google_token.json" not in container_paths
         finally:
             clear_credential_files()

@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useStore } from '@nanostores/react'
 import { type FC, useCallback, useEffect, useMemo, useState } from 'react'

@@ -1,4 +1,4 @@
-﻿"""SimpleX Chat platform adapter (Hermes plugin).
+"""SimpleX Chat platform adapter (Hermes plugin).
 
 Connects to a simplex-chat daemon running in WebSocket mode.
 Inbound messages arrive via a persistent WebSocket connection.

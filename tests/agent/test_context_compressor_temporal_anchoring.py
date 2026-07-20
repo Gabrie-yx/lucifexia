@@ -1,4 +1,4 @@
-﻿"""Tests for temporal anchoring in context-compaction summaries.
+"""Tests for temporal anchoring in context-compaction summaries.
 
 The summarizer is handed the current date and instructed to rewrite completed
 actions as absolute, dated, past-tense facts (e.g. "email John" ->

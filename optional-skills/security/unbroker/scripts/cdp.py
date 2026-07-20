@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """Launch (or detect) the operator's local Chrome/Chromium over the DevTools Protocol (CDP).
 
 Phase-2 work -- sending opt-out/CCPA email through the operator's logged-in webmail, and driving

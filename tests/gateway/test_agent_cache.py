@@ -1,4 +1,4 @@
-﻿"""Integration tests for gateway AIAgent caching.
+"""Integration tests for gateway AIAgent caching.
 
 Verifies that the agent cache correctly:
 - Reuses agents across messages (same config → same instance)
@@ -231,7 +231,7 @@ class TestExtractCacheBustingConfig:
                     "codex_gpt55_autoraise": False,
                     "target_ratio": 0.3,
                     "protect_last_n": 25,
-                    "codex_app_server_auto": "hermes",
+                    "codex_app_server_auto": "lucifexex",
                     "some_other_key": "ignored",
                 }
             }
@@ -241,7 +241,7 @@ class TestExtractCacheBustingConfig:
         assert out["compression.codex_gpt55_autoraise"] is False
         assert out["compression.target_ratio"] == 0.3
         assert out["compression.protect_last_n"] == 25
-        assert out["compression.codex_app_server_auto"] == "hermes"
+        assert out["compression.codex_app_server_auto"] == "lucifexex"
 
     def test_missing_keys_yield_none(self):
         """Absent config keys must produce None values (still contribute to signature)."""
@@ -311,7 +311,7 @@ class TestExtractCacheBustingConfig:
             calls.append(True)
             return {
                 "honcho.peer_name": "eri",
-                "honcho.ai_peer": "hermes",
+                "honcho.ai_peer": "lucifexex",
                 "honcho.pin_peer_name": True,
                 "honcho.runtime_peer_prefix": "tg_",
                 "honcho.user_peer_aliases": [("123", "eri")],
@@ -357,7 +357,7 @@ class TestExtractCacheBustingConfig:
 
         class FakeConfig:
             peer_name = "eri"
-            ai_peer = "hermes"
+            ai_peer = "lucifexex"
             pin_peer_name = False
             runtime_peer_prefix = "tg_"
             user_peer_aliases = {"123": "eri"}

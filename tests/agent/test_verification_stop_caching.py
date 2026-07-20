@@ -1,4 +1,4 @@
-﻿"""Verification-loop synthetic scaffolding must never reach durable session state.
+"""Verification-loop synthetic scaffolding must never reach durable session state.
 
 verify_on_stop / pre_verify append a synthetic assistant "done" plus a synthetic
 user nudge to keep the agent going one more turn before it can claim completion.

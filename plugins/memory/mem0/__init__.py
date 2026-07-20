@@ -1,4 +1,4 @@
-﻿"""Mem0 memory plugin — MemoryProvider interface.
+"""Mem0 memory plugin — MemoryProvider interface.
 
 Server-side LLM fact extraction, semantic search, and automatic deduplication
 via the Mem0 Platform API (cloud) or OSS (self-hosted) via Memory.

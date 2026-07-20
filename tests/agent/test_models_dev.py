@@ -1,4 +1,4 @@
-﻿"""Tests for agent.models_dev — models.dev registry integration."""
+"""Tests for agent.models_dev — models.dev registry integration."""
 from unittest.mock import patch, MagicMock
 
 from agent.models_dev import (

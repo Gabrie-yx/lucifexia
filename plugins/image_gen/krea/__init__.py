@@ -1,4 +1,4 @@
-﻿"""Krea image generation backend.
+"""Krea image generation backend.
 
 Exposes Krea's `Krea 2` foundation image model family — Krea 2 Medium and
 Krea 2 Large — as an :class:`ImageGenProvider` implementation.

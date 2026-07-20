@@ -1,4 +1,4 @@
-﻿"""Full MoA turn trace persistence (opt-in via config ``moa.save_traces``).
+"""Full MoA turn trace persistence (opt-in via config ``moa.save_traces``).
 
 When enabled, every Mixture-of-Agents turn that actually runs the reference
 fan-out (a cache MISS in ``MoAChatCompletions.create``) appends one JSON line

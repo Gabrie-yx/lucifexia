@@ -1,4 +1,4 @@
-﻿"""Tests for agent/curator_backup.py — snapshot + rollback of the skills tree."""
+"""Tests for agent/curator_backup.py — snapshot + rollback of the skills tree."""
 
 from __future__ import annotations
 

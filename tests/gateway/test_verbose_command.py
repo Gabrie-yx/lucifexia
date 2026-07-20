@@ -1,4 +1,4 @@
-﻿"""Tests for gateway /verbose command (config-gated tool progress cycling)."""
+"""Tests for gateway /verbose command (config-gated tool progress cycling)."""
 
 from unittest.mock import AsyncMock, MagicMock
 

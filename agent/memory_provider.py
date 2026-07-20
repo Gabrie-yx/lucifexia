@@ -1,4 +1,4 @@
-﻿"""Abstract base class for pluggable memory providers.
+"""Abstract base class for pluggable memory providers.
 
 Memory providers give the agent persistent recall across sessions.
 The MemoryManager enforces a one-external-provider limit to prevent

@@ -1,4 +1,4 @@
-﻿"""
+"""
 WhatsApp platform adapter.
 
 WhatsApp integration is more complex than Telegram/Discord because:

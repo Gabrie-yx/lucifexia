@@ -1,4 +1,4 @@
-﻿"""Tests for the PowerShellEditorServices (PSES) server registration.
+"""Tests for the PowerShellEditorServices (PSES) server registration.
 
 PSES is unusual among the registry entries: it's a PowerShell module
 bundle (GitHub release zip) driven by a ``pwsh`` bootstrap script, not a

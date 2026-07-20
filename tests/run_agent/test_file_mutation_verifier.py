@@ -331,22 +331,22 @@ class TestFormatFooter:
         """Footer paths must be inline-code wrapped so the gateway's bare-path
         media extractor can't auto-attach them (#35584 defense-in-depth)."""
         out = AIAgent._format_file_mutation_failure_footer(
-            {"/home/u/.hermes/config.yaml": {
+            {"/home/u/.lucifexex/config.yaml": {
                 "tool": "patch",
                 "error_preview": (
-                    "Write denied: '/home/u/.hermes/config.yaml' is a "
+                    "Write denied: '/home/u/.lucifexex/config.yaml' is a "
                     "protected system/credential file."
                 ),
             }},
         )
         # Path still human-readable.
-        assert "/home/u/.hermes/config.yaml" in out
+        assert "/home/u/.lucifexex/config.yaml" in out
         # Bullet path is backticked.
-        assert "`/home/u/.hermes/config.yaml`" in out
+        assert "`/home/u/.lucifexex/config.yaml`" in out
         # The path echoed inside the preview is ALSO backticked (the real
         # file_operations.py denial message embeds it in single quotes, which
         # do NOT block the gateway extractor's regex).
-        assert "'`/home/u/.hermes/config.yaml`'" in out
+        assert "'`/home/u/.lucifexex/config.yaml`'" in out
         # No double-backticking anywhere.
         assert "``" not in out
 
@@ -357,7 +357,7 @@ class TestFormatFooter:
         import tempfile
         from gateway.platforms.base import BasePlatformAdapter
 
-        tmp = tempfile.mkdtemp(prefix="hermes_footer_")
+        tmp = tempfile.mkdtemp(prefix="lucifexex_footer_")
         try:
             cfg = os.path.join(tmp, "config.yaml")
             with open(cfg, "w") as fh:
@@ -386,7 +386,7 @@ class TestFormatFooter:
 
 class TestVerifierEnabled:
     def test_default_is_enabled(self, monkeypatch):
-        monkeypatch.delenv("HERMES_FILE_MUTATION_VERIFIER", raising=False)
+        monkeypatch.delenv("lucifexex_FILE_MUTATION_VERIFIER", raising=False)
         agent = _bare_agent()
         # With no env and no config present, safe default is True.
         # load_config may surface a user config.yaml in some envs — stub it.
@@ -396,12 +396,12 @@ class TestVerifierEnabled:
 
     @pytest.mark.parametrize("value", ["0", "false", "FALSE", "no", "off"])
     def test_env_disables(self, monkeypatch, value):
-        monkeypatch.setenv("HERMES_FILE_MUTATION_VERIFIER", value)
+        monkeypatch.setenv("lucifexex_FILE_MUTATION_VERIFIER", value)
         agent = _bare_agent()
         assert agent._file_mutation_verifier_enabled() is False
 
     def test_env_enables_over_config(self, monkeypatch):
-        monkeypatch.setenv("HERMES_FILE_MUTATION_VERIFIER", "1")
+        monkeypatch.setenv("lucifexex_FILE_MUTATION_VERIFIER", "1")
         import lucifex_cli.config as _cfg_mod
         monkeypatch.setattr(
             _cfg_mod, "load_config",
@@ -411,7 +411,7 @@ class TestVerifierEnabled:
         assert agent._file_mutation_verifier_enabled() is True
 
     def test_config_disables_when_no_env(self, monkeypatch):
-        monkeypatch.delenv("HERMES_FILE_MUTATION_VERIFIER", raising=False)
+        monkeypatch.delenv("lucifexex_FILE_MUTATION_VERIFIER", raising=False)
         import lucifex_cli.config as _cfg_mod
         monkeypatch.setattr(
             _cfg_mod, "load_config",

@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Trajectory Compressor
 
@@ -386,7 +386,7 @@ class TrajectoryCompressor:
             if client is None:
                 raise RuntimeError(
                     f"Provider '{provider}' is not configured. "
-                    f"Check your API key or run: hermes setup")
+                    f"Check your API key or run: lucifexsetup")
             self.client = None  # Not used directly
             self.async_client = None  # Not used directly
         else:

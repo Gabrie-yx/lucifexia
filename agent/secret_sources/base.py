@@ -1,4 +1,4 @@
-﻿"""Secret-source contract: the ABC every secret backend implements.
+"""Secret-source contract: the ABC every secret backend implements.
 
 A *secret source* resolves credentials from an external secret manager
 (Bitwarden Secrets Manager, 1Password, an OS keystore, a user script, ...)

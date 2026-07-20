@@ -1,4 +1,4 @@
-﻿"""Tests for the Windows / Git Bash MSYS-path normalization in
+"""Tests for the Windows / Git Bash MSYS-path normalization in
 ``LocalEnvironment``.
 
 Background
@@ -130,8 +130,8 @@ class TestBashSafePath:
         """Production get_temp_dir emits C:/... — still needs /c/... rewrite."""
         monkeypatch.setattr(local_mod, "_IS_WINDOWS", True)
         assert (
-            _bash_safe_path("C:/Users/Alexander/.hermes/cache/terminal/hermes-snap-x.sh")
-            == "/c/Users/Alexander/.hermes/cache/terminal/hermes-snap-x.sh"
+            _bash_safe_path("C:/Users/Alexander/.lucifexex/cache/terminalucifexifex-snap-x.sh")
+            == "/c/Users/Alexander/.lucifexex/cache/terminalucifexifex-snap-x.sh"
         )
 
     def test_mixed_msys_path_normalizes_backslashes(self, monkeypatch):
@@ -147,9 +147,9 @@ class TestBashSafePath:
     def test_quote_bash_path_quotes_mixed_windows_path(self, monkeypatch):
         monkeypatch.setattr(local_mod, "_IS_WINDOWS", True)
         quoted = _quote_bash_path(
-            r"C:\Users\Alexander\AppData\Local\Temp\hermes-snap-abc.sh"
+            r"C:\Users\Alexander\AppData\Local\Temp\lucifexex-snap-abc.sh"
         )
-        assert "/c/Users/Alexander/AppData/Local/Temp/hermes-snap-abc.sh" in quoted
+        assert "/c/Users/Alexander/AppData/Local/Temp/lucifexex-snap-abc.sh" in quoted
         assert "\\" not in quoted
 
 
@@ -467,7 +467,7 @@ class TestWrapCommandWindowsNativeCwd:
         monkeypatch.setattr(LocalEnvironment, "_run_bash", fake_run_bash)
 
         # Production shape: get_temp_dir forces forward slashes but keeps C:.
-        snap = "C:/Users/Alexander/.hermes/cache/terminal/hermes-snap-deadbeef.sh"
+        snap = "C:/Users/Alexander/.lucifexex/cache/terminalucifexifex-snap-deadbeef.sh"
         with patch.object(LocalEnvironment, "__init__", lambda self, **kw: None):
             env = LocalEnvironment.__new__(LocalEnvironment)
             BaseEnvironment.__init__(
@@ -480,7 +480,7 @@ class TestWrapCommandWindowsNativeCwd:
             env.init_session()
 
         script = captured["script"]
-        assert "/c/Users/Alexander/.hermes/cache/terminal/hermes-snap-deadbeef.sh" in script
+        assert "/c/Users/Alexander/.lucifexex/cache/terminalucifexifex-snap-deadbeef.sh" in script
         assert "C:/Users/Alexander" not in script
         assert r"C:\Users\Alexander" not in script
 
@@ -495,7 +495,7 @@ class TestWrapCommandWindowsNativeCwd:
 
         monkeypatch.setattr(LocalEnvironment, "_run_bash", fake_run_bash)
 
-        snap = r"C:\Users\Alexander\AppData\Local\Temp\hermes-snap-deadbeef.sh"
+        snap = r"C:\Users\Alexander\AppData\Local\Temp\lucifexex-snap-deadbeef.sh"
         with patch.object(LocalEnvironment, "__init__", lambda self, **kw: None):
             env = LocalEnvironment.__new__(LocalEnvironment)
             BaseEnvironment.__init__(
@@ -508,5 +508,5 @@ class TestWrapCommandWindowsNativeCwd:
             env.init_session()
 
         script = captured["script"]
-        assert "/c/Users/Alexander/AppData/Local/Temp/hermes-snap-deadbeef.sh" in script
+        assert "/c/Users/Alexander/AppData/Local/Temp/lucifexex-snap-deadbeef.sh" in script
         assert r"C:\Users\Alexander\AppData" not in script

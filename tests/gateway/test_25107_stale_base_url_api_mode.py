@@ -1,4 +1,4 @@
-﻿"""Regression tests for #25107: gateway /model switch left a stale
+"""Regression tests for #25107: gateway /model switch left a stale
 ``base_url``/never persisted ``api_mode`` in config.yaml when switching to a
 custom provider whose resolver returned an empty ``base_url``.
 

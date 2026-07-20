@@ -1,4 +1,4 @@
-﻿"""Structured logging with steady-state silence for the LSP layer.
+"""Structured logging with steady-state silence for the LSP layer.
 
 The LSP layer fires on every write_file/patch.  In a busy session
 that's hundreds of events.  We want users to be able to ``rg`` the

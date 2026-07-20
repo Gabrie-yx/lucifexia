@@ -1,4 +1,4 @@
-﻿"""Tests for the bundled ``openai-codex`` image_gen plugin.
+"""Tests for the bundled ``openai-codex`` image_gen plugin.
 
 Mirrors ``test_openai_provider.py`` but targets the standalone
 Codex/ChatGPT-OAuth-backed provider that uses the Responses

@@ -1,4 +1,4 @@
-﻿"""Verify load_transcript returns SQLite messages without any JSONL file."""
+"""Verify load_transcript returns SQLite messages without any JSONL file."""
 
 
 from gateway.session import SessionStore

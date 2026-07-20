@@ -1,4 +1,4 @@
-﻿"""Shared auxiliary client router for side tasks.
+"""Shared auxiliary client router for side tasks.
 
 Provides a single resolution chain so every consumer (context compression,
 session search, web extraction, vision analysis, browser vision) picks up

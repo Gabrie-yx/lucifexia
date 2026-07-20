@@ -1,4 +1,4 @@
-﻿"""Tests for Discord channel_prompts resolution and injection."""
+"""Tests for Discord channel_prompts resolution and injection."""
 
 import sys
 import threading

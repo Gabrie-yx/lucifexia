@@ -1,4 +1,4 @@
-﻿"""Centralized Nous Portal request tags.
+"""Centralized Nous Portal request tags.
 
 Every Hermes request that hits the Nous Portal — main agent loop, auxiliary
 client (compression / titles / vision / web_extract / session_search / etc.),

@@ -1,4 +1,4 @@
-﻿"""Shared constants for Lucifex Agent.
+"""Shared constants for Lucifex Agent.
 
 Import-safe module with no dependencies — can be imported from anywhere
 without risk of circular imports.

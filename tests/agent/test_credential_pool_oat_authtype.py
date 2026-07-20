@@ -1,4 +1,4 @@
-﻿"""Regression tests for #63737: sk-ant-oat pool entries are OAuth."""
+"""Regression tests for #63737: sk-ant-oat pool entries are OAuth."""
 
 import json
 from pathlib import Path

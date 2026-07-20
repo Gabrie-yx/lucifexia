@@ -1,4 +1,4 @@
-﻿"""Tests for the gateway interactive choice picker (/reasoning, /fast).
+"""Tests for the gateway interactive choice picker (/reasoning, /fast).
 
 The picker mirrors the /model picker architecture: the gateway gates on the
 adapter *type* exposing ``send_choice_picker``, sends a flat choice list, and

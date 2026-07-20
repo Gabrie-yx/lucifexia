@@ -1,4 +1,4 @@
-﻿"""Profile-scoped credential resolution for multi-profile gateway multiplexing.
+"""Profile-scoped credential resolution for multi-profile gateway multiplexing.
 
 The multiplexing gateway serves many profiles from one process. Each profile
 has its own ``.env`` with its own provider keys and platform tokens, so we

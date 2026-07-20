@@ -1,4 +1,4 @@
-﻿"""Tests for Discord reply_to_mode functionality.
+"""Tests for Discord reply_to_mode functionality.
 
 Covers the threading behavior control for multi-chunk replies:
 - "off": Never reply-reference to original message

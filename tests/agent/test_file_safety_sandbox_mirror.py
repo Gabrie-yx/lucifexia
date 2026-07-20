@@ -1,4 +1,4 @@
-﻿"""Tests for the sandbox-mirror write guard in agent/file_safety.
+"""Tests for the sandbox-mirror write guard in agent/file_safety.
 
 The guard fires when a tool tries to write into the per-task mirror
 directory created by a non-local terminal backend (Docker, Daytona, etc.).

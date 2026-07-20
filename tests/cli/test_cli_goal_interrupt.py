@@ -1,4 +1,4 @@
-﻿"""Tests for CLI goal-continuation interrupt handling.
+"""Tests for CLI goal-continuation interrupt handling.
 
 Covers:
 - Ctrl+C during a /goal turn auto-pauses the goal (no more continuations).

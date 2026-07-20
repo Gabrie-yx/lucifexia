@@ -1,4 +1,4 @@
-﻿"""Tests for gateway session management."""
+"""Tests for gateway session management."""
 import json
 import pytest
 from pathlib import Path

@@ -1,4 +1,4 @@
-﻿"""Provider profile base class.
+"""Provider profile base class.
 
 A ProviderProfile declares everything about an inference provider in one place:
 auth, endpoints, client quirks, request-time quirks. The transport reads this

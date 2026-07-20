@@ -1,4 +1,4 @@
-﻿"""Reusable Microsoft Graph REST client helpers."""
+"""Reusable Microsoft Graph REST client helpers."""
 
 from __future__ import annotations
 

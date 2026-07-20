@@ -1,4 +1,4 @@
-﻿"""Tests for /update gateway slash command.
+"""Tests for /update gateway slash command.
 
 Tests both the _handle_update_command handler (spawns update process) and
 the _send_update_notification startup hook (sends results after restart).

@@ -1,4 +1,4 @@
-﻿"""Profile-isolation regression tests for single-process multi-profile runtimes.
+"""Profile-isolation regression tests for single-process multi-profile runtimes.
 
 In runtimes that serve every profile from one OS process (the desktop
 ``tui_gateway``), the profile boundary is the context-local

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Tests for electron/backend-probes.ts.
  *
  * Run with: node --test electron/backend-probes.test.ts

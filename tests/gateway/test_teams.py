@@ -1,4 +1,4 @@
-﻿"""Tests for the Microsoft Teams platform adapter plugin."""
+"""Tests for the Microsoft Teams platform adapter plugin."""
 
 import json
 import sys

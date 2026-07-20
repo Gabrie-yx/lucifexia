@@ -1,4 +1,4 @@
-﻿"""Human-friendly generic gateway status phrases.
+"""Human-friendly generic gateway status phrases.
 
 These helpers deliberately avoid relaying raw model scratch text.  They turn
 Hermes' long-running gateway status surface into short status lines suitable

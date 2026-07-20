@@ -1,4 +1,4 @@
-﻿"""Unit tests for the plugin LLM facade (``agent.plugin_llm``).
+"""Unit tests for the plugin LLM facade (``agent.plugin_llm``).
 
 These tests exercise the trust gate, JSON parsing, schema validation,
 image input encoding, and the auxiliary-client invocation contract.

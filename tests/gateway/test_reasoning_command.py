@@ -1,4 +1,4 @@
-﻿"""Tests for gateway /reasoning command and hot reload behavior."""
+"""Tests for gateway /reasoning command and hot reload behavior."""
 
 import asyncio
 import inspect

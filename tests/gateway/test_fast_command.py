@@ -1,4 +1,4 @@
-﻿"""Tests for gateway /fast support and Priority Processing routing."""
+"""Tests for gateway /fast support and Priority Processing routing."""
 
 import sys
 import threading

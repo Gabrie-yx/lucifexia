@@ -1,4 +1,4 @@
-﻿import type { CreditsViewResponse } from '../../../gatewayTypes.js'
+import type { CreditsViewResponse } from '../../../gatewayTypes.js'
 import { openExternalUrl } from '../../../lib/openExternalUrl.js'
 import { patchOverlayState } from '../../overlayStore.js'
 import type { SlashCommand } from '../types.js'
