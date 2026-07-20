@@ -31,7 +31,7 @@ from lucifex_cli._subprocess_compat import windows_detach_popen_kwargs
 from lucifex_constants import (
     find_node_executable,
     get_hermes_dir,
-    with_hermes_node_path,
+    with_lucifex_node_path,
 )
 
 logger = logging.getLogger(__name__)
@@ -549,7 +549,7 @@ class WhatsAppAdapter(WhatsAppBehaviorMixin, BasePlatformAdapter):
                         capture_output=True,
                         text=True,
                         timeout=npm_install_timeout,
-                        env=with_hermes_node_path(),
+                        env=with_lucifex_node_path(),
                     )
                     if install_result.returncode != 0:
                         print(f"[{self.name}] npm install failed: {install_result.stderr}")
@@ -622,8 +622,8 @@ class WhatsAppAdapter(WhatsAppBehaviorMixin, BasePlatformAdapter):
             # Build bridge subprocess environment.
             # Pass WHATSAPP_REPLY_PREFIX from config.yaml so the Node bridge
             # can use it without the user needing to set a separate env var.
-            # with_hermes_node_path() copies os.environ when called with no arg.
-            bridge_env = with_hermes_node_path()
+            # with_lucifex_node_path() copies os.environ when called with no arg.
+            bridge_env = with_lucifex_node_path()
             if self._reply_prefix is not None:
                 bridge_env["WHATSAPP_REPLY_PREFIX"] = self._reply_prefix
             # Pass the profile-aware cache directories so the bridge writes

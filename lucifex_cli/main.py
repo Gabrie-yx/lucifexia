@@ -2646,7 +2646,7 @@ def cmd_whatsapp(args):
     """Set up WhatsApp: choose mode, configure, install bridge, pair via QR."""
     _require_tty("whatsapp")
     from lucifex_cli.config import get_env_value, save_env_value
-    from lucifex_constants import find_node_executable, with_hermes_node_path
+    from lucifex_constants import find_node_executable, with_lucifex_node_path
 
     print()
     print("⚕ WhatsApp Setup")
@@ -2774,7 +2774,7 @@ def cmd_whatsapp(args):
                 text=True,
                 encoding="utf-8",
                 errors="replace",
-                env=with_hermes_node_path(),
+                env=with_lucifex_node_path(),
             )
         except KeyboardInterrupt:
             print("\n  ✗ Install cancelled")
@@ -2839,7 +2839,7 @@ def cmd_whatsapp(args):
                 str(session_dir),
             ],
             cwd=str(bridge_dir),
-            env=with_hermes_node_path(),
+            env=with_lucifex_node_path(),
         )
     except KeyboardInterrupt:
         pass
@@ -5104,7 +5104,7 @@ def _build_web_ui(web_dir: Path, *, fatal: bool = False) -> bool:
             encoding = getattr(sys.stdout, "encoding", None) or "ascii"
             print(text.encode(encoding, errors="replace").decode(encoding, errors="replace"))
 
-    from lucifex_constants import with_hermes_node_path
+    from lucifex_constants import with_lucifex_node_path
 
     npm = _resolve_node_runtime_npm()
     if not npm:
@@ -5112,7 +5112,7 @@ def _build_web_ui(web_dir: Path, *, fatal: bool = False) -> bool:
             _say("Web UI frontend not built and npm is not available.")
             _say("Install Node.js, then run:  cd web && npm install && npm run build")
         return not fatal
-    build_env = with_hermes_node_path()
+    build_env = with_lucifex_node_path()
     _say("→ Building web UI...")
 
     def _relay(result: "subprocess.CompletedProcess") -> None:
@@ -5545,7 +5545,7 @@ def _redownload_electron_dist(
     installer = electron_dir / "install.js"
     if not installer.is_file():
         return False
-    from lucifex_constants import find_node_executable, with_hermes_node_path
+    from lucifex_constants import find_node_executable, with_lucifex_node_path
 
     node = find_node_executable("node")
     if not node:
@@ -5558,7 +5558,7 @@ def _redownload_electron_dist(
     except OSError:
         pass
 
-    dl_env = with_hermes_node_path(env)
+    dl_env = with_lucifex_node_path(env)
     if mirror:
         dl_env["ELECTRON_MIRROR"] = mirror
     try:
@@ -5844,10 +5844,10 @@ def cmd_gui(args: argparse.Namespace):
     except Exception:
         pass
 
-    from lucifex_constants import with_hermes_node_path
+    from lucifex_constants import with_lucifex_node_path
 
-    # with_hermes_node_path() copies os.environ when called with no arg.
-    env = with_hermes_node_path()
+    # with_lucifex_node_path() copies os.environ when called with no arg.
+    env = with_lucifex_node_path()
     if getattr(args, "fake_boot", False):
         env["HERMES_DESKTOP_BOOT_FAKE"] = "1"
     if getattr(args, "ignore_existing", False):
@@ -5922,7 +5922,7 @@ def cmd_gui(args: argparse.Namespace):
             # hermes update) loses shell PATH customizations. Wrapping the
             # NixOS build env keeps its PYTHON hint while restoring managed Node
             # ahead of a bare PATH (same idiom as the `hermes update` path).
-            nixos_env = with_hermes_node_path(_nixos_build_env())
+            nixos_env = with_lucifex_node_path(_nixos_build_env())
             install_result = _run_npm_install_deterministic(npm, PROJECT_ROOT, capture_output=False, env=nixos_env)
             if install_result.returncode != 0:
                 if not _electron_pkg_staged_missing_dist(PROJECT_ROOT):
@@ -8555,9 +8555,9 @@ def _update_node_dependencies() -> list[str]:
 
     extra_args = ["--no-fund", "--no-audit", "--progress=false"]
 
-    from lucifex_constants import with_hermes_node_path
+    from lucifex_constants import with_lucifex_node_path
 
-    nixos_env = with_hermes_node_path(_nixos_build_env())
+    nixos_env = with_lucifex_node_path(_nixos_build_env())
 
     # Step 1: root install (no workspace recursion).
     # NOTE: capture_output=False here is deliberate (#18840) — optional
@@ -10476,9 +10476,9 @@ def _cmd_update_impl(args, gateway_mode: bool):
             # (Desktop → hermes-setup → hermes update), the shell PATH
             # customizations are lost, so a bare-PATH child would fail with
             # `node: not found` before cmd_gui can self-heal.
-            from lucifex_constants import with_hermes_node_path
+            from lucifex_constants import with_lucifex_node_path
 
-            _build_env = with_hermes_node_path()
+            _build_env = with_lucifex_node_path()
             build_result = _run_logged_subprocess(_desktop_build_cmd, cwd=PROJECT_ROOT, env=_build_env)
             if build_result.returncode != 0:
                 build_result = _run_logged_subprocess(_desktop_build_cmd, cwd=PROJECT_ROOT, env=_build_env)
