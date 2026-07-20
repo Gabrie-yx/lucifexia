@@ -1,4 +1,4 @@
-# Tool Search live test harness
+﻿# Tool Search live test harness
 
 Runs five scenarios against a real model (Claude Haiku 4.5 via OpenRouter) to
 verify that the bridge tools work end-to-end. Records transcripts in
@@ -12,7 +12,7 @@ python3 scripts/tool_search_livetest.py        # runs all 5 scenarios x 2 modes
 python3 scripts/analyze_livetest.py            # side-by-side report
 ```
 
-Requires `OPENROUTER_API_KEY` set or present in `~/.hermes/.env`.
+Requires `OPENROUTER_API_KEY` set or present in `~/.lucifex/.env`.
 
 ## What it verifies
 

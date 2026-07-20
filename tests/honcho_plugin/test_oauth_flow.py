@@ -1,4 +1,4 @@
-"""End-to-end test for the zero-CLI Honcho OAuth flow against a fake AS.
+﻿"""End-to-end test for the zero-CLI Honcho OAuth flow against a fake AS.
 
 Stands up a real local authorization server (no network, no browser) and drives
 the full path: begin → /authorize 302 → loopback :8765 callback → token
@@ -158,7 +158,7 @@ def test_state_mismatch_is_rejected(fake_as, tmp_path):
 
 def test_source_tags_the_authorize_link(fake_as):
     endpoints = oauth_flow.resolve_endpoints()
-    url, _ = oauth_flow.begin_authorization(endpoints, source="hermes-cli")
+    url, _ = oauth_flow.begin_authorization(endpoints, source="lucifex-cli")
     assert "source=hermes-cli" in url
     untagged, _ = oauth_flow.begin_authorization(endpoints)
     assert "source=" not in untagged
@@ -183,7 +183,7 @@ def test_grant_persists_default_client_id(tmp_path, fake_as, monkeypatch):
     oauth_flow.authorize_via_loopback(
         config_path=config_path,
         host="hermes",
-        source="hermes-cli",
+        source="lucifex-cli",
         apply_config=False,
         open_url=lambda url: _browser_driver(url),
         timeout=10,
@@ -194,9 +194,9 @@ def test_grant_persists_default_client_id(tmp_path, fake_as, monkeypatch):
 
 def test_config_path_rides_the_authorize_link(fake_as):
     endpoints = oauth_flow.resolve_endpoints()
-    url, _ = oauth_flow.begin_authorization(endpoints, config_path="~/.hermes/honcho.json")
+    url, _ = oauth_flow.begin_authorization(endpoints, config_path="~/.lucifex/honcho.json")
     q = parse_qs(urlparse(url).query)
-    assert q["config_path"][0] == "~/.hermes/honcho.json"
+    assert q["config_path"][0] == "~/.lucifex/honcho.json"
     bare, _ = oauth_flow.begin_authorization(endpoints)
     assert "config_path=" not in bare
 
@@ -206,7 +206,7 @@ def test_display_config_path_never_leaks_absolute_path():
 
     # Under home → collapsed to ~/…; outside home → bare filename only.
     under_home = Path.home() / ".hermes" / "profiles" / "work" / "honcho.json"
-    assert oauth_flow._display_config_path(under_home) == "~/.hermes/profiles/work/honcho.json"
+    assert oauth_flow._display_config_path(under_home) == "~/.lucifex/profiles/work/honcho.json"
     assert oauth_flow._display_config_path("/var/folders/tmp/honcho.json") == "honcho.json"
 
 
@@ -218,7 +218,7 @@ def test_cli_flow_stores_tokens_without_applying_config(tmp_path, fake_as):
     cred = oauth_flow.authorize_via_loopback(
         config_path=config_path,
         host="hermes",
-        source="hermes-cli",
+        source="lucifex-cli",
         apply_config=False,
         open_url=lambda url: _browser_driver(url),
         timeout=10,

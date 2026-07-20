@@ -3,7 +3,7 @@ Profile management for multiple isolated Hermes instances.
 
 Each profile is a fully independent LUCIFEX_HOME directory with its own
 config.yaml, .env, memory, sessions, skills, gateway, cron, and logs.
-Profiles live under ``~/.hermes/profiles/<name>/`` by default.
+Profiles live under ``~/.lucifex/profiles/<name>/`` by default.
 
 The "default" profile is ``~/.hermes`` itself — backward compatible,
 zero migration needed.
@@ -329,7 +329,7 @@ def validate_profile_name(name: str) -> None:
 
     Also rejects names in :data:`_RESERVED_NAMES` (``hermes``, ``test``,
     ``tmp``, ``root``, ``sudo``) that would create confusing on-disk
-    collisions (a ``hermes`` profile inside ``~/.hermes/``) or get refused
+    collisions (a ``hermes`` profile inside ``~/.lucifex/``) or get refused
     at alias-creation time anyway. ``default`` is a special pass-through —
     it's a valid alias for the built-in root profile.
     """
@@ -1057,7 +1057,7 @@ def create_profile(
             )
 
     if clone_all and source_dir:
-        # Full copy of source profile (exclude sibling ~/.hermes/profiles/)
+        # Full copy of source profile (exclude sibling ~/.lucifex/profiles/)
         shutil.copytree(
             source_dir,
             profile_dir,
@@ -1807,7 +1807,7 @@ def get_active_profile() -> str:
 def set_active_profile(name: str) -> None:
     """Set the sticky active profile.
 
-    Writes to ``~/.hermes/active_profile``. Use ``"default"`` to clear.
+    Writes to ``~/.lucifex/active_profile``. Use ``"default"`` to clear.
     """
     canon = normalize_profile_name(name)
     validate_profile_name(canon)
@@ -1833,7 +1833,7 @@ def get_active_profile_name() -> str:
     """Infer the current profile name from LUCIFEX_HOME.
 
     Returns ``"default"`` if LUCIFEX_HOME is not set or points to ``~/.hermes``.
-    Returns the profile name if LUCIFEX_HOME points into ``~/.hermes/profiles/<name>``.
+    Returns the profile name if LUCIFEX_HOME points into ``~/.lucifex/profiles/<name>``.
     Returns ``"custom"`` if LUCIFEX_HOME is set to an unrecognized path.
     """
     from lucifex_constants import get_lucifex_home

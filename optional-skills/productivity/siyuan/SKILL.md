@@ -1,4 +1,4 @@
----
+﻿---
 name: siyuan
 description: SiYuan Note API for searching, reading, creating, and managing blocks and documents in a self-hosted knowledge base via curl.
 version: 1.0.0
@@ -287,7 +287,7 @@ Common `type` values in SQL queries:
 If you prefer a native integration instead of curl, install the SiYuan MCP server:
 
 ```yaml
-# In ~/.hermes/config.yaml under mcp_servers:
+# In ~/.lucifex/config.yaml under mcp_servers:
 mcp_servers:
   siyuan:
     command: npx

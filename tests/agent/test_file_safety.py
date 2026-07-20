@@ -82,10 +82,10 @@ class TestEnvFileReadBlocking:
     def test_allowed_hermes_env(self):
         """Hermes' own .env inside LUCIFEX_HOME is NOT blocked by this rule
         (it's handled by other mechanisms). Only project-local .env is blocked."""
-        # Note: hermes internal .env is in ~/.hermes/.env which is NOT a project-local
+        # Note: hermes internal .env is in ~/.lucifex/.env which is NOT a project-local
         # path, but the basename check applies to ANY .env. This is intentional —
-        # even ~/.hermes/.env should not be readable via read_file.
-        error = get_read_block_error(os.path.expanduser("~/.hermes/.env"))
+        # even ~/.lucifex/.env should not be readable via read_file.
+        error = get_read_block_error(os.path.expanduser("~/.lucifex/.env"))
         assert error is not None
 
     def test_blocked_set_is_lowercase(self):

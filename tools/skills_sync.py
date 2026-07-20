@@ -1,8 +1,8 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Skills Sync -- Manifest-based seeding and updating of bundled skills.
 
-Copies bundled skills from the repo's skills/ directory into ~/.hermes/skills/
+Copies bundled skills from the repo's skills/ directory into ~/.lucifex/skills/
 and uses a manifest to track which skills have been synced and their origin hash.
 
 Manifest format (v2): each line is "skill_name:origin_hash" where origin_hash
@@ -18,7 +18,7 @@ Update logic:
   - DELETED by user (in manifest, absent from user dir): respected, not re-added.
   - REMOVED from bundled (in manifest, gone from repo): cleaned from manifest.
 
-The manifest lives at ~/.hermes/skills/.bundled_manifest.
+The manifest lives at ~/.lucifex/skills/.bundled_manifest.
 """
 
 import hashlib
@@ -125,7 +125,7 @@ def _read_suppressed_names() -> set:
     """Built-in skills the curator pruned — must NOT be re-seeded on sync.
 
     Delegates to ``tools.skill_usage`` (single source of truth) and falls back
-    to reading ``~/.hermes/skills/.curator_suppressed`` directly if that import
+    to reading ``~/.lucifex/skills/.curator_suppressed`` directly if that import
     is unavailable in a packaged/update context.
     """
     try:
@@ -223,7 +223,7 @@ def _discover_bundled_skills(bundled_dir: Path) -> List[Tuple[str, Path]]:
 def _compute_relative_dest(skill_dir: Path, bundled_dir: Path) -> Path:
     """
     Compute the destination path in SKILLS_DIR preserving the category structure.
-    e.g., bundled/skills/mlops/axolotl -> ~/.hermes/skills/mlops/axolotl
+    e.g., bundled/skills/mlops/axolotl -> ~/.lucifex/skills/mlops/axolotl
     """
     rel = skill_dir.relative_to(bundled_dir)
     return SKILLS_DIR / rel
@@ -482,7 +482,7 @@ def _backfill_optional_provenance(quiet: bool = False) -> List[str]:
 
 def sync_skills(quiet: bool = False) -> dict:
     """
-    Sync bundled skills into ~/.hermes/skills/ using the manifest.
+    Sync bundled skills into ~/.lucifex/skills/ using the manifest.
 
     Returns:
         dict with keys: copied (list), updated (list), skipped (int),
@@ -527,7 +527,7 @@ def sync_skills(quiet: bool = False) -> dict:
 
     for skill_name, skill_src in bundled_skills:
         # Curator-pruned built-ins: do not re-seed. The suppression list
-        # (~/.hermes/skills/.curator_suppressed) is written when the curator
+        # (~/.lucifex/skills/.curator_suppressed) is written when the curator
         # archives a bundled skill with curator.prune_builtins enabled. Without
         # this skip, every `hermes update` would resurrect a skill the user
         # deliberately pruned. Restoring the skill clears its suppression entry.
@@ -731,7 +731,7 @@ def _rmtree_writable(path: Path) -> None:
     """
     # Defense in depth (#48200): refuse to rmtree anything outside
     # ``LUCIFEX_HOME/skills/`` to prevent the catastrophic wipe of
-    # ``~/.hermes/`` (``.env``, ``MEMORY.md``, ``kanban.db``, custom
+    # ``~/.lucifex/`` (``.env``, ``MEMORY.md``, ``kanban.db``, custom
     # skills, scripts, …) that an earlier incident observed. Five call
     # sites in this file invoke this helper; if any one of them ever
     # computes a destination outside the skills root — through a bad
@@ -1161,7 +1161,7 @@ def remove_pristine_bundled_skills(dry_run: bool = False) -> dict:
 
 
 if __name__ == "__main__":
-    print("Syncing bundled skills into ~/.hermes/skills/ ...")
+    print("Syncing bundled skills into ~/.lucifex/skills/ ...")
     result = sync_skills(quiet=False)
     parts = [
         f"{len(result['copied'])} new",

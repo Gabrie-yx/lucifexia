@@ -1,4 +1,4 @@
-# Direct Auth, Checkout, And Orders API
+﻿# Direct Auth, Checkout, And Orders API
 
 Use this reference when the CLI cannot be installed. Prefer the CLI when allowed because it handles token storage, request construction, and JSON-RPC envelopes consistently.
 
@@ -23,7 +23,7 @@ Content-Type: application/x-www-form-urlencoded
 
 client_id=5c733ab2-1903-400a-891e-7ba20c09e2a3
 scope=openid email personal_agent
-device_name=<your name> - <device>   # e.g. Max - Mac Mini; name from IDENTITY.md (OpenClaw) / ~/.hermes/SOUL.md (Hermes)
+device_name=<your name> - <device>   # e.g. Max - Mac Mini; name from IDENTITY.md (OpenClaw) / ~/.lucifex/SOUL.md (Hermes)
 ```
 
 Show `verification_uri_complete` to the user. Poll:

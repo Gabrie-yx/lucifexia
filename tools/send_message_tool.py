@@ -1,4 +1,4 @@
-"""Send Message Tool -- cross-channel messaging via platform APIs.
+﻿"""Send Message Tool -- cross-channel messaging via platform APIs.
 
 Sends a message to a user or channel on any connected messaging platform
 (Telegram, Discord, Slack). Supports listing available targets and resolving
@@ -424,9 +424,9 @@ def _handle_send(args):
                     },
                 )
             else:
-                return tool_error(f"Platform '{platform_name}' is not configured. Set up credentials in ~/.hermes/config.yaml or environment variables.")
+                return tool_error(f"Platform '{platform_name}' is not configured. Set up credentials in ~/.lucifex/config.yaml or environment variables.")
         else:
-            return tool_error(f"Platform '{platform_name}' is not configured. Set up credentials in ~/.hermes/config.yaml or environment variables.")
+            return tool_error(f"Platform '{platform_name}' is not configured. Set up credentials in ~/.lucifex/config.yaml or environment variables.")
 
     from gateway.platforms.base import BasePlatformAdapter
 

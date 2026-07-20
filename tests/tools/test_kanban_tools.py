@@ -1,4 +1,4 @@
-"""Tests for the Kanban tool surface (tools/kanban_tools.py).
+﻿"""Tests for the Kanban tool surface (tools/kanban_tools.py).
 
 Verifies:
   - Tools are gated on HERMES_KANBAN_TASK: a normal chat session sees
@@ -31,7 +31,7 @@ def test_kanban_tools_hidden_without_env_var(monkeypatch, tmp_path):
     from toolsets import resolve_toolset
 
     invalidate_check_fn_cache()
-    schema = registry.get_definitions(set(resolve_toolset("hermes-cli")), quiet=True)
+    schema = registry.get_definitions(set(resolve_toolset("lucifex-cli")), quiet=True)
     names = {s["function"].get("name") for s in schema if "function" in s}
     kanban = {n for n in names if n and n.startswith("kanban_")}
     assert kanban == set(), (
@@ -51,7 +51,7 @@ def test_kanban_tools_visible_with_env_var(monkeypatch, tmp_path):
     from toolsets import resolve_toolset
 
     invalidate_check_fn_cache()
-    schema = registry.get_definitions(set(resolve_toolset("hermes-cli")), quiet=True)
+    schema = registry.get_definitions(set(resolve_toolset("lucifex-cli")), quiet=True)
     names = {s["function"].get("name") for s in schema if "function" in s}
     kanban = {n for n in names if n and n.startswith("kanban_")}
     expected = {
@@ -106,7 +106,7 @@ def test_worker_with_kanban_toolset_still_hides_board_routing(monkeypatch, tmp_p
     from toolsets import resolve_toolset
 
     invalidate_check_fn_cache()
-    schema = registry.get_definitions(set(resolve_toolset("hermes-cli")), quiet=True)
+    schema = registry.get_definitions(set(resolve_toolset("lucifex-cli")), quiet=True)
     names = {s["function"].get("name") for s in schema if "function" in s}
     kanban = {n for n in names if n and n.startswith("kanban_")}
     assert {
@@ -131,7 +131,7 @@ def test_kanban_tools_visible_with_toolset_config(monkeypatch, tmp_path):
     from toolsets import resolve_toolset
 
     invalidate_check_fn_cache()
-    schema = registry.get_definitions(set(resolve_toolset("hermes-cli")), quiet=True)
+    schema = registry.get_definitions(set(resolve_toolset("lucifex-cli")), quiet=True)
     names = {s["function"].get("name") for s in schema if "function" in s}
     kanban = {n for n in names if n and n.startswith("kanban_")}
     expected = {

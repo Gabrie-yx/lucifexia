@@ -1,9 +1,9 @@
-"""Regression for the stale-``utils``-module ImportError after a hot ``git pull``.
+﻿"""Regression for the stale-``utils``-module ImportError after a hot ``git pull``.
 
 Real incident (gateway session 1518671026962174144)::
 
     Sorry, I encountered an error (ImportError).
-    cannot import name 'env_float' from 'utils' (~/.hermes/lucifex-agent/utils.py)
+    cannot import name 'env_float' from 'utils' (~/.lucifex/lucifex-agent/utils.py)
 
 Mechanism:
 

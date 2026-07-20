@@ -55,7 +55,7 @@ def _resolve_local_initial_cwd(cwd: str) -> str:
     ``TERMINAL_CWD`` can be populated from config.yaml before the terminal
     backend is created.  If that value is relative and happens to match the
     directory Hermes was already launched from (for example ``lucifex-agent``
-    while the process cwd is ``~/.hermes/lucifex-agent``), passing it through
+    while the process cwd is ``~/.lucifex/lucifex-agent``), passing it through
     unchanged makes the wrapper run ``cd lucifex-agent`` *inside* the project
     and fail with a confusing nested-path error.  Anchor relative local cwd
     values once, up front, so both ``subprocess.Popen(cwd=...)`` and the

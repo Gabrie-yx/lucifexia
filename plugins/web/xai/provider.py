@@ -1,4 +1,4 @@
-"""xAI Web Search — plugin form.
+﻿"""xAI Web Search — plugin form.
 
 Routes ``web_search`` tool calls through xAI's agentic Web Search tool
 (server-side ``web_search`` on the Responses API). Grok runs the actual
@@ -26,7 +26,7 @@ Optional knobs (under ``web.xai`` in ``config.yaml``)::
 
 Auth: reuses :func:`tools.xai_http.resolve_xai_http_credentials`, which
 prefers Hermes-managed xAI Grok OAuth (via ``hermes auth``) and falls back
-to ``XAI_API_KEY`` (resolved through ``~/.hermes/.env``, then
+to ``XAI_API_KEY`` (resolved through ``~/.lucifex/.env``, then
 ``os.environ``).
 """
 

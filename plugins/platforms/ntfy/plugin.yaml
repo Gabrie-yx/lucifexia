@@ -1,4 +1,4 @@
-name: ntfy-platform
+﻿name: ntfy-platform
 label: ntfy
 kind: platform
 version: 1.0.0
@@ -14,7 +14,7 @@ description: >
   for any real trust boundary.
 author: sprmn24
 # ``requires_env`` and ``optional_env`` entries are surfaced in the
-# ``hermes config`` UI via the platform-plugin env var injector in
+# ``lucifex config`` UI via the platform-plugin env var injector in
 # ``lucifex_cli/config.py``.
 requires_env:
   - name: NTFY_TOPIC

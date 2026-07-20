@@ -1,4 +1,4 @@
-"""Upload a Hermes session transcript to Hugging Face as an agent trace.
+﻿"""Upload a Hermes session transcript to Hugging Face as an agent trace.
 
 Hermes stores sessions in its own SQLite store (``lucifex_state.SessionDB``),
 so we reconstruct the conversation and emit it in the **Claude Code JSONL**
@@ -258,7 +258,7 @@ _NO_TOKEN_MESSAGE = (
     "\n"
     "1. Create a token with WRITE access at https://huggingface.co/settings/tokens\n"
     "   (New token -> type \"Write\" -> copy it).\n"
-    "2. Add it to your environment as HF_TOKEN (e.g. in ~/.hermes/.env):\n"
+    "2. Add it to your environment as HF_TOKEN (e.g. in ~/.lucifex/.env):\n"
     "     HF_TOKEN=hf_xxxxxxxxxxxxxxxxxxxx\n"
     "3. Run /upload-trace again (or `hermes trace upload`)."
 )

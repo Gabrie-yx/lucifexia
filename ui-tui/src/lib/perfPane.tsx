@@ -1,10 +1,10 @@
-// Perf instrumentation for the full render pipeline.
+﻿// Perf instrumentation for the full render pipeline.
 //
 //   PerfPane (React.Profiler)  → per-pane commit times
 //   logFrameEvent (ink.onFrame) → yoga / renderer / diff / optimize / write
 //                                 phases + yoga counters + scroll fast-path
 //
-// Both gate on HERMES_DEV_PERF=1 and dump JSON-lines (default ~/.hermes/perf.log,
+// Both gate on HERMES_DEV_PERF=1 and dump JSON-lines (default ~/.lucifex/perf.log,
 // override HERMES_DEV_PERF_LOG). Tagged { src: 'react' | 'frame' } for jq.
 // HERMES_DEV_PERF_MS (default 2) skips sub-ms idle frames; set 0 to capture all.
 //

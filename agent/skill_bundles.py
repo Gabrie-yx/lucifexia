@@ -1,4 +1,4 @@
-"""Skill bundles — aliases that load multiple skills under one slash command.
+﻿"""Skill bundles — aliases that load multiple skills under one slash command.
 
 A skill bundle is a small YAML file that names a set of skills to load
 together. Invoking ``/<bundle-name>`` from the CLI or gateway loads every
@@ -7,7 +7,7 @@ referenced skill's full content into a single user message, the same way
 
 Storage
 -------
-Bundles live in ``~/.hermes/skill-bundles/*.yaml`` (and the equivalent
+Bundles live in ``~/.lucifex/skill-bundles/*.yaml`` (and the equivalent
 profile-aware directory under ``LUCIFEX_HOME``). Each file looks like::
 
     name: backend-dev

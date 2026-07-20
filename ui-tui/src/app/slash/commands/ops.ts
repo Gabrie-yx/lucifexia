@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   BrowserManageResponse,
   CommandsCatalogResponse,
   DelegationPauseResponse,
@@ -127,7 +127,7 @@ export const opsCommands: SlashCommand[] = [
   },
 
   {
-    help: 're-read ~/.hermes/.env into the running gateway (CLI parity)',
+    help: 're-read ~/.lucifex/.env into the running gateway (CLI parity)',
     name: 'reload',
     run: (_arg, ctx) => {
       ctx.gateway

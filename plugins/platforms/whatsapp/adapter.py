@@ -1,4 +1,4 @@
-"""
+﻿"""
 WhatsApp platform adapter.
 
 WhatsApp integration is more complex than Telegram/Discord because:
@@ -628,7 +628,7 @@ class WhatsAppAdapter(WhatsAppBehaviorMixin, BasePlatformAdapter):
                 bridge_env["WHATSAPP_REPLY_PREFIX"] = self._reply_prefix
             # Pass the profile-aware cache directories so the bridge writes
             # media where the Python side reads it.  Without these the bridge
-            # hardcodes ~/.hermes/{image,audio,document}_cache, which diverges
+            # hardcodes ~/.lucifex/{image,audio,document}_cache, which diverges
             # under LUCIFEX_HOME overrides, profiles, and the new cache/ layout.
             from gateway.platforms.base import (
                 get_audio_cache_dir as _get_audio_dir,

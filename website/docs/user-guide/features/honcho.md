@@ -1,4 +1,4 @@
----
+﻿---
 sidebar_position: 99
 title: "Honcho Memory"
 description: "AI-native persistent memory via Honcho — dialectic reasoning, multi-agent user modeling, and deep personalization"
@@ -39,13 +39,13 @@ hermes memory setup    # select "honcho" from the provider list
 Or configure manually:
 
 ```yaml
-# ~/.hermes/config.yaml
+# ~/.lucifex/config.yaml
 memory:
   provider: honcho
 ```
 
 ```bash
-echo 'HONCHO_API_KEY=***' >> ~/.hermes/.env
+echo 'HONCHO_API_KEY=***' >> ~/.lucifex/.env
 ```
 
 Get an API key at [honcho.dev](https://honcho.dev).

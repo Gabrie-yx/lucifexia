@@ -1,4 +1,4 @@
-"""Gateway lifecycle guard for cron job creation (#30719).
+﻿"""Gateway lifecycle guard for cron job creation (#30719).
 
 An agent running inside a gateway can schedule a cron job that calls
 ``hermes gateway restart`` (or ``launchctl kickstart ai.hermes.gateway``
@@ -80,7 +80,7 @@ def _resolve_script_path(script_path: str) -> Path:
     under ``<LUCIFEX_HOME>/scripts/`` and only accepts absolute paths as-is.
     We MUST mirror that here so the guard scans the file that will actually
     run — otherwise a job whose script lives at the scheduler's real location
-    (``~/.hermes/scripts/restart.sh``) but is passed as the bare name
+    (``~/.lucifex/scripts/restart.sh``) but is passed as the bare name
     ``restart.sh`` would read as a nonexistent relative path and silently
     scan prompt-only content, letting the command through.
     """

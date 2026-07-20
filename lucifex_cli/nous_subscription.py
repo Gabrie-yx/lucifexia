@@ -1,4 +1,4 @@
-"""Helpers for Nous subscription managed-tool capabilities."""
+﻿"""Helpers for Nous subscription managed-tool capabilities."""
 
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ from tools.tool_backend_helpers import (
 
 
 _DEFAULT_PLATFORM_TOOLSETS = {
-    "cli": "hermes-cli",
+    "cli": "lucifex-cli",
 }
 
 # Maps a tools_config provider's ``managed_nous_feature`` to the tool-pool

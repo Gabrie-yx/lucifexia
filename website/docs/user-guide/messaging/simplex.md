@@ -1,4 +1,4 @@
-# SimpleX Chat
+﻿# SimpleX Chat
 
 [SimpleX Chat](https://simplex.chat/) is a private, decentralised messaging platform where users own their contacts and groups. Unlike other platforms, SimpleX assigns no persistent user IDs — every contact is identified by an opaque internal ID generated at connection time, which makes it one of the most private messengers available.
 
@@ -41,7 +41,7 @@ Select **SimpleX Chat** and follow the prompts.
 
 ### Via environment variables
 
-Add these to `~/.hermes/.env`:
+Add these to `~/.lucifex/.env`:
 
 ```
 SIMPLEX_WS_URL=ws://127.0.0.1:5225

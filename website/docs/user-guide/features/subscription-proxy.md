@@ -1,4 +1,4 @@
----
+﻿---
 sidebar_position: 15
 title: "Subscription Proxy"
 description: "Use your Nous Portal subscription (or other OAuth provider) as an OpenAI-compatible endpoint for external apps"
@@ -33,7 +33,7 @@ hermes portal
 ```
 
 This opens your browser for the Nous Portal OAuth flow. Hermes stores
-the refresh token in `~/.hermes/auth.json` — the same place all Hermes
+the refresh token in `~/.lucifex/auth.json` — the same place all Hermes
 provider logins live.
 
 ### 2. Start the proxy

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
+﻿import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   Bot,
@@ -131,7 +131,7 @@ function normalizeWhatsAppMode(mode: unknown): "bot" | "self-chat" | null {
 
 export default function ChannelsPage() {
   const [platforms, setPlatforms] = useState<MessagingPlatform[]>([]);
-  const [envPath, setEnvPath] = useState("~/.hermes/.env");
+  const [envPath, setEnvPath] = useState("~/.lucifex/.env");
   const [gatewayStartCommand, setGatewayStartCommand] = useState(
     "lucifex gateway start",
   );
@@ -163,7 +163,7 @@ export default function ChannelsPage() {
       .getMessagingPlatforms()
       .then((res) => {
         setPlatforms(res.platforms);
-        setEnvPath(res.env_path || "~/.hermes/.env");
+        setEnvPath(res.env_path || "~/.lucifex/.env");
         setGatewayStartCommand(res.gateway_start_command || "lucifex gateway start");
       })
       .catch((e) => showToast(`Error: ${e}`, "error"));

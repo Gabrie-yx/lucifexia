@@ -1,4 +1,4 @@
----
+﻿---
 sidebar_position: 10
 title: "Tutorial: GitHub PR Review Agent"
 description: "Build an automated AI code reviewer that monitors your repos, reviews pull requests, and delivers feedback — hands-free"
@@ -53,7 +53,7 @@ If you have a public endpoint available, check out [Automated GitHub PR Comments
 - **Messaging configured** (optional) — [Telegram](/user-guide/messaging/telegram) or [Discord](/user-guide/messaging/discord)
 
 :::tip No messaging? No problem
-Use `deliver: "local"` to save reviews to `~/.hermes/cron/output/`. Great for testing before wiring up notifications.
+Use `deliver: "local"` to save reviews to `~/.lucifex/cron/output/`. Great for testing before wiring up notifications.
 :::
 
 ---
@@ -101,10 +101,10 @@ If you're happy with the quality, time to automate it.
 A skill gives Hermes consistent review guidelines that persist across sessions and cron runs. Without one, review quality varies.
 
 ```bash
-mkdir -p ~/.hermes/skills/code-review
+mkdir -p ~/.lucifex/skills/code-review
 ```
 
-Create `~/.hermes/skills/code-review/SKILL.md`:
+Create `~/.lucifex/skills/code-review/SKILL.md`:
 
 ```markdown
 ---

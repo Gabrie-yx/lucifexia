@@ -1,4 +1,4 @@
----
+﻿---
 sidebar_position: 7
 title: "Docker"
 description: "在 Docker 中运行 Hermes Agent 以及将 Docker 用作终端后端"
@@ -24,7 +24,7 @@ docker run -it --rm \
   nousresearch/lucifex-agent setup
 ```
 
-这将进入设置向导，向导会提示你输入 API 密钥并将其写入 `~/.hermes/.env`。你只需执行一次。强烈建议此时为 gateway 配置一个聊天系统。
+这将进入设置向导，向导会提示你输入 API 密钥并将其写入 `~/.lucifex/.env`。你只需执行一次。强烈建议此时为 gateway 配置一个聊天系统。
 
 ## 以 gateway 模式运行
 
@@ -128,7 +128,7 @@ docker run -it --rm \
 
 ## 持久化卷
 
-`/opt/data` 卷是所有 Hermes 状态的唯一数据来源。它映射到宿主机的 `~/.hermes/` 目录，包含：
+`/opt/data` 卷是所有 Hermes 状态的唯一数据来源。它映射到宿主机的 `~/.lucifex/` 目录，包含：
 
 | 路径 | 内容 |
 |------|----------|
@@ -160,7 +160,7 @@ docker run -it --rm \
 
 ## 多 profile 支持
 
-Hermes 支持[多个 profile](../reference/profile-commands.md)——独立的 `~/.hermes/` 子目录，让你可以从单个安装运行独立的 agent（不同的 SOUL、skills、memory、sessions、credentials）。**在官方 Docker 镜像内，s6 监管树把每个 profile 当作一等受监管服务**，因此推荐部署方式是：**一个容器承载多个 profile**。
+Hermes 支持[多个 profile](../reference/profile-commands.md)——独立的 `~/.lucifex/` 子目录，让你可以从单个安装运行独立的 agent（不同的 SOUL、skills、memory、sessions、credentials）。**在官方 Docker 镜像内，s6 监管树把每个 profile 当作一等受监管服务**，因此推荐部署方式是：**一个容器承载多个 profile**。
 
 每个通过 `hermes profile create <name>` 创建的 profile 都会获得：
 
@@ -333,7 +333,7 @@ docker compose up -d
 
 ## 技能与凭据文件
 
-当使用 Docker 作为执行环境时（不是上述方法，而是 agent 在 Docker 沙箱内运行命令——参见 [配置 → Docker 后端](./configuration.md#docker-backend)），Hermes 为所有工具调用复用单个长期运行的容器，并自动将技能目录（`~/.hermes/skills/`）和技能声明的所有凭据文件以只读卷的形式绑定挂载到该容器中。技能脚本、模板和引用在沙箱内无需手动配置即可使用，由于容器在 Hermes 进程的整个生命周期内持续存在，你安装的任何依赖或写入的文件都会在下次工具调用时保留。
+当使用 Docker 作为执行环境时（不是上述方法，而是 agent 在 Docker 沙箱内运行命令——参见 [配置 → Docker 后端](./configuration.md#docker-backend)），Hermes 为所有工具调用复用单个长期运行的容器，并自动将技能目录（`~/.lucifex/skills/`）和技能声明的所有凭据文件以只读卷的形式绑定挂载到该容器中。技能脚本、模板和引用在沙箱内无需手动配置即可使用，由于容器在 Hermes 进程的整个生命周期内持续存在，你安装的任何依赖或写入的文件都会在下次工具调用时保留。
 
 SSH 和 Modal 后端也会进行相同的同步——技能和凭据文件在每次命令执行前通过 rsync 或 Modal mount API 上传。
 
@@ -462,7 +462,7 @@ networks:
     driver: bridge
 ```
 
-然后在 `~/.hermes/config.yaml` 中，使用**容器名称**作为主机名：
+然后在 `~/.lucifex/config.yaml` 中，使用**容器名称**作为主机名：
 
 ```yaml
 model:
@@ -560,7 +560,7 @@ model:
 
 ### "Permission denied" 错误
 
-容器的 stage2 hook 通过 `s6-setuidgid` 在每个受监管的服务内将权限降至非 root 用户 `hermes`（UID 10000）。如果宿主机的 `~/.hermes/` 由不同 UID 拥有，请设置 `HERMES_UID`/`HERMES_GID` 以匹配宿主机用户，或确保数据目录可写：
+容器的 stage2 hook 通过 `s6-setuidgid` 在每个受监管的服务内将权限降至非 root 用户 `hermes`（UID 10000）。如果宿主机的 `~/.lucifex/` 由不同 UID 拥有，请设置 `HERMES_UID`/`HERMES_GID` 以匹配宿主机用户，或确保数据目录可写：
 
 ```sh
 chmod -R 755 ~/.hermes

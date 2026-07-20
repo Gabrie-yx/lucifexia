@@ -1,4 +1,4 @@
-"""Tests for tools/checkpoint_manager.py — CheckpointManager (v2 single-store)."""
+﻿"""Tests for tools/checkpoint_manager.py — CheckpointManager (v2 single-store)."""
 
 import json
 import logging
@@ -46,7 +46,7 @@ def work_dir(tmp_path):
 
 @pytest.fixture()
 def checkpoint_base(tmp_path):
-    """Isolated checkpoint base — never writes to ~/.hermes/."""
+    """Isolated checkpoint base — never writes to ~/.lucifex/."""
     return tmp_path / "checkpoints"
 
 

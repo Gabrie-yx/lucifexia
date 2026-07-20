@@ -1,4 +1,4 @@
-"""Shared threat-pattern library for context window security scanning.
+﻿"""Shared threat-pattern library for context window security scanning.
 
 This module is the single source of truth for prompt-injection / promptware /
 exfiltration patterns used across the context-assembly scanners
@@ -239,7 +239,7 @@ def scan_for_threats(content: str, scope: str = "context") -> List[str]:
     # Normalise to NFKC so full-width / compatibility Unicode variants
     # (e.g. ｃａｔ → cat, Ａ → A) are folded to their ASCII counterparts before
     # the regex engine sees them.  This prevents homograph substitution from
-    # bypassing keyword checks (e.g. ``ｃａｔ ~/.hermes/.env``).  NOTE: this
+    # bypassing keyword checks (e.g. ``ｃａｔ ~/.lucifex/.env``).  NOTE: this
     # does NOT defend against cross-script confusables (Cyrillic ``а`` U+0430),
     # which NFKC leaves untouched — that needs a TR#39 confusable database.
     normalised = unicodedata.normalize("NFKC", content)

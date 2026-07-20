@@ -1,4 +1,4 @@
----
+﻿---
 title: "Github Pr Workflow — GitHub PR 生命周期：分支、提交、开启、CI、合并"
 sidebar_label: "Github Pr Workflow"
 description: "GitHub PR 生命周期：分支、提交、开启、CI、合并"
@@ -48,8 +48,8 @@ else
   AUTH="git"
   # Ensure we have a token for API calls
   if [ -z "$GITHUB_TOKEN" ]; then
-    if [ -f ~/.hermes/.env ] && grep -q "^GITHUB_TOKEN=" ~/.hermes/.env; then
-      GITHUB_TOKEN=$(grep "^GITHUB_TOKEN=" ~/.hermes/.env | head -1 | cut -d= -f2 | tr -d '\n\r')
+    if [ -f ~/.lucifex/.env ] && grep -q "^GITHUB_TOKEN=" ~/.lucifex/.env; then
+      GITHUB_TOKEN=$(grep "^GITHUB_TOKEN=" ~/.lucifex/.env | head -1 | cut -d= -f2 | tr -d '\n\r')
     elif grep -q "github.com" ~/.git-credentials 2>/dev/null; then
       GITHUB_TOKEN=$(grep "github.com" ~/.git-credentials 2>/dev/null | head -1 | sed 's|https://[^:]*:\([^@]*\)@.*|\1|')
     fi

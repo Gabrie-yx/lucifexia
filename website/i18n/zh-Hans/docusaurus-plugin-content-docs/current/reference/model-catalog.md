@@ -1,4 +1,4 @@
----
+﻿---
 sidebar_position: 11
 title: 模型目录
 description: 远程托管的清单文件，驱动 OpenRouter 和 Nous Portal 的精选模型选择器列表。
@@ -61,7 +61,7 @@ https://lucifex-agent.nousresearch.com/docs/api/model-catalog.json
 | 网络故障且无缓存 | 静默回退到仓库内置快照 |
 | 清单未通过 schema 校验 | 视为不可达 |
 
-缓存位置：`~/.hermes/cache/model_catalog.json`。
+缓存位置：`~/.lucifex/cache/model_catalog.json`。
 
 ## 配置
 

@@ -1,4 +1,4 @@
-"""System-prompt assembly for :class:`AIAgent`.
+﻿"""System-prompt assembly for :class:`AIAgent`.
 
 The agent's system prompt is built once per session and reused across all
 turns — only context compression triggers a rebuild.  This keeps the
@@ -382,8 +382,8 @@ def build_system_prompt_parts(agent: Any, system_message: Optional[str] = None) 
             pass
 
     # Active-profile hint — names the Hermes profile the agent is running
-    # under so it doesn't conflate ~/.hermes/skills/ (default profile) with
-    # ~/.hermes/profiles/<active>/skills/ (this profile's). Deterministic
+    # under so it doesn't conflate ~/.lucifex/skills/ (default profile) with
+    # ~/.lucifex/profiles/<active>/skills/ (this profile's). Deterministic
     # for the lifetime of the agent — profile name doesn't change
     # mid-session, so this doesn't break the prompt cache.
     # See file_safety._resolve_active_profile_name + classify_cross_profile_target

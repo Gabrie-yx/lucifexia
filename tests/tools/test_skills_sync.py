@@ -190,7 +190,7 @@ class TestRmtreeWritableScopeGuard:
     ``tools/skills_sync.py`` ever computes a path outside the skills
     root — through a bad join, a missing default, a malicious
     bundled-manifest entry, or a stale path in scope after an
-    exception — the result is a silent ``shutil.rmtree(~/.hermes/)``
+    exception — the result is a silent ``shutil.rmtree(~/.lucifex/)``
     that destroys the user's ``.env``, ``MEMORY.md``, ``kanban.db``,
     custom skills, scripts, and the rest of the install in one go
     (#48200).
@@ -211,7 +211,7 @@ class TestRmtreeWritableScopeGuard:
                 _rmtree_writable(Path("/"))
 
     def test_refuses_LUCIFEX_HOME_itself(self, tmp_path):
-        """``~/.hermes/`` itself is what the #48200 wipe destroyed."""
+        """``~/.lucifex/`` itself is what the #48200 wipe destroyed."""
         from tools.skills_sync import _rmtree_writable
 
         hermes = tmp_path / "home"

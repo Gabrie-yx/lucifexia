@@ -1,4 +1,4 @@
----
+﻿---
 sidebar_position: 1
 title: "Quickstart"
 description: "Your first conversation with Hermes Agent — from install to chatting in under 5 minutes"
@@ -159,8 +159,8 @@ You can switch providers at any time with `hermes model` — no lock-in. For a f
 
 Hermes separates secrets from normal config:
 
-- **Secrets and tokens** → `~/.hermes/.env`
-- **Non-secret settings** → `~/.hermes/config.yaml`
+- **Secrets and tokens** → `~/.lucifex/.env`
+- **Non-secret settings** → `~/.lucifex/config.yaml`
 
 The easiest way to set values correctly is through the CLI:
 
@@ -278,8 +278,8 @@ hermes config set terminal.backend ssh       # Remote server
 
 ```bash
 # From the Hermes install directory (the curl installer placed it at
-# ~/.hermes/lucifex-agent on Linux/macOS or %LOCALAPPDATA%\hermes\lucifex-agent on Windows):
-cd ~/.hermes/lucifex-agent
+# ~/.lucifex/lucifex-agent on Linux/macOS or %LOCALAPPDATA%\hermes\lucifex-agent on Windows):
+cd ~/.lucifex/lucifex-agent
 uv pip install -e ".[voice]"
 # Includes faster-whisper for free local speech-to-text
 ```
@@ -290,7 +290,7 @@ Then in the CLI: `/voice on`. Press `Ctrl+B` to record. See [Voice Mode](../user
 
 Skills are on-demand instruction documents that teach Hermes how to do a specific task — deploy to Kubernetes, open a GitHub PR, fine-tune a model, search for GIFs. Each is a `SKILL.md` file with a name, a description, and a step-by-step procedure. The agent reads the short descriptions for free and only loads a skill's full content when a task actually calls for it, so adding skills doesn't bloat every request.
 
-Hermes ships with a catalog of bundled skills already installed in `~/.hermes/skills/`. You can add more from the Skills Hub, or write your own.
+Hermes ships with a catalog of bundled skills already installed in `~/.lucifex/skills/`. You can add more from the Skills Hub, or write your own.
 
 **Browse and install from the hub:**
 
@@ -316,7 +316,7 @@ See [Skills System](../user-guide/features/skills.md) for writing your own, exte
 ### MCP servers
 
 ```yaml
-# Add to ~/.hermes/config.yaml
+# Add to ~/.lucifex/config.yaml
 mcp_servers:
   github:
     command: npx
@@ -333,7 +333,7 @@ ACP support ships with the standard `[all]` extras, so the curl installer alread
 hermes acp
 ```
 
-(If you installed without `[all]`, run `cd ~/.hermes/lucifex-agent && uv pip install -e ".[acp]"` first.)
+(If you installed without `[all]`, run `cd ~/.lucifex/lucifex-agent && uv pip install -e ".[acp]"` first.)
 
 See [ACP Editor Integration](../user-guide/features/acp.md).
 
@@ -348,7 +348,7 @@ These are the problems that waste the most time:
 | Hermes opens but gives empty or broken replies | Provider auth or model selection is wrong | Run `hermes model` again and confirm provider, model, and auth |
 | Custom endpoint "works" but returns garbage | Wrong base URL, model name, or not actually OpenAI-compatible | Verify the endpoint in a separate client first |
 | Gateway starts but nobody can message it | Bot token, allowlist, or platform setup is incomplete | Re-run `hermes gateway setup` and check `hermes gateway status` |
-| `hermes --continue` can't find old session | Switched profiles or session never saved | Check `hermes sessions list` and confirm you're in the right profile |
+| `hermes --continue` can't find old session | Switched profiles or session never saved | Check `lucifex sessions list` and confirm you're in the right profile |
 | Model unavailable or odd fallback behavior | Provider routing or fallback settings are too aggressive | Keep routing off until the base provider is stable |
 | `hermes doctor` flags config problems | Config values are missing or stale | Fix the config, retest a plain chat before adding features |
 
@@ -359,7 +359,7 @@ When something feels off, use this order:
 1. `hermes doctor`
 2. `hermes model`
 3. `hermes setup`
-4. `hermes sessions list`
+4. `lucifex sessions list`
 5. `hermes --continue`
 6. `hermes gateway status`
 

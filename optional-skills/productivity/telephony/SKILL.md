@@ -1,4 +1,4 @@
----
+﻿---
 name: telephony
 description: Give Hermes phone capabilities without core tool changes. Provision and persist a Twilio number, send and receive SMS/MMS, make direct calls, and place AI-driven outbound calls through Bland.ai or Vapi.
 version: 1.0.0
@@ -115,7 +115,7 @@ Used for long-lived provider credentials and owned-number IDs, for example:
 - `VAPI_PHONE_NUMBER_ID`
 - `PHONE_PROVIDER` (AI call provider: bland or vapi)
 
-### `~/.hermes/telephony_state.json`
+### `~/.lucifex/telephony_state.json`
 Used for skill-only state that should survive across sessions, for example:
 - remembered default Twilio number / SID
 - remembered Vapi phone number ID
@@ -130,7 +130,7 @@ This means:
 After installing this skill, locate the script like this:
 
 ```bash
-SCRIPT="$(find ~/.hermes/skills -path '*/telephony/scripts/telephony.py' -print -quit)"
+SCRIPT="$(find ~/.lucifex/skills -path '*/telephony/scripts/telephony.py' -print -quit)"
 ```
 
 If `SCRIPT` is empty, the skill is not installed yet.

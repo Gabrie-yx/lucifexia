@@ -1,4 +1,4 @@
-"""Tests for tools/send_message_tool.py."""
+﻿"""Tests for tools/send_message_tool.py."""
 
 import asyncio
 import json
@@ -1182,7 +1182,7 @@ class TestSendToPlatformWhatsapp:
                     Platform.WHATSAPP,
                     SimpleNamespace(enabled=True, token=None, extra={"bridge_port": 3000}),
                     chat_id,
-                    "hello from hermes",
+                    "hello from lucifex",
                 )
             )
         finally:
@@ -1193,7 +1193,7 @@ class TestSendToPlatformWhatsapp:
         async_mock.assert_awaited_once()
         _call = async_mock.await_args
         assert _call.args[1] == chat_id
-        assert _call.args[2] == "hello from hermes"
+        assert _call.args[2] == "hello from lucifex"
 
 
 class TestSendTelegramHtmlDetection:

@@ -1,4 +1,4 @@
-"""Unit tests for scripts/docker_rebootstrap_nous_session.py.
+﻿"""Unit tests for scripts/docker_rebootstrap_nous_session.py.
 
 The boot-time re-seed is the load-bearing "does not clobber a healthy session"
 guard: it may overwrite the on-disk Nous provider entry when that entry is
@@ -205,7 +205,7 @@ def test_newer_seed_for_non_bootstrap_client_does_not_clobber_healthy_entry(tmp_
     seed = json.dumps({
         "providers": {
             "nous": {
-                "client_id": "hermes-cli",
+                "client_id": "lucifex-cli",
                 "access_token": "FRESH-at",
                 "refresh_token": "FRESH-rt",
                 "obtained_at": "2026-07-14T19:05:00Z",

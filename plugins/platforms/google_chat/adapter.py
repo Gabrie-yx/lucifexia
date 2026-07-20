@@ -3426,7 +3426,7 @@ def interactive_setup() -> None:
     The setup wizard at ``lucifex_cli/gateway.py`` calls this for plugin
     platforms instead of using the in-tree ``_PLATFORMS`` data block. The
     flow mirrors the in-tree built-ins: print the GCP setup instructions,
-    prompt for env vars, persist them to ``~/.hermes/.env`` so the next
+    prompt for env vars, persist them to ``~/.lucifex/.env`` so the next
     gateway restart picks them up.
     """
     from lucifex_cli.cli_output import (
@@ -3508,7 +3508,7 @@ def interactive_setup() -> None:
         save_env_value("GOOGLE_CHAT_HOME_CHANNEL", home.strip())
 
     print()
-    print_success("Google Chat configuration saved to ~/.hermes/.env")
+    print_success("Google Chat configuration saved to ~/.lucifex/.env")
     print_info("Restart the gateway: hermes gateway restart")
 
 

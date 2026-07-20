@@ -1,4 +1,4 @@
----
+﻿---
 sidebar_position: 7
 ---
 
@@ -185,7 +185,7 @@ This shows the profile's Hermes home directory, not the terminal working directo
 ```bash
 $ hermes profile show work
 Profile: work
-Path:    ~/.hermes/profiles/work
+Path:    ~/.lucifex/profiles/work
 Model:   anthropic/claude-sonnet-4 (anthropic)
 Gateway: stopped
 Skills:  12
@@ -238,7 +238,7 @@ Renames a profile. Updates the directory and shell alias.
 
 ```bash
 hermes profile rename mybot assistant
-# ~/.hermes/profiles/mybot → ~/.hermes/profiles/assistant
+# ~/.lucifex/profiles/mybot → ~/.lucifex/profiles/assistant
 # ~/.local/bin/mybot → ~/.local/bin/assistant
 ```
 

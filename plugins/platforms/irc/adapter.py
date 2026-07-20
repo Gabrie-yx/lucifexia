@@ -1,4 +1,4 @@
-"""
+﻿"""
 IRC Platform Adapter for Hermes Agent.
 
 A plugin-based gateway adapter that connects to an IRC server and relays
@@ -638,7 +638,7 @@ def interactive_setup() -> None:
             print_info("No nicks allowed — the bot will ignore all messages until you add nicks.")
 
     print()
-    print_success("IRC configuration saved to ~/.hermes/.env")
+    print_success("IRC configuration saved to ~/.lucifex/.env")
     print_info("Restart the gateway for changes to take effect: hermes gateway restart")
 
 

@@ -1,4 +1,4 @@
-"""CLI for the Hermes Kanban board — ``hermes kanban …`` subcommand.
+﻿"""CLI for the Hermes Kanban board — ``hermes kanban …`` subcommand.
 
 Exposes the full Kanban command surface documented in the design spec
 (``docs/hermes-kanban-v1-spec.pdf``).  All DB work is delegated to
@@ -786,7 +786,7 @@ def build_parser(parent_subparsers: argparse._SubParsersAction) -> argparse.Argu
     p_asg = sub.add_parser(
         "assignees",
         help="List known profiles + per-profile task counts "
-             "(union of ~/.hermes/profiles/ and current assignees on the board)",
+             "(union of ~/.lucifex/profiles/ and current assignees on the board)",
     )
     p_asg.add_argument("--json", action="store_true")
 
@@ -1278,7 +1278,7 @@ def _cmd_init(args: argparse.Namespace) -> int:
         for name in profiles:
             print(f"  {name}")
     else:
-        print("No profiles found under ~/.hermes/profiles/.")
+        print("No profiles found under ~/.lucifex/profiles/.")
         print("Create one with `hermes -p <name> setup` before assigning tasks.")
     print()
     print("Next step: start the gateway so ready tasks actually get picked up.")

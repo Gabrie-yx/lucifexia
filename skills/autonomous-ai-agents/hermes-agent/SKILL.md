@@ -1,4 +1,4 @@
----
+﻿---
 name: lucifex-agent
 description: "Configure, extend, or contribute to Hermes Agent."
 version: 2.3.0
@@ -175,7 +175,7 @@ Platform docs: https://lucifex-agent.nousresearch.com/docs/user-guide/messaging/
 ### Sessions
 
 ```
-hermes sessions list        List recent sessions
+lucifex sessions list        List recent sessions
 hermes sessions browse      Interactive picker
 hermes sessions export OUT  Export to JSONL
 hermes sessions rename ID T Rename a session
@@ -313,7 +313,7 @@ The registry of record is `lucifex_cli/commands.py` — every consumer
 /toolsets            List toolsets (CLI)
 /skills              Search/install skills (CLI)
 /skill <name>        Load a skill into session
-/reload-skills       Re-scan ~/.hermes/skills/ for added/removed skills
+/reload-skills       Re-scan ~/.lucifex/skills/ for added/removed skills
 /reload              Reload .env variables into the running session (CLI)
 /reload-mcp          Reload MCP servers
 /cron                Manage cron jobs (CLI)
@@ -367,21 +367,21 @@ The registry of record is `lucifex_cli/commands.py` — every consumer
 ## Key Paths & Config
 
 ```
-~/.hermes/config.yaml       Main configuration
-~/.hermes/.env              API keys and secrets (under $LUCIFEX_HOME if set)
+~/.lucifex/config.yaml       Main configuration
+~/.lucifex/.env              API keys and secrets (under $LUCIFEX_HOME if set)
 $LUCIFEX_HOME/skills/        Installed skills
-~/.hermes/sessions/         Gateway routing index, request dumps, *.jsonl transcripts (and optional per-session JSON snapshots when sessions.write_json_snapshots: true)
-~/.hermes/state.db          Canonical session store (SQLite + FTS5)
-~/.hermes/logs/             Gateway and error logs
-~/.hermes/auth.json         OAuth tokens and credential pools
-~/.hermes/lucifex-agent/     Source code (if git-installed)
+~/.lucifex/sessions/         Gateway routing index, request dumps, *.jsonl transcripts (and optional per-session JSON snapshots when sessions.write_json_snapshots: true)
+~/.lucifex/state.db          Canonical session store (SQLite + FTS5)
+~/.lucifex/logs/             Gateway and error logs
+~/.lucifex/auth.json         OAuth tokens and credential pools
+~/.lucifex/lucifex-agent/     Source code (if git-installed)
 ```
 
-Profiles use `~/.hermes/profiles/<name>/` with the same layout.
+Profiles use `~/.lucifex/profiles/<name>/` with the same layout.
 
 ### Config Sections
 
-Edit with `hermes config edit` or `hermes config set section.key value`.
+Edit with `lucifex config edit` or `lucifex config set section.key value`.
 
 | Section | Key options |
 |---------|-------------|
@@ -490,7 +490,7 @@ Hermes injects project-level instructions into the system prompt by reading cont
 
 - **Use `.hermes.md`** when you want Hermes-specific behavior that lives above the cwd (root + subtree), or when you want rules to inherit from a parent directory. The parent walk stops at the git root, so a home-level `.hermes.md` won't leak into every project (a git repo's root is the boundary).
 - **Use `AGENTS.md`** when the same project will also be worked on by other agents (Codex, Claude Code, OpenCode). Those tools all have their own conventions for `AGENTS.md`, and the "cwd only" contract keeps the file portable.
-- **Don't put project rules in `~/.hermes/AGENTS.md`** (or any other home-level location). When Hermes runs with that directory as cwd, the file loads — but only for that one directory. For cross-project context, use `SOUL.md` (in `$LUCIFEX_HOME`, identity-only) or install a skill via `hermes skills install`.
+- **Don't put project rules in `~/.lucifex/AGENTS.md`** (or any other home-level location). When Hermes runs with that directory as cwd, the file loads — but only for that one directory. For cross-project context, use `SOUL.md` (in `$LUCIFEX_HOME`, identity-only) or install a skill via `hermes skills install`.
 
 ### Size and truncation
 
@@ -571,7 +571,7 @@ Note: YOLO / `approvals.mode: off` does NOT turn off secret redaction. They are 
 
 ### Shell hooks allowlist
 
-Some shell-hook integrations require explicit allowlisting before they fire. Managed via `~/.hermes/shell-hooks-allowlist.json` — prompted interactively the first time a hook wants to run.
+Some shell-hook integrations require explicit allowlisting before they fire. Managed via `~/.lucifex/shell-hooks-allowlist.json` — prompted interactively the first time a hook wants to run.
 
 ### Disabling the web/browser/image-gen tools
 
@@ -760,7 +760,7 @@ so nothing is lost.
   **off by default** — opt in with `curator.consolidate: true` or
   `hermes curator run --consolidate`. Routine background curation costs
   zero tokens.
-- **Telemetry:** sidecar at `~/.hermes/skills/.usage.json` holds
+- **Telemetry:** sidecar at `~/.lucifex/skills/.usage.json` holds
   per-skill `use_count`, `view_count`, `patch_count`,
   `last_activity_at`, `state`, `pinned`.
 
@@ -852,7 +852,7 @@ To inspect how your terminal reports a keystroke, run
 
 **HTTP 400 "No models provided" on first run** — `config.yaml` was saved with
 a UTF-8 BOM (Notepad does this). Re-save as UTF-8 without BOM;
-`hermes config edit` writes correctly.
+`lucifex config edit` writes correctly.
 
 ### `execute_code` / Sandbox
 
@@ -922,7 +922,7 @@ and logs — avoids shell-escaping backslashes in bash.
 ### Gateway issues
 Check logs first:
 ```bash
-grep -i "failed to send\|error" ~/.hermes/logs/gateway.log | tail -20
+grep -i "failed to send\|error" ~/.lucifex/logs/gateway.log | tail -20
 ```
 
 Common gateway problems:
@@ -948,7 +948,7 @@ hermes config set auxiliary.vision.model <model_name>
 
 | Looking for... | Location |
 |----------------|----------|
-| Config options | `hermes config edit` or [Configuration docs](https://lucifex-agent.nousresearch.com/docs/user-guide/configuration) |
+| Config options | `lucifex config edit` or [Configuration docs](https://lucifex-agent.nousresearch.com/docs/user-guide/configuration) |
 | Available tools | `hermes tools list` or [Tools reference](https://lucifex-agent.nousresearch.com/docs/reference/tools-reference) |
 | Slash commands | `/help` in session or [Slash commands reference](https://lucifex-agent.nousresearch.com/docs/reference/slash-commands) |
 | Skills catalog | `hermes skills browse` or [Skills catalog](https://lucifex-agent.nousresearch.com/docs/reference/skills-catalog) |
@@ -958,11 +958,11 @@ hermes config set auxiliary.vision.model <model_name>
 | Profiles | `hermes profile list` or [Profiles docs](https://lucifex-agent.nousresearch.com/docs/user-guide/profiles) |
 | Cron jobs | `hermes cron list` or [Cron docs](https://lucifex-agent.nousresearch.com/docs/user-guide/features/cron) |
 | Memory | `hermes memory status` or [Memory docs](https://lucifex-agent.nousresearch.com/docs/user-guide/features/memory) |
-| Env variables | `hermes config env-path` or [Env vars reference](https://lucifex-agent.nousresearch.com/docs/reference/environment-variables) |
+| Env variables | `lucifex config env-path` or [Env vars reference](https://lucifex-agent.nousresearch.com/docs/reference/environment-variables) |
 | CLI commands | `hermes --help` or [CLI reference](https://lucifex-agent.nousresearch.com/docs/reference/cli-commands) |
-| Gateway logs | `~/.hermes/logs/gateway.log` |
+| Gateway logs | `~/.lucifex/logs/gateway.log` |
 | Session files | `hermes sessions browse` (reads state.db) |
-| Source code | `~/.hermes/lucifex-agent/` |
+| Source code | `~/.lucifex/lucifex-agent/` |
 
 ---
 
@@ -993,7 +993,7 @@ lucifex-agent/
 └── website/              # Docusaurus docs site
 ```
 
-Config: `~/.hermes/config.yaml` (settings), `~/.hermes/.env` (API keys) — both under `$LUCIFEX_HOME` when it is set.
+Config: `~/.lucifex/config.yaml` (settings), `~/.lucifex/.env` (API keys) — both under `$LUCIFEX_HOME` when it is set.
 
 ### Adding a Tool
 
@@ -1028,7 +1028,7 @@ registry.register(
 
 All handlers must return JSON strings. Use `get_lucifex_home()` for paths,
 never hardcode `~/.hermes`. For custom/local-only tools, write a plugin in
-`~/.hermes/plugins/` instead of editing core — see the developer docs.
+`~/.lucifex/plugins/` instead of editing core — see the developer docs.
 
 ### Adding a Slash Command
 
@@ -1062,7 +1062,7 @@ scripts/run_tests.sh tests/tools/test_x.py    # one file
 scripts/run_tests.sh -v --tb=long             # pass-through pytest flags
 ```
 
-- Tests auto-redirect `LUCIFEX_HOME` to temp dirs — never touch real `~/.hermes/`.
+- Tests auto-redirect `LUCIFEX_HOME` to temp dirs — never touch real `~/.lucifex/`.
 - The script probes `.venv`, then `venv`, then the shared worktree venv.
 - **Windows:** the wrapper is POSIX-only; see the **Windows-Specific Quirks**
   section above for the direct-pytest workaround.

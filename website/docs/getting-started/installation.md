@@ -1,4 +1,4 @@
----
+﻿---
 sidebar_position: 2
 title: "Installation"
 description: "Install Hermes Agent on Linux, macOS, WSL2, native Windows, or Android via Termux"
@@ -47,10 +47,10 @@ Where the installer puts things depends on whether you're installing as a normal
 
 | Installer                              | Code lives at                  | `hermes` binary                         | Data directory                       |
 | -------------------------------------- | ------------------------------ | --------------------------------------- | ------------------------------------ |
-| Per-user (git installer)               | `~/.hermes/lucifex-agent/`      | `~/.local/bin/hermes` (symlink)         | `~/.hermes/`                         |
+| Per-user (git installer)               | `~/.lucifex/lucifex-agent/`      | `~/.local/bin/hermes` (symlink)         | `~/.lucifex/`                         |
 | Root-mode (`sudo curl … \| sudo bash`) | `/usr/local/lib/lucifex-agent/` | `/usr/local/bin/hermes`                 | `/root/.hermes/` (or `$LUCIFEX_HOME`) |
 
-The root-mode **FHS layout** (`/usr/local/lib/…`, `/usr/local/bin/hermes`) matches where other system-wide developer tools land on Linux. It's useful for shared-machine deployments where one system install should serve every user. Per-user config (auth, skills, sessions) still lives under each user's `~/.hermes/` or explicit `LUCIFEX_HOME`.
+The root-mode **FHS layout** (`/usr/local/lib/…`, `/usr/local/bin/hermes`) matches where other system-wide developer tools land on Linux. It's useful for shared-machine deployments where one system install should serve every user. Per-user config (auth, skills, sessions) still lives under each user's `~/.lucifex/` or explicit `LUCIFEX_HOME`.
 
 ### After Installation
 
@@ -141,7 +141,7 @@ Running Hermes as a dedicated unprivileged user (e.g. a `hermes` systemd service
    sudo ln -s /home/hermes/.hermes/lucifex-agent/venv/bin/hermes /usr/local/bin/hermes
    ```
 
-4. **Verify:** `hermes doctor` should now run cleanly. If you get `ModuleNotFoundError: No module named 'dotenv'`, you're invoking the repo source `hermes` file (`~/.hermes/lucifex-agent/hermes`) with system Python instead of the venv launcher (`~/.hermes/lucifex-agent/venv/bin/hermes`) — fix step 3.
+4. **Verify:** `hermes doctor` should now run cleanly. If you get `ModuleNotFoundError: No module named 'dotenv'`, you're invoking the repo source `hermes` file (`~/.lucifex/lucifex-agent/hermes`) with system Python instead of the venv launcher (`~/.lucifex/lucifex-agent/venv/bin/hermes`) — fix step 3.
 
 The same pattern works on Arch (the installer uses pacman with the same sudo-detection logic), Fedora/RHEL, and openSUSE — those distros don't support `--with-deps` at all, so an administrator always installs the system libraries separately. The relevant `dnf`/`zypper` commands are printed by the installer.
 
@@ -152,11 +152,11 @@ The same pattern works on Arch (the installer uses pacman with the same sudo-det
 | Problem | Solution |
 |---------|----------|
 | `hermes: command not found` | Reload your shell (`source ~/.bashrc`) or check PATH |
-| `API key not set` | Run `hermes model` to configure your provider, or `hermes config set OPENROUTER_API_KEY your_key` |
-| Missing config after update | Run `hermes config check` then `hermes config migrate` |
+| `API key not set` | Run `hermes model` to configure your provider, or `lucifex config set OPENROUTER_API_KEY your_key` |
+| Missing config after update | Run `lucifex config check` then `lucifex config migrate` |
 
 For more diagnostics, run `hermes doctor` — it will tell you exactly what's missing and how to fix it.
 
 ## Install method auto-detection
 
-Hermes auto-detects whether it was installed via `pip`, the git installer, Homebrew, or NixOS, and `hermes update` prints the matching update command for that path. There's no env var to set — the detection is based on the install layout (Python site-packages, `~/.hermes/lucifex-agent/`, Homebrew prefix, or Nix store path). `hermes doctor` also surfaces the detected method under its environment summary.
+Hermes auto-detects whether it was installed via `pip`, the git installer, Homebrew, or NixOS, and `hermes update` prints the matching update command for that path. There's no env var to set — the detection is based on the install layout (Python site-packages, `~/.lucifex/lucifex-agent/`, Homebrew prefix, or Nix store path). `hermes doctor` also surfaces the detected method under its environment summary.

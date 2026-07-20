@@ -1,4 +1,4 @@
-"""OSS provider definitions for LLM, embedder, and vector store."""
+﻿"""OSS provider definitions for LLM, embedder, and vector store."""
 
 from __future__ import annotations
 
@@ -46,7 +46,7 @@ EMBEDDER_PROVIDERS: dict[str, dict[str, Any]] = {
 VECTOR_PROVIDERS: dict[str, dict[str, Any]] = {
     "qdrant": {
         "label": "Qdrant",
-        "default_config": {"path": os.path.expanduser("~/.hermes/mem0_qdrant")},
+        "default_config": {"path": os.path.expanduser("~/.lucifex/mem0_qdrant")},
         "pip_dep": "qdrant-client",
     },
     "pgvector": {

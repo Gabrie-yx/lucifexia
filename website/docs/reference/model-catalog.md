@@ -1,4 +1,4 @@
----
+﻿---
 sidebar_position: 11
 title: Model Catalog
 description: Remotely-hosted manifest driving curated model picker lists for OpenRouter and Nous Portal.
@@ -64,7 +64,7 @@ Field notes:
 | Network failure, no cache | Silent fallback to in-repo snapshot |
 | Manifest fails schema validation | Treated as unreachable |
 
-Cache location: `~/.hermes/cache/model_catalog.json`.
+Cache location: `~/.lucifex/cache/model_catalog.json`.
 
 ## Config
 

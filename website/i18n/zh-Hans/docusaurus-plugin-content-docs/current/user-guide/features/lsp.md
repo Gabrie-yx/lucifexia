@@ -1,4 +1,4 @@
----
+﻿---
 sidebar_position: 16
 title: "LSP — 语义诊断"
 description: "真实语言服务器（pyright、gopls、rust-analyzer 等）接入 write_file 和 patch 所使用的写后 lint 检查。"
@@ -197,11 +197,11 @@ brew install shellcheck     # macOS
 scoop install shellcheck    # Windows
 ```
 
-同样的警告会在服务器启动时记录一次到 `~/.hermes/logs/agent.log`。
+同样的警告会在服务器启动时记录一次到 `~/.lucifex/logs/agent.log`。
 
 **服务器已启动但从不返回诊断结果**
 
-检查 `~/.hermes/logs/agent.log` 中的 `[agent.lsp.client]` 条目——语言服务器的
+检查 `~/.lucifex/logs/agent.log` 中的 `[agent.lsp.client]` 条目——语言服务器的
 stderr 输出和协议错误均记录于此。部分服务器（尤其是 rust-analyzer）需要完成
 全项目索引后才会输出单文件诊断；服务器启动后的第一次编辑可能没有诊断结果，
 后续编辑才会获取到。

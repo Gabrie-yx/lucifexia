@@ -51,7 +51,7 @@ Si tu habilidad es especializada, contribuida por la comunidad o de nicho, es me
 
 ## Proveedores de Memoria: Publicar como Plugin Independiente
 
-**Ya no aceptamos nuevos proveedores de memoria en este repositorio.** El conjunto de proveedores integrados en `plugins/memory/` (honcho, mem0, supermemory, byterover, hindsight, holographic, openviking, retaindb) está cerrado. Si quieres añadir un nuevo backend de memoria, publícalo como un **repositorio de plugin independiente** que los usuarios instalen en `~/.hermes/plugins/` (o a través de un entry point de pip).
+**Ya no aceptamos nuevos proveedores de memoria en este repositorio.** El conjunto de proveedores integrados en `plugins/memory/` (honcho, mem0, supermemory, byterover, hindsight, holographic, openviking, retaindb) está cerrado. Si quieres añadir un nuevo backend de memoria, publícalo como un **repositorio de plugin independiente** que los usuarios instalen en `~/.lucifex/plugins/` (o a través de un entry point de pip).
 
 Los plugins de memoria independientes:
 
@@ -98,12 +98,12 @@ npm install
 ### Configurar para desarrollo
 
 ```bash
-mkdir -p ~/.hermes/{cron,sessions,logs,memories,skills}
-cp cli-config.yaml.example ~/.hermes/config.yaml
-touch ~/.hermes/.env
+mkdir -p ~/.lucifex/{cron,sessions,logs,memories,skills}
+cp cli-config.yaml.example ~/.lucifex/config.yaml
+touch ~/.lucifex/.env
 
 # Añadir al menos una clave de proveedor LLM:
-echo "OPENROUTER_API_KEY=***" >> ~/.hermes/.env
+echo "OPENROUTER_API_KEY=***" >> ~/.lucifex/.env
 ```
 
 ### Ejecutar
@@ -191,28 +191,28 @@ lucifex-agent/
 │   ├── install.ps1               # Instalador Windows PowerShell
 │   └── whatsapp-bridge/          # Puente WhatsApp Node.js (Baileys)
 │
-├── skills/                   # Habilidades incluidas (copiadas a ~/.hermes/skills/ en la instalación)
+├── skills/                   # Habilidades incluidas (copiadas a ~/.lucifex/skills/ en la instalación)
 ├── optional-skills/          # Habilidades opcionales oficiales (descubribles vía hub, no activadas por defecto)
 ├── tests/                    # Suite de tests
 ├── website/                  # Sitio de documentación (lucifex-agent.nousresearch.com)
 │
-├── cli-config.yaml.example   # Configuración de ejemplo (copiada a ~/.hermes/config.yaml)
+├── cli-config.yaml.example   # Configuración de ejemplo (copiada a ~/.lucifex/config.yaml)
 └── AGENTS.md                 # Guía de desarrollo para asistentes de codificación IA
 ```
 
-### Configuración del usuario (almacenada en `~/.hermes/`)
+### Configuración del usuario (almacenada en `~/.lucifex/`)
 
 | Ruta | Propósito |
 |------|-----------|
-| `~/.hermes/config.yaml` | Configuración (modelo, terminal, toolsets, compresión, etc.) |
-| `~/.hermes/.env` | Claves API y secretos |
-| `~/.hermes/auth.json` | Credenciales OAuth (Nous Portal) |
-| `~/.hermes/skills/` | Todas las habilidades activas (incluidas + instaladas desde hub + creadas por el agente) |
-| `~/.hermes/memories/` | Memoria persistente (MEMORY.md, USER.md) |
-| `~/.hermes/state.db` | Base de datos de sesiones SQLite |
-| `~/.hermes/sessions/` | Índice de enrutamiento del gateway (`sessions.json`), migas de pan de solicitudes, transcripciones `*.jsonl` del gateway y (opcionalmente) snapshots JSON por sesión cuando `sessions.write_json_snapshots: true` está configurado. Los snapshots por sesión están desactivados por defecto; state.db es canónica. |
-| `~/.hermes/cron/` | Datos de trabajos programados |
-| `~/.hermes/whatsapp/session/` | Credenciales del puente WhatsApp |
+| `~/.lucifex/config.yaml` | Configuración (modelo, terminal, toolsets, compresión, etc.) |
+| `~/.lucifex/.env` | Claves API y secretos |
+| `~/.lucifex/auth.json` | Credenciales OAuth (Nous Portal) |
+| `~/.lucifex/skills/` | Todas las habilidades activas (incluidas + instaladas desde hub + creadas por el agente) |
+| `~/.lucifex/memories/` | Memoria persistente (MEMORY.md, USER.md) |
+| `~/.lucifex/state.db` | Base de datos de sesiones SQLite |
+| `~/.lucifex/sessions/` | Índice de enrutamiento del gateway (`sessions.json`), migas de pan de solicitudes, transcripciones `*.jsonl` del gateway y (opcionalmente) snapshots JSON por sesión cuando `sessions.write_json_snapshots: true` está configurado. Los snapshots por sesión están desactivados por defecto; state.db es canónica. |
+| `~/.lucifex/cron/` | Datos de trabajos programados |
+| `~/.lucifex/whatsapp/session/` | Credenciales del puente WhatsApp |
 
 ---
 
@@ -412,7 +412,7 @@ Hermes usa un sistema de skins basado en datos — no se necesitan cambios de c�
 
 **Opción A: Skin de usuario (archivo YAML)**
 
-Crea `~/.hermes/skins/<nombre>.yaml`:
+Crea `~/.lucifex/skins/<nombre>.yaml`:
 
 ```yaml
 name: mitema

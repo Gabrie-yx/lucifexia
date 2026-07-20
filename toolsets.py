@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Toolsets Module
 
@@ -429,7 +429,7 @@ TOOLSETS = {
         "includes": []
     },
     
-    "hermes-cli": {
+    "lucifex-cli": {
         "description": "Full interactive CLI toolset - all default tools plus cronjob management",
         "tools": _HERMES_CORE_TOOLS,
         "includes": []
@@ -446,13 +446,13 @@ TOOLSETS = {
         "includes": []
     },
 
-    "hermes-telegram": {
+    "lucifex-telegram": {
         "description": "Telegram bot toolset - full access for personal use (terminal has safety checks)",
         "tools": _HERMES_CORE_TOOLS,
         "includes": []
     },
     
-    "hermes-discord": {
+    "lucifex-discord": {
         "description": "Discord bot toolset - full access (terminal has safety checks via dangerous command approval)",
         "tools": _HERMES_CORE_TOOLS + [
             "discord",
@@ -461,61 +461,61 @@ TOOLSETS = {
         "includes": []
     },
     
-    "hermes-whatsapp": {
+    "lucifex-whatsapp": {
         "description": "WhatsApp bot toolset - similar to Telegram (personal messaging, more trusted)",
         "tools": _HERMES_CORE_TOOLS,
         "includes": []
     },
     
-    "hermes-slack": {
+    "lucifex-slack": {
         "description": "Slack bot toolset - full access for workspace use (terminal has safety checks)",
         "tools": _HERMES_CORE_TOOLS,
         "includes": []
     },
     
-    "hermes-signal": {
+    "lucifex-signal": {
         "description": "Signal bot toolset - encrypted messaging platform (full access)",
         "tools": _HERMES_CORE_TOOLS,
         "includes": []
     },
 
-    "hermes-bluebubbles": {
+    "lucifex-bluebubbles": {
         "description": "BlueBubbles iMessage bot toolset - Apple iMessage via local BlueBubbles server",
         "tools": _HERMES_CORE_TOOLS,
         "includes": []
     },
 
-    "hermes-homeassistant": {
+    "lucifex-homeassistant": {
         "description": "Home Assistant bot toolset - smart home event monitoring and control",
         "tools": _HERMES_CORE_TOOLS,
         "includes": []
     },
 
-    "hermes-email": {
+    "lucifex-email": {
         "description": "Email bot toolset - interact with Hermes via email (IMAP/SMTP)",
         "tools": _HERMES_CORE_TOOLS,
         "includes": []
     },
 
-    "hermes-mattermost": {
+    "lucifex-mattermost": {
         "description": "Mattermost bot toolset - self-hosted team messaging (full access)",
         "tools": _HERMES_CORE_TOOLS,
         "includes": []
     },
 
-    "hermes-matrix": {
+    "lucifex-matrix": {
         "description": "Matrix bot toolset - decentralized encrypted messaging (full access)",
         "tools": _HERMES_CORE_TOOLS,
         "includes": []
     },
 
-    "hermes-dingtalk": {
+    "lucifex-dingtalk": {
         "description": "DingTalk bot toolset - enterprise messaging platform (full access)",
         "tools": _HERMES_CORE_TOOLS,
         "includes": []
     },
 
-    "hermes-feishu": {
+    "lucifex-feishu": {
         "description": "Feishu/Lark bot toolset - enterprise messaging via Feishu/Lark (full access)",
         "tools": _HERMES_CORE_TOOLS + [
             "feishu_doc_read",
@@ -527,31 +527,31 @@ TOOLSETS = {
         "includes": []
     },
 
-    "hermes-weixin": {
+    "lucifex-weixin": {
         "description": "Weixin bot toolset - personal WeChat messaging via iLink (full access)",
         "tools": _HERMES_CORE_TOOLS,
         "includes": []
     },
 
-    "hermes-qqbot": {
+    "lucifex-qqbot": {
         "description": "QQBot toolset - QQ messaging via Official Bot API v2 (full access)",
         "tools": _HERMES_CORE_TOOLS,
         "includes": []
     },
 
-    "hermes-wecom": {
+    "lucifex-wecom": {
         "description": "WeCom bot toolset - enterprise WeChat messaging (full access)",
         "tools": _HERMES_CORE_TOOLS,
         "includes": []
     },
 
-    "hermes-wecom-callback": {
+    "lucifex-wecom-callback": {
         "description": "WeCom callback toolset - enterprise self-built app messaging (full access)",
         "tools": _HERMES_CORE_TOOLS,
         "includes": []
     },
 
-    "hermes-yuanbao": {
+    "lucifex-yuanbao": {
         "description": "Yuanbao Bot 元宝消息平台工具集 - 群信息、成员查询、私聊、贴纸表情",
         "tools": _HERMES_CORE_TOOLS + [
             "yb_query_group_info",
@@ -564,13 +564,13 @@ TOOLSETS = {
         "includes": []
     },
 
-    "hermes-sms": {
+    "lucifex-sms": {
         "description": "SMS bot toolset - interact with Hermes via SMS (Twilio)",
         "tools": _HERMES_CORE_TOOLS,
         "includes": []
     },
 
-    "hermes-webhook": {
+    "lucifex-webhook": {
         "description": "Webhook toolset - receive and process external webhook events",
         "tools": _HERMES_WEBHOOK_SAFE_TOOLS,
         "includes": []
@@ -579,7 +579,7 @@ TOOLSETS = {
     "lucifex-gateway": {
         "description": "Gateway toolset - union of all messaging platform tools",
         "tools": [],
-        "includes": ["hermes-telegram", "hermes-discord", "hermes-whatsapp", "hermes-slack", "hermes-signal", "hermes-bluebubbles", "hermes-homeassistant", "hermes-email", "hermes-sms", "hermes-mattermost", "hermes-matrix", "hermes-dingtalk", "hermes-feishu", "hermes-wecom", "hermes-wecom-callback", "hermes-weixin", "hermes-qqbot", "hermes-webhook", "hermes-yuanbao"]
+        "includes": ["lucifex-telegram", "lucifex-discord", "lucifex-whatsapp", "lucifex-slack", "lucifex-signal", "lucifex-bluebubbles", "lucifex-homeassistant", "lucifex-email", "lucifex-sms", "lucifex-mattermost", "lucifex-matrix", "lucifex-dingtalk", "lucifex-feishu", "lucifex-wecom", "lucifex-wecom-callback", "lucifex-weixin", "lucifex-qqbot", "lucifex-webhook", "lucifex-yuanbao"]
     }
 }
 

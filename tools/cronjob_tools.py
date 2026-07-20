@@ -1,4 +1,4 @@
-"""
+﻿"""
 Cron job management tools for Hermes Agent.
 
 Expose a single compressed action-oriented tool to avoid schema/context bloat.
@@ -53,7 +53,7 @@ def _notify_provider_jobs_changed_safe() -> None:
 #
 #   1. User-supplied cron prompt (small, written as a directive).
 #      Strict scanning is appropriate — a legit cron prompt has no business
-#      saying "cat ~/.hermes/.env" or "rm -rf /". `_scan_cron_prompt()` runs
+#      saying "cat ~/.lucifex/.env" or "rm -rf /". `_scan_cron_prompt()` runs
 #      against this at create/update time and as a runtime defense-in-depth.
 #
 #   2. Assembled prompt that includes loaded skill content (large markdown
@@ -61,7 +61,7 @@ def _notify_provider_jobs_changed_safe() -> None:
 #      patterns in PROSE). Reusing the strict patterns here false-positives
 #      every time a skill *describes* a command — see #3968 follow-up: the
 #      `lucifex-agent-dev` skill contains a security postmortem mentioning
-#      `cat ~/.hermes/.env`, which tripped `read_secrets` and silently
+#      `cat ~/.lucifex/.env`, which tripped `read_secrets` and silently
 #      killed all PR-scout jobs.
 #
 #      Skill bodies are user-curated and scanned at install time by
@@ -542,12 +542,12 @@ def _validate_cron_script_path(script: Optional[str]) -> Optional[str]:
     raw = script.strip()
 
     # Reject absolute paths and ~ expansion at the API boundary.
-    # Only relative paths within ~/.hermes/scripts/ are allowed.
+    # Only relative paths within ~/.lucifex/scripts/ are allowed.
     if raw.startswith(("/", "~")) or (len(raw) >= 2 and raw[1] == ":"):
         return (
-            f"Script path must be relative to ~/.hermes/scripts/. "
+            f"Script path must be relative to ~/.lucifex/scripts/. "
             f"Got absolute or home-relative path: {raw!r}. "
-            f"Place scripts in ~/.hermes/scripts/ and use just the filename."
+            f"Place scripts in ~/.lucifex/scripts/ and use just the filename."
         )
 
     # Validate containment after resolution

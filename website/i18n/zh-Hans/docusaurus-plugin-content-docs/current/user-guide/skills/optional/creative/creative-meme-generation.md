@@ -1,4 +1,4 @@
----
+﻿---
 title: "Meme Generation — 使用 Pillow 选取模板并叠加文字，生成真实的表情包图片"
 sidebar_label: "Meme Generation"
 description: "使用 Pillow 选取模板并叠加文字，生成真实的表情包图片"
@@ -74,7 +74,7 @@ python "$SKILL_DIR/scripts/generate_meme.py" --search "disaster"
 3. 为每个字段编写简短说明文字（每个字段最多 8-12 个词，越短越好）。
 4. 找到 skill 的脚本目录：
    ```
-   SKILL_DIR=$(dirname "$(find ~/.hermes/skills -path '*/meme-generation/SKILL.md' 2>/dev/null | head -1)")
+   SKILL_DIR=$(dirname "$(find ~/.lucifex/skills -path '*/meme-generation/SKILL.md' 2>/dev/null | head -1)")
    ```
 5. 运行生成器：
    ```bash

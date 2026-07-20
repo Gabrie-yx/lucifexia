@@ -1,4 +1,4 @@
----
+﻿---
 sidebar_position: 4
 title: "Tutorial: Team Telegram Assistant"
 description: "Step-by-step guide to setting up a Telegram bot that your whole team can use for code help, research, system admin, and more"
@@ -26,7 +26,7 @@ Before starting, make sure you have:
 
 - **Hermes Agent installed** on a server or VPS (not your laptop — the bot needs to stay running). Follow the [installation guide](/getting-started/installation) if you haven't yet.
 - **A Telegram account** for yourself (the bot owner)
-- **An LLM provider configured** — at minimum, an API key for OpenAI, Anthropic, or another supported provider in `~/.hermes/.env`
+- **An LLM provider configured** — at minimum, an API key for OpenAI, Anthropic, or another supported provider in `~/.lucifex/.env`
 
 :::tip
 A $5/month VPS is plenty for running the gateway. Hermes itself is lightweight — the LLM API calls are what cost money, and those happen remotely.
@@ -93,7 +93,7 @@ This walks you through everything with arrow-key selection. Pick **Telegram**, p
 
 ### Option B: Manual Configuration
 
-Add these lines to `~/.hermes/.env`:
+Add these lines to `~/.lucifex/.env`:
 
 ```bash
 # Telegram bot token from BotFather
@@ -170,7 +170,7 @@ journalctl -u lucifex-gateway -f
 # macOS — manage the service
 lucifex gateway start
 lucifex gateway stop
-tail -f ~/.hermes/logs/gateway.log
+tail -f ~/.lucifex/logs/gateway.log
 ```
 
 :::tip macOS PATH
@@ -196,7 +196,7 @@ Now let's give your teammates access. There are two approaches.
 Collect each team member's Telegram user ID (have them message [@userinfobot](https://t.me/userinfobot)) and add them as a comma-separated list:
 
 ```bash
-# In ~/.hermes/.env
+# In ~/.lucifex/.env
 TELEGRAM_ALLOWED_USERS=123456789,987654321,555555555
 ```
 
@@ -260,7 +260,7 @@ A **home channel** is where the bot delivers cron job results and proactive mess
 
 **Option 1:** Use the `/sethome` command in any Telegram group or chat where the bot is a member.
 
-**Option 2:** Set it manually in `~/.hermes/.env`:
+**Option 2:** Set it manually in `~/.lucifex/.env`:
 
 ```bash
 TELEGRAM_HOME_CHANNEL=-1001234567890
@@ -271,7 +271,7 @@ To find a channel ID, add [@userinfobot](https://t.me/userinfobot) to the group 
 
 ### Configure Tool Progress Display
 
-Control how much detail the bot shows when using tools. In `~/.hermes/config.yaml`:
+Control how much detail the bot shows when using tools. In `~/.lucifex/config.yaml`:
 
 ```yaml
 display:
@@ -289,7 +289,7 @@ Users can also change this per-session with the `/verbose` command in chat.
 
 ### Set Up a Personality with SOUL.md
 
-Customize how the bot communicates by editing `~/.hermes/SOUL.md`:
+Customize how the bot communicates by editing `~/.lucifex/SOUL.md`:
 
 For a full guide, see [Use SOUL.md with Hermes](/guides/use-soul-with-hermes).
 
@@ -306,7 +306,7 @@ before guessing at solutions.
 If your team works on specific projects, create context files so the bot knows your stack:
 
 ```markdown
-<!-- ~/.hermes/AGENTS.md -->
+<!-- ~/.lucifex/AGENTS.md -->
 # Team Context
 - We use Python 3.12 with FastAPI and SQLAlchemy
 - Frontend is React with TypeScript
@@ -373,12 +373,12 @@ Cron job prompts run in completely fresh sessions with no memory of prior conver
 On a shared team bot, use Docker as the terminal backend so agent commands run in a container instead of on your host:
 
 ```bash
-# In ~/.hermes/.env
+# In ~/.lucifex/.env
 TERMINAL_ENV=docker
 TERMINAL_DOCKER_IMAGE=nikolaik/python-nodejs:python3.11-nodejs20
 ```
 
-Or in `~/.hermes/config.yaml`:
+Or in `~/.lucifex/config.yaml`:
 
 ```yaml
 terminal:
@@ -400,7 +400,7 @@ hermes gateway status
 journalctl --user -u lucifex-gateway -f
 
 # Watch live logs (macOS)
-tail -f ~/.hermes/logs/gateway.log
+tail -f ~/.lucifex/logs/gateway.log
 ```
 
 ### Keep Hermes Updated
@@ -416,11 +416,11 @@ lucifex gateway stop && lucifex gateway start
 
 | What | Location |
 |------|----------|
-| Gateway logs | `journalctl --user -u lucifex-gateway` (Linux) or `~/.hermes/logs/gateway.log` (macOS) |
-| Cron job output | `~/.hermes/cron/output/{job_id}/{timestamp}.md` |
-| Cron job definitions | `~/.hermes/cron/jobs.json` |
-| Pairing data | `~/.hermes/pairing/` |
-| Session history | `~/.hermes/sessions/` |
+| Gateway logs | `journalctl --user -u lucifex-gateway` (Linux) or `~/.lucifex/logs/gateway.log` (macOS) |
+| Cron job output | `~/.lucifex/cron/output/{job_id}/{timestamp}.md` |
+| Cron job definitions | `~/.lucifex/cron/jobs.json` |
+| Pairing data | `~/.lucifex/pairing/` |
+| Session history | `~/.lucifex/sessions/` |
 
 ---
 

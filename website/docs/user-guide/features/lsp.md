@@ -1,4 +1,4 @@
----
+﻿---
 sidebar_position: 16
 title: "LSP — Semantic Diagnostics"
 description: "Real language servers (pyright, gopls, rust-analyzer, …) wired into the post-write lint check used by write_file and patch."
@@ -253,11 +253,11 @@ scoop install shellcheck    # Windows
 ```
 
 The same warning is logged once at server spawn time in
-`~/.hermes/logs/agent.log`.
+`~/.lucifex/logs/agent.log`.
 
 **Server starts but never returns diagnostics**
 
-Check `~/.hermes/logs/agent.log` for `[agent.lsp.client]` entries —
+Check `~/.lucifex/logs/agent.log` for `[agent.lsp.client]` entries —
 both stderr from the language server and protocol errors land
 there. Some servers (rust-analyzer especially) need to finish a
 project-wide index before they emit per-file diagnostics; the first

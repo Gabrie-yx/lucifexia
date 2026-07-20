@@ -8,7 +8,7 @@ Modular wizard with independently-runnable sections:
   4. Messaging Platforms — connect Telegram, Discord, etc.
   5. Tools — configure TTS, web search, image generation, etc.
 
-Config files are stored in ~/.hermes/ for easy access.
+Config files are stored in ~/.lucifex/ for easy access.
 """
 
 import importlib.util
@@ -651,7 +651,7 @@ def _print_setup_summary(config: dict, LUCIFEX_HOME):
     print(f"   {color('hermes setup gateway', Colors.GREEN)}  Configure messaging")
     print(f"   {color('hermes setup tools', Colors.GREEN)}    Configure tool providers")
     print()
-    print(f"   {color('hermes config', Colors.GREEN)}         View current settings")
+    print(f"   {color('lucifex config', Colors.GREEN)}         View current settings")
     print(
         f"   {color('hermes config edit', Colors.GREEN)}    Open config in your editor"
     )
@@ -989,7 +989,7 @@ def _setup_tts_provider(config: dict):
         print_info("OpenAI TTS will use the managed Nous gateway and bill to your subscription.")
         if get_env_value("VOICE_TOOLS_OPENAI_KEY") or get_env_value("OPENAI_API_KEY"):
             print_warning(
-                "Direct OpenAI credentials are still configured and may take precedence until removed from ~/.hermes/.env."
+                "Direct OpenAI credentials are still configured and may take precedence until removed from ~/.lucifex/.env."
             )
 
     if selected == "neutts":
@@ -1519,7 +1519,7 @@ def setup_agent_settings(config: dict):
     print_info("  new     — Show tool name only when it changes (less noise)")
     print_info("  all     — Show every tool call with a short preview")
     print_info("  verbose — Full args, results, and debug logs")
-    print_info("  log     — Silent in chat; write every tool call to ~/.hermes/logs/tool_calls.log (gateway only)")
+    print_info("  log     — Silent in chat; write every tool call to ~/.lucifex/logs/tool_calls.log (gateway only)")
 
     current_mode = cfg_get(config, "display", "tool_progress", default="all")
     mode = prompt("Tool progress mode", current_mode)
@@ -3055,7 +3055,7 @@ def _blank_slate_minimize_config(config: dict):
     """Turn OFF the optional config features for a Blank Slate install.
 
     Everything here is opt-in afterwards via ``hermes setup agent`` /
-    ``hermes config set``. We keep only what's needed to run.
+    ``lucifex config set``. We keep only what's needed to run.
     """
     config.setdefault("agent", {})["max_turns"] = 90
 

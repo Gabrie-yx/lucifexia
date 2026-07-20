@@ -1,4 +1,4 @@
----
+﻿---
 sidebar_position: 3
 title: "更新与卸载"
 description: "如何将 Hermes Agent 更新至最新版本或将其卸载"
@@ -17,7 +17,7 @@ hermes update
 此命令会从 `main` 拉取最新代码、更新依赖项，并提示你配置自上次更新以来新增的选项。
 
 :::tip
-`hermes update` 会自动检测新的配置选项并提示你添加。如果跳过了该提示，可手动运行 `hermes config check` 查看缺失的选项，再运行 `hermes config migrate` 以交互方式添加。
+`hermes update` 会自动检测新的配置选项并提示你添加。如果跳过了该提示，可手动运行 `lucifex config check` 查看缺失的选项，再运行 `lucifex config migrate` 以交互方式添加。
 :::
 
 ### 更新过程
@@ -45,7 +45,7 @@ hermes update --backup
 或将其设为每次运行的默认行为：
 
 ```yaml
-# ~/.hermes/config.yaml
+# ~/.lucifex/config.yaml
 updates:
   pre_update_backup: full
 ```
@@ -107,10 +107,10 @@ Already up to date.  (or: Updating abc1234..def5678)
 `hermes update` 针对意外终端断开进行了保护：
 
 - 更新会忽略 `SIGHUP`，因此关闭 SSH 会话或终端窗口不再会在安装中途终止它。`pip` 和 `git` 子进程继承此保护，因此 Python 环境不会因连接断开而处于半安装状态。
-- 更新运行期间，所有输出会同步镜像到 `~/.hermes/logs/update.log`。如果终端消失，重新连接后检查日志，确认更新是否完成以及 gateway 重启是否成功：
+- 更新运行期间，所有输出会同步镜像到 `~/.lucifex/logs/update.log`。如果终端消失，重新连接后检查日志，确认更新是否完成以及 gateway 重启是否成功：
 
 ```bash
-tail -f ~/.hermes/logs/update.log
+tail -f ~/.lucifex/logs/update.log
 ```
 
 - `Ctrl-C`（SIGINT）和系统关机（SIGTERM）仍会被响应 — 这些是主动取消操作，而非意外中断。
@@ -180,7 +180,7 @@ uv pip install -e ".[all]"
 ```
 
 :::warning
-如果新增了配置选项，回滚可能导致配置不兼容。回滚后运行 `hermes config check`，如果遇到错误，请从 `config.yaml` 中删除无法识别的选项。
+如果新增了配置选项，回滚可能导致配置不兼容。回滚后运行 `lucifex config check`，如果遇到错误，请从 `config.yaml` 中删除无法识别的选项。
 :::
 
 ### Nix 用户注意事项
@@ -211,7 +211,7 @@ nix profile rollback
 hermes uninstall
 ```
 
-卸载程序会提供选项，让你保留配置文件（`~/.hermes/`）以便将来重新安装。
+卸载程序会提供选项，让你保留配置文件（`~/.lucifex/`）以便将来重新安装。
 
 ### 手动卸载
 

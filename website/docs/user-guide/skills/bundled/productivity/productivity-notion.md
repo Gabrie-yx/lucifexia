@@ -1,4 +1,4 @@
----
+﻿---
 title: "Notion — Notion API + ntn CLI: pages, databases, markdown, Workers"
 sidebar_label: "Notion"
 description: "Notion API + ntn CLI: pages, databases, markdown, Workers"
@@ -297,7 +297,7 @@ curl -s -X PATCH "https://api.notion.com/v1/blocks/{page_id}/children" \
   -H "Content-Type: application/json" \
   -d '{
     "children": [
-      {"object": "block", "type": "paragraph", "paragraph": {"rich_text": [{"text": {"content": "Hello from Hermes!"}}]}}
+      {"object": "block", "type": "paragraph", "paragraph": {"rich_text": [{"text": {"content": "hello from lucifex!"}}]}}
     ]
   }'
 ```

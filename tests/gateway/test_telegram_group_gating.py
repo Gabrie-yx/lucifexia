@@ -837,7 +837,7 @@ def test_config_bridges_telegram_group_settings(monkeypatch, tmp_path):
     # bridge. We deliberately do NOT assert on os.environ here: a third-party
     # import (microsoft_teams/apps/app.py) runs load_dotenv(find_dotenv(usecwd=True))
     # at import time, which walks up from cwd and can repopulate TELEGRAM_* vars
-    # from a developer's real ~/.hermes/.env, defeating the env-over-YAML bridge
+    # from a developer's real ~/.lucifex/.env, defeating the env-over-YAML bridge
     # for any key present there. The PlatformConfig.extra values below are parsed
     # straight from the test's config.yaml and are immune to that ambient leak.
     assert config is not None
@@ -885,7 +885,7 @@ def test_config_bridges_telegram_user_allowlists(monkeypatch, tmp_path):
     # group_allowed_chats via the config object, not os.environ: the
     # microsoft_teams import-time load_dotenv(find_dotenv(usecwd=True)) can
     # repopulate TELEGRAM_GROUP_ALLOWED_CHATS from a developer's real
-    # ~/.hermes/.env, which would defeat the env-over-YAML bridge here.
+    # ~/.lucifex/.env, which would defeat the env-over-YAML bridge here.
     tg_cfg = config.platforms.get(Platform.TELEGRAM)
     assert tg_cfg is not None
     assert tg_cfg.extra.get("group_allowed_chats") == ["-100"]

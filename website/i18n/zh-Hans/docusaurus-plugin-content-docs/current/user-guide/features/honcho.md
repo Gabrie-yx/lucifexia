@@ -1,4 +1,4 @@
----
+﻿---
 sidebar_position: 99
 title: "Honcho Memory"
 description: "通过 Honcho 实现 AI 原生持久记忆——辩证推理、多智能体用户建模与深度个性化"
@@ -39,13 +39,13 @@ hermes memory setup    # 从 provider 列表中选择 "honcho"
 或手动配置：
 
 ```yaml
-# ~/.hermes/config.yaml
+# ~/.lucifex/config.yaml
 memory:
   provider: honcho
 ```
 
 ```bash
-echo 'HONCHO_API_KEY=***' >> ~/.hermes/.env
+echo 'HONCHO_API_KEY=***' >> ~/.lucifex/.env
 ```
 
 在 [honcho.dev](https://honcho.dev) 获取 API key。

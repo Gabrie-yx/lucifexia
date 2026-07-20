@@ -119,7 +119,7 @@ class TestFromGlobalConfig:
                 }
             }
         }))
-        # Isolate from real ~/.hermes/honcho.json
+        # Isolate from real ~/.lucifex/honcho.json
         monkeypatch.setenv("LUCIFEX_HOME", str(tmp_path / "isolated"))
 
         config = HonchoClientConfig.from_global_config(config_path=config_file)
@@ -354,7 +354,7 @@ class TestResolveConfigPath:
         assert result == local_cfg
 
     def test_falls_back_to_default_profile_when_no_local(self, tmp_path, monkeypatch):
-        # Profile mode: LUCIFEX_HOME points at ~/.hermes/profiles/<name>, so
+        # Profile mode: LUCIFEX_HOME points at ~/.lucifex/profiles/<name>, so
         # _get_default_LUCIFEX_HOME() must resolve back to ~/.hermes — that's
         # the bug the HOME-anchored helper fixes (vs. blindly using Path.home()).
         fake_home = tmp_path / "fakehome"

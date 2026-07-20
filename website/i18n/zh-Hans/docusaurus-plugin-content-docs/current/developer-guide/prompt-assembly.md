@@ -1,4 +1,4 @@
----
+﻿---
 sidebar_position: 5
 title: "Prompt 组装"
 description: "Hermes 如何构建系统 prompt、保持缓存稳定性并注入临时层"
@@ -46,7 +46,7 @@ Hermes 刻意将以下内容分离：
 以下是所有层都存在时最终系统 prompt 的简化视图（注释说明每个部分的来源）：
 
 ```
-# Layer 1: Agent Identity (from ~/.hermes/SOUL.md)
+# Layer 1: Agent Identity (from ~/.lucifex/SOUL.md)
 You are Hermes, an AI assistant created by Nous Research.
 You are an expert software engineer and researcher.
 You value correctness, clarity, and efficiency.
@@ -118,7 +118,7 @@ renderable inside a terminal.
 
 ## SOUL.md 在 prompt 中的位置
 
-`SOUL.md` 位于 `~/.hermes/SOUL.md`，作为 agent 的身份标识——系统 prompt 的第一个部分。`prompt_builder.py` 中的加载逻辑如下：
+`SOUL.md` 位于 `~/.lucifex/SOUL.md`，作为 agent 的身份标识——系统 prompt 的第一个部分。`prompt_builder.py` 中的加载逻辑如下：
 
 ```python
 # From agent/prompt_builder.py (simplified)
@@ -236,8 +236,8 @@ def build_context_files_prompt(cwd=None, skip_soul=False):
 
 ### 优先使用这些入口
 
-- `~/.hermes/SOUL.md` — 用自定义 agent 角色和固定行为替换内置默认身份块。
-- `~/.hermes/MEMORY.md` 和 `~/.hermes/USER.md` — 提供应在新会话中快照的持久跨会话事实和用户配置文件数据。
+- `~/.lucifex/SOUL.md` — 用自定义 agent 角色和固定行为替换内置默认身份块。
+- `~/.lucifex/MEMORY.md` 和 `~/.lucifex/USER.md` — 提供应在新会话中快照的持久跨会话事实和用户配置文件数据。
 - 项目上下文文件，如 `.hermes.md`、`HERMES.md`、`AGENTS.md`、`CLAUDE.md` 或 `.cursorrules` — 注入仓库特定的工作规则。
 - Skills — 打包可复用的工作流和参考资料，无需编辑核心 prompt 代码。
 - 可选系统 prompt 配置 / API 覆盖 — 添加部署特定的指令文本，无需 fork Hermes。

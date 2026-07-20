@@ -1,4 +1,4 @@
-"""Regression: output-only SDK fields must not leak into Anthropic request input.
+﻿"""Regression: output-only SDK fields must not leak into Anthropic request input.
 
 Reproduces HTTP 400 `messages.N.content.M.text.parsed_output: Extra inputs are
 not permitted`. Anthropic SDK response blocks carry output-only attributes
@@ -11,7 +11,7 @@ normalize_response capture, _sanitize_replay_block (ordered-blocks replay), and
 _convert_content_part_to_anthropic (content-list replay).
 """
 import sys, os
-sys.path.insert(0, os.path.expanduser("~/.hermes/lucifex-agent"))
+sys.path.insert(0, os.path.expanduser("~/.lucifex/lucifex-agent"))
 
 import pytest
 from agent.anthropic_adapter import (

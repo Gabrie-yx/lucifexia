@@ -1,4 +1,4 @@
----
+﻿---
 title: "Google Workspace — 通过 gws CLI 或 Python 使用 Gmail、Calendar、Drive、Docs、Sheets"
 sidebar_label: "Google Workspace"
 description: "通过 gws CLI 或 Python 使用 Gmail、Calendar、Drive、Docs、Sheets"
@@ -121,7 +121,7 @@ $GSETUP --auth-url --services calendar,drive,sheets,docs --format json
 $GSETUP --auth-url --services all --format json
 ```
 
-此命令返回包含 `auth_url` 字段的 JSON，并将该 URL 保存至 `~/.hermes/google_oauth_last_url.txt`。
+此命令返回包含 `auth_url` 字段的 JSON，并将该 URL 保存至 `~/.lucifex/google_oauth_last_url.txt`。
 
 本步骤的 Agent 规则：
 - 提取 `auth_url` 字段，将该确切 URL 以单行形式发送给用户。
@@ -149,9 +149,9 @@ $GSETUP --check
 
 ### 注意事项
 
-- Token 存储于 `~/.hermes/google_token.json`，自动刷新。
-- 待处理的 OAuth 会话状态/验证器临时存储于 `~/.hermes/google_oauth_pending.json`，直至交换完成。
-- 若已安装 `gws`，`google_api.py` 会将其指向同一个 `~/.hermes/google_token.json` 凭据文件。用户无需单独运行 `gws auth login` 流程。
+- Token 存储于 `~/.lucifex/google_token.json`，自动刷新。
+- 待处理的 OAuth 会话状态/验证器临时存储于 `~/.lucifex/google_oauth_pending.json`，直至交换完成。
+- 若已安装 `gws`，`google_api.py` 会将其指向同一个 `~/.lucifex/google_token.json` 凭据文件。用户无需单独运行 `gws auth login` 流程。
 - 撤销授权：`$GSETUP --revoke`
 
 ## 使用方法

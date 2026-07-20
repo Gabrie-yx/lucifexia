@@ -101,7 +101,7 @@ def resolve_config_path() -> Path:
 
     Resolution order:
       1. $LUCIFEX_HOME/honcho.json      (profile-local, if it exists)
-      2. ~/.hermes/honcho.json          (default profile — shared host blocks live here)
+      2. ~/.lucifex/honcho.json          (default profile — shared host blocks live here)
       3. ~/.honcho/config.json          (global, cross-app interop)
 
     Returns the global path if none exist (for first-time setup writes).

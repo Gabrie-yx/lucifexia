@@ -16,7 +16,7 @@ Rules:
   - >500 MB files → prompt always (deep only)
 
 Scope: strictly LUCIFEX_HOME and /tmp/hermes-*
-Never touches: ~/.hermes/logs/ or any system directory.
+Never touches: ~/.lucifex/logs/ or any system directory.
 """
 
 from __future__ import annotations

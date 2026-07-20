@@ -1,4 +1,4 @@
----
+﻿---
 title: "Teams Meeting Pipeline"
 sidebar_label: "Teams Meeting Pipeline"
 description: "通过 Hermes CLI 操作 Teams 会议摘要流水线 — 总结会议、检查流水线状态、重放任务、管理 Microsoft Graph 订阅"
@@ -50,7 +50,7 @@ description: "通过 Hermes CLI 操作 Teams 会议摘要流水线 — 总结会
 
 ## 前置条件
 
-使用流水线前，请确认以下变量已在 `~/.hermes/.env` 中设置：
+使用流水线前，请确认以下变量已在 `~/.lucifex/.env` 中设置：
 
 ```bash
 MSGRAPH_TENANT_ID=...

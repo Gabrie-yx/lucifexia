@@ -1,4 +1,4 @@
----
+﻿---
 sidebar_position: 2
 title: "配置"
 description: "配置 Hermes Agent — config.yaml、providers、模型、API 密钥等"
@@ -6,12 +6,12 @@ description: "配置 Hermes Agent — config.yaml、providers、模型、API 密
 
 # 配置
 
-所有设置均存储在 `~/.hermes/` 目录中，便于访问。
+所有设置均存储在 `~/.lucifex/` 目录中，便于访问。
 
 ## 目录结构
 
 ```text
-~/.hermes/
+~/.lucifex/
 ├── config.yaml     # 设置（模型、终端、TTS、压缩等）
 ├── .env            # API 密钥和机密
 ├── auth.json       # OAuth provider 凭据（Nous Portal 等）
@@ -39,7 +39,7 @@ hermes config set OPENROUTER_API_KEY sk-or-...  # 保存到 .env
 ```
 
 :::tip
-`hermes config set` 命令会自动将值路由到正确的文件 —— API 密钥保存到 `.env`，其他所有内容保存到 `config.yaml`。
+`lucifex config set` 命令会自动将值路由到正确的文件 —— API 密钥保存到 `.env`，其他所有内容保存到 `config.yaml`。
 :::
 
 ## 配置优先级
@@ -47,8 +47,8 @@ hermes config set OPENROUTER_API_KEY sk-or-...  # 保存到 .env
 设置按以下顺序解析（优先级从高到低）：
 
 1. **CLI 参数** —— 例如 `hermes chat --model anthropic/claude-sonnet-4`（单次调用覆盖）
-2. **`~/.hermes/config.yaml`** —— 所有非机密设置的主配置文件
-3. **`~/.hermes/.env`** —— 环境变量的回退；机密（API 密钥、token、密码）**必须**放这里
+2. **`~/.lucifex/config.yaml`** —— 所有非机密设置的主配置文件
+3. **`~/.lucifex/.env`** —— 环境变量的回退；机密（API 密钥、token、密码）**必须**放这里
 4. **内置默认值** —— 未设置任何内容时的硬编码安全默认值
 
 :::info 经验法则
@@ -164,7 +164,7 @@ terminal:
 - `--pids-limit 256`
 - `/tmp`（512MB）、`/var/tmp`（256MB）、`/run`（64MB）的大小限制 tmpfs
 
-**凭据转发：** `docker_forward_env` 中列出的环境变量首先从您的 shell 环境解析，然后回退到 `~/.hermes/.env`。技能也可以声明 `required_environment_variables`，这些变量会自动合并。
+**凭据转发：** `docker_forward_env` 中列出的环境变量首先从您的 shell 环境解析，然后回退到 `~/.lucifex/.env`。技能也可以声明 `required_environment_variables`，这些变量会自动合并。
 
 ### SSH 后端
 
@@ -208,9 +208,9 @@ terminal:
 
 **必需：** `MODAL_TOKEN_ID` + `MODAL_TOKEN_SECRET` 环境变量，或 `~/.modal.toml` 配置文件。
 
-**持久化：** 启用后，沙箱文件系统在清理时快照，并在下次会话时恢复。快照在 `~/.hermes/modal_snapshots.json` 中跟踪。这保留文件系统状态，而非活跃进程、PID 空间或后台任务。
+**持久化：** 启用后，沙箱文件系统在清理时快照，并在下次会话时恢复。快照在 `~/.lucifex/modal_snapshots.json` 中跟踪。这保留文件系统状态，而非活跃进程、PID 空间或后台任务。
 
-**凭据文件：** 自动从 `~/.hermes/` 挂载（OAuth token 等），并在每条命令前同步。
+**凭据文件：** 自动从 `~/.lucifex/` 挂载（OAuth token 等），并在每条命令前同步。
 
 ### Daytona 后端
 
@@ -248,7 +248,7 @@ terminal:
 
 **镜像处理：** Docker URL（`docker://...`）自动转换为 SIF 文件并缓存。现有 `.sif` 文件直接使用。
 
-**临时目录：** 按顺序解析：`TERMINAL_SCRATCH_DIR` → `TERMINAL_SANDBOX_DIR/singularity` → `/scratch/$USER/lucifex-agent`（HPC 惯例）→ `~/.hermes/sandboxes/singularity`。
+**临时目录：** 按顺序解析：`TERMINAL_SCRATCH_DIR` → `TERMINAL_SANDBOX_DIR/singularity` → `/scratch/$USER/lucifex-agent`（HPC 惯例）→ `~/.lucifex/sandboxes/singularity`。
 
 **隔离：** 使用 `--containall --no-home` 实现完全命名空间隔离，不挂载宿主 home 目录。
 
@@ -257,7 +257,7 @@ terminal:
 如果终端命令立即失败或终端工具报告为已禁用：
 
 - **Local** —— 无特殊要求。入门时最安全的默认选项。
-- **Docker** —— 运行 `docker version` 验证 Docker 是否正常工作。如果失败，修复 Docker 或执行 `hermes config set terminal.backend local`。
+- **Docker** —— 运行 `docker version` 验证 Docker 是否正常工作。如果失败，修复 Docker 或执行 `lucifex config set terminal.backend local`。
 - **SSH** —— `TERMINAL_SSH_HOST` 和 `TERMINAL_SSH_USER` 都必须设置。如果缺少任一项，Hermes 会记录清晰的错误。
 - **Modal** —— 需要 `MODAL_TOKEN_ID` 环境变量或 `~/.modal.toml`。运行 `hermes doctor` 检查。
 - **Daytona** —— 需要 `DAYTONA_API_KEY`。Daytona SDK 处理服务器 URL 配置。
@@ -267,11 +267,11 @@ terminal:
 
 ### 拆卸时远程到宿主文件同步
 
-对于 **SSH**、**Modal** 和 **Daytona** 后端（agent 的工作树位于与运行 Hermes 的宿主不同的机器上），Hermes 跟踪 agent 在远程沙箱中触及的文件，并在会话拆卸/沙箱清理时，将修改的文件**同步回宿主**，存放在 `~/.hermes/cache/remote-syncs/<session-id>/` 下。
+对于 **SSH**、**Modal** 和 **Daytona** 后端（agent 的工作树位于与运行 Hermes 的宿主不同的机器上），Hermes 跟踪 agent 在远程沙箱中触及的文件，并在会话拆卸/沙箱清理时，将修改的文件**同步回宿主**，存放在 `~/.lucifex/cache/remote-syncs/<session-id>/` 下。
 
 - 触发时机：会话关闭、`/new`、`/reset`、gateway 消息超时、子 agent 使用远程后端时 `delegate_task` 子 agent 完成。
 - 覆盖 agent 修改的整个树，而不仅仅是它明确打开的文件。添加、编辑和删除都会被捕获。
-- 远程沙箱可能在您查找时已被拆除；本地 `~/.hermes/cache/remote-syncs/…` 副本是 agent 更改内容的权威记录。
+- 远程沙箱可能在您查找时已被拆除；本地 `~/.lucifex/cache/remote-syncs/…` 副本是 agent 更改内容的权威记录。
 - 大型二进制输出（模型检查点、原始数据集）按大小限制 —— 同步跳过超过 `file_sync_max_mb`（默认 `100`）的文件。如果您期望更大的工件返回，请调高该值。
 
 ```yaml
@@ -324,7 +324,7 @@ terminal:
     - "NPM_TOKEN"
 ```
 
-Hermes 首先从您当前的 shell 解析每个列出的变量，然后回退到通过 `hermes config set` 保存的 `~/.hermes/.env`。
+Hermes 首先从您当前的 shell 解析每个列出的变量，然后回退到通过 `lucifex config set` 保存的 `~/.lucifex/.env`。
 
 :::warning
 `docker_forward_env` 中列出的任何内容都会对容器内运行的命令可见。只转发您愿意暴露给终端会话的凭据。
@@ -424,8 +424,8 @@ skills:
 
 **技能设置的工作原理：**
 
-- `hermes config migrate` 扫描所有已启用的技能，找到未配置的设置，并提供提示
-- `hermes config show` 在"技能设置"下显示所有技能设置及其所属技能
+- `lucifex config migrate` 扫描所有已启用的技能，找到未配置的设置，并提供提示
+- `lucifex config show` 在"技能设置"下显示所有技能设置及其所属技能
 - 技能加载时，其解析的配置值会自动注入到技能上下文中
 
 **手动设置值：**
@@ -918,7 +918,7 @@ auxiliary:
     model: "openai/gpt-4o"
 ```
 
-或通过环境变量（在 `~/.hermes/.env` 中）：
+或通过环境变量（在 `~/.lucifex/.env` 中）：
 
 ```bash
 AUXILIARY_VISION_MODEL=openai/gpt-4o
@@ -964,7 +964,7 @@ auxiliary:
 
 **使用 OpenAI API 密钥进行视觉：**
 ```yaml
-# 在 ~/.hermes/.env 中：
+# 在 ~/.lucifex/.env 中：
 # OPENAI_BASE_URL=https://api.openai.com/v1
 # OPENAI_API_KEY=sk-...
 
@@ -1035,7 +1035,7 @@ auxiliary:
 压缩和回退模型设置仅限 config.yaml。
 
 :::tip
-运行 `hermes config` 查看您当前的辅助模型设置。覆盖仅在与默认值不同时显示。
+运行 `lucifex config` 查看您当前的辅助模型设置。覆盖仅在与默认值不同时显示。
 :::
 
 ## 推理努力程度
@@ -1342,7 +1342,7 @@ streaming:
 **新的最终消息（Telegram）：** Telegram 的 `editMessageText` 保留原始消息时间戳，因此长时间运行的流式回复即使在完成后也会保留第一个 token 的时间戳。设置 `fresh_final_after_seconds > 0` 可选择将旧预览作为全新的最终消息传递，并尽力删除旧预览。默认值为 `0`，始终就地最终化流式回复，避免某些客户端短暂显示重复消息再删除其中一条。
 
 :::note
-主开关 `streaming.enabled` 默认为 `false`——在你启用之前不会有任何流式传输。启用后，是否流式传输按**平台**决定：Telegram 默认带有 `display.platforms.telegram.streaming: true`（流式传输），Discord 为 `display.platforms.discord.streaming: false`（不流式传输）。因此启用流式传输后，Telegram 开箱即用地流式传输，Discord 在你修改其开关之前仍使用整条消息回复。你可以在仪表盘的 **Channels** 开关中或直接在 `~/.hermes/config.yaml` 中调整这些按平台的开关。
+主开关 `streaming.enabled` 默认为 `false`——在你启用之前不会有任何流式传输。启用后，是否流式传输按**平台**决定：Telegram 默认带有 `display.platforms.telegram.streaming: true`（流式传输），Discord 为 `display.platforms.discord.streaming: false`（不流式传输）。因此启用流式传输后，Telegram 开箱即用地流式传输，Discord 在你修改其开关之前仍使用整条消息回复。你可以在仪表盘的 **Channels** 开关中或直接在 `~/.lucifex/config.yaml` 中调整这些按平台的开关。
 :::
 
 ## 群聊会话隔离
@@ -1389,7 +1389,7 @@ quick_commands:
     command: df -h /
   update:
     type: exec
-    command: cd ~/.hermes/lucifex-agent && git pull && pip install -e .
+    command: cd ~/.lucifex/lucifex-agent && git pull && pip install -e .
   gpu:
     type: exec
     command: nvidia-smi --query-gpu=name,utilization.gpu,memory.used,memory.total --format=csv,noheader
@@ -1466,7 +1466,7 @@ web:
 
 **Parallel 搜索模式：** 设置 `PARALLEL_SEARCH_MODE` 控制搜索行为 —— `fast`、`one-shot` 或 `agentic`（默认：`agentic`）。
 
-**Exa：** 在 `~/.hermes/.env` 中设置 `EXA_API_KEY`。支持 `category` 过滤（`company`、`research paper`、`news`、`people`、`personal site`、`pdf`）和域名/日期过滤器。
+**Exa：** 在 `~/.lucifex/.env` 中设置 `EXA_API_KEY`。支持 `category` 过滤（`company`、`research paper`、`news`、`people`、`personal site`、`pdf`）和域名/日期过滤器。
 
 ## 浏览器
 
@@ -1476,7 +1476,7 @@ web:
 browser:
   inactivity_timeout: 120        # 自动关闭空闲会话前的秒数
   command_timeout: 30             # 浏览器命令超时（截图、导航等）（秒）
-  record_sessions: false         # 自动将浏览器会话录制为 WebM 视频到 ~/.hermes/browser_recordings/
+  record_sessions: false         # 自动将浏览器会话录制为 WebM 视频到 ~/.lucifex/browser_recordings/
   # 可选 CDP 覆盖 —— 设置后，Hermes 直接附加到您自己的
   # Chromium 系浏览器（通过 /browser connect），而不是启动无头浏览器。
   cdp_url: ""
@@ -1652,7 +1652,7 @@ Hermes 使用两种不同的上下文范围：
 
 | 文件 | 用途 | 范围 |
 |------|---------|-------|
-| `SOUL.md` | **主要 agent 身份** —— 定义 agent 是谁（系统提示词第 #1 槽位） | `~/.hermes/SOUL.md` 或 `$LUCIFEX_HOME/SOUL.md` |
+| `SOUL.md` | **主要 agent 身份** —— 定义 agent 是谁（系统提示词第 #1 槽位） | `~/.lucifex/SOUL.md` 或 `$LUCIFEX_HOME/SOUL.md` |
 | `.hermes.md` / `HERMES.md` | 项目特定指令（最高优先级） | 向上走到 git 根目录 |
 | `AGENTS.md` | 项目特定指令、编码规范 | 递归目录遍历 |
 | `CLAUDE.md` | Claude Code 上下文文件（也会检测） | 仅工作目录 |
@@ -1680,7 +1680,7 @@ Hermes 使用两种不同的上下文范围：
 
 覆盖工作目录：
 ```bash
-# 在 ~/.hermes/.env 或 ~/.hermes/config.yaml 中：
+# 在 ~/.lucifex/.env 或 ~/.lucifex/config.yaml 中：
 MESSAGING_CWD=/home/myuser/projects    # Gateway 会话
 TERMINAL_CWD=/workspace                # 所有终端会话
 ```

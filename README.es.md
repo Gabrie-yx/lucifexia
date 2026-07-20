@@ -1,4 +1,4 @@
-<p align="center">
+﻿<p align="center">
   <img src="assets/banner.png" alt="Hermes Agent" width="100%">
 </p>
 
@@ -167,7 +167,7 @@ Qué se importa:
 
 - **SOUL.md** — archivo de personalidad
 - **Memorias** — entradas de MEMORY.md y USER.md
-- **Habilidades** — habilidades creadas por el usuario → `~/.hermes/skills/openclaw-imports/`
+- **Habilidades** — habilidades creadas por el usuario → `~/.lucifex/skills/openclaw-imports/`
 - **Lista de comandos permitidos** — patrones de aprobación
 - **Configuración de mensajería** — configuración de plataformas, usuarios permitidos, directorio de trabajo
 - **Claves API** — secretos en lista de permitidos (Telegram, OpenRouter, OpenAI, Anthropic, ElevenLabs)

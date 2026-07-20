@@ -1,9 +1,9 @@
-"""Secret-source contract: the ABC every secret backend implements.
+﻿"""Secret-source contract: the ABC every secret backend implements.
 
 A *secret source* resolves credentials from an external secret manager
 (Bitwarden Secrets Manager, 1Password, an OS keystore, a user script, ...)
 into environment-variable-shaped values at process startup, AFTER
-``~/.hermes/.env`` has loaded and BEFORE the rest of Hermes reads
+``~/.lucifex/.env`` has loaded and BEFORE the rest of Hermes reads
 ``os.environ``.
 
 Scope of the contract (deliberate, please do not widen):

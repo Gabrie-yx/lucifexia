@@ -1,4 +1,4 @@
-import logging
+﻿import logging
 from io import StringIO
 import subprocess
 
@@ -315,7 +315,7 @@ def test_init_env_args_uses_hermes_dotenv_for_empty_shell_env(monkeypatch):
 
     Regression: the disk fallback used to fire only on `value is None`, so a
     present-but-empty `MY_SECRET=""` skipped it and was forwarded as `-e
-    MY_SECRET=`, clobbering the correct value sitting in ~/.hermes/.env.
+    MY_SECRET=`, clobbering the correct value sitting in ~/.lucifex/.env.
     """
     env = _make_execute_only_env(["MY_SECRET"])
 

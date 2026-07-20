@@ -1,4 +1,4 @@
-# Hermes Achievements
+﻿# Hermes Achievements
 
 > **Bundled with Hermes Agent.** Originally authored by [@PCinkusz](https://github.com/PCinkusz) at https://github.com/PCinkusz/hermes-achievements — vendored into `plugins/hermes-achievements/` so it ships with the dashboard out-of-the-box and stays in lockstep with Hermes feature changes. Upstream repo remains the staging ground for new badges and UI iteration.
 >
@@ -61,14 +61,14 @@ Version `0.2.x` expands the catalog to 60+ achievements, including model/provide
 Clone into your Hermes plugins directory:
 
 ```bash
-git clone https://github.com/PCinkusz/hermes-achievements ~/.hermes/plugins/hermes-achievements
+git clone https://github.com/PCinkusz/hermes-achievements ~/.lucifex/plugins/hermes-achievements
 ```
 
 For local development, keep the repo elsewhere and symlink it:
 
 ```bash
 git clone https://github.com/PCinkusz/hermes-achievements ~/hermes-achievements
-ln -s ~/hermes-achievements ~/.hermes/plugins/hermes-achievements
+ln -s ~/hermes-achievements ~/.lucifex/plugins/hermes-achievements
 ```
 
 Then rescan dashboard plugins:
@@ -84,7 +84,7 @@ If backend API routes 404, restart `hermes dashboard`; plugin APIs are mounted a
 If you installed with git:
 
 ```bash
-cd ~/.hermes/plugins/hermes-achievements
+cd ~/.lucifex/plugins/hermes-achievements
 git pull --ff-only
 curl http://127.0.0.1:9119/api/dashboard/plugins/rescan
 ```

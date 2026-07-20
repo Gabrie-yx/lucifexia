@@ -1,4 +1,4 @@
----
+﻿---
 title: "Windows (WSL2) 指南"
 description: "通过 WSL2 在 Windows 上运行 Hermes Agent —— 安装配置、Windows 与 Linux 之间的文件系统访问、网络设置及常见问题"
 sidebar_label: "Windows (WSL2)"
@@ -124,7 +124,7 @@ hermes
 
 **经验法则：将所有 Linux 相关内容保留在 Linux 文件系统内。**
 
-- 你的 Hermes 安装目录（`~/.hermes/`）—— Linux 侧。安装程序已自动处理。
+- 你的 Hermes 安装目录（`~/.lucifex/`）—— Linux 侧。安装程序已自动处理。
 - 你在 WSL 中开发的 git 仓库 —— Linux 侧（`~/code/...`、`~/projects/...`）。
 - 你的模型、数据集、venv —— Linux 侧。
 

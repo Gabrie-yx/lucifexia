@@ -177,7 +177,7 @@ export async function initialize(): Promise<void> {
 
   if (fake) {
     unlisten = () => {}
-    $logPath.set('~/.hermes/logs/bootstrap-installer.log')
+    $logPath.set('~/.lucifex/logs/bootstrap-installer.log')
     $hermesHome.set('~/.hermes')
     $mode.set(fake === 'update' ? 'update' : 'install')
 

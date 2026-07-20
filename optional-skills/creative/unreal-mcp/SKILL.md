@@ -1,4 +1,4 @@
----
+﻿---
 name: unreal-mcp
 description: "Use when the user wants to do anything in Unreal Engine through Epic's official editor-embedded MCP server (catalog entry: unreal-engine) — build/light/populate scenes, place and transform actors, author Blueprints, animate with Sequencer, create material instances, frame cameras, take screenshots, render, import assets, run PIE test sessions and automation tests, or automate the editor end-to-end from plain-English prompts with no Unreal knowledge required. Covers the tool-search discovery walk (list_toolsets/describe_toolset/call_tool), serial game-thread call discipline, ProgrammaticToolset batching, the Blueprint graph DSL loop, scene-craft numbers (physical light units, exposure, scale conventions), complete build recipes, save/undo hygiene, and extending the tool surface with custom Python toolsets."
 version: 1.0.0
@@ -67,7 +67,7 @@ This writes the `mcp_servers.unreal-engine` HTTP entry pointing at
 `http://127.0.0.1:8000/mcp` and probes the live server for its tools. Run it
 while the editor + server are up so the probe sees the real surface. If the
 user changed port/path in Editor Preferences, edit the `url` in
-`~/.hermes/config.yaml` under `mcp_servers.unreal-engine` to match.
+`~/.lucifex/config.yaml` under `mcp_servers.unreal-engine` to match.
 
 Do NOT use `ModelContextProtocol.GenerateClientConfig` for Hermes — that
 writes `.mcp.json`-style files for Claude Code/Cursor/etc. Hermes connects
@@ -225,7 +225,7 @@ Load on demand; keep SKILL.md-level rules in mind throughout.
   hangs indefinitely, tell the user to check the editor for a dialog.
 - **Timeouts on long operations.** Hermes' per-call default is 120 s; asset
   imports, big level saves, and renders can exceed it. Raise
-  `mcp_servers.unreal-engine.timeout` in `~/.hermes/config.yaml` for
+  `mcp_servers.unreal-engine.timeout` in `~/.lucifex/config.yaml` for
   render/import-heavy sessions.
 - **Stale tool schemas.** After authoring/hot-reloading toolsets or enabling
   a plugin, run `ModelContextProtocol.RefreshTools` in the editor console

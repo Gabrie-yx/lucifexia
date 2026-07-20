@@ -1,4 +1,4 @@
-"""Provider profile base class.
+﻿"""Provider profile base class.
 
 A ProviderProfile declares everything about an inference provider in one place:
 auth, endpoints, client quirks, request-time quirks. The transport reads this
@@ -32,7 +32,7 @@ def _profile_user_agent() -> str:
         from lucifex_cli import __version__ as _ver  # lazy: avoid layer cycle at import time
         return f"hermes-cli/{_ver}"
     except Exception:
-        return "hermes-cli"
+        return "lucifex-cli"
 
 
 @dataclass

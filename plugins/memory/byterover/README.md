@@ -1,4 +1,4 @@
-# ByteRover Memory Provider
+﻿# ByteRover Memory Provider
 
 Persistent memory via the `brv` CLI — hierarchical knowledge tree with tiered retrieval (fuzzy text → LLM-driven search).
 
@@ -21,7 +21,7 @@ Or manually:
 ```bash
 hermes config set memory.provider byterover
 # Optional cloud sync:
-echo "BRV_API_KEY=your-key" >> ~/.hermes/.env
+echo "BRV_API_KEY=your-key" >> ~/.lucifex/.env
 ```
 
 ## Config

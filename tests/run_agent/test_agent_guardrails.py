@@ -1,4 +1,4 @@
-"""Unit tests for AIAgent pre/post-LLM-call guardrails.
+﻿"""Unit tests for AIAgent pre/post-LLM-call guardrails.
 
 Covers three static methods on AIAgent (inspired by PR #1321 — @alireza78a):
   - _sanitize_api_messages()    — Phase 1: orphaned tool pair repair
@@ -17,7 +17,7 @@ from run_agent import AIAgent
 # time (inside a per-test hermetic LUCIFEX_HOME), but this module previously
 # froze the value at IMPORT time — before the hermetic fixture ran — so a
 # developer machine with delegation.max_concurrent_children in the real
-# ~/.hermes/config.yaml saw a different limit at import vs call and the
+# ~/.lucifex/config.yaml saw a different limit at import vs call and the
 # truncation tests failed locally while passing on CI.
 MAX_CONCURRENT_CHILDREN = 3
 

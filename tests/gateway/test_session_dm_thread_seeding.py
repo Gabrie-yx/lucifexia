@@ -1,4 +1,4 @@
-"""Tests for DM thread session isolation.
+﻿"""Tests for DM thread session isolation.
 
 DM thread sessions must start empty — no parent transcript seeding.
 Thread context is handled by platform adapters (e.g. Slack's
@@ -25,7 +25,7 @@ def store(tmp_path, monkeypatch):
     """SessionStore with SQLite — load_transcript reads from DB only.
 
     Pin DEFAULT_DB_PATH to tmp_path so SessionDB() can't write to the real
-    ~/.hermes/state.db. (DEFAULT_DB_PATH is a module-level constant computed
+    ~/.lucifex/state.db. (DEFAULT_DB_PATH is a module-level constant computed
     at lucifex_state import time, before pytest's LUCIFEX_HOME monkeypatch
     fires — the autouse fixture's LUCIFEX_HOME override doesn't help here.)
     """

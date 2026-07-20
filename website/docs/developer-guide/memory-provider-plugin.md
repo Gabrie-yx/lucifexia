@@ -187,7 +187,7 @@ from lucifex_constants import get_lucifex_home
 data_dir = get_lucifex_home() / "my-provider"
 
 # WRONG — shared across all profiles
-data_dir = Path("~/.hermes/my-provider").expanduser()
+data_dir = Path("~/.lucifex/my-provider").expanduser()
 ```
 
 ## Testing

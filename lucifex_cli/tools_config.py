@@ -1,11 +1,11 @@
-"""
+﻿"""
 Unified tool configuration for Hermes Agent.
 
 `hermes tools` and `hermes setup tools` both enter this module.
 Select a platform → toggle toolsets on/off → for newly enabled tools
 that need API keys, run through provider-aware configuration.
 
-Saves per-platform tool configuration to ~/.hermes/config.yaml under
+Saves per-platform tool configuration to ~/.lucifex/config.yaml under
 the `platform_toolsets` key.
 """
 
@@ -1157,7 +1157,7 @@ def _run_cua_driver_installer(label: str = "Installing", verbose: bool = True) -
             )
             # Preserve the full installer output. During `hermes update`,
             # sys.stdout is the mirroring _UpdateOutputStream whose `_log`
-            # handle is ~/.hermes/logs/update.log — write straight to it so
+            # handle is ~/.lucifex/logs/update.log — write straight to it so
             # the captured "Next steps" wall is kept in full (success AND
             # failure), without echoing it to the terminal.
             if result.stdout:
@@ -1414,7 +1414,7 @@ def _run_post_setup(post_setup_key: str):
                 return
         _print_info("    Default voice: en_US-lessac-medium (downloaded on first TTS call)")
         _print_info("    Full voice list: https://github.com/OHF-Voice/piper1-gpl/blob/main/docs/VOICES.md")
-        _print_info("    Switch voices by setting tts.piper.voice in ~/.hermes/config.yaml")
+        _print_info("    Switch voices by setting tts.piper.voice in ~/.lucifex/config.yaml")
 
     elif post_setup_key == "ddgs":
         try:
@@ -1442,7 +1442,7 @@ def _run_post_setup(post_setup_key: str):
         # Run the full `hermes auth spotify` flow — if the user has no
         # client_id yet, this drops them into the interactive wizard
         # (opens the Spotify dashboard, prompts for client_id, persists
-        # to ~/.hermes/.env), then continues straight into PKCE. If they
+        # to ~/.lucifex/.env), then continues straight into PKCE. If they
         # already have an app, it skips the wizard and just does OAuth.
         from types import SimpleNamespace
         try:
@@ -1706,7 +1706,7 @@ def _exempt_explicit_platform_native(
     ``discord``/``discord_admin`` on the discord platform) are the platform's
     own native tools. They are kept off for *unconfigured* platforms (security
     opt-in), but once a user explicitly saves a toolset list for the platform
-    the composite they chose (e.g. ``hermes-discord``, which contains those
+    the composite they chose (e.g. ``lucifex-discord``, which contains those
     tools) is an opt-in — stripping them silently defeats the explicit
     configuration (#35527). Mutates ``default_off`` in place.
     """
@@ -1731,7 +1731,7 @@ def _get_platform_tools(
     toolset_names = platform_toolsets.get(platform)
     # Track whether the user explicitly saved a toolset list for this platform
     # (vs. falling back to the platform default). An explicit composite (e.g.
-    # ``hermes-discord``) is an opt-in to the platform's native default-off
+    # ``lucifex-discord``) is an opt-in to the platform's native default-off
     # toolsets — see _exempt_explicit_platform_native (#35527).
     explicitly_configured = isinstance(toolset_names, list)
 
@@ -1755,7 +1755,7 @@ def _get_platform_tools(
     # If the saved list contains any configurable keys directly, the user
     # has explicitly configured this platform — use direct membership.
     # This avoids the subset-inference bug where composite toolsets like
-    # "hermes-cli" (which include all _HERMES_CORE_TOOLS) cause disabled
+    # "lucifex-cli" (which include all _HERMES_CORE_TOOLS) cause disabled
     # toolsets to re-appear as enabled.
     has_explicit_config = any(ts in configurable_keys for ts in toolset_names)
 
@@ -1765,7 +1765,7 @@ def _get_platform_tools(
             if ts in configurable_keys and _toolset_allowed_for_platform(ts, platform)
         }
         # Mixed config: composite toolset alongside configurables (e.g.
-        # ``[hermes-cli, spotify]`` after enabling Spotify via ``hermes
+        # ``[lucifex-cli, spotify]`` after enabling Spotify via ``hermes
         # tools``). Without expansion the composite name is silently dropped,
         # leaving sessions with only the configurable opt-ins and no native
         # tools. Mirror the else-branch's subset inference, but apply
@@ -1805,7 +1805,7 @@ def _get_platform_tools(
             enabled_toolsets |= expanded
     else:
         # No explicit config — fall back to resolving composite toolset names
-        # (e.g. "hermes-cli") to individual tool names and reverse-mapping.
+        # (e.g. "lucifex-cli") to individual tool names and reverse-mapping.
         all_tool_names = set()
         for ts_name in toolset_names:
             all_tool_names.update(resolve_toolset(ts_name))
@@ -1988,7 +1988,7 @@ def _get_platform_tools(
 
     # #38798: if this platform was explicitly configured but every toolset name
     # is invalid (e.g. a migration or hand-edit left `hermes` instead of
-    # `hermes-cli`), resolve_toolset() returns [] for each and the platform ends
+    # `lucifex-cli`), resolve_toolset() returns [] for each and the platform ends
     # up with no native tools — silently, with no error. Surface it at the point
     # tools are resolved for a session so an already-corrupted config is caught
     # at runtime, not only during the next `hermes update`/`hermes doctor`.
@@ -2035,7 +2035,7 @@ def _save_platform_tools(config: dict, platform: str, enabled_toolset_keys: Set[
     plugin_keys = _get_plugin_toolset_keys()
     configurable_keys |= plugin_keys
 
-    # Also exclude platform default toolsets (hermes-cli, hermes-telegram, etc.)
+    # Also exclude platform default toolsets (lucifex-cli, lucifex-telegram, etc.)
     # These are "super" toolsets that resolve to ALL tools, so preserving them
     # would silently override the user's unchecked selections on the next read.
     platform_default_keys = {p["default_toolset"] for p in PLATFORMS.values()}

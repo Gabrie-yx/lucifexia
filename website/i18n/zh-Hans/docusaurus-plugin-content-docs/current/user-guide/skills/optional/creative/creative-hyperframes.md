@@ -1,4 +1,4 @@
----
+﻿---
 title: "Hyperframes"
 sidebar_label: "Hyperframes"
 description: "使用 HyperFrames 创建基于 HTML 的视频合成、动画标题卡、社交叠加层、带字幕的对话视频、音频响应视觉效果和着色器转场..."
@@ -69,7 +69,7 @@ npx hyperframes doctor                      # 诊断环境问题
 ## 初始设置（一次性）
 
 ```bash
-bash "$(dirname "$(find ~/.hermes/skills -path '*/hyperframes/SKILL.md' 2>/dev/null | head -1)")/scripts/setup.sh"
+bash "$(dirname "$(find ~/.lucifex/skills -path '*/hyperframes/SKILL.md' 2>/dev/null | head -1)")/scripts/setup.sh"
 ```
 
 该脚本执行以下操作：

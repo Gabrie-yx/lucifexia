@@ -32,7 +32,7 @@ def _state_dir() -> Path:
     override = os.environ.get("WATCHER_STATE_DIR")
     if override:
         return Path(override)
-    # Default: $LUCIFEX_HOME/watcher-state/, falling back to ~/.hermes/watcher-state/.
+    # Default: $LUCIFEX_HOME/watcher-state/, falling back to ~/.lucifex/watcher-state/.
     LUCIFEX_HOME = os.environ.get("LUCIFEX_HOME") or str(Path.home() / ".hermes")
     return Path(LUCIFEX_HOME) / "watcher-state"
 

@@ -1,4 +1,4 @@
----
+﻿---
 sidebar_position: 3
 title: "Nix & NixOS Setup"
 description: "Install and deploy Hermes Agent with Nix — from quick `nix run` to fully declarative NixOS module with container mode"
@@ -56,7 +56,7 @@ hermes setup
 hermes --tui
 ```
 
-After `nix profile install`, `hermes`, `lucifex-agent`, and `hermes-acp` are on your PATH. From here, the workflow is identical to the [standard installation](./installation.md) — `hermes setup` walks you through provider selection, `hermes gateway install` sets up a launchd (macOS) or systemd user service, and config lives in `~/.hermes/`.
+After `nix profile install`, `hermes`, `lucifex-agent`, and `hermes-acp` are on your PATH. From here, the workflow is identical to the [standard installation](./installation.md) — `hermes setup` walks you through provider selection, `hermes gateway install` sets up a launchd (macOS) or systemd user service, and config lives in `~/.lucifex/`.
 
 :::warning Messaging platforms (Discord, Telegram, Slack)
 The default package includes ALL libraries lucifex-agent might need. if you want a smaller variant, check the other flake outputs. 
@@ -138,7 +138,7 @@ services.lucifex-agent.environmentFiles = [ "/var/lib/hermes/env" ];
 :::
 
 :::tip addToSystemPackages
-Setting `addToSystemPackages = true` does two things: puts the `hermes` CLI on your system PATH **and** sets `LUCIFEX_HOME` system-wide so the interactive CLI shares state (sessions, skills, cron) with the gateway service. Without it, running `hermes` in your shell creates a separate `~/.hermes/` directory.
+Setting `addToSystemPackages = true` does two things: puts the `hermes` CLI on your system PATH **and** sets `LUCIFEX_HOME` system-wide so the interactive CLI shares state (sessions, skills, cron) with the gateway service. Without it, running `hermes` in your shell creates a separate `~/.lucifex/` directory.
 :::
 
 ### Container-aware CLI
@@ -146,7 +146,7 @@ Setting `addToSystemPackages = true` does two things: puts the `hermes` CLI on y
 :::info
 When `container.enable = true` and `addToSystemPackages = true`, **every** `hermes` command on the host automatically routes into the managed container. This means your interactive CLI session runs inside the same environment as the gateway service — with access to all container-installed packages and tools.
 
-- The routing is transparent: `hermes chat`, `hermes sessions list`, `hermes version`, etc. all exec into the container under the hood
+- The routing is transparent: `hermes chat`, `lucifex sessions list`, `hermes version`, etc. all exec into the container under the hood
 - All CLI flags are forwarded as-is
 - If the container isn't running, the CLI retries briefly (5s with a spinner for interactive use, 10s silently for scripts) then fails with a clear error — no silent fallback
 - For developers working on the hermes codebase, set `HERMES_DEV=1` to bypass container routing and run the local checkout directly
@@ -511,7 +511,7 @@ The container uses `--network=host`, so the OAuth callback listener on `127.0.0.
 
 ```bash
 hermes mcp add my-oauth-server --url https://mcp.example.com/mcp --auth oauth
-scp ~/.hermes/mcp-tokens/my-oauth-server{,.client}.json \
+scp ~/.lucifex/mcp-tokens/my-oauth-server{,.client}.json \
     server:/var/lib/hermes/.hermes/mcp-tokens/
 # Ensure: chown hermes:hermes, chmod 0600
 ```
@@ -547,8 +547,8 @@ When hermes runs via the NixOS module, the following CLI commands are **blocked*
 | Blocked command | Why |
 |---|---|
 | `hermes setup` | Config is declarative — edit `settings` in your Nix config |
-| `hermes config edit` | Config is generated from `settings` |
-| `hermes config set <key> <value>` | Config is generated from `settings` |
+| `lucifex config edit` | Config is generated from `settings` |
+| `lucifex config set <key> <value>` | Config is generated from `settings` |
 | `hermes gateway install` | The systemd service is managed by NixOS |
 | `hermes gateway uninstall` | The systemd service is managed by NixOS |
 

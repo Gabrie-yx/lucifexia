@@ -1,6 +1,6 @@
-"""Regression tests for the docker-exec privilege-drop shim.
+﻿"""Regression tests for the docker-exec privilege-drop shim.
 
-The shim (docker/hermes-exec-shim.sh, installed at /opt/hermes/bin/hermes)
+The shim (docker/lucifex-exec-shim.sh, installed at /opt/hermes/bin/hermes)
 exists to prevent the auth.json ownership-mismatch bug where
 `docker exec <c> hermes login` would write /opt/data/auth.json as
 root:root mode 0600, leaving the supervised gateway (UID 10000) unable
@@ -115,7 +115,7 @@ def test_shim_drops_root_to_hermes_uid(sleep_container: str) -> None:
     into it without forking subcommands. Simplest approach: have `hermes`
     do anything that writes to disk, then check the file's owner.
 
-    Use `hermes config set` which writes config.yaml under LUCIFEX_HOME.
+    Use `lucifex config set` which writes config.yaml under LUCIFEX_HOME.
     The resulting file ownership tells us what UID the shim ended up at.
     """
     # Wipe any prior state.
@@ -282,7 +282,7 @@ def test_e2e_login_then_supervised_gateway_can_read_auth(
     "Hermes is not logged into Nous Portal" on every message.
 
     We can't do a real OAuth login in a unit test, but we can stand in
-    for it by writing the same file shape via `hermes config set`-style
+    for it by writing the same file shape via `lucifex config set`-style
     writes — what matters is the *file ownership invariant* downstream
     of `_save_auth_store`. If the shim works, every file the
     `docker exec` path produces is hermes-readable.
@@ -295,7 +295,7 @@ def test_e2e_login_then_supervised_gateway_can_read_auth(
     """
     # Have the shim-protected `docker exec` write the auth store.
     # `hermes auth list` is read-only but still exercises _load_auth_store
-    # under the shim's UID. We invoke `hermes config set` first to
+    # under the shim's UID. We invoke `lucifex config set` first to
     # provoke a write into LUCIFEX_HOME so we have something concrete to
     # owner-check.
     r = subprocess.run(

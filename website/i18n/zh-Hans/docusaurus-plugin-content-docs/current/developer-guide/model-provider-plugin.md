@@ -1,4 +1,4 @@
----
+﻿---
 sidebar_position: 10
 title: "模型提供商插件"
 description: "如何为 Hermes Agent 构建模型提供商（推理后端）插件"
@@ -158,7 +158,7 @@ class AcmeProfile(ProviderProfile):
 
 ## 用户覆盖——不修改仓库替换内置提供商
 
-假设你想将 `gmi` 指向私有测试端点进行测试。创建 `~/.hermes/plugins/model-providers/gmi/__init__.py`：
+假设你想将 `gmi` 指向私有测试端点进行测试。创建 `~/.lucifex/plugins/model-providers/gmi/__init__.py`：
 
 ```python
 from providers import register_provider

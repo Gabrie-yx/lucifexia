@@ -1,4 +1,4 @@
----
+﻿---
 name: google_meet
 description: Join a Google Meet call, transcribe live captions, optionally speak in realtime, and do the followup work afterwards. Use when the user asks the agent to sit in on a meeting, take notes, summarize, respond in-call, or action items from it.
 version: 0.2.0
@@ -63,7 +63,7 @@ pip install playwright websockets && python -m playwright install chromium
 #   Linux:  sudo apt install pulseaudio-utils
 #   macOS:  brew install blackhole-2ch ffmpeg
 #           → System Settings → Sound → Input → BlackHole 2ch
-#   Then set OPENAI_API_KEY or HERMES_MEET_REALTIME_KEY in ~/.hermes/.env
+#   Then set OPENAI_API_KEY or HERMES_MEET_REALTIME_KEY in ~/.lucifex/.env
 ```
 
 For a remote node:

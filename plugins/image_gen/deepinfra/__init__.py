@@ -1,4 +1,4 @@
-"""DeepInfra image generation backend.
+﻿"""DeepInfra image generation backend.
 
 Exposes DeepInfra's image-gen catalog (FLUX, Qwen-Image-Edit, …) through
 the OpenAI-compatible ``/v1/openai/images/generations`` endpoint as an
@@ -13,7 +13,7 @@ here). ``list_models()`` filters that catalog via
 :func:`lucifex_cli.models._fetch_deepinfra_models_by_tag` so newly added
 models show up in ``hermes tools`` automatically. No model ids are
 hardcoded in this file — if a model is retired upstream, it disappears
-from hermes the next time the catalog is fetched, no patch required.
+from lucifex the next time the catalog is fetched, no patch required.
 
 Model selection (first hit wins):
 

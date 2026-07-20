@@ -1,4 +1,4 @@
-"""
+﻿"""
 Text-to-Speech Provider ABC
 ============================
 
@@ -30,7 +30,7 @@ defensively). The dispatcher also rejects plugin dispatch when a same-
 name command provider is configured.
 
 Providers live in ``<repo>/plugins/tts/<name>/`` (built-in plugins, no
-shipped today) or ``~/.hermes/plugins/tts/<name>/`` (user-installed).
+shipped today) or ``~/.lucifex/plugins/tts/<name>/`` (user-installed).
 None ship in-tree as of issue #30398 — the hook is additive
 infrastructure waiting for a real consumer (Cartesia, Fish Audio, …).
 

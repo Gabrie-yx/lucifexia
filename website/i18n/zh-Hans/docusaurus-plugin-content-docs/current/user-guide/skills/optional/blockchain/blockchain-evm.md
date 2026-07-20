@@ -1,4 +1,4 @@
----
+﻿---
 title: "Evm — 只读 EVM 客户端：跨 8 条链的钱包、代币、Gas"
 sidebar_label: "Evm"
 description: "只读 EVM 客户端：跨 8 条链的钱包、代币、Gas"
@@ -72,14 +72,14 @@ ENS：ensideas.com 公共 API。
 
 覆盖 RPC 端点：`export EVM_RPC_URL=https://your-rpc.com`
 
-辅助脚本路径：`~/.hermes/skills/blockchain/evm/scripts/evm_client.py`
+辅助脚本路径：`~/.lucifex/skills/blockchain/evm/scripts/evm_client.py`
 
 ---
 
 ## 快速参考
 
 ```
-SCRIPT=~/.hermes/skills/blockchain/evm/scripts/evm_client.py
+SCRIPT=~/.lucifex/skills/blockchain/evm/scripts/evm_client.py
 
 # 网络与价格
 python3 $SCRIPT stats                            # Ethereum 统计
@@ -125,7 +125,7 @@ python3 $SCRIPT whale --blocks 50 --min-usd 100000 --chain arbitrum
 ### 0. 环境检查
 ```bash
 python3 --version   # 需要 3.8+
-python3 ~/.hermes/skills/blockchain/evm/scripts/evm_client.py stats
+python3 ~/.lucifex/skills/blockchain/evm/scripts/evm_client.py stats
 ```
 
 ### 1. 钱包投资组合
@@ -220,8 +220,8 @@ python3 $SCRIPT gas --chain polygon
 ## 验证
 ```bash
 # 应输出当前区块、Gas 价格、ETH 价格
-python3 ~/.hermes/skills/blockchain/evm/scripts/evm_client.py stats
+python3 ~/.lucifex/skills/blockchain/evm/scripts/evm_client.py stats
 
 # 应将 vitalik.eth 解析为 0xd8dA...
-python3 ~/.hermes/skills/blockchain/evm/scripts/evm_client.py ens vitalik.eth
+python3 ~/.lucifex/skills/blockchain/evm/scripts/evm_client.py ens vitalik.eth
 ```

@@ -1,10 +1,10 @@
-"""Gateway runtime-metadata footer.
+﻿"""Gateway runtime-metadata footer.
 
 Renders a compact footer showing runtime state (model, context %, cwd) and
 appends it to the FINAL message of an agent turn when enabled.  Off by default
 to keep replies minimal.
 
-Config (``~/.hermes/config.yaml``)::
+Config (``~/.lucifex/config.yaml``)::
 
     display:
       runtime_footer:

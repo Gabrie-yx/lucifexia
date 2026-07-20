@@ -1,4 +1,4 @@
-"""
+﻿"""
 DM Pairing System
 
 Code-based approval flow for authorizing new users on messaging platforms.
@@ -15,7 +15,7 @@ Security features (based on OWASP + NIST SP 800-63-4 guidance):
   - File permissions: chmod 0600 on all data files
   - Codes are never logged to stdout
 
-Storage: ~/.hermes/pairing/
+Storage: ~/.lucifex/pairing/
 """
 
 import hashlib

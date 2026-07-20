@@ -38,8 +38,8 @@ def _resolve_profile_path(path_value: Any) -> Optional[Path]:
     LUCIFEX_HOME = get_lucifex_home()
     if raw == "~/.hermes":
         return LUCIFEX_HOME
-    if raw.startswith("~/.hermes/"):
-        return LUCIFEX_HOME / raw.removeprefix("~/.hermes/")
+    if raw.startswith("~/.lucifex/"):
+        return LUCIFEX_HOME / raw.removeprefix("~/.lucifex/")
     path = Path(raw).expanduser()
     if path.is_absolute():
         return path
@@ -54,7 +54,7 @@ def _resolve_script_path(script_value: Any) -> tuple[Optional[Path], Optional[st
 
     scripts_root = (get_lucifex_home() / "scripts").resolve()
     raw_text = os.path.expandvars(script_value.strip())
-    if raw_text == "~/.hermes" or raw_text.startswith("~/.hermes/"):
+    if raw_text == "~/.hermes" or raw_text.startswith("~/.lucifex/"):
         mapped = _resolve_profile_path(raw_text)
         candidate = mapped.resolve() if mapped is not None else scripts_root
     else:

@@ -1,9 +1,9 @@
 ﻿"""
 Configuration management for Hermes Agent.
 
-Config files are stored in ~/.hermes/ for easy access:
-- ~/.hermes/config.yaml  - All settings (model, toolsets, terminal, etc.)
-- ~/.hermes/.env         - API keys and secrets
+Config files are stored in ~/.lucifex/ for easy access:
+- ~/.lucifex/config.yaml  - All settings (model, toolsets, terminal, etc.)
+- ~/.lucifex/.env         - API keys and secrets
 
 This module provides:
 - hermes config          - Show current configuration
@@ -47,7 +47,7 @@ def _backup_corrupt_config(config_path: Path) -> Optional[Path]:
     When the YAML can't be parsed, ``load_config()`` silently falls back to
     ``DEFAULT_CONFIG`` and the user's broken file stays on disk untouched.
     That file is still the user's only copy of their intended overrides — if
-    they re-run the setup wizard or ``hermes config set`` (which rewrites
+    they re-run the setup wizard or ``lucifex config set`` (which rewrites
     ``config.yaml``), the broken-but-recoverable content is gone for good.
 
     This snapshots the corrupted file to ``config.yaml.corrupt.<ts>.bak`` so
@@ -100,7 +100,7 @@ def _warn_config_parse_failure(
 ) -> None:
     """Surface a config.yaml parse failure to user, log, and stderr.
 
-    A YAML parse error in ``~/.hermes/config.yaml`` causes ``load_config()``
+    A YAML parse error in ``~/.lucifex/config.yaml`` causes ``load_config()``
     to silently fall back to ``DEFAULT_CONFIG``, which means every user
     override (auxiliary providers, fallback chain, model overrides, etc.)
     is dropped. Before this helper that was a one-line ``print(...)`` that
@@ -113,7 +113,7 @@ def _warn_config_parse_failure(
     first warning for a given broken file we also snapshot it to a
     timestamped ``.bak`` (best-effort) so the user's recoverable content
     survives any later rewrite of ``config.yaml`` by the setup wizard or
-    ``hermes config set``.
+    ``lucifex config set``.
 
     ``fallback`` selects the message wording: ``"defaults"`` (fresh process,
     nothing else to serve) or ``"last-known-good"`` (in-process retention of
@@ -148,7 +148,7 @@ def _warn_config_parse_failure(
         msg += f" A copy of the corrupted file was saved to {backup_path}."
     logger.warning(msg)
     try:
-        sys.stderr.write(f"⚠️  hermes config: {msg}\n")
+        sys.stderr.write(f"⚠️  lucifex config: {msg}\n")
         sys.stderr.flush()
     except Exception:
         pass
@@ -228,7 +228,7 @@ def _reject_denylisted_env_var(key: str) -> None:
             "PYTHONPATH, PATH, EDITOR, ...) or Hermes runtime location "
             "(LUCIFEX_HOME, HERMES_PROFILE, ...) cannot be persisted via "
             "the env writer. If you really need this, edit "
-            "~/.hermes/.env directly."
+            "~/.lucifex/.env directly."
         )
 
 _LAST_EXPANDED_CONFIG_BY_PATH: Dict[str, Any] = {}
@@ -1000,7 +1000,7 @@ DEFAULT_CONFIG = {
     "providers": {},
     "fallback_providers": [],
     "credential_pool_strategies": {},
-    "toolsets": ["hermes-cli"],
+    "toolsets": ["lucifex-cli"],
     # Global active chat session cap across CLI, TUI/dashboard, and messaging.
     # None/0 = unbounded.
     "max_concurrent_sessions": None,
@@ -1358,7 +1358,7 @@ DEFAULT_CONFIG = {
         # limited the `/rollback` listing; v2 actually rewrites the ref and
         # garbage-collects older commits.
         "max_snapshots": 20,
-        # Hard ceiling on total ``~/.hermes/checkpoints/`` size (MB).  When
+        # Hard ceiling on total ``~/.lucifex/checkpoints/`` size (MB).  When
         # exceeded, the oldest checkpoint per project is dropped in a
         # round-robin pass until total size falls under the cap.
         # 0 disables the size cap.
@@ -2230,7 +2230,7 @@ DEFAULT_CONFIG = {
             # use, OR an absolute path to a pre-downloaded .onnx file.
             # Full voice list: https://github.com/OHF-Voice/piper1-gpl/blob/main/docs/VOICES.md
             "voice": "en_US-lessac-medium",
-            # "voices_dir": "",        # Override voice cache dir; default = ~/.hermes/cache/piper-voices/
+            # "voices_dir": "",        # Override voice cache dir; default = ~/.lucifex/cache/piper-voices/
             # "use_cuda": False,       # Requires onnxruntime-gpu
             # "length_scale": 1.0,     # 2.0 = twice as slow
             # "noise_scale": 0.667,
@@ -2294,7 +2294,7 @@ DEFAULT_CONFIG = {
     # "compressor" = built-in lossy summarization (default).
     # Set to a plugin name to activate an alternative engine (e.g. "lcm"
     # for Lossless Context Management).  The engine must be installed as
-    # a plugin in plugins/context_engine/<name>/ or ~/.hermes/plugins/.
+    # a plugin in plugins/context_engine/<name>/ or ~/.lucifex/plugins/.
     "context": {
         "engine": "compressor",
     },
@@ -2351,7 +2351,7 @@ DEFAULT_CONFIG = {
         # the parent's context window and trigger a compression/429 death
         # spiral. delegate_task sizes each summary against the parent's
         # remaining context headroom (split across the batch); when it must
-        # trim, the full text is spilled to ~/.hermes/cache/delegation/
+        # trim, the full text is spilled to ~/.lucifex/cache/delegation/
         # (mounted into remote backends) and the in-context summary becomes a
         # head+tail window plus a footer with the exact read_file offset to
         # page the omitted middle — the same convention web_extract uses for
@@ -2440,7 +2440,7 @@ DEFAULT_CONFIG = {
 
     # Skills — external skill directories for sharing skills across tools/agents.
     # Each path is expanded (~, ${VAR}) and resolved.  Read-only — skill creation
-    # always goes to ~/.hermes/skills/.
+    # always goes to ~/.lucifex/skills/.
     "skills": {
         "external_dirs": [],   # e.g. ["~/.agents/skills", "/shared/team-skills"]
         # Substitute ${HERMES_SKILL_DIR} and ${HERMES_SESSION_ID} in SKILL.md
@@ -2523,8 +2523,8 @@ DEFAULT_CONFIG = {
         # to keep all bundled built-ins permanently.
         "prune_builtins": True,
         # Pre-run backup: before every real curator pass (dry-run is
-        # skipped), snapshot ~/.hermes/skills/ into
-        # ~/.hermes/skills/.curator_backups/<utc-iso>/skills.tar.gz so the
+        # skipped), snapshot ~/.lucifex/skills/ into
+        # ~/.lucifex/skills/.curator_backups/<utc-iso>/skills.tar.gz so the
         # user can roll back with `hermes curator rollback`.
         "backup": {
             "enabled": True,
@@ -2731,7 +2731,7 @@ DEFAULT_CONFIG = {
     # subagent_stop, etc.).  Each entry maps an event name to a list of
     # {matcher, command, timeout} dicts.  First registration of a new
     # command prompts the user for consent; subsequent runs reuse the
-    # stored approval from ~/.hermes/shell-hooks-allowlist.json.
+    # stored approval from ~/.lucifex/shell-hooks-allowlist.json.
     # See `website/docs/user-guide/features/hooks.md` for schema + examples.
     "hooks": {},
 
@@ -2951,7 +2951,7 @@ DEFAULT_CONFIG = {
         },
     },
 
-    # Logging — controls file logging to ~/.hermes/logs/.
+    # Logging — controls file logging to ~/.lucifex/logs/.
     # agent.log captures INFO+ (all agent activity); errors.log captures WARNING+.
     "logging": {
         "level": "INFO",       # Minimum level for agent.log: DEBUG, INFO, WARNING
@@ -3015,7 +3015,7 @@ DEFAULT_CONFIG = {
         # its routing index. The primary copy lives in state.db (the
         # gateway_routing table). Default True for backward compatibility with
         # external tooling and downgrade safety; set to false to stop
-        # producing ~/.hermes/sessions/sessions.json entirely.
+        # producing ~/.lucifex/sessions/sessions.json entirely.
         "write_sessions_json": True,
 
         # Scale-to-zero idle detection (Phase 0). The gateway watches for idle
@@ -3083,7 +3083,7 @@ DEFAULT_CONFIG = {
 
         # When false (default), any file path the agent emits is delivered
         # as a native attachment as long as it isn't under the credential /
-        # system-path denylist (/etc, /proc, ~/.ssh, ~/.aws, ~/.hermes/.env,
+        # system-path denylist (/etc, /proc, ~/.ssh, ~/.aws, ~/.lucifex/.env,
         # auth.json, etc.). This matches the symmetry of inbound delivery
         # — we accept any document type the user uploads, and the agent
         # can hand back any file that isn't a credential.
@@ -3098,7 +3098,7 @@ DEFAULT_CONFIG = {
         "strict": False,
         # Extra directories from which model-emitted bare file paths may be
         # uploaded as native gateway attachments. Files inside the Hermes
-        # cache (~/.hermes/cache/{documents,images,audio,video,screenshots})
+        # cache (~/.lucifex/cache/{documents,images,audio,video,screenshots})
         # are always trusted; this list adds operator-controlled roots
         # (project dirs, scratch dirs, mounted shares). Accepts a list of
         # absolute paths or a single os.pathsep-separated string. Bridged
@@ -3171,7 +3171,7 @@ DEFAULT_CONFIG = {
         "fresh_final_after_seconds": 0.0,
     },
 
-    # Session storage — controls automatic cleanup of ~/.hermes/state.db.
+    # Session storage — controls automatic cleanup of ~/.lucifex/state.db.
     # state.db accumulates every session, message, tool call, and FTS5 index
     # entry forever.  Without auto-pruning, a heavy user (gateway + cron)
     # reports 384MB+ databases with 68K+ messages, which slows down FTS5
@@ -3198,7 +3198,7 @@ DEFAULT_CONFIG = {
         # state.db itself, so it's shared across all processes.
         "min_interval_hours": 24,
         # Legacy per-session JSON snapshot writer.  When true, the agent
-        # rewrites ``~/.hermes/sessions/session_{sid}.json`` on every turn
+        # rewrites ``~/.lucifex/sessions/session_{sid}.json`` on every turn
         # boundary with the full message list.  state.db is canonical and
         # has every field the snapshot stored (plus per-message timestamps
         # and token counts), so this is off by default — the snapshots had
@@ -3342,7 +3342,7 @@ DEFAULT_CONFIG = {
     # External secret sources
     # =========================================================================
     # Pull credentials from external secret managers at process startup
-    # rather than storing them in ~/.hermes/.env.
+    # rather than storing them in ~/.lucifex/.env.
     "secrets": {
         # Optional explicit ordering of enabled secret sources.  When
         # omitted, sources run in registration order (bundled first,
@@ -3360,7 +3360,7 @@ DEFAULT_CONFIG = {
             "enabled": False,
             # Name of the env var that holds the Bitwarden machine-account
             # access token.  This is the one bootstrap secret; it lives
-            # in ~/.hermes/.env (or your shell) and never in config.yaml.
+            # in ~/.lucifex/.env (or your shell) and never in config.yaml.
             "access_token_env": "BWS_ACCESS_TOKEN",
             # UUID of the BSM project to sync from.
             "project_id": "",
@@ -3372,7 +3372,7 @@ DEFAULT_CONFIG = {
             # take effect until you also cleared the matching .env line.
             "override_existing": True,
             # When True, the bws binary is auto-downloaded into
-            # ~/.hermes/bin/ on first use.  When False you must install
+            # ~/.lucifex/bin/ on first use.  When False you must install
             # bws yourself and have it on PATH.
             "auto_install": True,
             # Bitwarden region / self-hosted endpoint.  Empty string
@@ -3396,7 +3396,7 @@ DEFAULT_CONFIG = {
             # `op read --account <account>`.  Empty = op's default account.
             "account": "",
             # Name of the env var holding a 1Password service-account token
-            # for headless auth.  Sourced from ~/.hermes/.env (or the shell)
+            # for headless auth.  Sourced from ~/.lucifex/.env (or the shell)
             # and exported to the op child as OP_SERVICE_ACCOUNT_TOKEN.
             # Leave the var unset to use an interactive/desktop op session.
             "service_account_token_env": "OP_SERVICE_ACCOUNT_TOKEN",
@@ -4856,7 +4856,7 @@ def _unset_nested(config, dotted_key: str) -> bool:
 
 
 def _is_env_config_key(key: str) -> bool:
-    """Return whether `hermes config set` routes this key to .env."""
+    """Return whether `lucifex config set` routes this key to .env."""
     if "." in key:
         return False
     key_upper = key.upper()
@@ -6181,7 +6181,7 @@ def migrate_config(interactive: bool = True, quiet: bool = False) -> Dict[str, A
     #   2. Writes the `auxiliary.curator` aux-task slot (provider, model,
     #      base_url, api_key, timeout, extra_body) — canonical slot for
     #      routing the curator fork to a cheaper aux model.
-    #   3. Creates `~/.hermes/logs/curator/` if missing (belt-and-suspenders
+    #   3. Creates `~/.lucifex/logs/curator/` if missing (belt-and-suspenders
     #      on top of ensure_LUCIFEX_HOME() — old profiles that predate this
     #      migration still benefit).
     if current_ver < 23:
@@ -6237,7 +6237,7 @@ def migrate_config(interactive: bool = True, quiet: bool = False) -> Dict[str, A
                 if not quiet:
                     print(
                         "  ✓ Curator settings now available "
-                        f"({', '.join(added_curator)}) — edit via `hermes config set`"
+                        f"({', '.join(added_curator)}) — edit via `lucifex config set`"
                     )
             if added_aux:
                 results["config_added"].append(
@@ -6246,7 +6246,7 @@ def migrate_config(interactive: bool = True, quiet: bool = False) -> Dict[str, A
                 if not quiet:
                     print(
                         "  ✓ auxiliary.curator settings now available "
-                        f"({', '.join(added_aux)}) — edit via `hermes config set`"
+                        f"({', '.join(added_aux)}) — edit via `lucifex config set`"
                     )
 
     # ── Version 24 → 25: lower model_catalog TTL 24h → 1h ──
@@ -6300,7 +6300,7 @@ def migrate_config(interactive: bool = True, quiet: bool = False) -> Dict[str, A
     # is supplied by load_config()'s deep-merge at read time, and persisting a
     # default-valued key would only bloat a lean config (it gets stripped on
     # save anyway). Existing installs that WANT the old always-consolidate
-    # behavior set it to true explicitly via `hermes config set`.
+    # behavior set it to true explicitly via `lucifex config set`.
 
     # ── Version 30 → 31: switch verify_on_stop OFF (one-time) ──
     # verify_on_stop defaulted to the "auto" sentinel (surface-aware: on for
@@ -6869,7 +6869,7 @@ def _normalize_root_model_keys(config: Dict[str, Any]) -> Dict[str, Any]:
     confusion on subsequent loads.
 
     Also aliases ``api_base`` → ``base_url`` (issue #8919). ``api_base`` is the
-    intuitive name OpenAI-SDK / LiteLLM users reach for, and ``hermes config set``
+    intuitive name OpenAI-SDK / LiteLLM users reach for, and ``lucifex config set``
     blindly accepts any dotted key — so ``model.api_base`` got written, confirmed,
     and then silently ignored by the runtime resolver (which reads only
     ``model.base_url``), causing requests to fall back to OpenRouter. We migrate
@@ -7046,7 +7046,7 @@ def cfg_get(cfg: Optional[Dict[str, Any]], *keys: str, default: Any = None) -> A
 
 
 def read_raw_config() -> Dict[str, Any]:
-    """Read ~/.hermes/config.yaml as-is, without merging defaults or migrating.
+    """Read ~/.lucifex/config.yaml as-is, without merging defaults or migrating.
 
     Returns the raw YAML dict, or ``{}`` if the file doesn't exist or can't
     be parsed.  Use this for lightweight config reads where you just need a
@@ -7134,7 +7134,7 @@ def atomic_config_write(config_path: Path, data: Any, **kwargs: Any) -> None:
 
 
 def load_config() -> Dict[str, Any]:
-    """Load configuration from ~/.hermes/config.yaml.
+    """Load configuration from ~/.lucifex/config.yaml.
 
     Cached on the config file's (mtime_ns, size). Returns a deepcopy of
     the cached value when unchanged, since most call sites mutate the
@@ -7519,7 +7519,7 @@ def save_config(
     preserve_keys: Optional[Set[Tuple[str, ...]]] = None,
     merge_existing: bool = False,
 ):
-    """Save configuration to ~/.hermes/config.yaml.\n
+    """Save configuration to ~/.lucifex/config.yaml.\n
 
     Default values from ``DEFAULT_CONFIG`` are not written to disk unless
     the user explicitly set them (i.e. the path exists in the raw config
@@ -7652,7 +7652,7 @@ def _parse_env_value(raw_value: str) -> str:
 
 
 def load_env() -> Dict[str, str]:
-    """Load environment variables from ~/.hermes/.env.
+    """Load environment variables from ~/.lucifex/.env.
 
     Sanitizes lines before parsing so that corrupted files (e.g.
     concatenated KEY=VALUE pairs on a single line) are handled
@@ -7833,7 +7833,7 @@ def _sanitize_env_lines(lines: list) -> list:
 
 
 def sanitize_env_file() -> int:
-    """Read, sanitize, and rewrite ~/.hermes/.env in place.
+    """Read, sanitize, and rewrite ~/.lucifex/.env in place.
 
     Returns the number of lines that were fixed (concatenation splits +
     placeholder removals).  Returns 0 when no changes are needed.
@@ -7954,7 +7954,7 @@ def _env_line_defines_key(line: str, key: str) -> bool:
 
 
 def save_env_value(key: str, value: str):
-    """Save or update a value in ~/.hermes/.env."""
+    """Save or update a value in ~/.lucifex/.env."""
     if is_managed():
         managed_error(f"set {key}")
         return
@@ -8048,7 +8048,7 @@ def save_env_value(key: str, value: str):
 
 
 def remove_env_value(key: str) -> bool:
-    """Remove a key from ~/.hermes/.env and os.environ.
+    """Remove a key from ~/.lucifex/.env and os.environ.
 
     Returns True if the key was found and removed, False otherwise.
     """
@@ -8157,7 +8157,7 @@ def save_env_value_secure(key: str, value: str) -> Dict[str, Any]:
 
 
 def reload_env() -> int:
-    """Re-read ~/.hermes/.env into os.environ. Returns count of vars updated.
+    """Re-read ~/.lucifex/.env into os.environ. Returns count of vars updated.
 
     Adds/updates vars that changed and removes vars that were deleted from
     the .env file (but only vars known to Hermes — OPTIONAL_ENV_VARS and
@@ -8179,7 +8179,7 @@ def reload_env() -> int:
 
 
 def get_env_value(key: str) -> Optional[str]:
-    """Get a value from ~/.hermes/.env or environment."""
+    """Get a value from ~/.lucifex/.env or environment."""
     # Check environment first
     if key in os.environ:
         return os.environ[key]
@@ -8190,7 +8190,7 @@ def get_env_value(key: str) -> Optional[str]:
 
 
 def get_env_value_prefer_dotenv(key: str) -> Optional[str]:
-    """Resolve a credential env value, preferring ``~/.hermes/.env`` over ``os.environ``.
+    """Resolve a credential env value, preferring ``~/.lucifex/.env`` over ``os.environ``.
 
     Used for Hermes-managed credentials where a deliberate edit to ``.env``
     must take precedence over a stale value inherited from the parent shell
@@ -8598,7 +8598,7 @@ def _known_top_level_keys() -> set[str]:
 
     Combines :data:`DEFAULT_CONFIG` with the dynamic categories that
     accept user-supplied child keys.  Used by :func:`_validate_config_key`
-    to decide whether a ``hermes config set`` invocation is targeting a
+    to decide whether a ``lucifex config set`` invocation is targeting a
     known shape.
     """
     keys = set(DEFAULT_CONFIG.keys())
@@ -8610,7 +8610,7 @@ def _known_top_level_keys() -> set[str]:
 
 def _suggest_closest_key(key: str, candidates: set[str], cutoff: float = 0.6) -> Optional[str]:
     """Return the closest valid key name from ``candidates`` if any are
-    similar enough to ``key``, else None.  Used by ``hermes config set``
+    similar enough to ``key``, else None.  Used by ``lucifex config set``
     to point users at the right path when they've typo'd a top-level key.
 
     Uses :func:`difflib.get_close_matches` with a conservative cutoff so
@@ -8726,7 +8726,7 @@ def set_config_value(key: str, value: str, force: bool = False):
         value: String value (auto-coerced to bool/int/float when matching).
         force: When True, skip the unknown-key warning — useful for scripted
             writes of keys the running version doesn't recognize yet. The CLI
-            exposes this via ``hermes config set --force``.
+            exposes this via ``lucifex config set --force``.
     """
     if is_managed():
         managed_error("set configuration values")
@@ -8801,7 +8801,7 @@ def set_config_value(key: str, value: str, force: bool = False):
     value = coerced_value
     _set_nested(user_config, key, value)
     # Normalize the api_base → base_url alias at set-time too (issue #8919),
-    # so a fresh `hermes config set model.api_base ...` lands on the canonical
+    # so a fresh `lucifex config set model.api_base ...` lands on the canonical
     # key the runtime resolver actually reads, instead of being silently
     # ignored. Mirrors the load-time migration in _normalize_root_model_keys.
     _alias_norm = key.strip().lower()
@@ -8821,7 +8821,7 @@ def set_config_value(key: str, value: str, force: bool = False):
         save_env_value(env_var, _terminal_env_value(value))
 
     # Mask the echoed value when the (possibly nested) key is credential-shaped
-    # — e.g. `hermes config set model.api_key cfut_...` routes to config.yaml
+    # — e.g. `lucifex config set model.api_key cfut_...` routes to config.yaml
     # (lowercase, so it misses the .env api_keys list above) and would otherwise
     # print the raw secret to the terminal.
     _leaf_key = key.rsplit(".", 1)[-1].lower()
@@ -8886,7 +8886,7 @@ def unset_config_value(key: str):
 
     if _is_env_config_key(key):
         # Unified lifecycle: prune env-seeded credential_pool entries and
-        # model-cache rows too, so `hermes config unset <KEY>` fully removes
+        # model-cache rows too, so `lucifex config unset <KEY>` fully removes
         # the provider instead of leaving it resurrectable (#51071 family).
         from lucifex_cli.credential_lifecycle import remove_provider_env_credential
 
@@ -9138,7 +9138,7 @@ _inject_profile_env_vars()
 # ── Platform-plugin env var injection ────────────────────────────────────────
 # Bundled platform plugins under ``plugins/platforms/*/plugin.yaml`` declare
 # their required env vars via ``requires_env``.  This mirror of
-# ``_inject_profile_env_vars`` surfaces them in ``hermes config`` UI so users
+# ``_inject_profile_env_vars`` surfaces them in ``lucifex config`` UI so users
 # can configure Teams / IRC / Google Chat without the core repo ever needing
 # to know they exist.
 #

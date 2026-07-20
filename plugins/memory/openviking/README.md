@@ -1,4 +1,4 @@
-# OpenViking Memory Provider
+﻿# OpenViking Memory Provider
 
 Context database by Volcengine (ByteDance) with filesystem-style knowledge hierarchy, tiered retrieval, and automatic memory extraction.
 
@@ -21,7 +21,7 @@ not exist.
 Or manually:
 ```bash
 hermes config set memory.provider openviking
-echo "OPENVIKING_ENDPOINT=http://localhost:1933" >> ~/.hermes/.env
+echo "OPENVIKING_ENDPOINT=http://localhost:1933" >> ~/.lucifex/.env
 ```
 
 ## Config

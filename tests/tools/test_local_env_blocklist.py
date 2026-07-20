@@ -1,4 +1,4 @@
-"""Tests for subprocess env sanitization in LocalEnvironment.
+﻿"""Tests for subprocess env sanitization in LocalEnvironment.
 
 Verifies that Hermes-managed provider, tool, and gateway env vars are
 stripped from subprocess environments so external CLIs are not silently
@@ -59,7 +59,7 @@ def _run_with_env(extra_os_env=None, self_env=None):
 
 
 class TestProviderEnvBlocklist:
-    """Provider env vars loaded from ~/.hermes/.env must not leak."""
+    """Provider env vars loaded from ~/.lucifex/.env must not leak."""
 
     def test_blocked_vars_are_stripped(self):
         """OPENAI_BASE_URL and other provider vars must not appear in subprocess env."""

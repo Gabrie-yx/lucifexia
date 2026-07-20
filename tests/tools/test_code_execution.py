@@ -120,8 +120,8 @@ class TestHermesToolsGeneration(unittest.TestCase):
     def test_file_transport_uses_tempfile_fallback_for_rpc_dir(self):
         src = generate_lucifex_tools_module(["terminal"], transport="file")
         self.assertIn("import json, os, shlex, tempfile, threading, time", src)
-        self.assertIn("os.path.join(tempfile.gettempdir(), \"hermes_rpc\")", src)
-        self.assertNotIn('os.environ.get("HERMES_RPC_DIR", "/tmp/hermes_rpc")', src)
+        self.assertIn("os.path.join(tempfile.gettempdir(), \"lucifex_rpc\")", src)
+        self.assertNotIn('os.environ.get("LUCIFEX_RPC_DIR", "/tmp/lucifex_rpc")', src)
 
     def test_uds_transport_serializes_concurrent_calls(self):
         """Regression: UDS _call() must hold a lock across send+recv so that
@@ -174,7 +174,7 @@ class TestExecuteCodeRemoteTempDir(unittest.TestCase):
         run_cmd = next(cmd for cmd, _, _ in env.commands if "python3 script.py" in cmd)
         cleanup_cmd = env.commands[-1][0]
         self.assertIn("mkdir -p /data/data/com.termux/files/usr/tmp/hermes_exec_", mkdir_cmd)
-        self.assertIn("HERMES_RPC_DIR=/data/data/com.termux/files/usr/tmp/hermes_exec_", run_cmd)
+        self.assertIn("LUCIFEX_RPC_DIR=/data/data/com.termux/files/usr/tmp/hermes_exec_", run_cmd)
         self.assertIn("rm -rf /data/data/com.termux/files/usr/tmp/hermes_exec_", cleanup_cmd)
         self.assertNotIn("mkdir -p /tmp/hermes_exec_", mkdir_cmd)
 
@@ -1060,7 +1060,7 @@ class TestRpcTokenAuthorization(unittest.TestCase):
     """The per-session RPC token must gate socket dispatch (fail-closed).
 
     Regression coverage for the execute_code tool-socket hardening: a
-    request without the matching HERMES_RPC_TOKEN must be rejected before
+    request without the matching LUCIFEX_RPC_TOKEN must be rejected before
     the tool is dispatched, while a request carrying the correct token
     round-trips normally.
     """
@@ -1176,9 +1176,9 @@ class TestRpcTokenAuthorization(unittest.TestCase):
         self.assertIn("Unauthorized", resp[0].get("error", ""))
 
     def test_generated_module_sends_token(self):
-        """The generated lucifex_tools module reads HERMES_RPC_TOKEN and sends it."""
+        """The generated lucifex_tools module reads LUCIFEX_RPC_TOKEN and sends it."""
         src = generate_lucifex_tools_module(["terminal"], transport="uds")
-        self.assertIn("HERMES_RPC_TOKEN", src)
+        self.assertIn("LUCIFEX_RPC_TOKEN", src)
         self.assertIn('"token"', src)
 
 

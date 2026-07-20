@@ -1,4 +1,4 @@
-"""Tests for the unconditional hardline command blocklist.
+﻿"""Tests for the unconditional hardline command blocklist.
 
 The hardline list is a floor below yolo: a small set of commands so
 catastrophic they should never run via the agent, regardless of --yolo,
@@ -488,7 +488,7 @@ def test_session_yolo_cannot_bypass_hardline(clean_session):
 
 def test_approvals_mode_off_cannot_bypass_hardline(clean_session, monkeypatch, tmp_path):
     """config approvals.mode=off (yolo-equivalent) must not bypass hardline."""
-    # _get_approval_mode() reads from hermes config; simplest path: monkeypatch the helper.
+    # _get_approval_mode() reads from lucifex config; simplest path: monkeypatch the helper.
     import tools.approval as approval_mod
     monkeypatch.setattr(approval_mod, "_get_approval_mode", lambda: "off")
 

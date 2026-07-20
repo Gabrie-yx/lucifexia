@@ -2,7 +2,7 @@
 
 Resolve provider credentials from 1Password ``op://vault/item/field``
 references at process startup so they don't have to live in plaintext in
-``~/.hermes/.env``.
+``~/.lucifex/.env``.
 
 Design summary
 --------------

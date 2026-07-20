@@ -1,4 +1,4 @@
-# TouchDesigner Troubleshooting (twozero MCP)
+﻿# TouchDesigner Troubleshooting (twozero MCP)
 
 > See `references/pitfalls.md` for the comprehensive lessons-learned list.
 
@@ -137,7 +137,7 @@ actual = str(n.width) + 'x' + str(n.height)
 
 ### Config location
 
-`$LUCIFEX_HOME/config.yaml` (defaults to `~/.hermes/config.yaml` when `LUCIFEX_HOME` is unset)
+`$LUCIFEX_HOME/config.yaml` (defaults to `~/.lucifex/config.yaml` when `LUCIFEX_HOME` is unset)
 
 ### MCP entry format
 

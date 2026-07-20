@@ -1,4 +1,4 @@
----
+﻿---
 sidebar_position: 3
 title: "Updating & Uninstalling"
 description: "How to update Lucifex Agent to the latest version or uninstall it"
@@ -17,7 +17,7 @@ hermes update
 This pulls the latest code from `main`, updates dependencies, and prompts you to configure any new options that were added since your last update.
 
 :::tip
-`hermes update` automatically detects new configuration options and prompts you to add them. If you skipped that prompt, you can manually run `hermes config check` to see missing options, then `hermes config migrate` to interactively add them.
+`hermes update` automatically detects new configuration options and prompts you to add them. If you skipped that prompt, you can manually run `lucifex config check` to see missing options, then `lucifex config migrate` to interactively add them.
 :::
 
 ### What happens during an update
@@ -49,7 +49,7 @@ When you run `hermes update` in a terminal, Hermes stashes any uncommitted sourc
 When the update runs **without a terminal** — from the desktop/chat app's "Update" button or a gateway-triggered update — there's no prompt to answer. The `updates.non_interactive_local_changes` setting decides what happens to your stashed changes:
 
 ```yaml
-# ~/.hermes/config.yaml
+# ~/.lucifex/config.yaml
 updates:
   non_interactive_local_changes: stash   # default: keep + auto-restore
   # non_interactive_local_changes: discard  # throw local source edits away
@@ -75,7 +75,7 @@ hermes update --backup
 Or make it the default for every run:
 
 ```yaml
-# ~/.hermes/config.yaml
+# ~/.lucifex/config.yaml
 updates:
   pre_update_backup: full
 ```
@@ -139,10 +139,10 @@ If `git status --short` shows unexpected changes after `hermes update`, stop and
 `hermes update` protects itself against accidental terminal loss:
 
 - The update ignores `SIGHUP`, so closing your SSH session or terminal window no longer kills it mid-install. `pip` and `git` child processes inherit this protection, so the Python environment cannot be left half-installed by a dropped connection.
-- All output is mirrored to `~/.hermes/logs/update.log` while the update runs. If your terminal disappears, reconnect and inspect the log to see whether the update finished and whether the gateway restart succeeded:
+- All output is mirrored to `~/.lucifex/logs/update.log` while the update runs. If your terminal disappears, reconnect and inspect the log to see whether the update finished and whether the gateway restart succeeded:
 
 ```bash
-tail -f ~/.hermes/logs/update.log
+tail -f ~/.lucifex/logs/update.log
 ```
 
 - `Ctrl-C` (SIGINT) and system shutdown (SIGTERM) are still honored — those are deliberate cancellations, not accidents.
@@ -214,7 +214,7 @@ uv pip install -e ".[all]"
 ```
 
 :::warning
-Rolling back may cause config incompatibilities if new options were added. Run `hermes config check` after rolling back and remove any unrecognized options from `config.yaml` if you encounter errors.
+Rolling back may cause config incompatibilities if new options were added. Run `lucifex config check` after rolling back and remove any unrecognized options from `config.yaml` if you encounter errors.
 :::
 
 ### Note for Nix users
@@ -245,7 +245,7 @@ See [Nix Setup](./nix-setup.md) for more details.
 hermes uninstall
 ```
 
-The uninstaller gives you the option to keep your configuration files (`~/.hermes/`) for a future reinstall.
+The uninstaller gives you the option to keep your configuration files (`~/.lucifex/`) for a future reinstall.
 
 ### Manual Uninstall
 

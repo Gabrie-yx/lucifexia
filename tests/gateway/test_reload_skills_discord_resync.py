@@ -1,4 +1,4 @@
-"""Tests for `/reload-skills` resyncing the Discord ``/skill`` autocomplete.
+﻿"""Tests for `/reload-skills` resyncing the Discord ``/skill`` autocomplete.
 
 Before this change, ``_register_skill_group`` captured the skill catalog
 in closure variables (``entries`` and ``skill_lookup``) so that the one
@@ -46,7 +46,7 @@ class TestRefreshSkillGroup:
         """The initial catalog is replaced wholesale on refresh.
 
         Mirrors the observable /reload-skills case: a user adds a new
-        skill to ~/.hermes/skills/, runs /reload-skills, and expects
+        skill to ~/.lucifex/skills/, runs /reload-skills, and expects
         the autocomplete to surface it on the very next keystroke.
         """
         adapter = _make_adapter()

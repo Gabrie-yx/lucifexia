@@ -1,4 +1,4 @@
----
+﻿---
 sidebar_position: 3
 title: "Nix & NixOS 安装配置"
 description: "使用 Nix 安装和部署 Hermes Agent——从快速 `nix run` 到完全声明式的 NixOS 模块（含容器模式）"
@@ -44,7 +44,7 @@ hermes setup
 hermes chat
 ```
 
-执行 `nix profile install` 后，`hermes`、`lucifex-agent` 和 `hermes-acp` 将出现在你的 PATH 中。之后的工作流与[标准安装](./installation.md)完全相同——`hermes setup` 引导你完成提供商选择，`hermes gateway install` 设置 launchd（macOS）或 systemd 用户服务，配置存放在 `~/.hermes/`。
+执行 `nix profile install` 后，`hermes`、`lucifex-agent` 和 `hermes-acp` 将出现在你的 PATH 中。之后的工作流与[标准安装](./installation.md)完全相同——`hermes setup` 引导你完成提供商选择，`hermes gateway install` 设置 launchd（macOS）或 systemd 用户服务，配置存放在 `~/.lucifex/`。
 
 <details>
 <summary><strong>从本地克隆构建</strong></summary>
@@ -119,7 +119,7 @@ services.lucifex-agent.environmentFiles = [ "/var/lib/hermes/env" ];
 :::
 
 :::tip addToSystemPackages
-设置 `addToSystemPackages = true` 有两个作用：将 `hermes` CLI 添加到系统 PATH，**并**在系统范围内设置 `LUCIFEX_HOME`，使交互式 CLI 与 gateway 服务共享状态（会话、技能、cron）。不设置此项时，在 shell 中运行 `hermes` 会创建独立的 `~/.hermes/` 目录。
+设置 `addToSystemPackages = true` 有两个作用：将 `hermes` CLI 添加到系统 PATH，**并**在系统范围内设置 `LUCIFEX_HOME`，使交互式 CLI 与 gateway 服务共享状态（会话、技能、cron）。不设置此项时，在 shell 中运行 `hermes` 会创建独立的 `~/.lucifex/` 目录。
 :::
 
 ### 容器感知 CLI
@@ -127,7 +127,7 @@ services.lucifex-agent.environmentFiles = [ "/var/lib/hermes/env" ];
 :::info
 当 `container.enable = true` 且 `addToSystemPackages = true` 时，主机上的**所有** `hermes` 命令都会自动路由到托管容器中执行。这意味着你的交互式 CLI 会话在与 gateway 服务相同的环境中运行——可以访问所有容器内安装的包和工具。
 
-- 路由是透明的：`hermes chat`、`hermes sessions list`、`hermes version` 等命令都会在底层 exec 进容器
+- 路由是透明的：`hermes chat`、`lucifex sessions list`、`hermes version` 等命令都会在底层 exec 进容器
 - 所有 CLI 参数原样转发
 - 如果容器未运行，CLI 会短暂重试（交互式使用时显示 5 秒 spinner，脚本中静默等待 10 秒），然后以明确的错误退出——不会静默回退
 - 对于在 hermes 代码库上工作的开发者，设置 `HERMES_DEV=1` 可绕过容器路由，直接运行本地检出版本
@@ -491,7 +491,7 @@ sudo -u hermes LUCIFEX_HOME=/var/lib/hermes/.hermes \
 
 ```bash
 hermes mcp add my-oauth-server --url https://mcp.example.com/mcp --auth oauth
-scp ~/.hermes/mcp-tokens/my-oauth-server{,.client}.json \
+scp ~/.lucifex/mcp-tokens/my-oauth-server{,.client}.json \
     server:/var/lib/hermes/.hermes/mcp-tokens/
 # 确保：chown hermes:hermes，chmod 0600
 ```
@@ -527,8 +527,8 @@ scp ~/.hermes/mcp-tokens/my-oauth-server{,.client}.json \
 | 被屏蔽的命令 | 原因 |
 |---|---|
 | `hermes setup` | 配置是声明式的——请在 Nix 配置中编辑 `settings` |
-| `hermes config edit` | 配置由 `settings` 生成 |
-| `hermes config set <key> <value>` | 配置由 `settings` 生成 |
+| `lucifex config edit` | 配置由 `settings` 生成 |
+| `lucifex config set <key> <value>` | 配置由 `settings` 生成 |
 | `hermes gateway install` | systemd 服务由 NixOS 管理 |
 | `hermes gateway uninstall` | systemd 服务由 NixOS 管理 |
 

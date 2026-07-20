@@ -1,4 +1,4 @@
-"""Tests for tools/threat_patterns.py — shared threat-pattern library.
+﻿"""Tests for tools/threat_patterns.py — shared threat-pattern library.
 
 Covers the scope split (all/context/strict), the Brainworm payload as the
 gold standard, false-positive guards on borderline patterns, and the
@@ -381,11 +381,11 @@ class TestNFKCNormalisation:
         # Full-width latin letters (ｃ U+FF43 etc.) are compatibility variants
         # that NFKC folds to ASCII; without normalisation they bypass the
         # keyword-based exfil patterns.
-        findings = scan_for_threats("ｃａｔ ~/.hermes/.env", scope="all")
+        findings = scan_for_threats("ｃａｔ ~/.lucifex/.env", scope="all")
         assert "read_secrets" in findings
 
     def test_ascii_equivalent_still_caught(self):
-        findings = scan_for_threats("cat ~/.hermes/.env", scope="all")
+        findings = scan_for_threats("cat ~/.lucifex/.env", scope="all")
         assert "read_secrets" in findings
 
     def test_invisible_chars_detected_before_normalisation(self):

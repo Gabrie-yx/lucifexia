@@ -1,4 +1,4 @@
-name: line-platform
+﻿name: line-platform
 label: LINE
 kind: platform
 version: 1.0.0
@@ -13,7 +13,7 @@ description: >
   a fresh reply token (free) once it's ready.
 author: Hermes Agent contributors
 # ``requires_env`` and ``optional_env`` entries are surfaced in the
-# ``hermes config`` UI via the platform-plugin env var injector in
+# ``lucifex config`` UI via the platform-plugin env var injector in
 # ``lucifex_cli/config.py``.
 requires_env:
   - name: LINE_CHANNEL_ACCESS_TOKEN

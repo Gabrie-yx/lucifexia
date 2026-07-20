@@ -1,4 +1,4 @@
-"""Windows-safe stdio configuration.
+﻿"""Windows-safe stdio configuration.
 
 On Windows, Python's ``sys.stdout``/``sys.stderr`` default to the console's
 active code page (often ``cp1252``, sometimes ``cp437``, occasionally ``cp932``
@@ -168,7 +168,7 @@ def _default_windows_editor() -> str:
        the user closes the window).  This is the "always-works" default.
 
     The prompt_toolkit buffer's ``open_in_editor`` and Hermes's
-    ``hermes config edit`` both honour ``$EDITOR``.  Users who prefer a
+    ``lucifex config edit`` both honour ``$EDITOR``.  Users who prefer a
     different editor can override:
 
     - VSCode: ``$env:EDITOR = "code --wait"``  (``--wait`` is critical;

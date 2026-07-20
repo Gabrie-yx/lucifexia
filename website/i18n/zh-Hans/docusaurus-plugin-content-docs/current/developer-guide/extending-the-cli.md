@@ -1,4 +1,4 @@
----
+﻿---
 sidebar_position: 8
 title: "扩展 CLI"
 description: "构建包装 CLI，通过自定义 widget、快捷键和布局变更来扩展 Hermes TUI"
@@ -76,7 +76,7 @@ if __name__ == "__main__":
 运行：
 
 ```bash
-cd ~/.hermes/lucifex-agent
+cd ~/.lucifex/lucifex-agent
 source .venv/bin/activate
 python my_cli.py
 ```

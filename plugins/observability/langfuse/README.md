@@ -1,4 +1,4 @@
-# Langfuse Observability Plugin
+﻿# Langfuse Observability Plugin
 
 This plugin ships bundled with Hermes but is **opt-in** — it only loads when
 you explicitly enable it.
@@ -18,7 +18,7 @@ hermes plugins enable observability/langfuse
 
 ## Required credentials
 
-Set these in `~/.hermes/.env` (or via `hermes tools`):
+Set these in `~/.lucifex/.env` (or via `hermes tools`):
 
 ```bash
 HERMES_LANGFUSE_PUBLIC_KEY=pk-lf-...

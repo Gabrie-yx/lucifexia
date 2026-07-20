@@ -1,4 +1,4 @@
----
+﻿---
 sidebar_position: 8
 title: "上下文文件"
 description: "项目上下文文件 — .hermes.md、AGENTS.md、CLAUDE.md、全局 SOUL.md 以及 .cursorrules — 自动注入每次对话"
@@ -83,7 +83,7 @@ This is a Next.js 14 web application with a Python FastAPI backend.
 
 **位置：**
 
-- `~/.hermes/SOUL.md`
+- `~/.lucifex/SOUL.md`
 - 或 `$LUCIFEX_HOME/SOUL.md`（若使用自定义主目录运行 Hermes）
 
 重要说明：

@@ -249,9 +249,9 @@ SCENARIOS: List[Dict[str, Any]] = [
 
 
 def setup_isolated_home(enabled: bool) -> Path:
-    """Create a fresh ~/.hermes/ for one test, copying minimal credentials.
+    """Create a fresh ~/.lucifex/ for one test, copying minimal credentials.
 
-    Also reads OPENROUTER_API_KEY from the user's real ``~/.hermes/.env`` so
+    Also reads OPENROUTER_API_KEY from the user's real ``~/.lucifex/.env`` so
     the agent can authenticate against OpenRouter inside the isolated home.
     """
     home_dir = Path(tempfile.mkdtemp(prefix="hermes_ts_live_"))

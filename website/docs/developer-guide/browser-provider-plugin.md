@@ -1,4 +1,4 @@
----
+﻿---
 sidebar_position: 13
 title: "Browser Provider Plugins"
 description: "How to build a cloud browser backend plugin for Hermes Agent"
@@ -23,7 +23,7 @@ The active provider is selected by `browser.cloud_provider` in `config.yaml`; th
 Hermes scans for browser backends in three places:
 
 1. **Bundled** — `<repo>/plugins/browser/<name>/` (auto-loaded with `kind: backend`)
-2. **User** — `~/.hermes/plugins/browser/<name>/` (opt-in via `plugins.enabled` or `hermes plugins enable <name>`)
+2. **User** — `~/.lucifex/plugins/browser/<name>/` (opt-in via `plugins.enabled` or `hermes plugins enable <name>`)
 3. **Pip** — packages declaring a `hermes_agent.plugins` entry point
 
 Each plugin's `register(ctx)` calls `ctx.register_browser_provider(...)`, which puts the instance into the registry in `agent/browser_registry.py`.

@@ -1,4 +1,4 @@
-"""Kanban diagnostics — structured, actionable distress signals for tasks.
+﻿"""Kanban diagnostics — structured, actionable distress signals for tasks.
 
 A ``Diagnostic`` is a machine-readable description of something that's wrong
 with a kanban task: a hallucinated card id, a spawn crash-loop, a task
@@ -434,7 +434,7 @@ def _rule_triage_aux_unavailable(task, events, runs, now, cfg) -> list[Diagnosti
             label=f"Configure {primary_slot}",
             payload={
                 "command": (
-                    f"hermes config set {primary_slot}.provider auto"
+                    f"lucifex config set {primary_slot}.provider auto"
                 )
             },
             suggested=True,
@@ -446,7 +446,7 @@ def _rule_triage_aux_unavailable(task, events, runs, now, cfg) -> list[Diagnosti
             label=f"Or configure fallback {fallback_slot}",
             payload={
                 "command": (
-                    f"hermes config set {fallback_slot}.provider auto"
+                    f"lucifex config set {fallback_slot}.provider auto"
                 )
             },
         ))

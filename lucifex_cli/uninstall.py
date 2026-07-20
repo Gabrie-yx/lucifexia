@@ -3,7 +3,7 @@ Hermes Agent Uninstaller.
 
 Provides options for:
 - Full uninstall: Remove everything including configs and data
-- Keep data: Remove code but keep ~/.hermes/ (configs, sessions, logs)
+- Keep data: Remove code but keep ~/.lucifex/ (configs, sessions, logs)
 """
 
 import os
@@ -569,8 +569,8 @@ def run_uninstall(args):
     Run the uninstall process.
     
     Options:
-    - Full uninstall: removes code + ~/.hermes/ (configs, data, logs)
-    - Keep data: removes code but keeps ~/.hermes/ for future reinstall
+    - Full uninstall: removes code + ~/.lucifex/ (configs, data, logs)
+    - Keep data: removes code but keeps ~/.lucifex/ for future reinstall
     """
     project_root = get_project_root()
     LUCIFEX_HOME = get_lucifex_home()
@@ -837,7 +837,7 @@ def _perform_uninstall(
     # We need to be careful here
     try:
         if project_root.exists():
-            # If the install is inside ~/.hermes/, just remove the lucifex-agent subdir
+            # If the install is inside ~/.lucifex/, just remove the lucifex-agent subdir
             if LUCIFEX_HOME in project_root.parents or project_root.parent == LUCIFEX_HOME:
                 shutil.rmtree(project_root)
                 log_success(f"Removed {project_root}")
@@ -864,7 +864,7 @@ def _perform_uninstall(
         else:
             log_info("No Windows installer artifacts to remove")
     
-    # 5. Optionally remove ~/.hermes/ data directory (and named profiles)
+    # 5. Optionally remove ~/.lucifex/ data directory (and named profiles)
     if full_uninstall:
         # 5a. Stop and remove each named profile's gateway service and
         #     alias wrapper. The profile LUCIFEX_HOME dirs live under

@@ -1,4 +1,4 @@
----
+﻿---
 sidebar_position: 1
 title: "消息网关"
 description: "通过 Telegram、Discord、Slack、WhatsApp、Signal、SMS、Email、Home Assistant、Mattermost、Matrix、DingTalk、Yuanbao、Microsoft Teams、LINE、Webhooks 或任何兼容 OpenAI 的前端与 Hermes 对话 — 架构与配置概览"
@@ -162,7 +162,7 @@ hermes gateway status --system         # 仅 Linux：显式检查系统服务
 
 ### 重置策略
 
-**默认情况下会话永不自动重置** —— 上下文会一直保留，直到你手动 `/reset` 或触发上下文压缩。如果你希望会话自动重置，可在 `~/.hermes/config.yaml` 的 `session_reset` 部分选择启用：
+**默认情况下会话永不自动重置** —— 上下文会一直保留，直到你手动 `/reset` 或触发上下文压缩。如果你希望会话自动重置，可在 `~/.lucifex/config.yaml` 的 `session_reset` 部分选择启用：
 
 ```yaml
 session_reset:
@@ -178,7 +178,7 @@ session_reset:
 | `idle` | 空闲 N 分钟后重置 |
 | `both` | 以先触发者为准 |
 
-在 `~/.hermes/gateway.json` 中配置各平台的覆盖设置：
+在 `~/.lucifex/gateway.json` 中配置各平台的覆盖设置：
 
 ```json
 {
@@ -295,7 +295,7 @@ display:
 
 ## 工具进度通知
 
-在 `~/.hermes/config.yaml` 中控制显示多少工具活动信息：
+在 `~/.lucifex/config.yaml` 中控制显示多少工具活动信息：
 
 ```yaml
 display:
@@ -338,7 +338,7 @@ Hermes 立即确认：
 
 ### 后台进程通知
 
-当运行后台会话的 agent 使用 `terminal(background=true)` 启动长时间运行的进程（服务器、构建等）时，网关可以向你的聊天推送状态更新。通过 `~/.hermes/config.yaml` 中的 `display.background_process_notifications` 控制：
+当运行后台会话的 agent 使用 `terminal(background=true)` 启动长时间运行的进程（服务器、构建等）时，网关可以向你的聊天推送状态更新。通过 `~/.lucifex/config.yaml` 中的 `display.background_process_notifications` 控制：
 
 ```yaml
 display:
@@ -405,7 +405,7 @@ hermes gateway install               # 安装为 launchd agent
 lucifex gateway start                 # 启动服务
 lucifex gateway stop                  # 停止服务
 hermes gateway status                # 检查状态
-tail -f ~/.hermes/logs/gateway.log   # 查看日志
+tail -f ~/.lucifex/logs/gateway.log   # 查看日志
 ```
 
 生成的 plist 文件位于 `~/Library/LaunchAgents/ai.hermes.gateway.plist`。它包含三个环境变量：
@@ -480,7 +480,7 @@ launchd plist 是静态的——如果你在配置网关后安装了新工具（
 
 当适配器暂停时，检查：
 
-1. **网关日志**（`~/.hermes/logs/gateway.log` 或 systemd / launchd 单元日志）。搜索平台名称以及 `circuit breaker`、`paused` 或 `disabled`。触发事件包含失败次数和最后一个错误。
+1. **网关日志**（`~/.lucifex/logs/gateway.log` 或 systemd / launchd 单元日志）。搜索平台名称以及 `circuit breaker`、`paused` 或 `disabled`。触发事件包含失败次数和最后一个错误。
 2. **`/platform list`** 输出——显示当前状态和最后原因。
 3. **提供商状态页面**（Telegram bot API 状态、Discord 状态等）。熔断器触发是因为平台不健康；在平台恢复之前不要尝试恢复。
 

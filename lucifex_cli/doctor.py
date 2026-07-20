@@ -17,9 +17,9 @@ from lucifex_constants import agent_browser_runnable
 
 PROJECT_ROOT = get_project_root()
 LUCIFEX_HOME = get_lucifex_home()
-_DHH = display_lucifex_home()  # user-facing display path (e.g. ~/.hermes or ~/.hermes/profiles/coder)
+_DHH = display_lucifex_home()  # user-facing display path (e.g. ~/.hermes or ~/.lucifex/profiles/coder)
 
-# Load environment variables from ~/.hermes/.env so API key checks work
+# Load environment variables from ~/.lucifex/.env so API key checks work
 _env_path = get_env_path()
 load_lucifex_dotenv(LUCIFEX_HOME=_env_path.parent, project_env=PROJECT_ROOT / ".env")
 
@@ -101,7 +101,7 @@ def _termux_install_all_fallback_notes() -> list[str]:
 
 
 def _has_provider_env_config(content: str) -> bool:
-    """Return True when ~/.hermes/.env contains provider auth/base URL settings."""
+    """Return True when ~/.lucifex/.env contains provider auth/base URL settings."""
     return any(key in content for key in _PROVIDER_ENV_HINTS)
 
 
@@ -638,7 +638,7 @@ def run_doctor(args):
         else:
             print(color(
                 f"  ✗ Failed to persist ack for {ack_target}. "
-                f"Check ~/.hermes/config.yaml is writable.",
+                f"Check ~/.lucifex/config.yaml is writable.",
                 Colors.RED,
             ))
             sys.exit(1)
@@ -786,7 +786,7 @@ def run_doctor(args):
     _section("Configuration Files")
     # Managed scope (administrator-pinned config/env), when present.
     managed_scope_check()
-    # Check ~/.hermes/.env (primary location for user config)
+    # Check ~/.lucifex/.env (primary location for user config)
     env_path = LUCIFEX_HOME / '.env'
     if env_path.exists():
         check_ok(f"{_DHH}/.env file exists")
@@ -825,7 +825,7 @@ def run_doctor(args):
                 check_info("Run 'hermes setup' to create one")
                 issues.append("Run 'hermes setup' to create .env")
     
-    # Check ~/.hermes/config.yaml (primary) or project cli-config.yaml (fallback)
+    # Check ~/.lucifex/config.yaml (primary) or project cli-config.yaml (fallback)
     config_path = LUCIFEX_HOME / 'config.yaml'
     if config_path.exists():
         check_ok(f"{_DHH}/config.yaml exists")
@@ -1005,7 +1005,7 @@ def run_doctor(args):
                     if not configured:
                         _fail_and_issue(
                             f"model.provider '{runtime_provider}' is set but no API key is configured",
-                            "(check ~/.hermes/.env or run 'hermes setup')",
+                            "(check ~/.lucifex/.env or run 'hermes setup')",
                             (
                                 f"No credentials found for provider '{runtime_provider}'. "
                                 f"Run 'hermes setup' or set the provider's API key in {_DHH}/.env, "

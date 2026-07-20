@@ -1,4 +1,4 @@
-# Honcho Memory Provider
+﻿# Honcho Memory Provider
 
 AI-native cross-session user modeling with multi-pass dialectic reasoning, session summaries, bidirectional peer tools, and persistent conclusions.
 
@@ -25,7 +25,7 @@ next to the memory-provider dropdown.
 Or manually:
 ```bash
 hermes config set memory.provider honcho
-echo "HONCHO_API_KEY=***" >> ~/.hermes/.env
+echo "HONCHO_API_KEY=***" >> ~/.lucifex/.env
 ```
 
 > `hermes honcho setup` also works, but only **after** Honcho is the active
@@ -140,7 +140,7 @@ Config is read from the first file that exists:
 | Priority | Path | Scope |
 |----------|------|-------|
 | 1 | `$LUCIFEX_HOME/honcho.json` | Profile-local (isolated Hermes instances) |
-| 2 | `~/.hermes/honcho.json` | Default profile (shared host blocks) |
+| 2 | `~/.lucifex/honcho.json` | Default profile (shared host blocks) |
 | 3 | `~/.honcho/config.json` | Global (cross-app interop) |
 
 Host key is derived from the active Hermes profile: `hermes` (default) or `hermes_<profile>`.

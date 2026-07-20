@@ -1,4 +1,4 @@
-"""The agent conversation loop — extracted from ``run_agent.AIAgent``.
+﻿"""The agent conversation loop — extracted from ``run_agent.AIAgent``.
 
 This is the biggest single chunk pulled out of ``run_agent.py``: the
 roughly 3,900-line :func:`run_conversation` body that drives one user
@@ -4221,7 +4221,7 @@ def run_conversation(
                         agent._vprint(
                             f"{agent.log_prefix}      1. Set "
                             f"`providers.{_provider}.models.{_model}.stale_timeout_seconds: 900` "
-                            f"in `~/.hermes/config.yaml` to extend the per-call "
+                            f"in `~/.lucifex/config.yaml` to extend the per-call "
                             f"timeout. (Hermes's built-in floor is 600s for "
                             f"known reasoning models — if you still see this "
                             f"after raising, the upstream cap is even shorter.)",

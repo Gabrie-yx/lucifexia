@@ -1,4 +1,4 @@
-name: "🔧 Setup / Installation Help"
+﻿name: "🔧 Setup / Installation Help"
 description: Having trouble installing or configuring Hermes? Ask here.
 title: "[Setup]: "
 labels: ["setup"]
@@ -109,4 +109,4 @@ body:
       placeholder: |
         - Ran `hermes update`
         - Tried reinstalling with `pip install -e ".[all]"`
-        - Checked that OPENROUTER_API_KEY is set in ~/.hermes/.env
+        - Checked that OPENROUTER_API_KEY is set in ~/.lucifex/.env

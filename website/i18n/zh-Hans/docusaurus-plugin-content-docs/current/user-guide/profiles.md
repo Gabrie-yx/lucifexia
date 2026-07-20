@@ -1,4 +1,4 @@
----
+﻿---
 sidebar_position: 2
 ---
 
@@ -46,7 +46,7 @@ hermes profile create researcher --description "Reads source code and external d
 hermes profile create work --clone
 ```
 
-将当前 profile 的 `config.yaml`、`.env`、`SOUL.md` 和 skills 复制到新 profile。API 密钥、模型和能力相同，但会话和记忆是全新的。编辑 `~/.hermes/profiles/work/.env` 可使用不同的 API 密钥，编辑 `~/.hermes/profiles/work/SOUL.md` 可设置不同的人格。
+将当前 profile 的 `config.yaml`、`.env`、`SOUL.md` 和 skills 复制到新 profile。API 密钥、模型和能力相同，但会话和记忆是全新的。编辑 `~/.lucifex/profiles/work/.env` 可使用不同的 API 密钥，编辑 `~/.lucifex/profiles/work/SOUL.md` 可设置不同的人格。
 
 ### 克隆全部内容（`--clone-all`）
 
@@ -159,10 +159,10 @@ assistant gateway start       # 启动 assistant 的 gateway（独立进程）
 
 ```bash
 # 编辑 coder 的 token
-nano ~/.hermes/profiles/coder/.env
+nano ~/.lucifex/profiles/coder/.env
 
 # 编辑 assistant 的 token
-nano ~/.hermes/profiles/assistant/.env
+nano ~/.lucifex/profiles/assistant/.env
 ```
 
 ### 安全性：token 锁
@@ -192,7 +192,7 @@ assistant gateway install     # 创建 lucifex-gateway-assistant 服务
 
 ```bash
 coder config set model.default anthropic/claude-sonnet-4
-echo "You are a focused coding assistant." > ~/.hermes/profiles/coder/SOUL.md
+echo "You are a focused coding assistant." > ~/.lucifex/profiles/coder/SOUL.md
 ```
 
 如果你希望此 profile 默认在特定项目中工作，还需设置其 `terminal.cwd`：
@@ -251,7 +251,7 @@ eval "$(hermes completion zsh)"
 
 ## 工作原理
 
-profile 使用 `LUCIFEX_HOME` 环境变量。运行 `coder chat` 时，包装脚本在启动 hermes 前将 `LUCIFEX_HOME` 设置为 `~/.hermes/profiles/coder`。由于代码库中 119+ 个文件通过 `get_lucifex_home()` 解析路径，Hermes 状态会自动限定在 profile 目录范围内——包括配置、会话、记忆、技能、状态数据库、gateway PID、日志和 cron 任务。
+profile 使用 `LUCIFEX_HOME` 环境变量。运行 `coder chat` 时，包装脚本在启动 hermes 前将 `LUCIFEX_HOME` 设置为 `~/.lucifex/profiles/coder`。由于代码库中 119+ 个文件通过 `get_lucifex_home()` 解析路径，Hermes 状态会自动限定在 profile 目录范围内——包括配置、会话、记忆、技能、状态数据库、gateway PID、日志和 cron 任务。
 
 这与终端工作目录是分开的。工具执行从 `terminal.cwd` 开始（或在 local 后端使用 `cwd: "."` 时从启动目录开始），而非自动从 `LUCIFEX_HOME` 开始。
 

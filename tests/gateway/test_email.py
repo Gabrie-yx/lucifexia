@@ -1,4 +1,4 @@
-"""Tests for the Email gateway platform adapter.
+﻿"""Tests for the Email gateway platform adapter.
 
 Covers:
 1. Platform enum exists with correct value
@@ -882,7 +882,7 @@ class TestSendMethods(unittest.TestCase):
             mock_smtp.return_value = mock_server
 
             result = asyncio.run(
-                adapter.send("user@test.com", "Hello from Hermes!")
+                adapter.send("user@test.com", "hello from lucifex!")
             )
 
             self.assertTrue(result.success)
@@ -1606,7 +1606,7 @@ class TestConnectionConfigResolution(unittest.TestCase):
 
     def test_falls_back_to_platform_config_extra(self):
         """When env vars are absent, settings come from PlatformConfig.extra —
-        the same dict gateway.config populates and `hermes config show` reads."""
+        the same dict gateway.config populates and `lucifex config show` reads."""
         from gateway.config import PlatformConfig
         from plugins.platforms.email.adapter import EmailAdapter
         cfg = PlatformConfig(enabled=True)

@@ -505,7 +505,7 @@ from lucifex_constants import get_default_lucifex_root, get_hermes_dir, get_luci
 
 GATEWAY_SECRET_CAPTURE_UNSUPPORTED_MESSAGE = (
     "Secure secret entry is not supported over messaging. "
-    "Load this skill in the local CLI to be prompted, or add the key to ~/.hermes/.env manually."
+    "Load this skill in the local CLI to be prompted, or add the key to ~/.lucifex/.env manually."
 )
 
 
@@ -1220,7 +1220,7 @@ def _path_under_denied_prefix(resolved: Path) -> bool:
     on a root-run gateway ``$HOME=/root`` and the operator's own deliverables
     (``/root/work/proposal.docx``) live directly under it. The credential
     sub-directories inside home (``~/.ssh``, ``~/.aws``, ...) and Hermes
-    secrets (``~/.hermes/.env``, ``auth.json``) are *separate, more-specific*
+    secrets (``~/.lucifex/.env``, ``auth.json``) are *separate, more-specific*
     denied paths, so they stay blocked regardless of this exception — it can
     only un-block a plain file sitting in the running user's home tree, never a
     credential location or another user's home.
@@ -1327,11 +1327,11 @@ def validate_media_delivery_path(path: str) -> Optional[str]:
 
     # Non-strict mode (default): accept anything not on the denylist.
     # The denylist still blocks /etc, /proc, ~/.ssh, ~/.aws, and the
-    # credential/secret stores under the Hermes root (~/.hermes/.env,
+    # credential/secret stores under the Hermes root (~/.lucifex/.env,
     # auth.json, .anthropic_oauth.json, google_token.json, pairing/, ...) —
     # so the obvious prompt-injection / credential-exfil sites
     # (``MEDIA:/etc/passwd``, ``MEDIA:~/.ssh/id_rsa``,
-    # ``MEDIA:~/.hermes/google_token.json``) remain rejected.
+    # ``MEDIA:~/.lucifex/google_token.json``) remain rejected.
     if not _media_delivery_strict_mode():
         if _path_under_denied_prefix(resolved):
             return None

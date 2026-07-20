@@ -1,4 +1,4 @@
----
+﻿---
 sidebar_position: 7
 title: "Sessions"
 description: "Session persistence, resume, search, management, and per-platform session tracking"
@@ -14,7 +14,7 @@ Hermes Agent automatically saves every conversation as a session. Sessions enabl
 
 Every conversation — whether from the CLI, Telegram, Discord, Slack, WhatsApp, Signal, Matrix, Teams, or any other messaging platform — is stored as a session with full message history. Sessions are tracked in:
 
-1. **SQLite database** (`~/.hermes/state.db`) — structured session metadata with FTS5 full-text search, plus full message history
+1. **SQLite database** (`~/.lucifex/state.db`) — structured session metadata with FTS5 full-text search, plus full message history
 
 The SQLite database stores:
 - Session ID, source platform, user ID
@@ -140,7 +140,7 @@ hermes --resume "refactoring auth"
 hermes chat --resume 20250305_091523_a1b2c3d4
 ```
 
-Session IDs are shown when you exit a CLI session, and can be found with `hermes sessions list`.
+Session IDs are shown when you exit a CLI session, and can be found with `lucifex sessions list`.
 
 ### Conversation Recap on Resume
 
@@ -157,7 +157,7 @@ The recap:
 - **Caps** at the last 10 exchanges with a "... N earlier messages ..." indicator
 - Uses **dim styling** to distinguish from the active conversation
 
-To disable the recap and keep the minimal one-liner behavior, set in `~/.hermes/config.yaml`:
+To disable the recap and keep the minimal one-liner behavior, set in `~/.lucifex/config.yaml`:
 
 ```yaml
 display:
@@ -212,7 +212,7 @@ Give sessions human-readable titles so you can find and resume them easily.
 
 ### Auto-Generated Titles
 
-Hermes automatically generates a short descriptive title (3–7 words) for each session after the first exchange. This runs in a background thread using a fast auxiliary model, so it adds no latency. You'll see auto-generated titles when browsing sessions with `hermes sessions list` or `hermes sessions browse`.
+Hermes automatically generates a short descriptive title (3–7 words) for each session after the first exchange. This runs in a background thread using a fast auxiliary model, so it adds no latency. You'll see auto-generated titles when browsing sessions with `lucifex sessions list` or `hermes sessions browse`.
 
 Auto-titling only fires once per session and is skipped if you've already set a title manually.
 
@@ -264,13 +264,13 @@ Hermes provides a full set of session management commands via `hermes sessions`:
 
 ```bash
 # List recent sessions (default: last 20)
-hermes sessions list
+lucifex sessions list
 
 # Filter by platform
-hermes sessions list --source telegram
+lucifex sessions list --source telegram
 
 # Show more sessions
-hermes sessions list --limit 50
+lucifex sessions list --limit 50
 ```
 
 When sessions have titles, the output shows titles, previews, and relative timestamps:
@@ -370,7 +370,7 @@ Trace exports are secret-redacted by default (they're meant to leave the machine
 
 #### Markdown / QMD
 
-Pass `--format md` or `--format qmd` when you want a readable, file-based archive before hiding or deleting old sessions. Markdown/QMD exports write one file per session into a directory (default: `~/.hermes/session-exports`).
+Pass `--format md` or `--format qmd` when you want a readable, file-based archive before hiding or deleting old sessions. Markdown/QMD exports write one file per session into a directory (default: `~/.lucifex/session-exports`).
 
 ```bash
 # Export one session to Markdown
@@ -501,7 +501,7 @@ hermes sessions archive --title "dry run" --yes
 
 At least one filter is required — a bare `hermes sessions archive` refuses to
 archive your entire history. Archived sessions are hidden from
-`hermes sessions list` and `/resume` but remain in the database and can be
+`lucifex sessions list` and `/resume` but remain in the database and can be
 unarchived from the Desktop/Dashboard session list.
 
 ### Session Statistics
@@ -644,24 +644,24 @@ Sessions with **active background processes** are never auto-reset, regardless o
 
 | What | Path | Description |
 |------|------|-------------|
-| SQLite database | `~/.hermes/state.db` | All session metadata + messages with FTS5 |
-| Gateway messages    | `~/.hermes/state.db`   | SQLite — canonical store for all session messages |
-| Gateway routing index | `~/.hermes/sessions/sessions.json` | Maps session keys to active session IDs (origin metadata, expiry flags) |
+| SQLite database | `~/.lucifex/state.db` | All session metadata + messages with FTS5 |
+| Gateway messages    | `~/.lucifex/state.db`   | SQLite — canonical store for all session messages |
+| Gateway routing index | `~/.lucifex/sessions/sessions.json` | Maps session keys to active session IDs (origin metadata, expiry flags) |
 
 The SQLite database uses WAL mode for concurrent readers and a single writer, which suits the gateway's multi-platform architecture well.
 
 :::warning `sessions.json` is not the session list
-`~/.hermes/sessions/sessions.json` is the **gateway routing index** — it maps
+`~/.lucifex/sessions/sessions.json` is the **gateway routing index** — it maps
 messaging session keys (`agent:main:<platform>:...`) to active session IDs.
 It only ever contains gateway/messaging entries, so if you run a messaging
 platform you'll see only those (e.g. `agent:main:whatsapp:dm:...`).
 
 This is **expected** and does **not** mean your CLI sessions are missing.
-`hermes sessions list`, `/sessions`, and the dashboard all read `state.db`,
+`lucifex sessions list`, `/sessions`, and the dashboard all read `state.db`,
 which holds **every** session (CLI, TUI, and gateway). The `/save` snapshots
-under `~/.hermes/sessions/saved/*.json` are convenience exports, not the index.
+under `~/.lucifex/sessions/saved/*.json` are convenience exports, not the index.
 
-If CLI sessions genuinely don't appear in `hermes sessions list`, the cause is
+If CLI sessions genuinely don't appear in `lucifex sessions list`, the cause is
 `state.db` not receiving them — run `hermes sessions repair` and watch for a
 `⚠ Session store unavailable` warning at CLI startup, which means SQLite
 persistence failed for that run.
@@ -669,7 +669,7 @@ persistence failed for that run.
 
 :::note Legacy JSONL transcripts
 Sessions created before state.db became canonical may have leftover
-`*.jsonl` files in `~/.hermes/sessions/`. They are no longer written or
+`*.jsonl` files in `~/.lucifex/sessions/`. They are no longer written or
 read by Hermes. Safe to delete after verifying the corresponding session
 exists in state.db.
 :::
@@ -692,7 +692,7 @@ Key tables in `state.db`:
 - After a prune that actually removed rows, `state.db` is `VACUUM`ed to reclaim disk space (SQLite does not shrink the file on plain DELETE)
 - Pruning runs at most once per `sessions.min_interval_hours` (default 24); the last-run timestamp is tracked inside `state.db` itself so it's shared across every Hermes process in the same `LUCIFEX_HOME`
 
-Default is **off** — session history is valuable for `session_search` recall, and silently deleting it could surprise users. Enable in `~/.hermes/config.yaml`:
+Default is **off** — session history is valuable for `session_search` recall, and silently deleting it could surprise users. Enable in `~/.lucifex/config.yaml`:
 
 ```yaml
 sessions:

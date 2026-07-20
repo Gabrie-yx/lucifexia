@@ -1,4 +1,4 @@
-"""
+﻿"""
 Checkpoint Manager — Transparent filesystem snapshots via a single shared
 shadow git store.
 
@@ -13,7 +13,7 @@ controlled by the ``checkpoints`` config flag or ``--checkpoints`` CLI flag.
 Storage layout (single shared store, git objects deduplicated across projects)
 -----------------------------------------------------------------------------
 
-    ~/.hermes/checkpoints/
+    ~/.lucifex/checkpoints/
         store/                          — single bare-ish git repo
             HEAD, config, objects/      — standard git internals (shared)
             refs/hermes/<hash16>        — per-project branch tip

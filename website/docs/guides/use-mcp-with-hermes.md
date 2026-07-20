@@ -1,4 +1,4 @@
----
+﻿---
 sidebar_position: 6
 title: "Use MCP with Hermes"
 description: "A practical guide to connecting MCP servers to Hermes Agent, filtering their tools, and using them safely in real workflows"
@@ -42,7 +42,7 @@ If you installed Hermes with the standard install script, MCP support is already
 If you installed without extras and need to add MCP separately:
 
 ```bash
-cd ~/.hermes/lucifex-agent
+cd ~/.lucifex/lucifex-agent
 uv pip install -e ".[mcp]"
 ```
 

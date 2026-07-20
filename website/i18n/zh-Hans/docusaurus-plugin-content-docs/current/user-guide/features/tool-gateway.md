@@ -1,4 +1,4 @@
----
+﻿---
 title: "Nous Tool Gateway（工具网关）"
 description: "通过 Nous 订阅统一使用网页搜索、文生图、语音合成与浏览器自动化，无需单独申请 Firecrawl、FAL、OpenAI、Browser Use 等 API Key"
 sidebar_label: "Tool Gateway"
@@ -74,7 +74,7 @@ hermes tools
 
 ### 手动编辑配置
 
-在 `~/.hermes/config.yaml` 中直接设置 `use_gateway`：
+在 `~/.lucifex/config.yaml` 中直接设置 `use_gateway`：
 
 ```yaml
 web:
@@ -102,7 +102,7 @@ browser:
 3. **TTS** — `text_to_speech` 走网关的 OpenAI Audio 端点  
 4. **浏览器** — `browser_navigate` 等走网关的 Browser Use 端点  
 
-网关使用 Nous Portal 凭据认证（在 `hermes model` 完成后写入 `~/.hermes/auth.json`）。
+网关使用 Nous Portal 凭据认证（在 `hermes model` 完成后写入 `~/.lucifex/auth.json`）。
 
 ### 优先级
 
@@ -153,7 +153,7 @@ hermes status
 
 ## 进阶：自建网关
 
-若使用自建或自定义网关，可在 `~/.hermes/.env` 中用环境变量覆盖端点：
+若使用自建或自定义网关，可在 `~/.lucifex/.env` 中用环境变量覆盖端点：
 
 ```bash
 TOOL_GATEWAY_DOMAIN=nousresearch.com     # 网关路由基础域名

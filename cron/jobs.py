@@ -1,8 +1,8 @@
-"""
+﻿"""
 Cron job storage and management.
 
-Jobs are stored in ~/.hermes/cron/jobs.json
-Output is saved to ~/.hermes/cron/output/{job_id}/{timestamp}.md
+Jobs are stored in ~/.lucifex/cron/jobs.json
+Output is saved to ~/.lucifex/cron/output/{job_id}/{timestamp}.md
 """
 
 import contextlib
@@ -54,7 +54,7 @@ except ImportError:
 # Cron is per-profile by design (issue #4707). Each profile owns its own cron
 # store under its own LUCIFEX_HOME, and a profile-scoped gateway runs that
 # profile's jobs under that same LUCIFEX_HOME — so a job authored in profile
-# `coder` lives in `~/.hermes/profiles/coder/cron/jobs.json` and executes with
+# `coder` lives in `~/.lucifex/profiles/coder/cron/jobs.json` and executes with
 # `coder`'s `.env`, `config.yaml`, and skills. We deliberately anchor on
 # `get_lucifex_home()` (the active profile home), NOT `get_default_lucifex_root()`
 # (the shared root). Anchoring at the root would funnel every profile's jobs
@@ -1109,7 +1109,7 @@ def create_job(
                 delivered verbatim. Without ``no_agent``, its stdout is
                 injected into the agent's prompt as context (data-collection /
                 change-detection pattern). Paths resolve under
-                ~/.hermes/scripts/; ``.sh`` / ``.bash`` files run via bash,
+                ~/.lucifex/scripts/; ``.sh`` / ``.bash`` files run via bash,
                 anything else via Python.
         context_from: Optional job ID (or list of job IDs) whose most recent output
                       is injected into the prompt as context before each run.

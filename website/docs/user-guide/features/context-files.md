@@ -1,4 +1,4 @@
----
+﻿---
 sidebar_position: 8
 title: "Context Files"
 description: "Project context files — .hermes.md, AGENTS.md, CLAUDE.md, global SOUL.md, and .cursorrules — automatically injected into every conversation"
@@ -83,7 +83,7 @@ This is a Next.js 14 web application with a Python FastAPI backend.
 
 **Location:**
 
-- `~/.hermes/SOUL.md`
+- `~/.lucifex/SOUL.md`
 - or `$LUCIFEX_HOME/SOUL.md` if you run Hermes with a custom home directory
 
 Important details:

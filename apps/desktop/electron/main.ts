@@ -506,7 +506,7 @@ const DESKTOP_WINDOW_STATE_PATH = path.join(app.getPath('userData'), 'window-sta
 // local backend as. When set, startHermes() passes `hermes --profile <name>
 // dashboard …`, which deterministically pins LUCIFEX_HOME (see
 // _apply_profile_override in lucifex_cli/main.py) and bypasses the sticky
-// ~/.hermes/active_profile file. Unset (null) preserves the legacy behavior:
+// ~/.lucifex/active_profile file. Unset (null) preserves the legacy behavior:
 // no --profile flag, so the backend honors active_profile / default.
 const DESKTOP_PROFILE_CONFIG_PATH = path.join(app.getPath('userData'), 'active-profile.json')
 // Mirrors lucifex_cli.profiles._PROFILE_ID_RE so we never hand the backend a
@@ -3465,7 +3465,7 @@ function resolveHermesBackend(backendArgs) {
   }
 
   // 3. Bootstrap-complete ACTIVE_HERMES_ROOT -- the canonical install at
-  //    %LOCALAPPDATA%\hermes\lucifex-agent (Windows) or ~/.hermes/lucifex-agent.
+  //    %LOCALAPPDATA%\hermes\lucifex-agent (Windows) or ~/.lucifex/lucifex-agent.
   //    The bootstrap marker means install.ps1 stages finished and the user
   //    completed initial configuration; we trust the install and go straight
   //    to spawning hermes. Updates flow through the in-app update path
@@ -7055,7 +7055,7 @@ async function startHermes() {
     // --port 0: the OS assigns an ephemeral port; the child announces it on stdout.
     const backendArgs = ['serve', '--host', '127.0.0.1', '--port', '0']
     // Pin the desktop's chosen profile via the global --profile flag. This is
-    // deterministic (it wins over the sticky ~/.hermes/active_profile file) and
+    // deterministic (it wins over the sticky ~/.lucifex/active_profile file) and
     // resolves LUCIFEX_HOME the same way `hermes -p <name>` does on the CLI. An
     // unset preference keeps the legacy launch so existing installs are
     // unaffected.

@@ -1,4 +1,4 @@
-<p align="center">
+﻿<p align="center">
   <img src="assets/banner.png" alt="Hermes Agent" width="100%">
 </p>
 
@@ -153,7 +153,7 @@ hermes claw migrate --overwrite  # 覆盖已有冲突
 导入内容：
 - **SOUL.md** — 人格文件
 - **记忆** — MEMORY.md 和 USER.md 条目
-- **技能** — 用户创建的技能 → `~/.hermes/skills/openclaw-imports/`
+- **技能** — 用户创建的技能 → `~/.lucifex/skills/openclaw-imports/`
 - **命令白名单** — 审批模式
 - **消息设置** — 平台配置、允许用户、工作目录
 - **API 密钥** — 白名单中的密钥（Telegram、OpenRouter、OpenAI、Anthropic、ElevenLabs）
@@ -169,7 +169,7 @@ hermes claw migrate --overwrite  # 覆盖已有冲突
 欢迎贡献！请参阅 [贡献指南](https://lucifex-agent.nousresearch.com/docs/developer-guide/contributing) 了解开发设置、代码风格和 PR 流程。
 
 贡献者快速开始——使用标准安装器，然后在它创建的完整 git checkout 中开发：
-`$LUCIFEX_HOME/lucifex-agent`（通常是 `~/.hermes/lucifex-agent`）。这会匹配
+`$LUCIFEX_HOME/lucifex-agent`（通常是 `~/.lucifex/lucifex-agent`）。这会匹配
 `hermes update`、托管 venv、lazy dependencies、gateway 和 docs tooling 使用的布局。
 
 ```bash

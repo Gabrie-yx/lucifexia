@@ -1,4 +1,4 @@
-"""CLI subcommand: ``hermes send`` — pipe text from shell scripts to any
+﻿"""CLI subcommand: ``hermes send`` — pipe text from shell scripts to any
 configured messaging platform (Telegram, Discord, Slack, Signal, SMS, etc.).
 
 This is a thin wrapper around ``tools.send_message_tool.send_message_tool``
@@ -183,7 +183,7 @@ def _list_targets(platform_filter: Optional[str], *, json_mode: bool) -> int:
     if not any(platforms.values()):
         print("No messaging platforms configured or no channels discovered yet.")
         print("Set one up with `hermes gateway setup`, or run the gateway once so")
-        print("channel discovery can populate ~/.hermes/channel_directory.json.")
+        print("channel discovery can populate ~/.lucifex/channel_directory.json.")
         return _SUCCESS_EXIT
 
     # Human display — when unfiltered, reuse the shared formatter the agent
@@ -209,7 +209,7 @@ def _list_targets(platform_filter: Optional[str], *, json_mode: bool) -> int:
 
 
 def _load_hermes_env() -> None:
-    """Populate ``os.environ`` from ``~/.hermes/.env`` AND bridge top-level
+    """Populate ``os.environ`` from ``~/.lucifex/.env`` AND bridge top-level
     ``config.yaml`` keys into the environment so the underlying gateway
     config loader sees platform credentials and home channel IDs.
 
@@ -217,11 +217,11 @@ def _load_hermes_env() -> None:
     ``os.getenv(...)`` on each call. The gateway process does two things at
     startup that ``hermes send`` must replicate when invoked standalone:
 
-    1. ``load_dotenv(~/.hermes/.env)`` — brings bot tokens into the env.
-    2. Bridge top-level simple values from ``~/.hermes/config.yaml`` into
+    1. ``load_dotenv(~/.lucifex/.env)`` — brings bot tokens into the env.
+    2. Bridge top-level simple values from ``~/.lucifex/config.yaml`` into
        ``os.environ`` (without overriding existing env vars). This is where
        ``TELEGRAM_HOME_CHANNEL`` and friends live when the user saved them
-       via ``hermes config set``.
+       via ``lucifex config set``.
 
     See ``gateway/run.py`` for the canonical version of this bridge — we
     intentionally reimplement the minimum needed here so ``hermes send``
@@ -298,7 +298,7 @@ def _load_hermes_env() -> None:
 def cmd_send(args: argparse.Namespace) -> None:
     """Entry point wired into the top-level argparse dispatcher."""
 
-    # Bridge ~/.hermes/.env and ~/.hermes/config.yaml into os.environ so the
+    # Bridge ~/.lucifex/.env and ~/.lucifex/config.yaml into os.environ so the
     # gateway config loader (invoked downstream by send_message_tool and by
     # the channel directory) can see platform credentials and home channels.
     _load_hermes_env()
@@ -378,7 +378,7 @@ def register_send_subparser(subparsers) -> argparse.ArgumentParser:
         description=(
             "Pipe text from any shell script to any messaging platform Hermes "
             "is already configured for. Reuses the gateway's platform "
-            "credentials (~/.hermes/.env + ~/.hermes/config.yaml) — no LLM, "
+            "credentials (~/.lucifex/.env + ~/.lucifex/config.yaml) — no LLM, "
             "no agent loop, no running gateway required for bot-token "
             "platforms like Telegram/Discord/Slack/Signal."
         ),

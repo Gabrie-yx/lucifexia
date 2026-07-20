@@ -1,10 +1,10 @@
-# Adding a New Messaging Platform
+﻿# Adding a New Messaging Platform
 
 There are two ways to add a platform to the Hermes gateway:
 
 ## Plugin Path (Recommended for Community/Third-Party)
 
-Create a plugin directory in `~/.hermes/plugins/` (or under `plugins/platforms/`
+Create a plugin directory in `~/.lucifex/plugins/` (or under `plugins/platforms/`
 for bundled plugins) with a `plugin.yaml` and `adapter.py`.  The adapter
 inherits from `BasePlatformAdapter` and registers via
 `ctx.register_platform()` in the `register(ctx)` entry point.  This requires

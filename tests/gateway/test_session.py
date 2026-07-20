@@ -1,4 +1,4 @@
-"""Tests for gateway session management."""
+﻿"""Tests for gateway session management."""
 import json
 import pytest
 from pathlib import Path
@@ -365,10 +365,10 @@ class TestBuildSessionContextPrompt:
         )
         ctx = build_session_context(source, config)
 
-        with patch("lucifex_constants.display_lucifex_home", return_value="~/.hermes/profiles/coder"):
+        with patch("lucifex_constants.display_lucifex_home", return_value="~/.lucifex/profiles/coder"):
             prompt = build_session_context_prompt(ctx)
 
-        assert "~/.hermes/profiles/coder/cron/output/" in prompt
+        assert "~/.lucifex/profiles/coder/cron/output/" in prompt
 
     def test_whatsapp_prompt(self):
         config = GatewayConfig(

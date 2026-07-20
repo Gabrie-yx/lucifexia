@@ -1,4 +1,4 @@
----
+﻿---
 sidebar_position: 10
 title: "Model Provider Plugins"
 description: "How to build a model provider (inference backend) plugin for Hermes Agent"
@@ -159,7 +159,7 @@ Look at these bundled plugins for idioms:
 
 ## User overrides — replace a built-in without editing the repo
 
-Say you want to point `gmi` at your private staging endpoint for testing. Create `~/.hermes/plugins/model-providers/gmi/__init__.py`:
+Say you want to point `gmi` at your private staging endpoint for testing. Create `~/.lucifex/plugins/model-providers/gmi/__init__.py`:
 
 ```python
 from providers import register_provider

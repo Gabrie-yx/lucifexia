@@ -1,4 +1,4 @@
-"""
+﻿"""
 OpenAI-compatible API server platform adapter.
 
 Exposes an HTTP server with endpoints:
@@ -1617,7 +1617,7 @@ class APIServerAdapter(BasePlatformAdapter):
     def _ensure_session_db(self):
         """Lazily initialise and return the SessionDB for the active profile home.
 
-        Sessions are persisted to ``state.db`` so that ``hermes sessions list``
+        Sessions are persisted to ``state.db`` so that ``lucifex sessions list``
         shows API-server conversations alongside CLI and gateway ones.
 
         Under multiplex ``/p/<profile>/`` requests the profile runtime scope
@@ -5427,7 +5427,7 @@ class APIServerAdapter(BasePlatformAdapter):
             # unsandboxed local terminal backend. The API server can drive the
             # agent's terminal/file tools as the host user; on a public bind
             # that is the exact surface the hermes-0day campaign abused to write
-            # ~/.hermes/config.yaml and plant persistence. Sandboxing (Docker /
+            # ~/.lucifex/config.yaml and plant persistence. Sandboxing (Docker /
             # remote backend) contains the blast radius. Warn, don't refuse —
             # the operator may have an external firewall / strong key.
             if is_network_accessible(self._host):

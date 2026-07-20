@@ -2724,7 +2724,7 @@
     "date": "2026-05-13",
     "category": "dev-workflow",
     "headline": "After a 15-tool-call monitoring pipeline, Hermes wrote the skill unprompted",
-    "quote": "After a multi-step monitoring pipeline setup (Prometheus/Grafana/alerts) in ~15 tool calls, Hermes unprompted entered a reflection phase and generated a skill at ~/.hermes/skills/devops/monitoring-pipeline/SKILL.md — adjusting variables per new context, not just template reuse.",
+    "quote": "After a multi-step monitoring pipeline setup (Prometheus/Grafana/alerts) in ~15 tool calls, Hermes unprompted entered a reflection phase and generated a skill at ~/.lucifex/skills/devops/monitoring-pipeline/SKILL.md — adjusting variables per new context, not just template reuse.",
     "size": "md"
   },
   {

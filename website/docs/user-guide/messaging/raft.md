@@ -1,4 +1,4 @@
----
+﻿---
 sidebar_position: 19
 title: "Raft"
 description: "Connect Hermes Agent to Raft as an external agent via wake-channel bridge"
@@ -30,7 +30,7 @@ In Raft, open the Agents menu, create an External Agent, and follow the setup ca
 
 ## Setup
 
-Add to `~/.hermes/.env`:
+Add to `~/.lucifex/.env`:
 
 ```bash
 RAFT_PROFILE=your-agent-profile

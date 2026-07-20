@@ -1,4 +1,4 @@
-"""Tests for tools/cronjob_tools.py — prompt scanning, schedule/list/remove dispatchers."""
+﻿"""Tests for tools/cronjob_tools.py — prompt scanning, schedule/list/remove dispatchers."""
 
 import json
 import pytest
@@ -157,10 +157,10 @@ class TestScanCronSkillAssembled:
         """Security postmortems and runbooks routinely describe attack
         commands in prose — that's not a payload, it's documentation.
         Real example: the `lucifex-agent-dev` skill contains a postmortem
-        section saying 'the attacker could just cat ~/.hermes/.env'.
+        section saying 'the attacker could just cat ~/.lucifex/.env'.
         """
         assert _scan_cron_skill_assembled(
-            "the attacker could just cat ~/.hermes/.env to steal credentials"
+            "the attacker could just cat ~/.lucifex/.env to steal credentials"
         )[1] == ""
         assert _scan_cron_skill_assembled(
             "this rule writes to authorized_keys for persistence"

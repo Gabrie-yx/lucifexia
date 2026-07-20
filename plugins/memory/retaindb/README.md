@@ -1,4 +1,4 @@
-# RetainDB Memory Provider
+﻿# RetainDB Memory Provider
 
 Cloud memory API with hybrid search (Vector + BM25 + Reranking) and 7 memory types.
 
@@ -16,7 +16,7 @@ hermes memory setup    # select "retaindb"
 Or manually:
 ```bash
 hermes config set memory.provider retaindb
-echo "RETAINDB_API_KEY=your-key" >> ~/.hermes/.env
+echo "RETAINDB_API_KEY=your-key" >> ~/.lucifex/.env
 ```
 
 ## Config

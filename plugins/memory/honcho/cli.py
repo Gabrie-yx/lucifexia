@@ -1,4 +1,4 @@
-"""CLI commands for Honcho integration management.
+﻿"""CLI commands for Honcho integration management.
 
 Handles: hermes honcho setup | status | sessions | map | peer
 """
@@ -653,7 +653,7 @@ def cmd_setup(args) -> None:
             try:
                 cred = authorize_via_loopback(
                     config_path=write_path,
-                    source="hermes-cli",
+                    source="lucifex-cli",
                     apply_config=False,
                     open_url=_open,
                 )

@@ -1,4 +1,4 @@
----
+﻿---
 title: "Hyperframes"
 sidebar_label: "Hyperframes"
 description: "Create HTML-based video compositions, animated title cards, social overlays, captioned talking-head videos, audio-reactive visuals, and shader transitions us..."
@@ -69,7 +69,7 @@ Full CLI reference: [references/cli.md](https://github.com/NousResearch/lucifex-
 ## Setup (one-time)
 
 ```bash
-bash "$(dirname "$(find ~/.hermes/skills -path '*/hyperframes/SKILL.md' 2>/dev/null | head -1)")/scripts/setup.sh"
+bash "$(dirname "$(find ~/.lucifex/skills -path '*/hyperframes/SKILL.md' 2>/dev/null | head -1)")/scripts/setup.sh"
 ```
 
 The script:

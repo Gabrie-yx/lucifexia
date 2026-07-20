@@ -1,4 +1,4 @@
-# Multi-gateway deployment
+﻿# Multi-gateway deployment
 
 Hermes supports multiple gateway processes running concurrently — one per profile
 (default, writer, admin, coder, researcher). Each gateway opens its own connection
@@ -19,7 +19,7 @@ same flag means exactly one process touches the kanban DBs.
 ## Configuration
 
 On the dispatch-owning gateway (typically the `default` profile), no change is
-needed. On every other profile gateway, add to `~/.hermes/config.yaml`:
+needed. On every other profile gateway, add to `~/.lucifex/config.yaml`:
 
 ```yaml
 kanban:

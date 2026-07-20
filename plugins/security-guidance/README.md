@@ -1,4 +1,4 @@
-# security-guidance
+﻿# security-guidance
 
 Pattern-matched security warnings for code the agent writes. When the agent
 calls `write_file`, `patch`, or `skill_manage` with content that matches a
@@ -43,7 +43,7 @@ Plugins are opt-in. Add it to your allow-list:
 
 ```bash
 hermes plugins enable security-guidance
-# or edit ~/.hermes/config.yaml manually:
+# or edit ~/.lucifex/config.yaml manually:
 plugins:
   enabled:
     - security-guidance

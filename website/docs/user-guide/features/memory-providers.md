@@ -1,4 +1,4 @@
----
+﻿---
 sidebar_position: 4
 title: "Memory Providers"
 description: "External memory provider plugins — Honcho, OpenViking, Mem0, Hindsight, Holographic, RetainDB, ByteRover, Supermemory"
@@ -18,7 +18,7 @@ hermes memory off        # disable external provider
 
 You can also select the active memory provider via `hermes plugins` → Provider Plugins → Memory Provider.
 
-Or set manually in `~/.hermes/config.yaml`:
+Or set manually in `~/.lucifex/config.yaml`:
 
 ```yaml
 memory:
@@ -70,7 +70,7 @@ hermes memory setup        # select "honcho" — runs the Honcho-specific post-s
 
 The legacy `hermes honcho setup` command still works (it now redirects to `hermes memory setup`), but is only registered after Honcho is selected as the active memory provider.
 
-**Config:** `$LUCIFEX_HOME/honcho.json` (profile-local) or `~/.honcho/config.json` (global). Resolution order: `$LUCIFEX_HOME/honcho.json` > `~/.hermes/honcho.json` > `~/.honcho/config.json`. See the [config reference](https://github.com/NousResearch/lucifex-agent/blob/main/plugins/memory/honcho/README.md) and the [Honcho integration guide](https://docs.honcho.dev/v3/guides/integrations/hermes).
+**Config:** `$LUCIFEX_HOME/honcho.json` (profile-local) or `~/.honcho/config.json` (global). Resolution order: `$LUCIFEX_HOME/honcho.json` > `~/.lucifex/honcho.json` > `~/.honcho/config.json`. See the [config reference](https://github.com/NousResearch/lucifex-agent/blob/main/plugins/memory/honcho/README.md) and the [Honcho integration guide](https://docs.honcho.dev/v3/guides/integrations/hermes).
 
 <details>
 <summary>Full config reference</summary>
@@ -300,9 +300,9 @@ openviking-server
 hermes memory setup    # select "openviking"
 # Or manually:
 hermes config set memory.provider openviking
-echo "OPENVIKING_ENDPOINT=http://localhost:1933" >> ~/.hermes/.env
+echo "OPENVIKING_ENDPOINT=http://localhost:1933" >> ~/.lucifex/.env
 # Authenticated servers should use a user/admin API key:
-echo "OPENVIKING_API_KEY=..." >> ~/.hermes/.env
+echo "OPENVIKING_API_KEY=..." >> ~/.lucifex/.env
 ```
 
 **Key features:**
@@ -333,7 +333,7 @@ Server-side LLM fact extraction with semantic search, reranking, and automatic d
 hermes memory setup    # select "mem0" → "Platform"
 # Or manually:
 hermes config set memory.provider mem0
-echo "MEM0_API_KEY=your-key" >> ~/.hermes/.env
+echo "MEM0_API_KEY=your-key" >> ~/.lucifex/.env
 ```
 
 **Setup (OSS):**
@@ -359,8 +359,8 @@ hermes memory setup mem0 --mode selfhosted --host http://localhost:8888 --api-ke
 Or configure manually — either as env vars:
 
 ```bash
-echo "MEM0_HOST=http://localhost:8888" >> ~/.hermes/.env
-echo "MEM0_API_KEY=your-admin-api-key" >> ~/.hermes/.env
+echo "MEM0_HOST=http://localhost:8888" >> ~/.lucifex/.env
+echo "MEM0_API_KEY=your-admin-api-key" >> ~/.lucifex/.env
 ```
 
 or in `mem0.json`:
@@ -371,7 +371,7 @@ or in `mem0.json`:
 
 The plugin authenticates with `X-API-Key` and uses the server's `/search` / `/memories` routes. `api_key` is optional (omit only for `AUTH_DISABLED` servers). Don't set `mode: oss` — it takes precedence over `host`.
 
-**Config:** `$LUCIFEX_HOME/mem0.json` (behavioral settings). Only the secret `MEM0_API_KEY` belongs in `~/.hermes/.env`.
+**Config:** `$LUCIFEX_HOME/mem0.json` (behavioral settings). Only the secret `MEM0_API_KEY` belongs in `~/.lucifex/.env`.
 
 | Key | Default | Description |
 |-----|---------|-------------|
@@ -411,7 +411,7 @@ Long-term memory with knowledge graph, entity resolution, and multi-strategy ret
 hermes memory setup    # select "hindsight"
 # Or manually:
 hermes config set memory.provider hindsight
-echo "HINDSIGHT_API_KEY=your-key" >> ~/.hermes/.env
+echo "HINDSIGHT_API_KEY=your-key" >> ~/.lucifex/.env
 ```
 
 The setup wizard installs dependencies automatically and only installs what's needed for the selected mode (`hindsight-client` for cloud, `hindsight-all` for local). Requires `hindsight-client >= 0.4.22` (auto-upgraded on session start if outdated).
@@ -494,7 +494,7 @@ Cloud memory API with hybrid search (Vector + BM25 + Reranking), 7 memory types,
 hermes memory setup    # select "retaindb"
 # Or manually:
 hermes config set memory.provider retaindb
-echo "RETAINDB_API_KEY=your-key" >> ~/.hermes/.env
+echo "RETAINDB_API_KEY=your-key" >> ~/.lucifex/.env
 ```
 
 ---
@@ -548,7 +548,7 @@ Semantic long-term memory with profile recall, semantic search, explicit memory 
 hermes memory setup    # select "supermemory"
 # Or manually:
 hermes config set memory.provider supermemory
-echo 'SUPERMEMORY_API_KEY=***' >> ~/.hermes/.env
+echo 'SUPERMEMORY_API_KEY=***' >> ~/.lucifex/.env
 ```
 
 Self-hosted setup:

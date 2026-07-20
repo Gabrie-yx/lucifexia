@@ -1,4 +1,4 @@
-"""Microsoft Entra ID adapter for Microsoft Foundry.
+﻿"""Microsoft Entra ID adapter for Microsoft Foundry.
 
 Provides keyless authentication for Microsoft Foundry deployments using the
 `azure-identity` SDK's `DefaultAzureCredential` chain (env service principal
@@ -179,7 +179,7 @@ def _build_default_credential(config: EntraIdentityConfig) -> Any:
     cloud authority, etc.) is read by ``azure-identity`` from the
     standard ``AZURE_*`` environment variables — see Microsoft's
     documented credential resolution chain. Users configure those in
-    ``~/.hermes/.env`` or the deployment environment.
+    ``~/.lucifex/.env`` or the deployment environment.
     """
     ai = _require_azure_identity()
     kwargs: Dict[str, Any] = {}

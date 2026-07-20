@@ -1,4 +1,4 @@
-"""Behavior-parity check for the browser-provider plugin migration (#25214).
+﻿"""Behavior-parity check for the browser-provider plugin migration (#25214).
 
 Spawns one subprocess per (version, scenario) cell — pinned to either
 origin/main (legacy in-tree providers + class-instantiation lookup) or
@@ -13,7 +13,7 @@ which would be a real regression for users on the existing config keys.
 
 Run from the PR worktree:
 
-    cd ~/.hermes/lucifex-agent/.worktrees/browser-providers-plugin
+    cd ~/.lucifex/lucifex-agent/.worktrees/browser-providers-plugin
     python tests/plugins/browser/check_parity_vs_main.py
 """
 from __future__ import annotations
@@ -29,8 +29,8 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 
 # Pin one path to current main, one to the PR worktree.
 # ``REPO_ROOT`` is ``.../.worktrees/browser-providers-plugin``; the main
-# checkout lives two levels up at ``~/.hermes/lucifex-agent``.
-MAIN_DIR = REPO_ROOT.parent.parent  # ~/.hermes/lucifex-agent
+# checkout lives two levels up at ``~/.lucifex/lucifex-agent``.
+MAIN_DIR = REPO_ROOT.parent.parent  # ~/.lucifex/lucifex-agent
 PR_DIR = REPO_ROOT  # the worktree we're in
 assert (MAIN_DIR / "tools" / "browser_tool.py").exists(), (
     f"MAIN_DIR={MAIN_DIR} doesn't look like a lucifex-agent checkout"

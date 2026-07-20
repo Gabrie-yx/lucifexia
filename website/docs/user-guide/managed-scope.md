@@ -1,4 +1,4 @@
----
+﻿---
 sidebar_position: 3
 title: "Managed Scope"
 description: "Administrator-pinned, user-immutable config and secrets via a system-level managed directory"
@@ -13,7 +13,7 @@ shared API base URL, or `security.redact_secrets: true` across every user on a
 machine.
 
 When a managed scope is present, the values it specifies win over the user's
-`~/.hermes/config.yaml`, `~/.hermes/.env`, and even the shell environment — for
+`~/.lucifex/config.yaml`, `~/.lucifex/.env`, and even the shell environment — for
 exactly the keys it pins. Everything else stays fully user-controlled.
 
 :::note Different from a package-manager–locked install
@@ -29,8 +29,8 @@ Managed scope is read from a system-level directory, default `/etc/hermes`:
 
 ```text
 /etc/hermes/
-├── config.yaml     # managed config layer (wins over ~/.hermes/config.yaml)
-└── .env            # managed env layer (wins over ~/.hermes/.env + shell)
+├── config.yaml     # managed config layer (wins over ~/.lucifex/config.yaml)
+└── .env            # managed env layer (wins over ~/.lucifex/.env + shell)
 ```
 
 The directory and files are owned by `root` (directory mode `0755`, files
@@ -69,7 +69,7 @@ For the keys a managed layer specifies, the order is (highest wins):
 | Tier | config.yaml | .env |
 |---|---|---|
 | 1 | `/etc/hermes/config.yaml` (managed) | `/etc/hermes/.env` (managed) |
-| 2 | `~/.hermes/config.yaml` (user) | `~/.hermes/.env` (user) |
+| 2 | `~/.lucifex/config.yaml` (user) | `~/.lucifex/.env` (user) |
 | 3 | built-in defaults | pre-existing shell environment |
 
 Merging is **leaf-level**: pinning `model.default` does not freeze the rest of
@@ -105,7 +105,7 @@ Cannot set 'model.default': it is managed by your administrator
 (/etc/hermes/config.yaml) and cannot be changed.
 ```
 
-The same applies to managed secrets — `hermes config set` / setup will not write
+The same applies to managed secrets — `lucifex config set` / setup will not write
 a user value for an env key pinned by the managed `.env`.
 
 ## Setting up a managed scope (administrators)

@@ -25,7 +25,7 @@ from agent.skill_utils import (
 
 @pytest.fixture
 def LUCIFEX_HOME_with_config(tmp_path, monkeypatch):
-    """Isolated ``~/.hermes/`` with a config.yaml referencing one external dir."""
+    """Isolated ``~/.lucifex/`` with a config.yaml referencing one external dir."""
     home = tmp_path / ".hermes"
     home.mkdir()
     external = tmp_path / "external_skills"

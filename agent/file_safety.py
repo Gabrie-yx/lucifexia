@@ -213,7 +213,7 @@ def get_read_block_error(path: str) -> Optional[str]:
 
     **This is NOT a security boundary.** The terminal tool runs as the
     same OS user with shell access; the agent can still ``cat auth.json``
-    or ``cat ~/.hermes/.env`` and exfiltrate the file. The read-deny exists
+    or ``cat ~/.lucifex/.env`` and exfiltrate the file. The read-deny exists
     as defense-in-depth that:
 
       * Returns a clear error to models that respect tool denials, which
@@ -375,8 +375,8 @@ def raise_if_read_blocked(path: str) -> None:
 # exists, and explicit user direction is required to cross it.
 #
 # Reference: May 2026 incident where a hermes-security profile session
-# edited skills under both ``~/.hermes/profiles/hermes-security/skills/``
-# AND ``~/.hermes/skills/`` (the default profile's skills) without realizing
+# edited skills under both ``~/.lucifex/profiles/hermes-security/skills/``
+# AND ``~/.lucifex/skills/`` (the default profile's skills) without realizing
 # the second path belonged to a different profile.
 # ---------------------------------------------------------------------------
 
@@ -390,7 +390,7 @@ def _resolve_active_profile_name() -> str:
     """Return the active profile name derived from LUCIFEX_HOME.
 
     ``~/.hermes``              -> ``"default"``
-    ``~/.hermes/profiles/X``  -> ``"X"``
+    ``~/.lucifex/profiles/X``  -> ``"X"``
 
     Falls back to ``"default"`` on any resolution failure so the guard
     never raises into the tool path.

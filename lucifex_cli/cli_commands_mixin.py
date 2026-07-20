@@ -1,4 +1,4 @@
-"""Slash-command handlers for the interactive CLI (god-file decomposition Phase 4).
+﻿"""Slash-command handlers for the interactive CLI (god-file decomposition Phase 4).
 
 This module hosts the ``_handle_*_command`` slash-command handlers lifted out of
 ``cli.py``'s ``LucifexCLI`` class. ``LucifexCLI`` inherits ``CLICommandsMixin`` so
@@ -700,7 +700,7 @@ class CLICommandsMixin:
                 # #34584.
                 self._pending_resume_sessions = self._list_recent_sessions(limit=10)
                 return
-            _cprint("  Tip:   Use /history or `hermes sessions list` to find sessions.")
+            _cprint("  Tip:   Use /history or `lucifex sessions list` to find sessions.")
             return
 
         # Any explicit /resume <target> supersedes a previously-armed bare
@@ -730,7 +730,7 @@ class CLICommandsMixin:
         session_meta = self._session_db.get_session(target_id)
         if not session_meta:
             _cprint(f"  Session not found: {target}")
-            _cprint("  Use /history or `hermes sessions list` to see available sessions.")
+            _cprint("  Use /history or `lucifex sessions list` to see available sessions.")
             return
 
         # If the target is the empty head of a compression chain, redirect to

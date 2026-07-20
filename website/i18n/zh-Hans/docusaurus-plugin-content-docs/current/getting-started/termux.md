@@ -1,4 +1,4 @@
----
+﻿---
 sidebar_position: 3
 title: "Android / Termux"
 description: "通过 Termux 在 Android 手机上直接运行 Hermes Agent"
@@ -138,7 +138,7 @@ hermes
 hermes model
 ```
 
-或直接在 `~/.hermes/.env` 中设置密钥。
+或直接在 `~/.lucifex/.env` 中设置密钥。
 
 ### 稍后重新运行完整的交互式设置向导
 

@@ -1,4 +1,4 @@
-"""Tests for _is_write_denied() — verifies deny list blocks sensitive paths on all platforms."""
+﻿"""Tests for _is_write_denied() — verifies deny list blocks sensitive paths on all platforms."""
 
 import os
 
@@ -45,7 +45,7 @@ class TestWriteDenyExactPaths:
 
         Before the fix, ``build_write_denied_paths`` only added
         ``<active_profile>/.env`` to the deny list, so the global
-        ``~/.hermes/.env`` (whose credentials are inherited by every profile)
+        ``~/.lucifex/.env`` (whose credentials are inherited by every profile)
         could be silently overwritten by ``write_file`` while a profile was
         active.
         """

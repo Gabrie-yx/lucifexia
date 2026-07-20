@@ -1,4 +1,4 @@
-"""Kanban tools — structured tool-call surface for worker + orchestrator agents.
+﻿"""Kanban tools — structured tool-call surface for worker + orchestrator agents.
 
 These tools are registered into the model's schema when the agent is
 running under the dispatcher (env var ``HERMES_KANBAN_TASK`` set) or when
@@ -12,7 +12,7 @@ Why tools instead of just shelling out to ``hermes kanban``?
    / Modal / Singularity / SSH would run ``hermes kanban complete …``
    inside the container, where ``hermes`` isn't installed and the DB
    isn't mounted. Tools run in the agent's Python process, so they
-   always reach ``~/.hermes/kanban.db`` regardless of terminal backend.
+   always reach ``~/.lucifex/kanban.db`` regardless of terminal backend.
 
 2. **No shell-quoting footguns.** Passing ``--metadata '{"x": [...]}'``
    through shlex+argparse is fragile. Structured tool args skip it.

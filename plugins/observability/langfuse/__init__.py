@@ -1,4 +1,4 @@
-"""langfuse — Hermes plugin for Langfuse observability.
+﻿"""langfuse — Hermes plugin for Langfuse observability.
 
 Traces Hermes conversations, LLM calls, and tool usage to Langfuse.
 
@@ -8,7 +8,7 @@ observability/langfuse`` or ``hermes tools → Langfuse Observability``). At
 runtime the plugin also requires the ``langfuse`` SDK and credentials; if
 either is missing the hooks are inert.
 
-Required env vars (set via ``hermes tools`` or ~/.hermes/.env):
+Required env vars (set via ``hermes tools`` or ~/.lucifex/.env):
   HERMES_LANGFUSE_PUBLIC_KEY  - Langfuse project public key (pk-lf-...)
   HERMES_LANGFUSE_SECRET_KEY  - Langfuse project secret key (sk-lf-...)
   HERMES_LANGFUSE_BASE_URL    - Langfuse server URL (default: https://cloud.langfuse.com)

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+﻿#!/usr/bin/env bash
 # Canonical test runner for lucifex-agent. Run this instead of calling
 # `pytest` directly to guarantee your local run matches CI behavior.
 #
@@ -11,7 +11,7 @@
 #   * Env vars blanked (conftest.py also does this, but this
 #     is belt-and-suspenders for anyone running pytest outside our
 #     conftest path — e.g. on a single file)
-#   * Proper venv activation (probes .venv, venv, then ~/.hermes/...)
+#   * Proper venv activation (probes .venv, venv, then ~/.lucifex/...)
 #
 # Usage:
 #   scripts/run_tests.sh                            # full suite

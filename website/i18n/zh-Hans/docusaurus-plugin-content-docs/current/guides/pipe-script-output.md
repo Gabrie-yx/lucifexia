@@ -1,4 +1,4 @@
----
+﻿---
 sidebar_position: 12
 title: "将脚本输出推送到消息平台"
 description: "使用 `hermes send` 将任意 shell 脚本、cron 任务、CI hook 或监控守护进程的文本发送到 Telegram、Discord、Slack、Signal 等平台。"
@@ -167,7 +167,7 @@ msg_id=$(hermes send --to discord:#ops --json "build started" \
 
 ## `hermes send` 需要 gateway 运行吗？
 
-**通常不需要。** 对于所有基于 bot token 的平台——Telegram、Discord、Slack、Signal、SMS、WhatsApp Cloud API 等——`hermes send` 直接使用 `~/.hermes/.env` 和 `~/.hermes/config.yaml` 中的凭据调用平台的 REST 接口。它是一个独立的子进程，消息投递完成后即退出。
+**通常不需要。** 对于所有基于 bot token 的平台——Telegram、Discord、Slack、Signal、SMS、WhatsApp Cloud API 等——`hermes send` 直接使用 `~/.lucifex/.env` 和 `~/.lucifex/config.yaml` 中的凭据调用平台的 REST 接口。它是一个独立的子进程，消息投递完成后即退出。
 
 只有依赖持久适配器连接的**插件平台**才需要运行中的 gateway（例如，某个保持长连接 WebSocket 的自定义插件）。此时你会收到明确的错误提示，指引你启动 gateway；执行 `lucifex gateway start` 后重试即可。
 
@@ -188,7 +188,7 @@ hermes send --list telegram
 hermes send --list --json
 ```
 
-列表数据来源于 `~/.hermes/channel_directory.json`，gateway 运行期间每隔几分钟刷新一次。如果看到"尚未发现频道"，请先启动一次 gateway（`lucifex gateway start`）以填充缓存。
+列表数据来源于 `~/.lucifex/channel_directory.json`，gateway 运行期间每隔几分钟刷新一次。如果看到"尚未发现频道"，请先启动一次 gateway（`lucifex gateway start`）以填充缓存。
 
 易读名称（`discord:#ops`、`slack:#engineering`）在发送时通过该缓存解析，无需记忆数字 ID。
 

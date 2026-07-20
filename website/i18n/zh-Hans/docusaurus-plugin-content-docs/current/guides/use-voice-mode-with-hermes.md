@@ -1,4 +1,4 @@
----
+﻿---
 sidebar_position: 8
 title: "在 Hermes 中使用语音模式"
 description: "在 CLI、Telegram、Discord 及 Discord 语音频道中设置和使用 Hermes 语音模式的实用指南"
@@ -57,19 +57,19 @@ What tools do you have available?
 ### CLI 麦克风 + 播放
 
 ```bash
-cd ~/.hermes/lucifex-agent && uv pip install -e ".[voice]"
+cd ~/.lucifex/lucifex-agent && uv pip install -e ".[voice]"
 ```
 
 ### 消息平台
 
 ```bash
-cd ~/.hermes/lucifex-agent && uv pip install -e ".[messaging]"
+cd ~/.lucifex/lucifex-agent && uv pip install -e ".[messaging]"
 ```
 
 ### 高级 ElevenLabs TTS
 
 ```bash
-cd ~/.hermes/lucifex-agent && uv pip install -e ".[tts-premium]"
+cd ~/.lucifex/lucifex-agent && uv pip install -e ".[tts-premium]"
 ```
 
 ### 本地 NeuTTS（可选）
@@ -81,7 +81,7 @@ python -m pip install -U neutts[all]
 ### 全部安装
 
 ```bash
-cd ~/.hermes/lucifex-agent && uv pip install -e ".[all]"
+cd ~/.lucifex/lucifex-agent && uv pip install -e ".[all]"
 ```
 
 ## 第三步：安装系统依赖
@@ -120,7 +120,7 @@ Hermes 同时支持本地和云端语音处理方案。
 
 ### 环境变量文件示例
 
-添加到 `~/.hermes/.env`：
+添加到 `~/.lucifex/.env`：
 
 ```bash
 # 云端 STT 选项（本地无需密钥）

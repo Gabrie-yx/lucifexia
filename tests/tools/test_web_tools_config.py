@@ -138,7 +138,7 @@ class TestFirecrawlClientConfig:
                 )
 
     def test_nous_auth_token_respects_LUCIFEX_HOME_override(self, tmp_path):
-        """Auth lookup should read from LUCIFEX_HOME/auth.json, not ~/.hermes/auth.json."""
+        """Auth lookup should read from LUCIFEX_HOME/auth.json, not ~/.lucifex/auth.json."""
         real_home = tmp_path / "real-home"
         (real_home / ".hermes").mkdir(parents=True)
 
@@ -816,7 +816,7 @@ class TestNonBuiltinProviderAvailability:
 class TestFirecrawlEnvResolution:
     """Verify Firecrawl reads env values from lucifex_cli.config.get_env_value,
     not just os.getenv.  This catches the regression reported in #40190 where
-    values stored in ~/.hermes/.env were invisible to the provider."""
+    values stored in ~/.lucifex/.env were invisible to the provider."""
 
     def test_direct_config_reads_via_get_env_value(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """_get_direct_firecrawl_config() must use get_env_value, not os.getenv."""
@@ -857,7 +857,7 @@ class TestFirecrawlEnvResolution:
 class TestSiblingProvidersEnvResolution:
     """The same #40190 bug class widened: every keyed web provider must
     resolve its credential through the config-aware lookup (os.environ OR
-    ~/.hermes/.env), not bare os.getenv. Parametrized over the four
+    ~/.lucifex/.env), not bare os.getenv. Parametrized over the four
     providers that previously read only the process environment."""
 
     _CASES = [

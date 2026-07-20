@@ -1,4 +1,4 @@
-# Profile Builder — Dashboard-Native, Full-Featured Profile Creation
+﻿# Profile Builder — Dashboard-Native, Full-Featured Profile Creation
 
 Status: design proposal (not yet implemented)
 Author: drafted for Teknium
@@ -13,7 +13,7 @@ needs, and a profile is just a LUCIFEX_HOME directory — so the dashboard is th
 right home for a full-featured builder, and it can reuse everything that
 already exists.
 
-A profile = a full `~/.hermes/profiles/<name>/` directory with its own:
+A profile = a full `~/.lucifex/profiles/<name>/` directory with its own:
 - `config.yaml` — holds `model`/`provider`, `mcp_servers`, enabled skills
 - `skills/` — physical SKILL.md files (built-in seed + optional + hub installs)
 - `.env` — secrets

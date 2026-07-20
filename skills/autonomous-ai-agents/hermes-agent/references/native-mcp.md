@@ -1,4 +1,4 @@
-# Native MCP Client
+﻿# Native MCP Client
 
 Hermes Agent has a built-in MCP client that connects to MCP servers at startup, discovers their tools, and makes them available as first-class tools the agent can call directly. No bridge CLI needed -- tools from MCP servers appear alongside built-in tools like `terminal`, `read_file`, etc.
 
@@ -29,7 +29,7 @@ uv pip install mcp
 
 ## Quick Start
 
-Add MCP servers to `~/.hermes/config.yaml` under the `mcp_servers` key:
+Add MCP servers to `~/.lucifex/config.yaml` under the `mcp_servers` key:
 
 ```yaml
 mcp_servers:
@@ -95,7 +95,7 @@ Note: A server config must have either `command` (stdio) or `url` (HTTP), not bo
 
 When Hermes Agent starts, `discover_mcp_tools()` is called during tool initialization:
 
-1. Reads `mcp_servers` from `~/.hermes/config.yaml`
+1. Reads `mcp_servers` from `~/.lucifex/config.yaml`
 2. For each server, spawns a connection in a dedicated background event loop
 3. Initializes the MCP session and calls `list_tools()` to discover available tools
 4. Registers each tool in the Hermes tool registry
@@ -201,7 +201,7 @@ pip install mcp
 
 ### "No MCP servers configured"
 
-No `mcp_servers` key in `~/.hermes/config.yaml`, or it's empty. Add at least one server.
+No `mcp_servers` key in `~/.lucifex/config.yaml`, or it's empty. Add at least one server.
 
 ### "Failed to connect to MCP server 'X'"
 

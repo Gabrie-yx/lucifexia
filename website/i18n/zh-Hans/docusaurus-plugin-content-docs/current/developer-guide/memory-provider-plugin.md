@@ -177,7 +177,7 @@ from lucifex_constants import get_lucifex_home
 data_dir = get_lucifex_home() / "my-provider"
 
 # 错误 — 所有 profile 共享
-data_dir = Path("~/.hermes/my-provider").expanduser()
+data_dir = Path("~/.lucifex/my-provider").expanduser()
 ```
 
 ## 测试

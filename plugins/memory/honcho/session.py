@@ -1,4 +1,4 @@
-"""Honcho-based session management for conversation history."""
+﻿"""Honcho-based session management for conversation history."""
 
 from __future__ import annotations
 
@@ -840,7 +840,7 @@ class HonchoSessionManager:
 
         Args:
             session_key: The session key to associate files with.
-            memory_dir: Path to the memories directory (~/.hermes/memories/).
+            memory_dir: Path to the memories directory (~/.lucifex/memories/).
 
         Returns:
             True if at least one file was uploaded, False otherwise.

@@ -1,4 +1,4 @@
----
+﻿---
 sidebar_position: 3
 title: "Android / Termux"
 description: "Run Hermes Agent directly on an Android phone with Termux"
@@ -145,7 +145,7 @@ hermes
 hermes model
 ```
 
-Or set keys directly in `~/.hermes/.env`.
+Or set keys directly in `~/.lucifex/.env`.
 
 ### Re-run the full interactive setup wizard later
 

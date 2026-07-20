@@ -1,4 +1,4 @@
-"""SelfHostedOIDCProvider — generic self-hosted OpenID Connect dashboard auth.
+﻿"""SelfHostedOIDCProvider — generic self-hosted OpenID Connect dashboard auth.
 
 A standards-compliant OpenID Connect Relying Party for the ``hermes dashboard``
 OAuth gate. Unlike the bundled ``nous`` provider (which encodes Nous Portal's
@@ -57,7 +57,7 @@ same precedence convention as the ``nous`` plugin)::
           client_id: hermes-dashboard                              # required
           scopes: "openid profile email"                           # optional
           # client_secret: set ONLY for a confidential client. It is a
-          # credential — prefer the env var / ~/.hermes/.env over config.yaml.
+          # credential — prefer the env var / ~/.lucifex/.env over config.yaml.
 
     # Environment overrides (Docker/Fly secret injection)
     HERMES_DASHBOARD_OIDC_ISSUER
@@ -813,7 +813,7 @@ def register(ctx) -> None:
         or _DEFAULT_SCOPES
     )
     # Optional — set only for a confidential client. A credential, so the
-    # canonical home is the env var / ~/.hermes/.env; config.yaml is supported
+    # canonical home is the env var / ~/.lucifex/.env; config.yaml is supported
     # for precedence symmetry. Empty ⇒ public client (unchanged behaviour).
     client_secret = _resolve_setting(
         "HERMES_DASHBOARD_OIDC_CLIENT_SECRET", oidc_cfg.get("client_secret")

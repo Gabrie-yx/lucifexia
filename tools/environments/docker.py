@@ -1,4 +1,4 @@
-"""Docker execution environment for sandboxed command execution.
+﻿"""Docker execution environment for sandboxed command execution.
 
 Security hardened (cap-drop ALL, no-new-privileges, PID limits),
 configurable resource limits (CPU, memory, disk), and optional filesystem
@@ -94,7 +94,7 @@ def _normalize_env_dict(env: dict | None) -> dict[str, str]:
 
 
 def _load_hermes_env_vars() -> dict[str, str]:
-    """Load ~/.hermes/.env values without failing Docker command execution."""
+    """Load ~/.lucifex/.env values without failing Docker command execution."""
     try:
         from lucifex_cli.config import load_env
 
@@ -643,7 +643,7 @@ class DockerEnvironment(BaseEnvironment):
             resource_args.append("--network=none")
 
         # Persistent workspace via bind mounts from a configurable host directory
-        # (TERMINAL_SANDBOX_DIR, default ~/.hermes/sandboxes/). Non-persistent
+        # (TERMINAL_SANDBOX_DIR, default ~/.lucifex/sandboxes/). Non-persistent
         # mode uses tmpfs (ephemeral, fast, gone on cleanup).
         from tools.environments.base import get_sandbox_dir
 

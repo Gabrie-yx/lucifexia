@@ -1,8 +1,8 @@
-"""Regression tests for GitHub #16743 — atomic writes must preserve symlinks.
+﻿"""Regression tests for GitHub #16743 — atomic writes must preserve symlinks.
 
 ``os.replace(tmp, target)`` replaces whatever exists at ``target`` — including
 symlinks, which it swaps for a regular file.  Managed deployments that
-symlink ``~/.hermes/config.yaml`` (and other state files) to a git-tracked
+symlink ``~/.lucifex/config.yaml`` (and other state files) to a git-tracked
 profile package were silently detached on every config write.
 
 The fix: a shared ``atomic_replace`` helper in ``utils.py`` that resolves the

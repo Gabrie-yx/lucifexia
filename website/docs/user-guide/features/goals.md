@@ -1,4 +1,4 @@
----
+﻿---
 sidebar_position: 16
 title: "Persistent Goals"
 description: "Set a standing goal and let Hermes keep working across turns until it's done. Our take on the Ralph loop."
@@ -173,7 +173,7 @@ The continuation prompt is a plain user-role message appended to history. It doe
 
 ## Configuration
 
-Add to `~/.hermes/config.yaml`:
+Add to `~/.lucifex/config.yaml`:
 
 ```yaml
 goals:

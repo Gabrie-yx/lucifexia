@@ -1188,7 +1188,7 @@ def test_write_credential_pool_preserves_known_provider_owned_oauth_state(tmp_pa
 
 def test_load_pool_prefers_dotenv_over_stale_os_environ(tmp_path, monkeypatch):
     """Regression for #18254: stale OPENROUTER_API_KEY in os.environ (inherited
-    from a parent shell) must NOT shadow the fresh key in ~/.hermes/.env when
+    from a parent shell) must NOT shadow the fresh key in ~/.lucifex/.env when
     seeding the credential pool. Before the fix, `get_env_value()` preferred
     os.environ and silently wrote the stale value into auth.json, causing
     persistent 401 errors after key rotation.
@@ -1200,7 +1200,7 @@ def test_load_pool_prefers_dotenv_over_stale_os_environ(tmp_path, monkeypatch):
     # Simulate the bug: parent shell exported a stale test key
     monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or-STALE-from-shell")
 
-    # User edited ~/.hermes/.env with the fresh key
+    # User edited ~/.lucifex/.env with the fresh key
     (LUCIFEX_HOME / ".env").write_text(
         "OPENROUTER_API_KEY=sk-or-FRESH-from-dotenv\n"
     )
@@ -1220,7 +1220,7 @@ def test_load_pool_prefers_dotenv_over_stale_os_environ(tmp_path, monkeypatch):
 
 
 def test_load_pool_falls_back_to_os_environ_when_dotenv_empty(tmp_path, monkeypatch):
-    """When ~/.hermes/.env does not define OPENROUTER_API_KEY (typical Docker /
+    """When ~/.lucifex/.env does not define OPENROUTER_API_KEY (typical Docker /
     K8s / systemd deployment), seeding must still pick up the key from
     os.environ. Guards against regressions that would break production
     deployments relying on runtime-injected env vars.
@@ -1334,7 +1334,7 @@ def test_load_pool_migrates_nous_provider_state(tmp_path, monkeypatch):
                 "nous": {
                     "portal_base_url": "https://portal.example.com",
                     "inference_base_url": "https://inference.example.com/v1",
-                    "client_id": "hermes-cli",
+                    "client_id": "lucifex-cli",
                     "token_type": "Bearer",
                     "scope": "inference:invoke",
                     "access_token": "access-token",
@@ -1375,7 +1375,7 @@ def test_load_pool_mirrors_nous_invoke_jwt_agent_key_runtime_api_key(tmp_path, m
                 "nous": {
                     "portal_base_url": "https://portal.example.com",
                     "inference_base_url": "https://inference.example.com/v1",
-                    "client_id": "hermes-cli",
+                    "client_id": "lucifex-cli",
                     "token_type": "Bearer",
                     "scope": "inference:invoke",
                     "access_token": token,
@@ -1439,7 +1439,7 @@ def test_nous_pool_terminal_refresh_removes_device_code_entry(tmp_path, monkeypa
                 "nous": {
                     "portal_base_url": "https://portal.example.com",
                     "inference_base_url": "https://inference.example.com/v1",
-                    "client_id": "hermes-cli",
+                    "client_id": "lucifex-cli",
                     "token_type": "Bearer",
                     "scope": "inference:invoke",
                     "access_token": "access-token",
@@ -1515,7 +1515,7 @@ def test_load_pool_removes_nous_device_code_when_singleton_quarantined(tmp_path,
                 "nous": {
                     "portal_base_url": "https://portal.example.com",
                     "inference_base_url": "https://inference.example.com/v1",
-                    "client_id": "hermes-cli",
+                    "client_id": "lucifex-cli",
                     "last_auth_error": {"code": "invalid_grant"},
                 }
             },
@@ -1611,7 +1611,7 @@ def test_load_pool_migrates_nous_provider_state_preserves_tls(tmp_path, monkeypa
                 "nous": {
                     "portal_base_url": "https://portal.example.com",
                     "inference_base_url": "https://inference.example.com/v1",
-                    "client_id": "hermes-cli",
+                    "client_id": "lucifex-cli",
                     "token_type": "Bearer",
                     "scope": "inference:invoke",
                     "access_token": "access-token",
@@ -2443,7 +2443,7 @@ def test_nous_seed_from_singletons_preserves_obtained_at_timestamps(tmp_path, mo
                 "nous": {
                     "access_token": "at_XXXXXXXX",
                     "refresh_token": "rt_YYYYYYYY",
-                    "client_id": "hermes-cli",
+                    "client_id": "lucifex-cli",
                     "portal_base_url": "https://portal.nousresearch.com",
                     "inference_base_url": "https://inference.nousresearch.com/v1",
                     "token_type": "Bearer",
@@ -2537,7 +2537,7 @@ def test_sync_nous_entry_from_auth_store_adopts_newer_tokens(tmp_path, monkeypat
                 "nous": {
                     "portal_base_url": "https://portal.example.com",
                     "inference_base_url": "https://inference.example.com/v1",
-                    "client_id": "hermes-cli",
+                    "client_id": "lucifex-cli",
                     "token_type": "Bearer",
                     "scope": "inference:invoke",
                     "access_token": "access-OLD",
@@ -2567,7 +2567,7 @@ def test_sync_nous_entry_from_auth_store_adopts_newer_tokens(tmp_path, monkeypat
                 "nous": {
                     "portal_base_url": "https://portal.example.com",
                     "inference_base_url": "https://inference.example.com/v1",
-                    "client_id": "hermes-cli",
+                    "client_id": "lucifex-cli",
                     "token_type": "Bearer",
                     "scope": "inference:invoke",
                     "access_token": "access-NEW",
@@ -2599,7 +2599,7 @@ def test_sync_nous_entry_noop_when_tokens_match(tmp_path, monkeypatch):
                 "nous": {
                     "portal_base_url": "https://portal.example.com",
                     "inference_base_url": "https://inference.example.com/v1",
-                    "client_id": "hermes-cli",
+                    "client_id": "lucifex-cli",
                     "token_type": "Bearer",
                     "scope": "inference:invoke",
                     "access_token": "access-token",
@@ -2636,7 +2636,7 @@ def test_nous_exhausted_entry_recovers_via_auth_store_sync(tmp_path, monkeypatch
                 "nous": {
                     "portal_base_url": "https://portal.example.com",
                     "inference_base_url": "https://inference.example.com/v1",
-                    "client_id": "hermes-cli",
+                    "client_id": "lucifex-cli",
                     "token_type": "Bearer",
                     "scope": "inference:invoke",
                     "access_token": "access-OLD",
@@ -2673,7 +2673,7 @@ def test_nous_exhausted_entry_recovers_via_auth_store_sync(tmp_path, monkeypatch
                 "nous": {
                     "portal_base_url": "https://portal.example.com",
                     "inference_base_url": "https://inference.example.com/v1",
-                    "client_id": "hermes-cli",
+                    "client_id": "lucifex-cli",
                     "token_type": "Bearer",
                     "scope": "inference:invoke",
                     "access_token": "access-FRESH",

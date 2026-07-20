@@ -1,4 +1,4 @@
-# Supermemory Memory Provider
+﻿# Supermemory Memory Provider
 
 Semantic long-term memory with profile recall, semantic search, explicit memory tools, and full-session conversation ingest (one ingest per session) for richer profiles.
 
@@ -18,7 +18,7 @@ Or manually:
 
 ```bash
 hermes config set memory.provider supermemory
-echo 'SUPERMEMORY_API_KEY=***' >> ~/.hermes/.env
+echo 'SUPERMEMORY_API_KEY=***' >> ~/.lucifex/.env
 ```
 
 For a fully self-hosted setup, start Supermemory local and note the API key it

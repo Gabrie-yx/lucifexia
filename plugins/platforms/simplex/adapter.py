@@ -1,4 +1,4 @@
-"""SimpleX Chat platform adapter (Hermes plugin).
+﻿"""SimpleX Chat platform adapter (Hermes plugin).
 
 Connects to a simplex-chat daemon running in WebSocket mode.
 Inbound messages arrive via a persistent WebSocket connection.
@@ -1222,7 +1222,7 @@ def interactive_setup() -> None:
     """Minimal stdin wizard for ``hermes setup gateway`` → SimpleX.
 
     Prompts for the WebSocket URL and the optional allowlist / groups /
-    auto-accept / home channel. Writes to ``~/.hermes/.env`` via
+    auto-accept / home channel. Writes to ``~/.lucifex/.env`` via
     ``lucifex_cli.config``.
     """
     print()
@@ -1238,7 +1238,7 @@ def interactive_setup() -> None:
     except ImportError:
         print(
             "lucifex_cli.config not available; set SIMPLEX_* vars manually in "
-            "~/.hermes/.env"
+            "~/.lucifex/.env"
         )
         return
 

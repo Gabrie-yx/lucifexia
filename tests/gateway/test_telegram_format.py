@@ -1,4 +1,4 @@
-"""Tests for Telegram MarkdownV2 formatting in gateway/platforms/telegram.py.
+﻿"""Tests for Telegram MarkdownV2 formatting in gateway/platforms/telegram.py.
 
 Covers: _escape_mdv2 (pure function), format_message (markdown-to-MarkdownV2
 conversion pipeline), and edge cases that could produce invalid MarkdownV2
@@ -197,7 +197,7 @@ async def test_legacy_send_keeps_chunk_indicators_outside_fenced_code_lines(adap
     content = (
         "Intro before code block\n"
         "```text\n"
-        + ("~/.hermes/skills/github/hermes-contribution-workflow/SKILL.md\n" * 8)
+        + ("~/.lucifex/skills/github/hermes-contribution-workflow/SKILL.md\n" * 8)
         + "```\n"
         "After."
     )

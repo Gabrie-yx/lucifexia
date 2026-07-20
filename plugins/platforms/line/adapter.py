@@ -1581,7 +1581,7 @@ def interactive_setup() -> None:
     """Minimal stdin wizard for ``hermes setup line``.
 
     Mirrors the irc/teams style: prompts for the two required vars, plus
-    one optional public URL. Writes to ``~/.hermes/.env`` via ``lucifex_cli.config``.
+    one optional public URL. Writes to ``~/.lucifex/.env`` via ``lucifex_cli.config``.
     """
     print()
     print("LINE Messaging API setup")
@@ -1593,7 +1593,7 @@ def interactive_setup() -> None:
     try:
         from lucifex_cli.config import get_env_var, set_env_var
     except ImportError:
-        print("lucifex_cli.config not available; set LINE_* vars manually in ~/.hermes/.env")
+        print("lucifex_cli.config not available; set LINE_* vars manually in ~/.lucifex/.env")
         return
 
     def _prompt(var: str, prompt: str, *, secret: bool = False) -> None:

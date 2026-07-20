@@ -1,4 +1,4 @@
----
+﻿---
 title: "Gif Search — 通过 curl + jq 搜索/下载 Tenor GIF"
 sidebar_label: "Gif Search"
 description: "通过 curl + jq 搜索/下载 Tenor GIF"
@@ -38,7 +38,7 @@ description: "通过 curl + jq 搜索/下载 Tenor GIF"
 
 ## 配置
 
-在环境中设置 Tenor API 密钥（添加到 `~/.hermes/.env`）：
+在环境中设置 Tenor API 密钥（添加到 `~/.lucifex/.env`）：
 
 ```bash
 TENOR_API_KEY=your_key_here

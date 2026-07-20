@@ -1,4 +1,4 @@
----
+﻿---
 sidebar_position: 4
 title: "Contributing"
 description: "How to contribute to Hermes Agent — dev setup, code style, PR process"
@@ -44,7 +44,7 @@ For most contributors, the best development bootstrap is the same path users
 take: run the standard installer, then work inside the repository it cloned.
 The installer creates the Hermes venv, wires the `hermes` command, stamps the
 install method for `hermes update`, and clones the full git project into
-`$LUCIFEX_HOME/lucifex-agent` (usually `~/.hermes/lucifex-agent`). That keeps your
+`$LUCIFEX_HOME/lucifex-agent` (usually `~/.lucifex/lucifex-agent`). That keeps your
 development environment on the same layout the CLI, updater, lazy dependency
 installer, gateway, and docs assume.
 
@@ -93,7 +93,7 @@ git clone https://github.com/NousResearch/lucifex-agent.git
 cd lucifex-agent
 
 # Create venv with Python 3.11, OUTSIDE the source tree
-uv venv ~/.hermes/venvs/hermes-dev --python 3.11
+uv venv ~/.lucifex/venvs/hermes-dev --python 3.11
 export VIRTUAL_ENV="$HOME/.hermes/venvs/hermes-dev"
 export PATH="$VIRTUAL_ENV/bin:$PATH"
 
@@ -107,12 +107,12 @@ npm install
 ### Configure for Development
 
 ```bash
-mkdir -p ~/.hermes/{cron,sessions,logs,memories,skills}
-cp cli-config.yaml.example ~/.hermes/config.yaml
-touch ~/.hermes/.env
+mkdir -p ~/.lucifex/{cron,sessions,logs,memories,skills}
+cp cli-config.yaml.example ~/.lucifex/config.yaml
+touch ~/.lucifex/.env
 
 # Add at minimum an LLM provider key:
-echo 'OPENROUTER_API_KEY=sk-or-v1-your-key' >> ~/.hermes/.env
+echo 'OPENROUTER_API_KEY=sk-or-v1-your-key' >> ~/.lucifex/.env
 ```
 
 ### Run

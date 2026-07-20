@@ -150,11 +150,11 @@ class TestGatewayPersonalityNone:
         (tmp_path / "config.yaml").write_text(yaml.dump({"agent": {"personalities": {}}}))
 
         with patch("gateway.run._LUCIFEX_HOME", tmp_path), \
-             patch("lucifex_constants.display_lucifex_home", return_value="~/.hermes/profiles/coder"):
+             patch("lucifex_constants.display_lucifex_home", return_value="~/.lucifex/profiles/coder"):
             event = self._make_event("")
             result = await runner._handle_personality_command(event)
 
-        assert result == "No personalities configured in `~/.hermes/profiles/coder/config.yaml`"
+        assert result == "No personalities configured in `~/.lucifex/profiles/coder/config.yaml`"
 
 
 class TestPersonalityDictFormat:

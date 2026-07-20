@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+﻿import { describe, expect, it } from 'vitest'
 
 import { isProviderSetupErrorMessage } from './provider-setup-errors'
 
@@ -9,7 +9,7 @@ describe('isProviderSetupErrorMessage', () => {
     )
     expect(isProviderSetupErrorMessage('No inference provider is configured.')).toBe(true)
     expect(isProviderSetupErrorMessage('No Hermes provider is configured.')).toBe(true)
-    expect(isProviderSetupErrorMessage('set an API key (OPENROUTER_API_KEY) in ~/.hermes/.env')).toBe(true)
+    expect(isProviderSetupErrorMessage('set an API key (OPENROUTER_API_KEY) in ~/.lucifex/.env')).toBe(true)
   })
 
   it('does not match non-provider runtime failures', () => {

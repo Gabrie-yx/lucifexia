@@ -247,7 +247,7 @@ def _is_gateway_approval_context() -> bool:
 # Sensitive write targets that should trigger approval even when referenced
 # via shell expansions like $HOME or $LUCIFEX_HOME, or by the resolved absolute
 # active profile home path such as /home/hermes/.hermes/config.yaml. The
-# resolved-absolute form is folded into the ~/.hermes/ patterns at detection
+# resolved-absolute form is folded into the ~/.lucifex/ patterns at detection
 # time by _normalize_command_for_detection() — see the rewrite step there — so
 # these static patterns stay free of any import-time path snapshot (which would
 # go stale when LUCIFEX_HOME is set after this module is imported, e.g. under the
@@ -259,14 +259,14 @@ _HERMES_ENV_PATH = (
     r'(?:\$LUCIFEX_HOME|\$\{LUCIFEX_HOME\})/)'
     r'\.env\b'
 )
-# ~/.hermes/config.yaml IS the security policy: approvals.mode, yolo, and the
+# ~/.lucifex/config.yaml IS the security policy: approvals.mode, yolo, and the
 # permanent-approval allowlist live here, and the config cache is mtime-keyed
 # so a write takes effect mid-session (the agent could flip approvals.mode=off
 # and immediately bypass the gate). Pair the write_file/patch deny (file_tools
 # _check_sensitive_path) with terminal-side coverage so `sed -i`, `tee`, `>`,
 # `cp`, etc. targeting it are gated too — otherwise the deny is unpaired
 # theater. Mirrors _HERMES_ENV_PATH; matches the LUCIFEX_HOME override form as
-# well as ~/.hermes/.
+# well as ~/.lucifex/.
 _HERMES_CONFIG_PATH = (
     r'(?:~\/\.hermes/|'
     r'(?:\$home|\$\{home\})/\.hermes/|'
@@ -717,7 +717,7 @@ DANGEROUS_PATTERNS = [
     # cp/mv/install OVERWRITING a sensitive credential/SSH/shell-rc/Hermes file.
     # The tee/redirection patterns above already gate _SENSITIVE_WRITE_TARGET
     # (~/.ssh/*, ~/.netrc/.pgpass/.npmrc/.pypirc, shell rc files,
-    # ~/.hermes/config.yaml/.env), but cp/mv/install was only paired for /etc and
+    # ~/.lucifex/config.yaml/.env), but cp/mv/install was only paired for /etc and
     # project-relative env/config — so `cp evil ~/.ssh/authorized_keys` (key
     # implant), `cp creds ~/.netrc`, and `cp evil ~/.bashrc` (login-time command
     # injection) slipped through with auto-approve. Same unpaired-door rationale
@@ -737,7 +737,7 @@ DANGEROUS_PATTERNS = [
     (rf'\b(?:perl|ruby)\b.*(?:^|\s)-[^\s]*i\b.*(?:{_USER_SENSITIVE_WRITE_TARGET})[^\s"\']*', "in-place edit of sensitive credential/SSH/shell-rc path (perl/ruby)"),
     (rf'\bsed\s+-[^\s]*i.*\s{_SYSTEM_CONFIG_PATH}', "in-place edit of system config"),
     (rf'\bsed\s+--in-place\b.*\s{_SYSTEM_CONFIG_PATH}', "in-place edit of system config (long flag)"),
-    # In-place edit of a Hermes-managed security file (~/.hermes/config.yaml or
+    # In-place edit of a Hermes-managed security file (~/.lucifex/config.yaml or
     # .env). sed -i bypasses the redirection/tee patterns above because it
     # mutates the file directly. Pairs the file_tools write_file/patch deny so
     # the terminal side is not an open door. See #14639.
@@ -889,7 +889,7 @@ def _normalize_command_for_detection(command: str) -> str:
     # home-prefix folds below (which match C:\Users\alice\... — no newline).
     command = re.sub(r'\\\r?\n', '', command)
     # Fold absolute home / active-profile-home prefixes into their canonical
-    # ~/ and ~/.hermes/ forms so static user-sensitive patterns catch
+    # ~/ and ~/.lucifex/ forms so static user-sensitive patterns catch
     # /home/alice/.bashrc and C:\Users\alice\.bashrc the same way they catch
     # ~/.bashrc. Resolve at detection time (not via an import-time snapshot) so
     # it tracks HOME / LUCIFEX_HOME even when those are set after this module is
@@ -1009,11 +1009,11 @@ def _rewrite_resolved_user_home(command: str) -> str:
 
 
 def _rewrite_resolved_LUCIFEX_HOME(command: str) -> str:
-    """Rewrite the resolved absolute Hermes home prefix to ``~/.hermes/``.
+    """Rewrite the resolved absolute Hermes home prefix to ``~/.lucifex/``.
 
     Resolves the active ``LUCIFEX_HOME`` at call time (and its symlink-resolved
     form) and folds an occurrence of ``<home>/`` in *command* into
-    ``~/.hermes/`` so the static ``_HERMES_CONFIG_PATH`` / ``_HERMES_ENV_PATH``
+    ``~/.lucifex/`` so the static ``_HERMES_CONFIG_PATH`` / ``_HERMES_ENV_PATH``
     patterns match. In Docker and gateway deployments the agent often references
     the resolved absolute path directly (e.g. ``sed -i ...
     /home/hermes/.hermes/config.yaml``) rather than ``~``, ``$HOME``, or

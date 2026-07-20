@@ -654,13 +654,13 @@ class TestBuildToolComplete:
     def test_build_tool_complete_for_write_file_summarizes_without_repeating_diff(self, tmp_path):
         target = tmp_path / "diff-test.txt"
         snapshot = type("Snapshot", (), {"paths": [target], "before": {str(target): None}})()
-        target.write_text("hello from hermes\n", encoding="utf-8")
+        target.write_text("hello from lucifex\n", encoding="utf-8")
 
         result = build_tool_complete(
             "tc-wf1",
             "write_file",
             '{"bytes_written": 18, "dirs_created": false}',
-            function_args={"path": str(target), "content": "hello from hermes\n"},
+            function_args={"path": str(target), "content": "hello from lucifex\n"},
             snapshot=snapshot,
         )
         assert isinstance(result, ToolCallProgress)

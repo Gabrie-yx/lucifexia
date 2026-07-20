@@ -1755,7 +1755,7 @@ def _profile_suffix() -> str:
 def _profile_arg(LUCIFEX_HOME: str | None = None, default_root: str | Path | None = None) -> str:
     """Return ``--profile <name>`` only when LUCIFEX_HOME is a named profile.
 
-    For ``~/.hermes/profiles/<name>``, returns ``"--profile <name>"``.
+    For ``~/.lucifex/profiles/<name>``, returns ``"--profile <name>"``.
     For the default profile or hash-based custom paths, returns the empty string.
 
     Args:
@@ -1799,7 +1799,7 @@ def get_service_name() -> str:
     """Derive a systemd service name scoped to this LUCIFEX_HOME.
 
     Default ``~/.hermes`` returns ``lucifex-gateway`` (backward compatible).
-    Profile ``~/.hermes/profiles/coder`` returns ``lucifex-gateway-coder``.
+    Profile ``~/.lucifex/profiles/coder`` returns ``lucifex-gateway-coder``.
     Any other LUCIFEX_HOME appends a short hash for uniqueness.
     """
     suffix = _profile_suffix()
@@ -2482,7 +2482,7 @@ def get_launchd_plist_path() -> Path:
     """Return the launchd plist path, scoped per profile.
 
     Default ``~/.hermes`` → ``ai.hermes.gateway.plist`` (backward compatible).
-    Profile ``~/.hermes/profiles/coder`` → ``ai.hermes.gateway-coder.plist``.
+    Profile ``~/.lucifex/profiles/coder`` → ``ai.hermes.gateway-coder.plist``.
     """
     suffix = _profile_suffix()
     name = f"ai.hermes.gateway-{suffix}" if suffix else "ai.hermes.gateway"
@@ -4116,7 +4116,7 @@ def refresh_launchd_plist_if_needed() -> bool:
         # service stays unregistered — KeepAlive can't revive a service
         # launchd no longer knows about, so the gateway stays dark until a
         # manual `launchctl bootstrap`. Failures append a timestamped line
-        # to ~/.hermes/logs/launchd-reload.log, which the health watchdog
+        # to ~/.lucifex/logs/launchd-reload.log, which the health watchdog
         # can tail to detect a persistent orphan. See hermes-restart
         # rootcause handoff (2026-06-26 incident).
         reload_log_path = get_lucifex_home() / "logs" / "launchd-reload.log"
@@ -5231,7 +5231,7 @@ def _all_platforms() -> list[dict]:
     # Populate the registry so plugin platforms are visible. Idempotent.
     # Bundled platform plugins (``kind: platform``) auto-load unconditionally,
     # so every shipped messaging channel appears in the setup menu by default.
-    # User-installed platform plugins under ~/.hermes/plugins/ still require
+    # User-installed platform plugins under ~/.lucifex/plugins/ still require
     # opt-in via ``plugins.enabled`` (untrusted code).
     try:
         from lucifex_cli.plugins import discover_plugins
@@ -5664,7 +5664,7 @@ def _setup_weixin():
     print_info("  1. Hermes will open Tencent iLink QR login in this terminal.")
     print_info("  2. Use WeChat to scan and confirm the QR code.")
     print_info(
-        "  3. Hermes will store the returned account_id/token in ~/.hermes/.env."
+        "  3. Hermes will store the returned account_id/token in ~/.lucifex/.env."
     )
     print_info(
         "  4. This adapter supports native text, image, video, and document delivery."
@@ -6132,7 +6132,7 @@ def _configure_platform(platform: dict) -> None:
       4. Env-var hint fallback for plugins that offer no setup helper.
 
     Bundled platform plugins (e.g. IRC) auto-load, so no plugin enable step
-    is needed here. User-installed platform plugins under ~/.hermes/plugins/
+    is needed here. User-installed platform plugins under ~/.lucifex/plugins/
     must already be in ``plugins.enabled`` before they appear in this menu.
     """
     entry = platform.get("_registry_entry")
@@ -6157,7 +6157,7 @@ def _configure_platform(platform: dict) -> None:
     print(color(f"  ─── {emoji} {label} Setup ───", Colors.CYAN))
     required = entry.required_env if entry else []
     if required:
-        print_info(f"  Set these env vars in ~/.hermes/.env: {', '.join(required)}")
+        print_info(f"  Set these env vars in ~/.lucifex/.env: {', '.join(required)}")
     else:
         print_info(
             f"  Configure {label} in config.yaml under gateway.platforms.{platform['key']}"
@@ -6765,7 +6765,7 @@ def _gateway_command_inner(args):
                 "  tmux new -s hermes 'lucifex gateway run'         # persistent via tmux"
             )
             print(
-                "  nohup lucifex gateway run > ~/.hermes/logs/gateway.log 2>&1 &  # background"
+                "  nohup lucifex gateway run > ~/.lucifex/logs/gateway.log 2>&1 &  # background"
             )
             sys.exit(1)
         elif is_container():
@@ -6884,7 +6884,7 @@ def _gateway_command_inner(args):
                 "  tmux new -s hermes 'lucifex gateway run'         # persistent via tmux"
             )
             print(
-                "  nohup lucifex gateway run > ~/.hermes/logs/gateway.log 2>&1 &  # background"
+                "  nohup lucifex gateway run > ~/.lucifex/logs/gateway.log 2>&1 &  # background"
             )
             print()
             print(
@@ -7232,14 +7232,14 @@ def _gateway_command_inner(args):
                 print("  lucifex gateway run      # Run in foreground")
                 if is_termux():
                     print(
-                        "  nohup lucifex gateway run > ~/.hermes/logs/gateway.log 2>&1 &  # Best-effort background start"
+                        "  nohup lucifex gateway run > ~/.lucifex/logs/gateway.log 2>&1 &  # Best-effort background start"
                     )
                 elif is_wsl():
                     print(
                         "  tmux new -s hermes 'lucifex gateway run'         # persistent via tmux"
                     )
                     print(
-                        "  nohup lucifex gateway run > ~/.hermes/logs/gateway.log 2>&1 &  # background"
+                        "  nohup lucifex gateway run > ~/.lucifex/logs/gateway.log 2>&1 &  # background"
                     )
                 elif is_windows():
                     print(

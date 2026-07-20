@@ -1,4 +1,4 @@
----
+﻿---
 sidebar_position: 11
 title: "Plugin LLM Access"
 description: "Run any LLM call from inside a plugin via ctx.llm — chat or structured, sync or async. Host-owned auth, fail-closed trust gate, optional JSON Schema validation."
@@ -402,7 +402,7 @@ don't have to:
 * **Provider resolution.** Reads `model.provider` + `model.model`
   from the user's config (or the explicit overrides when trusted).
 * **Auth.** Pulls API keys, OAuth tokens, or refresh tokens from
-  `~/.hermes/auth.json` / env, including the credential pool when
+  `~/.lucifex/auth.json` / env, including the credential pool when
   one is configured. The plugin never sees them.
 * **Vision routing.** When image input is supplied and the user's
   active text model is text-only, the host falls back to the

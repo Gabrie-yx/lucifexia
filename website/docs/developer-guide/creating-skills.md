@@ -1,4 +1,4 @@
----
+﻿---
 sidebar_position: 3
 title: "Creating Skills"
 description: "How to create skills for Hermes Agent — SKILL.md format, guidelines, and publishing"
@@ -205,7 +205,7 @@ Each entry supports:
 - `key` (required) — dotpath for the setting (e.g., `myplugin.path`)
 - `description` (required) — explains what the setting controls
 - `default` (optional) — default value if the user doesn't configure it
-- `prompt` (optional) — prompt text shown during `hermes config migrate`; falls back to `description`
+- `prompt` (optional) — prompt text shown during `lucifex config migrate`; falls back to `description`
 
 **How it works:**
 
@@ -217,11 +217,11 @@ Each entry supports:
          path: ~/my-data
    ```
 
-2. **Discovery:** `hermes config migrate` scans all enabled skills, finds unconfigured settings, and prompts the user. Settings also appear in `hermes config show` under "Skill Settings."
+2. **Discovery:** `lucifex config migrate` scans all enabled skills, finds unconfigured settings, and prompts the user. Settings also appear in `lucifex config show` under "Skill Settings."
 
 3. **Runtime injection:** When a skill loads, its config values are resolved and appended to the skill message:
    ```
-   [Skill config (from ~/.hermes/config.yaml):
+   [Skill config (from ~/.lucifex/config.yaml):
      myplugin.path = /home/user/my-data
    ]
    ```
@@ -233,7 +233,7 @@ Each entry supports:
    ```
 
 :::tip When to use which
-Use `required_environment_variables` for API keys, tokens, and other **secrets** (stored in `~/.hermes/.env`, never shown to the model). Use `config` for **paths, preferences, and non-sensitive settings** (stored in `config.yaml`, visible in config show).
+Use `required_environment_variables` for API keys, tokens, and other **secrets** (stored in `~/.lucifex/.env`, never shown to the model). Use `config` for **paths, preferences, and non-sensitive settings** (stored in `config.yaml`, visible in config show).
 :::
 
 ### Credential File Requirements (OAuth tokens, etc.)
@@ -249,7 +249,7 @@ required_credential_files:
 ```
 
 Each entry supports:
-- `path` (required) — file path relative to `~/.hermes/`
+- `path` (required) — file path relative to `~/.lucifex/`
 - `description` (optional) — explains what the file is and how it's created
 
 When loaded, Hermes checks if these files exist. Missing files trigger `setup_needed`. Existing files are automatically:
@@ -258,7 +258,7 @@ When loaded, Hermes checks if these files exist. Missing files trigger `setup_ne
 - Available on **local** backend without any special handling
 
 :::tip When to use which
-Use `required_environment_variables` for simple API keys and tokens (strings stored in `~/.hermes/.env`). Use `required_credential_files` for OAuth token files, client secrets, service account JSON, certificates, or any credential that's a file on disk.
+Use `required_environment_variables` for simple API keys and tokens (strings stored in `~/.lucifex/.env`). Use `required_credential_files` for OAuth token files, client secrets, service account JSON, certificates, or any credential that's a file on disk.
 :::
 
 See the `skills/productivity/google-workspace/SKILL.md` for a complete example using both.

@@ -1,4 +1,4 @@
-"""Contract test: install.sh stamps the install method next to the code tree
+﻿"""Contract test: install.sh stamps the install method next to the code tree
 ($INSTALL_DIR), not into the shared $LUCIFEX_HOME.
 
 Background (shared-$LUCIFEX_HOME bug)
@@ -12,7 +12,7 @@ booting last, would win and wrongly make the host install look like 'docker'
 
 The fix: detect_install_method() reads a CODE-scoped stamp first, and the
 installer writes ``git`` into $INSTALL_DIR (the git checkout, e.g.
-``~/.hermes/lucifex-agent``), which is unique to this install and immune to the
+``~/.lucifex/lucifex-agent``), which is unique to this install and immune to the
 shared data dir.
 """
 from __future__ import annotations

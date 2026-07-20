@@ -619,7 +619,7 @@ def migrate(
     ~/.codex/config.toml.
 
     Args:
-        hermes_config: full ~/.hermes/config.yaml dict
+        hermes_config: full ~/.lucifex/config.yaml dict
         codex_home: override CODEX_HOME (defaults to ~/.codex)
         dry_run: skip the actual write; report what would happen
         discover_plugins: when True (default), query `plugin/list` against

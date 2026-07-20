@@ -1,4 +1,4 @@
----
+﻿---
 sidebar_position: 2
 title: "安装"
 description: "在 Linux、macOS、WSL2、原生 Windows 或通过 Termux 在 Android 上安装 Hermes Agent"
@@ -85,11 +85,11 @@ curl -fsSL https://lucifex-agent.nousresearch.com/install.sh | bash
 
 | 安装方式                                | 代码位置                       | `hermes` 二进制                          | 数据目录                              |
 | --------------------------------------- | ------------------------------ | ---------------------------------------- | ------------------------------------- |
-| pip install                             | Python site-packages           | `~/.local/bin/hermes`（console_scripts） | `~/.hermes/`                          |
-| 用户级（git 安装程序）                  | `~/.hermes/lucifex-agent/`      | `~/.local/bin/hermes`（符号链接）        | `~/.hermes/`                          |
+| pip install                             | Python site-packages           | `~/.local/bin/hermes`（console_scripts） | `~/.lucifex/`                          |
+| 用户级（git 安装程序）                  | `~/.lucifex/lucifex-agent/`      | `~/.local/bin/hermes`（符号链接）        | `~/.lucifex/`                          |
 | Root 模式（`sudo curl … \| sudo bash`） | `/usr/local/lib/lucifex-agent/` | `/usr/local/bin/hermes`                  | `/root/.hermes/`（或 `$LUCIFEX_HOME`） |
 
-Root 模式的 **FHS 布局**（`/usr/local/lib/…`、`/usr/local/bin/hermes`）与其他系统级开发工具在 Linux 上的安装位置一致。适用于共享机器部署场景，一次系统安装可服务所有用户。每个用户的个人配置（认证、技能、会话）仍位于各自的 `~/.hermes/` 或显式指定的 `LUCIFEX_HOME` 下。
+Root 模式的 **FHS 布局**（`/usr/local/lib/…`、`/usr/local/bin/hermes`）与其他系统级开发工具在 Linux 上的安装位置一致。适用于共享机器部署场景，一次系统安装可服务所有用户。每个用户的个人配置（认证、技能、会话）仍位于各自的 `~/.lucifex/` 或显式指定的 `LUCIFEX_HOME` 下。
 
 ### 安装后
 
@@ -186,7 +186,7 @@ hermes setup --portal
    sudo ln -s /home/hermes/.hermes/lucifex-agent/venv/bin/hermes /usr/local/bin/hermes
    ```
 
-4. **验证：** `hermes doctor` 现在应能正常运行。如果出现 `ModuleNotFoundError: No module named 'dotenv'`，说明你在用系统 Python 调用仓库源码中的 `hermes` 文件（`~/.hermes/lucifex-agent/hermes`），而非 venv 启动器（`~/.hermes/lucifex-agent/venv/bin/hermes`）——请修正步骤 3。
+4. **验证：** `hermes doctor` 现在应能正常运行。如果出现 `ModuleNotFoundError: No module named 'dotenv'`，说明你在用系统 Python 调用仓库源码中的 `hermes` 文件（`~/.lucifex/lucifex-agent/hermes`），而非 venv 启动器（`~/.lucifex/lucifex-agent/venv/bin/hermes`）——请修正步骤 3。
 
 同样的方式适用于 Arch（安装程序使用 pacman，具有相同的 sudo 检测逻辑）、Fedora/RHEL 和 openSUSE——这些发行版完全不支持 `--with-deps`，因此管理员始终需要单独安装系统库。安装程序会打印相应的 `dnf`/`zypper` 命令。
 
@@ -197,11 +197,11 @@ hermes setup --portal
 | 问题                        | 解决方案                                                                           |
 | --------------------------- | ---------------------------------------------------------------------------------- |
 | `hermes: command not found` | 重新加载 shell（`source ~/.bashrc`）或检查 PATH                                    |
-| `API key not set`           | 运行 `hermes model` 配置提供商，或 `hermes config set OPENROUTER_API_KEY your_key` |
-| 更新后配置丢失              | 运行 `hermes config check`，然后运行 `hermes config migrate`                       |
+| `API key not set`           | 运行 `hermes model` 配置提供商，或 `lucifex config set OPENROUTER_API_KEY your_key` |
+| 更新后配置丢失              | 运行 `lucifex config check`，然后运行 `lucifex config migrate`                       |
 
 如需更多诊断信息，运行 `hermes doctor`——它会告诉你确切缺少什么以及如何修复。
 
 ## 安装方式自动检测
 
-Hermes 会自动检测安装方式（`pip`、git 安装程序、Homebrew 或 NixOS），`hermes update` 会打印对应路径的更新命令。无需设置任何环境变量——检测基于安装目录结构（Python site-packages、`~/.hermes/lucifex-agent/`、Homebrew 前缀或 Nix store 路径）。`hermes doctor` 也会在其环境摘要中显示检测到的安装方式。
+Hermes 会自动检测安装方式（`pip`、git 安装程序、Homebrew 或 NixOS），`hermes update` 会打印对应路径的更新命令。无需设置任何环境变量——检测基于安装目录结构（Python site-packages、`~/.lucifex/lucifex-agent/`、Homebrew 前缀或 Nix store 路径）。`hermes doctor` 也会在其环境摘要中显示检测到的安装方式。

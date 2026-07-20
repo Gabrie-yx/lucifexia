@@ -1,4 +1,4 @@
-"""
+﻿"""
 Shell-script hooks bridge.
 
 Reads the ``hooks:`` block from ``cli-config.yaml``, prompts the user for
@@ -17,7 +17,7 @@ Design notes
   with ``shell=False`` — no shell injection footguns.  Users that need
   pipes/redirection wrap their logic in a script.
 * First-use consent is gated by the allowlist under
-  ``~/.hermes/shell-hooks-allowlist.json``.  Non-TTY callers must pass
+  ``~/.lucifex/shell-hooks-allowlist.json``.  Non-TTY callers must pass
   ``accept_hooks=True`` (resolved from ``--accept-hooks``,
   ``HERMES_ACCEPT_HOOKS``, or ``hooks_auto_accept: true`` in config)
   for registration to succeed without a prompt.

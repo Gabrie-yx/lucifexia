@@ -1,7 +1,7 @@
-"""Agent-construction and session-resume display methods for ``LucifexCLI``.
+﻿"""Agent-construction and session-resume display methods for ``LucifexCLI``.
 
 Extracted from ``cli.py`` as part of the god-file decomposition campaign
-(``~/.hermes/plans/god-file-decomposition.md``, Phase 4 step 2). This mixin holds
+(``~/.lucifex/plans/god-file-decomposition.md``, Phase 4 step 2). This mixin holds
 the agent lifecycle/setup cluster: runtime-credential resolution, per-turn agent
 config, first-use agent construction, and resumed-session preload + history recap.
 
@@ -270,12 +270,12 @@ class CLIAgentSetupMixin:
                 if _quiet_mode:
                     print(f"Session not found: {self.session_id}", file=sys.stderr)
                     print(
-                        "Use a session ID from a previous CLI run (hermes sessions list).",
+                        "Use a session ID from a previous CLI run (lucifex sessions list).",
                         file=sys.stderr,
                     )
                 else:
                     _cprint(f"\033[1;31mSession not found: {self.session_id}{_RST}")
-                    _cprint(f"{_DIM}Use a session ID from a previous CLI run (hermes sessions list).{_RST}")
+                    _cprint(f"{_DIM}Use a session ID from a previous CLI run (lucifex sessions list).{_RST}")
                 return False
             # If the requested session is the (empty) head of a compression
             # chain, walk to the descendant that actually holds the messages.
@@ -474,7 +474,7 @@ class CLIAgentSetupMixin:
             )
             self._console_print(
                 "[dim]Use a session ID from a previous CLI run "
-                "(hermes sessions list).[/]"
+                "(lucifex sessions list).[/]"
             )
             return False
 

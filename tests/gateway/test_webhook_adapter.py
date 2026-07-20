@@ -1,4 +1,4 @@
-"""Unit tests for the generic webhook platform adapter.
+﻿"""Unit tests for the generic webhook platform adapter.
 
 Covers:
 - HMAC signature validation (GitHub, GitLab, generic)
@@ -710,11 +710,11 @@ class TestPayloadFilters:
                         "any": [
                             {
                                 "field": "payload.chatId",
-                                "in_file": "~/.hermes/data/watchlist.json",
+                                "in_file": "~/.lucifex/data/watchlist.json",
                             },
                             {
                                 "field": "payload.id.remote",
-                                "in_file": "~/.hermes/data/watchlist.json",
+                                "in_file": "~/.lucifex/data/watchlist.json",
                             },
                         ]
                     },
@@ -825,7 +825,7 @@ class TestPayloadFilters:
 
     @pytest.mark.asyncio
     async def test_script_tilde_hermes_path_resolves_to_active_profile_home(self, tmp_path, monkeypatch):
-        """~/.hermes/scripts paths must resolve through LUCIFEX_HOME for profiles."""
+        """~/.lucifex/scripts paths must resolve through LUCIFEX_HOME for profiles."""
         monkeypatch.setenv("LUCIFEX_HOME", str(tmp_path))
         scripts = tmp_path / "scripts"
         scripts.mkdir()
@@ -839,7 +839,7 @@ class TestPayloadFilters:
         routes = {
             "todoist": {
                 "secret": _INSECURE_NO_AUTH,
-                "script": "~/.hermes/scripts/todoist_filter.py",
+                "script": "~/.lucifex/scripts/todoist_filter.py",
                 "prompt": "Task: {body}",
             }
         }

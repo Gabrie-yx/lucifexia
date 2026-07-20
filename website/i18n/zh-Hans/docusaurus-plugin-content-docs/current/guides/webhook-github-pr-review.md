@@ -1,4 +1,4 @@
----
+﻿---
 sidebar_position: 11
 sidebar_label: "通过 Webhook 进行 GitHub PR 审查"
 title: "使用 Webhook 自动发布 GitHub PR 评论"
@@ -36,7 +36,7 @@ Webhook payload 包含攻击者可控的数据——PR 标题、commit 消息和
 
 ## 第一步——启用 webhook 平台
 
-在你的 `~/.hermes/config.yaml` 中添加以下内容：
+在你的 `~/.lucifex/config.yaml` 中添加以下内容：
 
 ```yaml
 platforms:

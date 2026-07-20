@@ -1,4 +1,4 @@
----
+﻿---
 title: "Qmd"
 sidebar_label: "Qmd"
 description: "Search personal knowledge bases, notes, docs, and meeting transcripts locally using qmd — a hybrid retrieval engine with BM25, vector search, and LLM reranking"
@@ -244,7 +244,7 @@ without needing to load this skill.
 
 ### Option A: Stdio Mode (Simple)
 
-Add to `~/.hermes/config.yaml`:
+Add to `~/.lucifex/config.yaml`:
 
 ```yaml
 mcp_servers:

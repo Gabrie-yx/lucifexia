@@ -1,4 +1,4 @@
----
+﻿---
 title: Vision & Image Paste
 description: Paste images from your clipboard into the Hermes CLI for multimodal vision analysis.
 sidebar_label: Vision & Image Paste
@@ -23,7 +23,7 @@ Portal subscribers get vision-capable models (Claude, GPT-5, Gemini) in the same
 
 You can attach multiple images before sending — each gets its own badge. Press `Ctrl+C` to clear all attached images.
 
-Images are saved to `~/.hermes/images/` as PNG files with timestamped filenames.
+Images are saved to `~/.lucifex/images/` as PNG files with timestamped filenames.
 
 ## Paste Methods
 

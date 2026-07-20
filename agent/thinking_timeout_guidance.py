@@ -1,4 +1,4 @@
-"""Thinking-timeout detection and user-facing guidance for reasoning models.
+﻿"""Thinking-timeout detection and user-facing guidance for reasoning models.
 
 When a known reasoning model (NVIDIA Nemotron 3 Ultra, OpenAI o1/o3,
 Anthropic Opus 4.x thinking, DeepSeek R1, Qwen QwQ, xAI Grok reasoning)
@@ -12,7 +12,7 @@ distinct guidance for this case:
      issue with reasoning models behind cloud gateways (NVIDIA NIM,
      OpenAI, Anthropic, DeepSeek).  Workarounds in priority order:
      1. Set `providers.<provider>.models.<model>.stale_timeout_seconds: 900`
-        in `~/.hermes/config.yaml` to extend the per-call timeout...
+        in `~/.lucifex/config.yaml` to extend the per-call timeout...
      2. Lower `reasoning_budget` or set `reasoning_effort: medium`...
      3. Use a smaller / faster reasoning model..."
 
@@ -125,7 +125,7 @@ def build_thinking_timeout_guidance(
         "gateways (NVIDIA NIM, OpenAI, Anthropic, DeepSeek). Workarounds "
         "in priority order:\n"
         f"1. Set `providers.{provider}.models.{model}.stale_timeout_seconds: 900` "
-        "in `~/.hermes/config.yaml` to extend the per-call timeout. "
+        "in `~/.lucifex/config.yaml` to extend the per-call timeout. "
         "(Hermes's built-in floor is 600s for known reasoning models — "
         "if you still see this after raising, the upstream cap is even "
         "shorter.)\n"

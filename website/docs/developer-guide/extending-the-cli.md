@@ -1,4 +1,4 @@
----
+﻿---
 sidebar_position: 8
 title: "Extending the CLI"
 description: "Build wrapper CLIs that extend the Hermes TUI with custom widgets, keybindings, and layout changes"
@@ -76,7 +76,7 @@ if __name__ == "__main__":
 Run it:
 
 ```bash
-cd ~/.hermes/lucifex-agent
+cd ~/.lucifex/lucifex-agent
 source .venv/bin/activate
 python my_cli.py
 ```

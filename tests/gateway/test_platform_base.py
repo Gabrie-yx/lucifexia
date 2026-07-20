@@ -76,7 +76,7 @@ class TestSecretCaptureGuidance:
     def test_gateway_secret_capture_message_points_to_local_setup(self):
         message = GATEWAY_SECRET_CAPTURE_UNSUPPORTED_MESSAGE
         assert "local cli" in message.lower()
-        assert "~/.hermes/.env" in message
+        assert "~/.lucifex/.env" in message
 
 
 class TestSafeUrlForLog:
@@ -985,7 +985,7 @@ class TestMediaDeliveryPathValidation:
         """The motivating case: agent produces a PDF in a project directory.
 
         Reproduces the Discord-PDF-not-delivered bug. Before recency trust,
-        files outside ~/.hermes/cache/* were silently dropped, leaving the
+        files outside ~/.lucifex/cache/* were silently dropped, leaving the
         user with a raw filepath in chat instead of an attachment.
         """
         self._patch_roots(monkeypatch)
@@ -1095,7 +1095,7 @@ class TestMediaDeliveryDefaultMode:
         assert BasePlatformAdapter.validate_media_delivery_path(str(secret)) is None
 
     def test_denylist_blocks_hermes_credentials(self, tmp_path, monkeypatch):
-        """~/.hermes/.env and ~/.hermes/auth.json stay blocked even in
+        """~/.lucifex/.env and ~/.lucifex/auth.json stay blocked even in
         default mode. They live under $HOME (not the system prefix list)
         so this exercises the home-relative denied paths.
         """
@@ -1123,7 +1123,7 @@ class TestMediaDeliveryDefaultMode:
         ],
     )
     def test_denylist_blocks_mcp_oauth_tokens(self, tmp_path, monkeypatch, rel):
-        """Live MCP OAuth tokens/client creds under ~/.hermes/mcp-tokens/ must
+        """Live MCP OAuth tokens/client creds under ~/.lucifex/mcp-tokens/ must
         never deliver as native media — same exfil class as auth.json/.env.
         Sibling to the pairing/ directory denylist entry.
         """
@@ -1228,7 +1228,7 @@ class TestMediaDeliveryDefaultMode:
         assert BasePlatformAdapter.validate_media_delivery_path(str(token)) is None
 
     def test_denylist_blocks_pairing_directory_contents(self, tmp_path, monkeypatch):
-        """Files under ~/.hermes/pairing/ (platform pairing tokens) are
+        """Files under ~/.lucifex/pairing/ (platform pairing tokens) are
         credential material and must not be deliverable.
         """
         self._patch_roots(monkeypatch)
@@ -1373,7 +1373,7 @@ class TestMediaDeliveryDefaultMode:
         assert BasePlatformAdapter.validate_media_delivery_path(str(key)) is None
 
     def test_root_home_hermes_env_still_blocked(self, tmp_path, monkeypatch):
-        """``~/.hermes/.env`` stays blocked under the $HOME exception — it is a
+        """``~/.lucifex/.env`` stays blocked under the $HOME exception — it is a
         more-specific denied path, not reachable just because home is allowed.
         """
         self._patch_roots(monkeypatch)

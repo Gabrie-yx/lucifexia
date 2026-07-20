@@ -1,9 +1,9 @@
 ﻿"""Tests for credential_pool .env fallback and auth credential_pool lookup.
 
 Covers the fix from #15914 / PR #15920 and the rotation fix from #20591:
-- _seed_from_env reads API keys from ~/.hermes/.env when not in os.environ
+- _seed_from_env reads API keys from ~/.lucifex/.env when not in os.environ
 - _resolve_api_key_provider_secret falls back to credential_pool when env vars are empty
-- ~/.hermes/.env takes priority over os.environ for Hermes-managed credentials
+- ~/.lucifex/.env takes priority over os.environ for Hermes-managed credentials
   (so a deliberate rotation in .env wins over a stale shell export)
 - env / dotenv values take priority over credential pool (pool fires only when both are empty)
 """
@@ -53,13 +53,13 @@ def isolated_LUCIFEX_HOME(tmp_path, monkeypatch):
 
 
 def _write_env_file(home: Path, **kwargs) -> None:
-    """Write key=value pairs to ~/.hermes/.env."""
+    """Write key=value pairs to ~/.lucifex/.env."""
     lines = [f"{k}={v}" for k, v in kwargs.items()]
     (home / ".env").write_text("\n".join(lines) + "\n")
 
 
 class TestCredentialPoolSeedsFromDotEnv:
-    """_seed_from_env must read keys from ~/.hermes/.env, not just os.environ.
+    """_seed_from_env must read keys from ~/.lucifex/.env, not just os.environ.
 
     This is the load-bearing behaviour for the fix: when a user adds a key to
     .env mid-session or via a non-CLI entry point that doesn't run
@@ -108,7 +108,7 @@ class TestCredentialPoolSeedsFromDotEnv:
         assert entries == []
 
     def test_dotenv_wins_over_stale_os_environ(self, isolated_LUCIFEX_HOME, monkeypatch):
-        """Regression for #20591: a fresh key rotated into ~/.hermes/.env must
+        """Regression for #20591: a fresh key rotated into ~/.lucifex/.env must
         win over a stale value inherited from os.environ (parent shell export
         from Codex CLI, test runner, login profile, etc.). Without this, key
         rotation produces persistent 401s.
@@ -127,7 +127,7 @@ class TestCredentialPoolSeedsFromDotEnv:
 
 
 class TestAuthResolvesFromDotEnv:
-    """_resolve_api_key_provider_secret must also read from ~/.hermes/.env."""
+    """_resolve_api_key_provider_secret must also read from ~/.lucifex/.env."""
 
     def test_key_from_dotenv_only(self, isolated_LUCIFEX_HOME):
         """Key in .env but not os.environ → _resolve returns it with the env var source."""
@@ -145,7 +145,7 @@ class TestAuthResolvesFromDotEnv:
     def test_dotenv_wins_over_stale_os_environ_on_resolve(
         self, isolated_LUCIFEX_HOME, monkeypatch
     ):
-        """Regression for #20591: when both ~/.hermes/.env and os.environ define
+        """Regression for #20591: when both ~/.lucifex/.env and os.environ define
         the key, the .env value wins. Symmetric with the pool seeding rule —
         without this, the pool gets re-seeded with the fresh .env key while the
         live request path keeps returning the stale shell export, producing
@@ -166,7 +166,7 @@ class TestAuthResolvesFromDotEnv:
         self, isolated_LUCIFEX_HOME, monkeypatch
     ):
         """Regression for #20591 (sibling site): get_anthropic_key() must also
-        prefer ~/.hermes/.env over a stale shell export. This path resolves
+        prefer ~/.lucifex/.env over a stale shell export. This path resolves
         ANTHROPIC_API_KEY/ANTHROPIC_TOKEN/CLAUDE_CODE_OAUTH_TOKEN and had the
         identical os.environ-first rotation bug that the api-key resolution
         path did, just for Anthropic.

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """OpenClaw -> Hermes migration helper.
 
 This script migrates the parts of an OpenClaw user footprint that map cleanly
@@ -73,11 +73,11 @@ MIGRATION_OPTION_METADATA: Dict[str, Dict[str, str]] = {
     },
     "skills": {
         "label": "User skills",
-        "description": "Copy OpenClaw skills into ~/.hermes/skills/openclaw-imports/.",
+        "description": "Copy OpenClaw skills into ~/.lucifex/skills/openclaw-imports/.",
     },
     "tts-assets": {
         "label": "TTS assets",
-        "description": "Copy compatible workspace TTS assets into ~/.hermes/tts/.",
+        "description": "Copy compatible workspace TTS assets into ~/.lucifex/tts/.",
     },
     "discord-settings": {
         "label": "Discord settings",
@@ -416,8 +416,8 @@ def _case_preserving_replacement(replacement: str):
 
     Keeps ``OpenClaw`` → ``Hermes`` but maps ``openclaw`` → ``hermes`` so a
     filesystem path like ``~/.openclaw/config.yaml`` rewrites to
-    ``~/.hermes/config.yaml`` (the real Hermes home) instead of the broken
-    ``~/.Hermes/config.yaml``.
+    ``~/.lucifex/config.yaml`` (the real Hermes home) instead of the broken
+    ``~/.lucifex/config.yaml``.
     """
     def _sub(match: "re.Match[str]") -> str:
         matched = match.group(0)
@@ -1228,7 +1228,7 @@ class Migrator:
             self.record("command-allowlist", source, destination, "skipped", "No allowlist patterns found")
             return
         if not destination.exists():
-            self.record("command-allowlist", source, destination, "skipped", "Hermes config.yaml does not exist yet")
+            self.record("command-allowlist", source, destination, "skipped", "lucifex config.yaml does not exist yet")
             return
 
         config = load_yaml_file(destination)
@@ -2946,7 +2946,7 @@ class Migrator:
 
         notes.extend([
             "- Run `hermes gateway install` if you need the gateway service",
-            "- Review `~/.hermes/config.yaml` for any adjustments",
+            "- Review `~/.lucifex/config.yaml` for any adjustments",
             "",
         ])
 
@@ -3067,7 +3067,7 @@ def main() -> int:
             seen_kinds.add(label)
             dest = item.get("destination") or ""
             if dest.startswith(str(report["target_root"])):
-                dest = "~/.hermes/" + dest[len(str(report["target_root"])) + 1:]
+                dest = "~/.lucifex/" + dest[len(str(report["target_root"])) + 1:]
             meta = MIGRATION_OPTION_METADATA.get(label, {})
             display = meta.get("label", label)
             print(f"    ✔ {display:<35s} -> {dest}")
@@ -3113,7 +3113,7 @@ def main() -> int:
     if args.execute:
         print()
         print("  Next steps:")
-        print("    1. Review ~/.hermes/config.yaml")
+        print("    1. Review ~/.lucifex/config.yaml")
         print("    2. Run: hermes mcp list")
         if any(i["kind"] == "cron-jobs" and i["status"] == "archived" for i in items):
             print("    3. Recreate cron jobs: hermes cron")

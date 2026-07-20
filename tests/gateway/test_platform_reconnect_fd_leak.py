@@ -1,4 +1,4 @@
-"""Regression tests for the gateway platform fd-leak fix (#37011).
+﻿"""Regression tests for the gateway platform fd-leak fix (#37011).
 
 Without an explicit ``disconnect()`` on adapters that fail to connect in
 the reconnect watcher, every retry leaks the resources the adapter
@@ -307,7 +307,7 @@ class TestAPIServerDisconnectClosesResponseStore:
         We point the ``ResponseStore`` at a tmp db so we can verify
         its ``close()`` is called by ``APIServerAdapter.disconnect()``.
         The real ``ResponseStore.__init__`` opens a SQLite connection
-        to ``~/.hermes/response_store.db`` (or :memory: as a fallback),
+        to ``~/.lucifex/response_store.db`` (or :memory: as a fallback),
         which is exactly the resource that was leaking pre-fix.
         """
         import sqlite3

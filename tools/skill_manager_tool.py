@@ -1,10 +1,10 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Skill Manager Tool -- Agent-Managed Skill Creation & Editing
 
 Allows the agent to create, update, and delete skills, turning successful
 approaches into reusable procedural knowledge. New skills are created in
-~/.hermes/skills/. Existing skills (bundled, hub-installed, or user-created)
+~/.lucifex/skills/. Existing skills (bundled, hub-installed, or user-created)
 can be modified or deleted wherever they live.
 
 Skills are the agent's procedural memory: they capture *how to do a specific
@@ -20,7 +20,7 @@ Actions:
   remove_file-- Remove a supporting file from a user skill
 
 Directory layout for user skills:
-    ~/.hermes/skills/
+    ~/.lucifex/skills/
     ├── my-skill/
     │   ├── SKILL.md
     │   ├── references/
@@ -105,7 +105,7 @@ def _guard_agent_created_enabled() -> bool:
     Off by default because the agent can already execute the same code
     paths via terminal() with no gate, so the scan adds friction without
     meaningful security.  Users who want belt-and-suspenders can turn it
-    on via `hermes config set skills.guard_agent_created true`.
+    on via `lucifex config set skills.guard_agent_created true`.
     """
     try:
         from lucifex_cli.config import load_config
@@ -147,7 +147,7 @@ def _security_scan_skill(skill_dir: Path) -> Optional[str]:
 import yaml
 
 
-# All skills live in ~/.hermes/skills/ (single source of truth)
+# All skills live in ~/.lucifex/skills/ (single source of truth)
 LUCIFEX_HOME = get_lucifex_home()
 SKILLS_DIR = LUCIFEX_HOME / "skills"
 _SKILLS_DIR_AT_IMPORT = SKILLS_DIR
@@ -606,7 +606,7 @@ def _find_skill(name: str) -> Optional[Dict[str, Any]]:
     """
     Find a skill by name across all skill directories.
 
-    Searches the local skills dir (~/.hermes/skills/) first, then any
+    Searches the local skills dir (~/.lucifex/skills/) first, then any
     external dirs configured via skills.external_dirs.  Returns
     {"path": Path} or None.
     """
@@ -649,7 +649,7 @@ def _find_skill_in_other_profiles(name: str) -> List[Tuple[str, Path]]:
     active_dir = _active.resolve() if _active.exists() else _active
     candidates: List[Tuple[str, Path]] = []
 
-    # Default profile (~/.hermes/skills) — only consider when active is non-default.
+    # Default profile (~/.lucifex/skills) — only consider when active is non-default.
     default_skills = root / "skills"
     try:
         if default_skills.resolve() != active_dir:
@@ -657,7 +657,7 @@ def _find_skill_in_other_profiles(name: str) -> List[Tuple[str, Path]]:
     except (OSError, RuntimeError):
         pass
 
-    # All named profiles (~/.hermes/profiles/*/skills)
+    # All named profiles (~/.lucifex/profiles/*/skills)
     profiles_root = root / "profiles"
     if profiles_root.is_dir():
         try:
@@ -1107,7 +1107,7 @@ def _delete_skill(name: str, absorbed_into: Optional[str] = None) -> Dict[str, A
         return {"success": False, "error": unsafe}
 
     # During the curator consolidation pass, a verified consolidation must be
-    # RECOVERABLE: archival into ~/.hermes/skills/.archive/ is documented as
+    # RECOVERABLE: archival into ~/.lucifex/skills/.archive/ is documented as
     # the maximum destructive action the curator may take, and
     # `hermes curator restore` promises the skill can be brought back. Route
     # through the recoverable archive primitive instead of permanent rmtree so

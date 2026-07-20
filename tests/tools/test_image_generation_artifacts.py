@@ -75,7 +75,7 @@ def test_postprocess_maps_ssh_cache_path_without_active_env(monkeypatch, tmp_pat
     result = json.loads(image_generation_tool._postprocess_image_generate_result(raw))
 
     assert result["image"] == str(image_path)
-    assert result["agent_visible_image"] == "~/.hermes/cache/images/first-call.png"
+    assert result["agent_visible_image"] == "~/.lucifex/cache/images/first-call.png"
 
 
 def test_postprocess_leaves_remote_image_urls_unchanged(monkeypatch):
