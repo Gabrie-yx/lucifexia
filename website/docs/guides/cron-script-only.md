@@ -8,7 +8,7 @@ description: "Classic watchdog cron jobs that skip the LLM entirely — a script
 
 Sometimes you already know exactly what message you want to send. You don't need an agent to reason about it — you just need a script to run on a timer, and its output (if any) to land in Telegram / Discord / Slack / Signal.
 
-lucifexex calls this **no-agent mode**. It's the cron system minus the LLM.
+lucifex calls this **no-agent mode**. It's the cron system minus the LLM.
 
 <!-- ascii-guard-ignore -->
 ```
@@ -45,13 +45,13 @@ Use a normal (LLM-driven) cron job when you need the agent to **decide** what to
 
 ## Create One from Chat
 
-The real win of no-agent mode is that the agent itself can set up the watchdog for you — no editor, no shell, no remembering CLI flags. You describe what you want, lucifexex writes the script, schedules it, and tells you when it'll fire.
+The real win of no-agent mode is that the agent itself can set up the watchdog for you — no editor, no shell, no remembering CLI flags. You describe what you want, lucifex writes the script, schedules it, and tells you when it'll fire.
 
 ### Example transcript
 
 > **You:** ping me on telegram if RAM is over 85% every 5 minutes
 >
-> **lucifexex:** *(writes `~/.lucifex/scripts/memory-watchdog.sh`, then calls `cronjob(...)` with `no_agent=true`)*
+> **lucifex:** *(writes `~/.lucifex/scripts/memory-watchdog.sh`, then calls `cronjob(...)` with `no_agent=true`)*
 >
 > Set up. Runs every 5 min, alerts Telegram only when RAM is over 85%. Script: `memory-watchdog.sh`. Job ID: `abc123`.
 
@@ -85,7 +85,7 @@ From that point on every tick is free: the scheduler runs the script, pipes its 
 
 ### What the agent decides for you
 
-When you phrase a request like "alert me when X" or "every N minutes check Y and tell me if Z", lucifexex' `cronjob` tool description tells it to reach for `no_agent=True` whenever the message content is fully determined by the script. It falls back to the normal LLM-driven path when the request needs reasoning (*"summarize the new issues"*, *"pick the most interesting headlines"*, *"draft a friendly reminder"*).
+When you phrase a request like "alert me when X" or "every N minutes check Y and tell me if Z", lucifex' `cronjob` tool description tells it to reach for `no_agent=True` whenever the message content is fully determined by the script. It falls back to the normal LLM-driven path when the request needs reasoning (*"summarize the new issues"*, *"pick the most interesting headlines"*, *"draft a friendly reminder"*).
 
 You don't have to specify `--no-agent` yourself. Just describe the behavior.
 
@@ -95,13 +95,13 @@ The agent can pause, resume, edit, and remove jobs the same way it creates them:
 
 > **You:** stop the memory watchdog for tonight
 >
-> **lucifexex:** *(calls `cronjob(action='pause', job_id='abc123')`)*
+> **lucifex:** *(calls `cronjob(action='pause', job_id='abc123')`)*
 >
-> Paused. Resume with "turn it back on" or via `lucifexex cron resume abc123`.
+> Paused. Resume with "turn it back on" or via `lucifex cron resume abc123`.
 
 > **You:** change it to every 15 minutes
 >
-> **lucifexex:** *(calls `cronjob(action='update', job_id='abc123', schedule='every 15m')`)*
+> **lucifex:** *(calls `cronjob(action='update', job_id='abc123', schedule='every 15m')`)*
 
 The full lifecycle (create / list / update / pause / resume / run-now / remove) is available to the agent without you learning any CLI commands.
 
@@ -123,15 +123,15 @@ EOF
 chmod +x ~/.lucifex/scripts/memory-watchdog.sh
 
 # 2. Schedule it
-lucifexex cron create "every 5m" \
+lucifex cron create "every 5m" \
   --no-agent \
   --script memory-watchdog.sh \
   --deliver telegram \
   --name "memory-watchdog"
 
 # 3. Verify
-lucifexex cron list
-lucifexex cron run <job_id>    # fire it once to test
+lucifex cron list
+lucifex cron run <job_id>    # fire it once to test
 ```
 
 That's the whole thing. No prompt, no skill, no model.
@@ -167,10 +167,10 @@ We intentionally do NOT honour `#!/...` shebangs — keeping the interpreter set
 Same as all other cron jobs:
 
 ```bash
-lucifexex cron create "every 5m"        # interval
-lucifexex cron create "every 2h"
-lucifexex cron create "0 9 * * *"       # standard cron: 9am daily
-lucifexex cron create "30m"             # one-shot: run once in 30 minutes
+lucifex cron create "every 5m"        # interval
+lucifex cron create "every 2h"
+lucifex cron create "0 9 * * *"       # standard cron: 9am daily
+lucifex cron create "30m"             # one-shot: run once in 30 minutes
 ```
 
 See the [cron feature reference](/user-guide/features/cron) for the full syntax.
@@ -194,13 +194,13 @@ No running gateway is required at script-run time for bot-token platforms (Teleg
 ## Editing and Lifecycle
 
 ```bash
-lucifexex cron list                                    # see all jobs
-lucifexex cron pause <job_id>                          # stop firing, keep definition
-lucifexex cron resume <job_id>
-lucifexex cron edit <job_id> --schedule "every 10m"    # adjust cadence
-lucifexex cron edit <job_id> --agent                   # flip to LLM mode
-lucifexex cron edit <job_id> --no-agent --script …     # flip back
-lucifexex cron remove <job_id>                         # delete it
+lucifex cron list                                    # see all jobs
+lucifex cron pause <job_id>                          # stop firing, keep definition
+lucifex cron resume <job_id>
+lucifex cron edit <job_id> --schedule "every 10m"    # adjust cadence
+lucifex cron edit <job_id> --agent                   # flip to LLM mode
+lucifex cron edit <job_id> --no-agent --script …     # flip back
+lucifex cron remove <job_id>                         # delete it
 ```
 
 Everything that works on LLM jobs (pause, resume, manual trigger, delivery target changes) works on no-agent jobs too.
@@ -220,7 +220,7 @@ df -h / /home 2>/dev/null | awk -v t="$THRESHOLD" '
 EOF
 chmod +x ~/.lucifex/scripts/disk-alert.sh
 
-lucifexex cron create "*/15 * * * *" \
+lucifex cron create "*/15 * * * *" \
   --no-agent \
   --script disk-alert.sh \
   --deliver telegram \
@@ -233,11 +233,11 @@ Silent when both filesystems are under 90%; fires exactly one line per over-thre
 
 | Approach | What runs | When to use |
 |----------|-----------|-------------|
-| `cronjob --no-agent` (this page) | Your script on lucifexex' schedule | Recurring watchdogs / alerts / metrics that don't need reasoning |
+| `cronjob --no-agent` (this page) | Your script on lucifex' schedule | Recurring watchdogs / alerts / metrics that don't need reasoning |
 | `cronjob` (default, LLM) | Agent with optional pre-check script | When the message content requires reasoning over data |
-| OS cron + `curl` to a [webhook subscription](/user-guide/messaging/webhooks) | Your script on the OS schedule | When lucifexex might be unhealthy (the thing you're monitoring) |
+| OS cron + `curl` to a [webhook subscription](/user-guide/messaging/webhooks) | Your script on the OS schedule | When lucifex might be unhealthy (the thing you're monitoring) |
 
-For critical system-health watchdogs that must fire *even when the gateway is down*, use OS-level cron with a plain `curl` to a lucifexex webhook subscription (or any external alerting endpoint) — those run as independent OS processes and don't depend olucifexifex being up. The in-gateway scheduler is the right choice when the thing being monitored is external.
+For critical system-health watchdogs that must fire *even when the gateway is down*, use OS-level cron with a plain `curl` to a lucifex webhook subscription (or any external alerting endpoint) — those run as independent OS processes and don't depend olucifexifex being up. The in-gateway scheduler is the right choice when the thing being monitored is external.
 
 ## Related
 

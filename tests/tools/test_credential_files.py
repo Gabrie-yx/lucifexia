@@ -32,7 +32,7 @@ def _clean_state():
 
 class TestRegisterCredentialFiles:
     def test_dict_with_path_key(self, tmp_path):
-        LUCIFEX_HOME = tmp_path / ".lucifexex"
+        LUCIFEX_HOME = tmp_path / ".lucifex"
         LUCIFEX_HOME.mkdir()
         (LUCIFEX_HOME / "token.json").write_text("{}")
 
@@ -43,11 +43,11 @@ class TestRegisterCredentialFiles:
         mounts = get_credential_file_mounts()
         assert len(mounts) == 1
         assert mounts[0]["host_path"] == str(LUCIFEX_HOME / "token.json")
-        assert mounts[0]["container_path"] == "/root/.lucifexex/token.json"
+        assert mounts[0]["container_path"] == "/root/.lucifex/token.json"
 
     def test_dict_with_name_key_fallback(self, tmp_path):
         """Skills use 'name' instead of 'path' — both should work."""
-        LUCIFEX_HOME = tmp_path / ".lucifexex"
+        LUCIFEX_HOME = tmp_path / ".lucifex"
         LUCIFEX_HOME.mkdir()
         (LUCIFEX_HOME / "google_token.json").write_text("{}")
 
@@ -62,7 +62,7 @@ class TestRegisterCredentialFiles:
         assert "google_token.json" in mounts[0]["container_path"]
 
     def test_string_entry(self, tmp_path):
-        LUCIFEX_HOME = tmp_path / ".lucifexex"
+        LUCIFEX_HOME = tmp_path / ".lucifex"
         LUCIFEX_HOME.mkdir()
         (LUCIFEX_HOME / "secret.key").write_text("key")
 
@@ -74,7 +74,7 @@ class TestRegisterCredentialFiles:
         assert len(mounts) == 1
 
     def test_missing_file_reported(self, tmp_path):
-        LUCIFEX_HOME = tmp_path / ".lucifexex"
+        LUCIFEX_HOME = tmp_path / ".lucifex"
         LUCIFEX_HOME.mkdir()
 
         with patch.dict(os.environ, {"LUCIFEX_HOME": str(LUCIFEX_HOME)}):
@@ -87,7 +87,7 @@ class TestRegisterCredentialFiles:
 
     def test_path_takes_precedence_over_name(self, tmp_path):
         """When both path and name are present, path wins."""
-        LUCIFEX_HOME = tmp_path / ".lucifexex"
+        LUCIFEX_HOME = tmp_path / ".lucifex"
         LUCIFEX_HOME.mkdir()
         (LUCIFEX_HOME / "real.json").write_text("{}")
 
@@ -103,7 +103,7 @@ class TestRegisterCredentialFiles:
 
 class TestSkillsDirectoryMount:
     def test_returns_mount_when_skills_dir_exists(self, tmp_path):
-        LUCIFEX_HOME = tmp_path / ".lucifexex"
+        LUCIFEX_HOME = tmp_path / ".lucifex"
         skills_dir = LUCIFEX_HOME / "skills"
         skills_dir.mkdir(parents=True)
         (skills_dir / "test-skill").mkdir()
@@ -114,10 +114,10 @@ class TestSkillsDirectoryMount:
 
         assert len(mounts) >= 1
         assert mounts[0]["host_path"] == str(skills_dir)
-        assert mounts[0]["container_path"] == "/root/.lucifexex/skills"
+        assert mounts[0]["container_path"] == "/root/.lucifex/skills"
 
     def test_returns_none_when_no_skills_dir(self, tmp_path):
-        LUCIFEX_HOME = tmp_path / ".lucifexex"
+        LUCIFEX_HOME = tmp_path / ".lucifex"
         LUCIFEX_HOME.mkdir()
 
         with patch.dict(os.environ, {"LUCIFEX_HOME": str(LUCIFEX_HOME)}):
@@ -128,17 +128,17 @@ class TestSkillsDirectoryMount:
         assert local_mounts == []
 
     def test_custom_container_base(self, tmp_path):
-        LUCIFEX_HOME = tmp_path / ".lucifexex"
+        LUCIFEX_HOME = tmp_path / ".lucifex"
         (LUCIFEX_HOME / "skills").mkdir(parents=True)
 
         with patch.dict(os.environ, {"LUCIFEX_HOME": str(LUCIFEX_HOME)}):
-            mounts = get_skills_directory_mount(container_base="/home/user/.lucifexex")
+            mounts = get_skills_directory_mount(container_base="/home/user/.lucifex")
 
-        assert mounts[0]["container_path"] == "/home/user/.lucifexex/skills"
+        assert mounts[0]["container_path"] == "/home/user/.lucifex/skills"
 
     def test_symlinks_are_sanitized(self, tmp_path):
         """Symlinks in skills dir should be excluded from the mount."""
-        LUCIFEX_HOME = tmp_path / ".lucifexex"
+        LUCIFEX_HOME = tmp_path / ".lucifex"
         skills_dir = LUCIFEX_HOME / "skills"
         skills_dir.mkdir(parents=True)
         (skills_dir / "legit.md").write_text("# real skill")
@@ -163,7 +163,7 @@ class TestSkillsDirectoryMount:
 
     def test_no_symlinks_returns_original_dir(self, tmp_path):
         """When no symlinks exist, the original dir is returned (no copy)."""
-        LUCIFEX_HOME = tmp_path / ".lucifexex"
+        LUCIFEX_HOME = tmp_path / ".lucifex"
         skills_dir = LUCIFEX_HOME / "skills"
         skills_dir.mkdir(parents=True)
         (skills_dir / "skill.md").write_text("ok")
@@ -176,7 +176,7 @@ class TestSkillsDirectoryMount:
 
 class TestIterSkillsFiles:
     def test_returns_files_skipping_symlinks(self, tmp_path):
-        LUCIFEX_HOME = tmp_path / ".lucifexex"
+        LUCIFEX_HOME = tmp_path / ".lucifex"
         skills_dir = LUCIFEX_HOME / "skills"
         (skills_dir / "cat" / "myskill").mkdir(parents=True)
         (skills_dir / "cat" / "myskill" / "SKILL.md").write_text("# skill")
@@ -191,13 +191,13 @@ class TestIterSkillsFiles:
             files = iter_skills_files()
 
         paths = {f["container_path"] for f in files}
-        assert "/root/.lucifexex/skills/cat/myskill/SKILL.md" in paths
-        assert "/root/.lucifexex/skills/cat/myskill/scripts/run.sh" in paths
+        assert "/root/.lucifex/skills/cat/myskill/SKILL.md" in paths
+        assert "/root/.lucifex/skills/cat/myskill/scripts/run.sh" in paths
         # Symlink should be excluded
         assert not any("evil" in f["container_path"] for f in files)
 
     def test_empty_when_no_skills_dir(self, tmp_path):
-        LUCIFEX_HOME = tmp_path / ".lucifexex"
+        LUCIFEX_HOME = tmp_path / ".lucifex"
         LUCIFEX_HOME.mkdir()
 
         with patch.dict(os.environ, {"LUCIFEX_HOME": str(LUCIFEX_HOME)}):
@@ -217,8 +217,8 @@ class TestPathTraversalSecurity:
 
     def test_dotdot_traversal_rejected(self, tmp_path, monkeypatch):
         """'../sensitive' must not escape LUCIFEX_HOME."""
-        monkeypatch.setenv("LUCIFEX_HOME", str(tmp_path / ".lucifexex"))
-        (tmp_path / ".lucifexex").mkdir()
+        monkeypatch.setenv("LUCIFEX_HOME", str(tmp_path / ".lucifex"))
+        (tmp_path / ".lucifex").mkdir()
 
         # Create a sensitive file one level above LUCIFEX_HOME
         sensitive = tmp_path / "sensitive.json"
@@ -231,7 +231,7 @@ class TestPathTraversalSecurity:
 
     def test_deep_traversal_rejected(self, tmp_path, monkeypatch):
         """'../../etc/passwd' style traversal must be rejected."""
-        LUCIFEX_HOME = tmp_path / ".lucifexex"
+        LUCIFEX_HOME = tmp_path / ".lucifex"
         LUCIFEX_HOME.mkdir()
         monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
 
@@ -247,7 +247,7 @@ class TestPathTraversalSecurity:
 
     def test_absolute_path_rejected(self, tmp_path, monkeypatch):
         """Absolute paths must be rejected regardless of whether they exist."""
-        LUCIFEX_HOME = tmp_path / ".lucifexex"
+        LUCIFEX_HOME = tmp_path / ".lucifex"
         LUCIFEX_HOME.mkdir()
         monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
 
@@ -262,7 +262,7 @@ class TestPathTraversalSecurity:
 
     def test_legitimate_file_still_works(self, tmp_path, monkeypatch):
         """Normal files inside LUCIFEX_HOME must still be registered."""
-        LUCIFEX_HOME = tmp_path / ".lucifexex"
+        LUCIFEX_HOME = tmp_path / ".lucifex"
         LUCIFEX_HOME.mkdir()
         monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
         (LUCIFEX_HOME / "token.json").write_text('{"token": "abc"}')
@@ -276,7 +276,7 @@ class TestPathTraversalSecurity:
 
     def test_nested_subdir_inside_LUCIFEX_HOME_allowed(self, tmp_path, monkeypatch):
         """Files in subdirectories of LUCIFEX_HOME must be allowed."""
-        LUCIFEX_HOME = tmp_path / ".lucifexex"
+        LUCIFEX_HOME = tmp_path / ".lucifex"
         LUCIFEX_HOME.mkdir()
         subdir = LUCIFEX_HOME / "creds"
         subdir.mkdir()
@@ -289,7 +289,7 @@ class TestPathTraversalSecurity:
 
     def test_symlink_traversal_rejected(self, tmp_path, monkeypatch):
         """A symlink inside LUCIFEX_HOME pointing outside must be rejected."""
-        LUCIFEX_HOME = tmp_path / ".lucifexex"
+        LUCIFEX_HOME = tmp_path / ".lucifex"
         LUCIFEX_HOME.mkdir()
         monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
 
@@ -325,7 +325,7 @@ class TestConfigPathTraversal:
 
     def test_config_traversal_rejected(self, tmp_path, monkeypatch):
         """'../secret' in config.yaml must not escape LUCIFEX_HOME."""
-        LUCIFEX_HOME = tmp_path / ".lucifexex"
+        LUCIFEX_HOME = tmp_path / ".lucifex"
         LUCIFEX_HOME.mkdir()
         monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
 
@@ -340,7 +340,7 @@ class TestConfigPathTraversal:
 
     def test_config_absolute_path_rejected(self, tmp_path, monkeypatch):
         """Absolute paths in config.yaml must be rejected."""
-        LUCIFEX_HOME = tmp_path / ".lucifexex"
+        LUCIFEX_HOME = tmp_path / ".lucifex"
         LUCIFEX_HOME.mkdir()
         monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
 
@@ -353,7 +353,7 @@ class TestConfigPathTraversal:
 
     def test_config_legitimate_file_works(self, tmp_path, monkeypatch):
         """Normal files inside LUCIFEX_HOME via config must still mount."""
-        LUCIFEX_HOME = tmp_path / ".lucifexex"
+        LUCIFEX_HOME = tmp_path / ".lucifex"
         LUCIFEX_HOME.mkdir()
         monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
 
@@ -374,7 +374,7 @@ class TestCacheDirectoryMounts:
 
     def test_returns_existing_cache_dirs(self, tmp_path, monkeypatch):
         """Existing cache dirs are returned with correct container paths."""
-        LUCIFEX_HOME = tmp_path / ".lucifexex"
+        LUCIFEX_HOME = tmp_path / ".lucifex"
         LUCIFEX_HOME.mkdir()
         (LUCIFEX_HOME / "cache" / "documents").mkdir(parents=True)
         (LUCIFEX_HOME / "cache" / "audio").mkdir(parents=True)
@@ -383,13 +383,13 @@ class TestCacheDirectoryMounts:
 
         mounts = get_cache_directory_mounts()
         paths = {m["container_path"] for m in mounts}
-        assert "/root/.lucifexex/cache/documents" in paths
-        assert "/root/.lucifexex/cache/audio" in paths
-        assert "/root/.lucifexex/cache/videos" in paths
+        assert "/root/.lucifex/cache/documents" in paths
+        assert "/root/.lucifex/cache/audio" in paths
+        assert "/root/.lucifex/cache/videos" in paths
 
     def test_skips_nonexistent_dirs(self, tmp_path, monkeypatch):
         """Dirs that don't exist on disk are not returned."""
-        LUCIFEX_HOME = tmp_path / ".lucifexex"
+        LUCIFEX_HOME = tmp_path / ".lucifex"
         LUCIFEX_HOME.mkdir()
         # Create only one cache dir
         (LUCIFEX_HOME / "cache" / "documents").mkdir(parents=True)
@@ -397,18 +397,18 @@ class TestCacheDirectoryMounts:
 
         mounts = get_cache_directory_mounts()
         assert len(mounts) == 1
-        assert mounts[0]["container_path"] == "/root/.lucifexex/cache/documents"
+        assert mounts[0]["container_path"] == "/root/.lucifex/cache/documents"
 
     def test_legacy_dir_names_resolved(self, tmp_path, monkeypatch):
         """Old-style dir names (e.g. document_cache) are resolved correctly.
 
         Populates the legacy dirs with a sentinel file so they count as
-        ``has content`` for ``get_lucifexex_dir``'s populated-legacy check
+        ``has content`` for ``get_lucifex_dir``'s populated-legacy check
         (see #27602 — empty legacy stubs are no longer honoured).
         """
-        LUCIFEX_HOME = tmp_path / ".lucifexex"
+        LUCIFEX_HOME = tmp_path / ".lucifex"
         LUCIFEX_HOME.mkdir()
-        # Use legacy dir name with content — get_lucifexex_dir prefers
+        # Use legacy dir name with content — get_lucifex_dir prefers
         # populated old over new.
         legacy_doc = LUCIFEX_HOME / "document_cache"
         legacy_img = LUCIFEX_HOME / "image_cache"
@@ -424,12 +424,12 @@ class TestCacheDirectoryMounts:
         assert str(LUCIFEX_HOME / "image_cache") in host_paths
         # Container paths always use the new layout
         container_paths = {m["container_path"] for m in mounts}
-        assert "/root/.lucifexex/cache/documents" in container_paths
-        assert "/root/.lucifexex/cache/images" in container_paths
+        assert "/root/.lucifex/cache/documents" in container_paths
+        assert "/root/.lucifex/cache/images" in container_paths
 
     def test_empty_LUCIFEX_HOME(self, tmp_path, monkeypatch):
         """No cache dirs → empty list."""
-        LUCIFEX_HOME = tmp_path / ".lucifexex"
+        LUCIFEX_HOME = tmp_path / ".lucifex"
         LUCIFEX_HOME.mkdir()
         monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
 
@@ -440,7 +440,7 @@ class TestMapCachePathToContainer:
     """Tests for map_cache_path_to_container() — the backend-agnostic mapper."""
 
     def test_maps_path_under_cache_dir(self, tmp_path, monkeypatch):
-        LUCIFEX_HOME = tmp_path / ".lucifexex"
+        LUCIFEX_HOME = tmp_path / ".lucifex"
         img_dir = LUCIFEX_HOME / "cache" / "images"
         img_dir.mkdir(parents=True)
         host_path = str(img_dir / "generated.png")
@@ -448,30 +448,30 @@ class TestMapCachePathToContainer:
 
         assert (
             map_cache_path_to_container(host_path)
-            == "/root/.lucifexex/cache/images/generated.png"
+            == "/root/.lucifex/cache/images/generated.png"
         )
 
     def test_custom_container_base_for_remote_home(self, tmp_path, monkeypatch):
-        LUCIFEX_HOME = tmp_path / ".lucifexex"
+        LUCIFEX_HOME = tmp_path / ".lucifex"
         img_dir = LUCIFEX_HOME / "cache" / "images"
         img_dir.mkdir(parents=True)
         host_path = str(img_dir / "remote.png")
         monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
 
         assert (
-            map_cache_path_to_container(host_path, container_base="/home/agent/.lucifexex")
-            == "/home/agent/.lucifexex/cache/images/remote.png"
+            map_cache_path_to_container(host_path, container_base="/home/agent/.lucifex")
+            == "/home/agent/.lucifex/cache/images/remote.png"
         )
 
     def test_returns_none_when_outside_cache_dirs(self, tmp_path, monkeypatch):
-        LUCIFEX_HOME = tmp_path / ".lucifexex"
+        LUCIFEX_HOME = tmp_path / ".lucifex"
         (LUCIFEX_HOME / "cache" / "images").mkdir(parents=True)
         monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
 
         assert map_cache_path_to_container(str(tmp_path / "elsewhere.png")) is None
 
     def test_returns_none_when_no_cache_dirs_exist(self, tmp_path, monkeypatch):
-        LUCIFEX_HOME = tmp_path / ".lucifexex"
+        LUCIFEX_HOME = tmp_path / ".lucifex"
         LUCIFEX_HOME.mkdir()
         monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
 
@@ -483,7 +483,7 @@ class TestIterCacheFiles:
 
     def test_enumerates_files(self, tmp_path, monkeypatch):
         """Regular files in cache dirs are returned."""
-        LUCIFEX_HOME = tmp_path / ".lucifexex"
+        LUCIFEX_HOME = tmp_path / ".lucifex"
         doc_dir = LUCIFEX_HOME / "cache" / "documents"
         doc_dir.mkdir(parents=True)
         (doc_dir / "upload.zip").write_bytes(b"PK\x03\x04")
@@ -497,7 +497,7 @@ class TestIterCacheFiles:
 
     def test_skips_symlinks(self, tmp_path, monkeypatch):
         """Symlinks inside cache dirs are skipped."""
-        LUCIFEX_HOME = tmp_path / ".lucifexex"
+        LUCIFEX_HOME = tmp_path / ".lucifex"
         doc_dir = LUCIFEX_HOME / "cache" / "documents"
         doc_dir.mkdir(parents=True)
         real_file = doc_dir / "real.txt"
@@ -512,7 +512,7 @@ class TestIterCacheFiles:
 
     def test_nested_files(self, tmp_path, monkeypatch):
         """Files in subdirectories are included with correct relative paths."""
-        LUCIFEX_HOME = tmp_path / ".lucifexex"
+        LUCIFEX_HOME = tmp_path / ".lucifex"
         ss_dir = LUCIFEX_HOME / "cache" / "screenshots"
         sub = ss_dir / "session_abc"
         sub.mkdir(parents=True)
@@ -521,11 +521,11 @@ class TestIterCacheFiles:
 
         entries = iter_cache_files()
         assert len(entries) == 1
-        assert entries[0]["container_path"] == "/root/.lucifexex/cache/screenshots/session_abc/screen1.png"
+        assert entries[0]["container_path"] == "/root/.lucifex/cache/screenshots/session_abc/screen1.png"
 
     def test_empty_cache(self, tmp_path, monkeypatch):
         """No cache dirs → empty list."""
-        LUCIFEX_HOME = tmp_path / ".lucifexex"
+        LUCIFEX_HOME = tmp_path / ".lucifex"
         LUCIFEX_HOME.mkdir()
         monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
 
@@ -550,7 +550,7 @@ class TestMasterCredentialStoresAreNeverMountable:
 
     @staticmethod
     def _home(tmp_path):
-        home = tmp_path / ".lucifexex"
+        home = tmp_path / ".lucifex"
         home.mkdir()
         (home / ".env").write_text("OPENAI_API_KEY=sk-proj-REAL\n")
         (home / "auth.json").write_text('{"providers":{}}')
@@ -589,7 +589,7 @@ class TestMasterCredentialStoresAreNeverMountable:
             assert register_credential_file("google_token.json") is True
             mounts = get_credential_file_mounts()
         assert [m["container_path"] for m in mounts] == [
-            "/root/.lucifexex/google_token.json"
+            "/root/.lucifex/google_token.json"
         ]
 
     def test_refused_entry_does_not_block_the_rest_of_the_batch(self, tmp_path):
@@ -599,8 +599,8 @@ class TestMasterCredentialStoresAreNeverMountable:
             mounts = get_credential_file_mounts()
 
         paths = [m["container_path"] for m in mounts]
-        assert "/root/.lucifexex/google_token.json" in paths
-        assert "/root/.lucifexex/.env" not in paths
+        assert "/root/.lucifex/google_token.json" in paths
+        assert "/root/.lucifex/.env" not in paths
         assert ".env" in missing, "a refused store is reported back to the skill"
 
     def test_traversal_guard_still_applies(self, tmp_path):

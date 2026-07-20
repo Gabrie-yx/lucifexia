@@ -1,12 +1,12 @@
 ﻿---
 sidebar_position: 16
 title: "Yuanbao"
-description: "Connect lucifexex Agent to the Yuanbao enterprise messaging platform via WebSocket gateway"
+description: "Connect lucifex Agent to the Yuanbao enterprise messaging platform via WebSocket gateway"
 ---
 
 # Yuanbao
 
-Connect lucifexex to [Yuanbao](https://yuanbao.tencent.com/), Tencent's enterprise messaging platform. The adapter uses a WebSocket gateway for real-time message delivery and supports both direct (C2C) and group conversations.
+Connect lucifex to [Yuanbao](https://yuanbao.tencent.com/), Tencent's enterprise messaging platform. The adapter uses a WebSocket gateway for real-time message delivery and supports both direct (C2C) and group conversations.
 
 :::info
 Yuanbao is an enterprise messaging platform primarily used within Tencent and enterprise environments. It uses WebSocket for real-time communication, HMAC-based authentication, and supports rich media including images, files, and voice messages.
@@ -38,7 +38,7 @@ pip install websockets httpx aiofiles
 The easiest way to configure Yuanbao is through the interactive setup:
 
 ```bash
-lucifexex gateway setup
+lucifex gateway setup
 ```
 
 Select **Yuanbao** when prompted. The wizard will:
@@ -79,7 +79,7 @@ YUANBAO_ALLOWED_USERS=user_account_1,user_account_2
 ### 4. Start the Gateway
 
 ```bash
-lucifexex gateway
+lucifex gateway
 ```
 
 The adapter will connect to the Yuanbao WebSocket gateway, authenticate using HMAC signatures, and begin processing messages.
@@ -170,7 +170,7 @@ The bot responds in the same conversation thread.
 
 ### Available Commands
 
-All standard lucifexex commands work on Yuanbao:
+All standard lucifex commands work on Yuanbao:
 
 | Command | Description |
 |---------|-------------|
@@ -244,7 +244,7 @@ When you ask the bot to create or export a file, it sends the file directly to y
 1. Check gateway logs for error patterns
 2. Increase heartbeat timeout in connection settings
 3. Ensure stable network connection to Yuanbao API
-4. Consider enabling verbose logging: `lucifexex_LOG_LEVEL=debug`
+4. Consider enabling verbose logging: `lucifex_LOG_LEVEL=debug`
 
 ## Access Control
 
@@ -278,7 +278,7 @@ platforms:
 
 ### Message Chunking
 
-Yuanbao has a maximum message size. lucifexex automatically chunks large responses with Markdown-aware splitting (respects code fences, tables, and paragraph boundaries).
+Yuanbao has a maximum message size. lucifex automatically chunks large responses with Markdown-aware splitting (respects code fences, tables, and paragraph boundaries).
 
 ### Connection Parameters
 
@@ -302,7 +302,7 @@ These values are currently not configurable via environment variables. They are 
 Enable debug logging to troubleshoot connection issues:
 
 ```bash
-lucifexex_LOG_LEVEL=debulucifexifex gateway
+lucifex_LOG_LEVEL=debulucifexifex gateway
 ```
 
 ## Integration with Other Features
@@ -330,7 +330,7 @@ Run long operations without blocking the conversation:
 Send a message from CLI to Yuanbao:
 
 ```bash
-lucifexex chat -q "Send 'Hello from CLI' to yuanbao:group:group_code"
+lucifex chat -q "Send 'Hello from CLI' to yuanbao:group:group_code"
 ```
 
 ## Related Documentation

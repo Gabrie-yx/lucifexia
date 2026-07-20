@@ -1,13 +1,13 @@
 ﻿---
 title: Home Assistant
-description: 通过 Home Assistant 集成，使用 lucifexex Agent 控制您的智能家居。
+description: 通过 Home Assistant 集成，使用 lucifex Agent 控制您的智能家居。
 sidebar_label: Home Assistant
 sidebar_position: 5
 ---
 
 # Home Assistant 集成
 
-lucifexex Agent 通过以下两种方式与 [Home Assistant](https://www.home-assistant.io/) 集成：
+lucifex Agent 通过以下两种方式与 [Home Assistant](https://www.home-assistant.io/) 集成：
 
 1. **Gateway 平台** — 通过 WebSocket 订阅实时状态变更并响应事件
 2. **智能家居工具** — 四个可供 LLM 调用的工具，通过 REST API 查询和控制设备
@@ -19,7 +19,7 @@ lucifexex Agent 通过以下两种方式与 [Home Assistant](https://www.home-as
 1. 打开您的 Home Assistant 实例
 2. 进入**个人资料**（点击侧边栏中的用户名）
 3. 滚动至**长期访问令牌**
-4. 点击**创建令牌**，命名为"lucifexex Agent"
+4. 点击**创建令牌**，命名为"lucifex Agent"
 5. 复制令牌
 
 ### 2. 配置环境变量
@@ -41,14 +41,14 @@ HASS_URL=http://192.168.1.100:8123
 ### 3. 启动 Gateway
 
 ```bash
-lucifexex gateway
+lucifex gateway
 ```
 
 Home Assistant 将作为已连接平台出现，与其他消息平台（Telegram、Discord 等）并列显示。
 
 ## 可用工具
 
-lucifexex Agent 注册了四个智能家居控制工具：
+lucifex Agent 注册了四个智能家居控制工具：
 
 ### `ha_list_entities`
 
@@ -178,7 +178,7 @@ platforms:
 
 ### Agent 响应
 
-Agent 发出的消息将以 **Home Assistant 持久通知**的形式推送（通过 `persistent_notification.create`），标题为"lucifexex Agent"，显示在 HA 通知面板中。
+Agent 发出的消息将以 **Home Assistant 持久通知**的形式推送（通过 `persistent_notification.create`），标题为"lucifex Agent"，显示在 HA 通知面板中。
 
 ### 连接管理
 

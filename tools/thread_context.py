@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Propagate agent-turn context into worker threads that dispatch lucifexex tools.
+"""Propagate agent-turn context into worker threads that dispatch lucifex tools.
 
 A bare ``threading.Thread`` / ``ThreadPoolExecutor`` worker starts with an
 empty ``contextvars.Context`` and no thread-local approval/sudo callbacks.

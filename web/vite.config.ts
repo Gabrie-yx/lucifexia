@@ -3,25 +3,25 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 
-const BACKEND = process.env.lucifexex_DASHBOARD_URL ?? "http://127.0.0.1:9119";
+const BACKEND = process.env.lucifex_DASHBOARD_URL ?? "http://127.0.0.1:9119";
 
 /**
- * In production the Python `lucifexex dashboard` server injects a one-shot
+ * In production the Python `lucifex dashboard` server injects a one-shot
  * session token into `index.html` (see `lucifex_cli/web_server.py`). The
  * Vite dev server serves its own `index.html`, so unless we forward that
  * token, every protected `/api/*` call 401s.
  *
  * This plugin fetches the running dashboard's `index.html` on each dev page
- * load, scrapes the `window.__lucifexex_SESSION_TOKEN__` assignment, and
+ * load, scrapes the `window.__lucifex_SESSION_TOKEN__` assignment, and
  * re-injects it into the dev HTML. No-op in production builds.
  */
-function lucifexexDevToken(): Plugin {
-  const TOKEN_RE = /window\.__lucifexex_SESSION_TOKEN__\s*=\s*"([^"]+)"/;
+function lucifexDevToken(): Plugin {
+  const TOKEN_RE = /window\.__lucifex_SESSION_TOKEN__\s*=\s*"([^"]+)"/;
   const EMBEDDED_RE =
-    /window\.__lucifexex_DASHBOARD_EMBEDDED_CHAT__\s*=\s*(true|false)/;
+    /window\.__lucifex_DASHBOARD_EMBEDDED_CHAT__\s*=\s*(true|false)/;
 
   return {
-    name: "lucifexex:dev-session-token",
+    name: "lucifex:dev-session-token",
     apply: "serve",
     async transformIndexHtml() {
       try {
@@ -30,8 +30,8 @@ function lucifexexDevToken(): Plugin {
         const match = html.match(TOKEN_RE);
         if (!match) {
           console.warn(
-            `[lucifexex] Could not find session token in ${BACKEND} — ` +
-              `is \`lucifexex dashboard\` running? /api calls will 401.`,
+            `[lucifex] Could not find session token in ${BACKEND} — ` +
+            `is \`lucifex dashboard\` running? /api calls will 401.`,
           );
           return;
         }
@@ -42,15 +42,15 @@ function lucifexexDevToken(): Plugin {
             tag: "script",
             injectTo: "head",
             children:
-              `window.__lucifexex_SESSION_TOKEN__="${match[1]}";` +
-              `window.__lucifexex_DASHBOARD_EMBEDDED_CHAT__=${embeddedJs};`,
+              `window.__lucifex_SESSION_TOKEN__="${match[1]}";` +
+              `window.__lucifex_DASHBOARD_EMBEDDED_CHAT__=${embeddedJs};`,
           },
         ];
       } catch (err) {
         console.warn(
-          `[lucifexex] Dashboard at ${BACKEND} unreachable — ` +
-            `start it with \`lucifexex dashboard\` or selucifexifex_DASHBOARD_URL. ` +
-            `(${(err as Error).message})`,
+          `[lucifex] Dashboard at ${BACKEND} unreachable — ` +
+          `start it with \`lucifex dashboard\` or selucifexifex_DASHBOARD_URL. ` +
+          `(${(err as Error).message})`,
         );
       }
     },
@@ -58,11 +58,11 @@ function lucifexexDevToken(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [react(), tailwindcss(), lucifexexDevToken()],
+  plugins: [react(), tailwindcss(), lucifexDevToken()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-      "@lucifexex/shared": path.resolve(__dirname, "../apps/shared/src"),
+      "@lucifex/shared": path.resolve(__dirname, "../apps/shared/src"),
     },
     // When @nous-research/ui is symlinked via `file:../../design-language`,
     // Node's module resolution would pick up shared deps from
@@ -93,7 +93,7 @@ export default defineConfig({
         target: BACKEND,
         ws: true,
       },
-      // Same host as `lucifexex dashboard` must serve these; Vite has no
+      // Same host as `lucifex dashboard` must serve these; Vite has no
       // dashboard-plugins/* files, so without this, plugin scripts 404
       // or receive index.html in dev.
       "/dashboard-plugins": BACKEND,

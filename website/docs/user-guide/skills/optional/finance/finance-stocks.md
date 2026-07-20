@@ -14,10 +14,10 @@ Stock quotes, history, search, compare, crypto via Yahoo.
 
 | | |
 |---|---|
-| Source | Optional — install with `lucifexex skills install official/finance/stocks` |
+| Source | Optional — install with `lucifex skills install official/finance/stocks` |
 | Path | `optional-skills/finance/stocks` |
 | Version | `0.1.0` |
-| Author | Mibay (Mibayy), lucifexex Agent |
+| Author | Mibay (Mibayy), lucifex Agent |
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `Stocks`, `Finance`, `Market`, `Crypto`, `Investing` |
@@ -26,7 +26,7 @@ Stock quotes, history, search, compare, crypto via Yahoo.
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that lucifexex loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that lucifex loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # Stocks Skill

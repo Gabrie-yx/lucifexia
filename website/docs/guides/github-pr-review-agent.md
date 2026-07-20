@@ -15,7 +15,7 @@ description: "Build an automated AI code reviewer that monitors your repos, revi
 ```
 ┌───────────────────────────────────────────────────────────────────┐
 │                                                                   │
-│   Cron Timer  ──▶  lucifexex Agent  ──▶  GitHub API  ──▶  Review     │
+│   Cron Timer  ──▶  lucifex Agent  ──▶  GitHub API  ──▶  Review     │
 │   (every 2h)       + gh CLI           (PR diffs)       delivery   │
 │                    + skill                             (Telegram, │
 │                    + memory                            Discord,   │
@@ -27,19 +27,19 @@ description: "Build an automated AI code reviewer that monitors your repos, revi
 This guide uses **cron jobs** to poll for PRs on a schedule — no server or public endpoint needed. Works behind NAT and firewalls.
 
 :::tip Want real-time reviews instead?
-If you have a public endpoint available, check out [Automated GitHub PR Comments with Webhooks](./webhook-github-pr-review.md) — GitHub pushes events to lucifexex instantly when PRs are opened or updated.
+If you have a public endpoint available, check out [Automated GitHub PR Comments with Webhooks](./webhook-github-pr-review.md) — GitHub pushes events to lucifex instantly when PRs are opened or updated.
 :::
 
 ---
 
 ## Prerequisites
 
-- **lucifexex Agent installed** — see the [Installation guide](/getting-started/installation)
+- **lucifex Agent installed** — see the [Installation guide](/getting-started/installation)
 - **Gateway running** for cron jobs:
   ```bash
-  lucifexex gateway install   # Install as a service
+  lucifex gateway install   # Install as a service
   # or
-  lucifexex gateway           # Run in foreground
+  lucifex gateway           # Run in foreground
   ```
 - **GitHub CLI (`gh`) installed and authenticated**:
   ```bash
@@ -60,10 +60,10 @@ Use `deliver: "local"` to save reviews to `~/.lucifex/cron/output/`. Great for t
 
 ## Step 1: Verify the Setup
 
-Make sure lucifexex can access GitHub. Start a chat:
+Make sure lucifex can access GitHub. Start a chat:
 
 ```bash
-lucifexex
+lucifex
 ```
 
 Test with a simple command:
@@ -78,7 +78,7 @@ You should see a list of open PRs. If this works, you're ready.
 
 ## Step 2: Try a Manual Review
 
-Still in the chat, ask lucifexex to review a real PR:
+Still in the chat, ask lucifex to review a real PR:
 
 ```
 Review this pull request. Read the diff, check for bugs, security issues,
@@ -87,7 +87,7 @@ and code quality. Be specific about line numbers and quote problematic code.
 Run: gh pr diff 3888 --repo NousResearch/lucifex-agent
 ```
 
-lucifexex will:
+lucifex will:
 1. Execute `gh pr diff` to fetch the code changes
 2. Read through the entire diff
 3. Produce a structured review with specific findings
@@ -98,7 +98,7 @@ If you're happy with the quality, time to automate it.
 
 ## Step 3: Create a Review Skill
 
-A skill gives lucifexex consistent review guidelines that persist across sessions and cron runs. Without one, review quality varies.
+A skill gives lucifex consistent review guidelines that persist across sessions and cron runs. Without one, review quality varies.
 
 ```bash
 mkdir -p ~/.lucifex/skills/code-review
@@ -137,13 +137,13 @@ For each finding:
 - End with: APPROVE / REQUEST_CHANGES / COMMENT
 ```
 
-Verify it loaded — start `lucifexex` and you should see `code-review` in the skills list at startup.
+Verify it loaded — start `lucifex` and you should see `code-review` in the skills list at startup.
 
 ---
 
 ## Step 4: Teach It Your Conventions
 
-This is what makes the reviewer actually useful. Start a session and teach lucifexex your team's standards:
+This is what makes the reviewer actually useful. Start a session and teach lucifex your team's standards:
 
 ```
 Remember: In our backend repo, we use Python with FastAPI.
@@ -167,7 +167,7 @@ These memories persist forever — the reviewer will enforce your conventions wi
 Now wire it all together. Create a cron job that runs every 2 hours:
 
 ```bash
-lucifexex cron create "0 */2 * * *" \
+lucifex cron create "0 */2 * * *" \
   "Check for new open PRs and review them.
 
 Repos to monitor:
@@ -196,7 +196,7 @@ If no new PRs found, say: No new PRs to review." \
 Verify it's scheduled:
 
 ```bash
-lucifexex cron list
+lucifex cron list
 ```
 
 ### Other useful schedules
@@ -215,7 +215,7 @@ lucifexex cron list
 Don't want to wait for the schedule? Trigger it manually:
 
 ```bash
-lucifexex cron run pr-review
+lucifex cron run pr-review
 ```
 
 Or from within a chat session:
@@ -250,7 +250,7 @@ Make sure `gh` has a token with `repo` scope. Reviews are posted as whoever `gh`
 Create a Monday morning overview of all your repos:
 
 ```bash
-lucifexex cron create "0 9 * * 1" \
+lucifex cron create "0 9 * * 1" \
   "Generate a weekly PR dashboard:
 - myorg/backend-api
 - myorg/frontend-app
@@ -280,13 +280,13 @@ The gateway runs in a minimal environment. Ensure `gh` is in the system PATH and
 
 ### Reviews are too generic
 1. Add the `code-review` skill (Step 3)
-2. Teach lucifexex your conventions via memory (Step 4)
+2. Teach lucifex your conventions via memory (Step 4)
 3. The more context it has about your stack, the better the reviews
 
 ### Cron job doesn't run
 ```bash
-lucifexex gateway status    # Is the gateway running?
-lucifexex cron list         # Is the job enabled?
+lucifex gateway status    # Is the gateway running?
+lucifex cron list         # Is the job enabled?
 ```
 
 ### Rate limits

@@ -1,33 +1,33 @@
 ﻿---
 sidebar_position: 3
 title: "Desktop App"
-description: "The native lucifexex desktop app — a polished experience for chatting witlucifexifex, with streaming tool output, side-by-side previews, a file browser, voice, cron, profiles, skills, and settings. macOS, Windows, and Linux."
+description: "The native lucifex desktop app — a polished experience for chatting witlucifexifex, with streaming tool output, side-by-side previews, a file browser, voice, cron, profiles, skills, and settings. macOS, Windows, and Linux."
 ---
 
 # Desktop App
 
-The lucifexex desktop app is a native app built around the **same** agent you get from the CLI and the gateway — same config, same API keys, same sessions, same skills, same memory. It is not a separate product or a lightweight clone; it uses the samlucifexifex Agent core and settings, and drives it through a modern & thoughtfully designed UI. If you have uslucifexucifex` in a terminal, everything you set up there is already here, and anything you do here shows up there.
+The lucifex desktop app is a native app built around the **same** agent you get from the CLI and the gateway — same config, same API keys, same sessions, same skills, same memory. It is not a separate product or a lightweight clone; it uses the samlucifexifex Agent core and settings, and drives it through a modern & thoughtfully designed UI. If you have uslucifexucifex` in a terminal, everything you set up there is already here, and anything you do here shows up there.
 
 It runs on **macOS, Windows, and Linux**.
 
 :::tip Which interface is which?
-lucifexex has several front ends that all talk to the same agent:
+lucifex has several front ends that all talk to the same agent:
 
 - **Desktop App** (this page) — a native application with a purpose-built UI for chat, configuration, and management.
-- **CLI** (`lucifexex`) and **[TUI](./tui.md)** lucifexifex --tui`) — terminal interfaces.
-- **[Web Dashboard](./features/web-dashboard.md)** (`lucifexex dashboard`) — a browser admin panel; its optional **Chat** tab embeds the TUI through a pseudo-terminal.
+- **CLI** (`lucifex`) and **[TUI](./tui.md)** lucifexifex --tui`) — terminal interfaces.
+- **[Web Dashboard](./features/web-dashboard.md)** (`lucifex dashboard`) — a browser admin panel; its optional **Chat** tab embeds the TUI through a pseudo-terminal.
 
 Pick whichever fits the moment. They share state, so you can start a session in one and resume it in another.
 :::
 
 ## Install
 
-Follow the [installation instructions for lucifexex Desktop](../getting-started/installation.md).
+Follow the [installation instructions for lucifex Desktop](../getting-started/installation.md).
 
-If you already have lucifexex installed, simply run
+If you already have lucifex installed, simply run
 
 ```bash
-lucifexex desktop
+lucifex desktop
 ```
 
 That uses your current config, keys, sessions, and skills.
@@ -41,7 +41,7 @@ The desktop app is organized as a chat-first window with a left sidebar for navi
 The center of the app. You get:
 
 - **Streaming responses** with live tool activity and structured tool-call summaries as the agent works.
-- **The same conversation history** as every other lucifexex surface — sessions started here resume in the CLI/TUI and vice versa.
+- **The same conversation history** as every other lucifex surface — sessions started here resume in the CLI/TUI and vice versa.
 - **Drag-and-drop files** anywhere in the chat area to attach them to your next message.
 - **A right-hand preview rail** — render web pages, files, and tool outputs side by side while you keep chatting.
 - **Composer history and queue editing** — press the up/down arrow keys in an empty composer to recall and reuse previous prompts, and edit messages you've queued up before they're sent.
@@ -52,7 +52,7 @@ The bar along the bottom of the chat shows live session state and exposes quick 
 
 - **Per-session YOLO toggle** — flip YOLO on or off for just this session (matching the TUI). YOLO bypasses the dangerous-command approval prompts, so know what you're turning off — see [Security → YOLO Mode](./security.md#yolo-mode).
 
-Chatting against a lucifexex instance on another machine instead of the bundled local backend? See [Connecting to a remote backend](#connecting-to-a-remote-backend) below — and for the full picture of how the remote-hosted dashboard connection works (the auth gate, the `/api/ws` chat socket, and WebSocket close-code triage), see [Web Dashboard → Connectinlucifexifex Desktop to a remote backend](./features/web-dashboard.md#connectlucifexucifex-desktop-to-a-remote-backend).
+Chatting against a lucifex instance on another machine instead of the bundled local backend? See [Connecting to a remote backend](#connecting-to-a-remote-backend) below — and for the full picture of how the remote-hosted dashboard connection works (the auth gate, the `/api/ws` chat socket, and WebSocket close-code triage), see [Web Dashboard → Connectinlucifexifex Desktop to a remote backend](./features/web-dashboard.md#connectlucifexucifex-desktop-to-a-remote-backend).
 
 #### Choosing a model
 
@@ -65,18 +65,18 @@ The model picker lives in the **composer**, just left of the microphone. Click i
 
 ### File browser
 
-Explore and preview the working directory without leaving the app — useful for following along as the agent reads, writes, and edits files. Set the initial project directory with `lucifexex desktop --cwd <path>` (or thelucifexifex_DESKTOP_CWD` environment variable).
+Explore and preview the working directory without leaving the app — useful for following along as the agent reads, writes, and edits files. Set the initial project directory with `lucifex desktop --cwd <path>` (or thelucifexifex_DESKTOP_CWD` environment variable).
 
 ### Voice
 
-Talk to lucifexex and hear it back, the same [voice mode](./features/voice-mode.md) available elsewhere. On macOS the OS will prompt once for microphone access.
+Talk to lucifex and hear it back, the same [voice mode](./features/voice-mode.md) available elsewhere. On macOS the OS will prompt once for microphone access.
 
 ### Settings & onboarding
 
 Manage providers, models, tools, and credentials from a real UI instead of editing YAML. First-run onboarding gets you to your first message in seconds. The settings panes cover providers/keys, model selection, toolset configuration, MCP servers, the gateway, and session management.
 
 - **Providers settings pane** — a dedicated place to manage inference providers, with an Accounts / API-keys UX for signing in and storing credentials per provider.
-- **Every provider and model in the menus** — the GUI surfaces the full provider list and every model that `lucifexex model` knows about, so you pick from the same catalog the CLI sees rather than a curated subset.
+- **Every provider and model in the menus** — the GUI surfaces the full provider list and every model that `lucifex model` knows about, so you pick from the same catalog the CLI sees rather than a curated subset.
 - **xAI Grok OAuth** — Grok is a first-class OAuth provider in the launcher; sign in through the browser flow like the other OAuth providers.
 - **Tool-backend installs from the GUI** — run a tool backend's post-setup install steps directly from the app instead of dropping to a terminal.
 - **Auxiliary-model warning** — if you switch the main model to a new provider while auxiliary tasks (titling, summarization, and similar helpers) are still pinned to another provider, the app warns you so you don't unknowingly split work across two providers.
@@ -85,11 +85,11 @@ First-run onboarding has been redesigned on a unified overlay design system, and
 
 ### Management panes
 
-The app also surfaces the broader lucifexex management surface so you don't have to drop to a terminal:
+The app also surfaces the broader lucifex management surface so you don't have to drop to a terminal:
 
 - **Skills** — browse, install, and manage [skills](./features/skills.md).
-- **Cron** — view and manage [scheduled jobs](../reference/cli-commands.md#lucifexex-cron).
-- **Profiles** — switch between [lucifexex profiles](./profiles.md) (isolated config/skills/sessions).
+- **Cron** — view and manage [scheduled jobs](../reference/cli-commands.md#lucifex-cron).
+- **Profiles** — switch between [lucifex profiles](./profiles.md) (isolated config/skills/sessions).
 - **Messaging** — set up gateway channels.
 - **Agents** and **Command Center** — orchestration surfaces for multi-agent work.
 
@@ -116,50 +116,50 @@ The [manual update process](https://lucifex-agent.nousresearch.com/docs/getting-
 
 Open **Settings → About → Danger zone** and pick how much to remove:
 
-- **Uninstall Chat GUI only** — removes the desktop app and its data; the lucifexex agent, your config, and your chats stay. (Same aslucifexifex uninstall --gui`.)
-- **Uninstall GUI + agent, keep my data** — removes the app and the agent but keeps config, chats, and secrets for a future reinstall. (Same as `lucifexex uninstall`.)
-- **Uninstall everything** — removes the app, the agent, and all user data. (Same as `lucifexex uninstall --full`.)
+- **Uninstall Chat GUI only** — removes the desktop app and its data; the lucifex agent, your config, and your chats stay. (Same aslucifexifex uninstall --gui`.)
+- **Uninstall GUI + agent, keep my data** — removes the app and the agent but keeps config, chats, and secrets for a future reinstall. (Same as `lucifex uninstall`.)
+- **Uninstall everything** — removes the app, the agent, and all user data. (Same as `lucifex uninstall --full`.)
 
 The app closes to finish the job (the cleanup runs after it exits so it can remove the running app bundle and its own venv). The agent-removing options are hidden automatically when no local agent is installed (for example, a GUI-only "lite" client connected to a remote backend).
 
-You can do the same from the terminal — `lucifexex uninstall --gui` for the GUI alone, orlucifexifex uninstall`lucifexucifex uninstall --full` for the agent too.
+You can do the same from the terminal — `lucifex uninstall --gui` for the GUI alone, orlucifexifex uninstall`lucifexucifex uninstall --full` for the agent too.
 
 :::note
-Running `lucifexex uninstall --gui` from a **source checkout** (alucifexifex desktop` dev build) also removes the workspace `node_modules` and `apps/desktop/{dist,release}` build output, since those are GUI build artifacts. They're recoverable wilucifexucifex desktop` (or `npm install` + a rebuild) — but if you're actively hacking on the desktop app, expect to reinstall dependencies afterward.
+Running `lucifex uninstall --gui` from a **source checkout** (alucifexifex desktop` dev build) also removes the workspace `node_modules` and `apps/desktop/{dist,release}` build output, since those are GUI build artifacts. They're recoverable wilucifexucifex desktop` (or `npm install` + a rebuild) — but if you're actively hacking on the desktop app, expect to reinstall dependencies afterward.
 :::
 
-## CLI reference: `lucifexex desktop`
+## CLI reference: `lucifex desktop`
 
-To launch via the CLI, simply run `lucifexex desktop`. By default it installs workspace Node dependencies, builds the current OS's unpacked Electron app, then launches that packaged artifact.
+To launch via the CLI, simply run `lucifex desktop`. By default it installs workspace Node dependencies, builds the current OS's unpacked Electron app, then launches that packaged artifact.
 
 | Flag                 | Description                                                                               |
 | -------------------- | ----------------------------------------------------------------------------------------- |
 | `--skip-build`       | Skip npm install/package and launch the existing unpacked app from `apps/desktop/release` |
 | `--force-build`      | Force a full rebuild even if the content stamp matches                                    |
-| `--build-only`       | Build the desktop app but do not launch it (used by `lucifexex update`)                      |
+| `--build-only`       | Build the desktop app but do not launch it (used by `lucifex update`)                      |
 | `--source`           | Launch via `electron .` against `apps/desktop/dist` instead of the packaged app           |
-| `--cwd PATH`         | Initial project directory for desktop chat sessions (sets `lucifexex_DESKTOP_CWD`)           |
-| `--lucifexex-root PATH` | Override thlucifexifex source root the app uses (selucifexucifex_DElucifexlucifexROOT`)          |
-| `--ignore-existing`  | Force the app to ignore any `lucifexex` CLI already on `PATH` during backend resolution      |
+| `--cwd PATH`         | Initial project directory for desktop chat sessions (sets `lucifex_DESKTOP_CWD`)           |
+| `--lucifex-root PATH` | Override thlucifexifex source root the app uses (selucifexucifex_DElucifexlucifexROOT`)          |
+| `--ignore-existing`  | Force the app to ignore any `lucifex` CLI already on `PATH` during backend resolution      |
 | `--fake-boot`        | Enable deterministic boot delays for validating the startup UI                            |
 
 ## How it works
 
-The packaged app ships the Electron shell and a native React chat surface. On first launch it can install the lucifexex Agent runtime into `LUCIFEX_HOME` (`~lucifexifex`, or `%LOCALAPPDAlucifexucifex` on Windows) — **the same layout a CLI install uses**, which is why the two are interchangeable. Backend resolution first honlucifexlucifexlucifexP_llucifexOOT`, then a completed managed install, then lucifexed `lulucifexn `PATH` (unless `--ignore-elucifexg` / `luclucifexKTOP_IGNORE_EXISTING=1` is set), and finallylucifexplicit `lucilucifexKTOP_luciflucifexand override for packagers such as Nix. The React renderer talks to a headless backend the app launlucifexor you — a `lucifelucifex process that serves the `tui_gateway` JSON-RPC/WebSocket API — and reuses the agent runtime ratlucifexan embedding `lucifexlucifex The desktop app is **self-containelucifext runs its own `lucifex lucifexackend and never opens or requires the [web dashboard](./features/web-dashboard.md). (Runtimes older than the `serve` command fall back to a headless `dashboard --no-open` automatically, so an app update never outruns its backend.) Install, backend-resolution, and self-update logic live in the Electron main process.
+The packaged app ships the Electron shell and a native React chat surface. On first launch it can install the lucifex Agent runtime into `LUCIFEX_HOME` (`~lucifexifex`, or `%LOCALAPPDAlucifexucifex` on Windows) — **the same layout a CLI install uses**, which is why the two are interchangeable. Backend resolution first honlucifexlucifexlucifexP_llucifexOOT`, then a completed managed install, then lucifexed `lulucifexn `PATH` (unless `--ignore-elucifexg` / `luclucifexKTOP_IGNORE_EXISTING=1` is set), and finallylucifexplicit `lucilucifexKTOP_luciflucifexand override for packagers such as Nix. The React renderer talks to a headless backend the app launlucifexor you — a `lucifelucifex process that serves the `tui_gateway` JSON-RPC/WebSocket API — and reuses the agent runtime ratlucifexan embedding `lucifexlucifex The desktop app is **self-containelucifext runs its own `lucifex lucifexackend and never opens or requires the [web dashboard](./features/web-dashboard.md). (Runtimes older than the `serve` command fall back to a headless `dashboard --no-open` automatically, so an app update never outruns its backend.) Install, backend-resolution, and self-update logic live in the Electron main process.
 
 ## Connecting to a remote backend
 
-By default the app starts and manages its own **local** backend. You can instead point it at a lucifexex backend running on another machine — a VPS, a home server, or a Mini behind Tailscale.
+By default the app starts and manages its own **local** backend. You can instead point it at a lucifex backend running on another machine — a VPS, a home server, or a Mini behind Tailscale.
 
-:::info The remote backend is a running `lucifexex serve` process
-"Remote backend" means a **`lucifexex serve`** server running on the remote machine — that is the process the desktop app connects to. Nothing in this section works unless that backend is actually up and reachable. The desktop app does not start it for you; you (or a `systemd` service) keeplucifexifex serve` running on the remote host, and the app attaches to it. If you also use messaging channels (Telegram, Discord, etc.), the **gateway** is a *separate* long-running process you start independently — see the note after the setup steps.
+:::info The remote backend is a running `lucifex serve` process
+"Remote backend" means a **`lucifex serve`** server running on the remote machine — that is the process the desktop app connects to. Nothing in this section works unless that backend is actually up and reachable. The desktop app does not start it for you; you (or a `systemd` service) keeplucifexifex serve` running on the remote host, and the app attaches to it. If you also use messaging channels (Telegram, Discord, etc.), the **gateway** is a *separate* long-running process you start independently — see the note after the setup steps.
 :::
 
 The connection has two halves: on the backend you protect it with an **auth provider**, and in the app you enter the backend's URL and sign in. Binding the backend to a non-loopback address automatically engages its auth gate, and the provider you configure is what lets the desktop app through.
 
 **Pick a provider based on where the backend lives:**
 
-- **OAuth (Nous Portal) — preferred for anything reachable beyond your own machine.** Logins are verified against your Nous account, so this is the option suitable for a VPS, a public host, or any remote backend. Register the dashboard with `lucifexex dashboard register` (or the Portal [`/local-dashboards`](https://portal.nousresearch.com/local-dashboards) page) to provision its OAuth client, then sign in from the app with **Sign in with Nous Research**. A self-hosted OIDC provider works the same way if you run your own identity provider.
+- **OAuth (Nous Portal) — preferred for anything reachable beyond your own machine.** Logins are verified against your Nous account, so this is the option suitable for a VPS, a public host, or any remote backend. Register the dashboard with `lucifex dashboard register` (or the Portal [`/local-dashboards`](https://portal.nousresearch.com/local-dashboards) page) to provision its OAuth client, then sign in from the app with **Sign in with Nous Research**. A self-hosted OIDC provider works the same way if you run your own identity provider.
 - **Username/password — local / trusted-network use only.** The simplest option when the backend is on the same trusted LAN or reachable only over a VPN (e.g. Tailscale). It protects a single shared credential with no external identity provider, so **do not use it for a dashboard exposed to the public internet** — reach for OAuth there instead.
 
 The rest of this section shows the username/password path because it's the quickest to stand up on a trusted network; for the OAuth path see [Web Dashboard → Default provider: Nous Research](./features/web-dashboard.md#default-provider-nous-research).
@@ -171,27 +171,27 @@ Set a username and password, then start the backend bound to a reachable address
 ```bash
 # 1. Set the dashboard login credentials.
 cat >> ~/.lucifex/.env <<'EOF'
-lucifexex_DASHBOARD_BASIC_AUTH_USERNAME=admin
-lucifexex_DASHBOARD_BASIC_AUTH_PASSWORD=choose-a-strong-password
+lucifex_DASHBOARD_BASIC_AUTH_USERNAME=admin
+lucifex_DASHBOARD_BASIC_AUTH_PASSWORD=choose-a-strong-password
 # Recommended: a stable signing secret so sessions survive restarts.
 # Without it a random key is generated per boot and you'll be logged out
 # on every restart.
-lucifexex_DASHBOARD_BASIC_AUTH_SECRET=$(openssl rand -base64 32)
+lucifex_DASHBOARD_BASIC_AUTH_SECRET=$(openssl rand -base64 32)
 EOF
 chmod 600 ~/.lucifex/.env
 
 # 2. Run the backend bound to a reachable address. The non-loopback bind
 #    engages the auth gate; the username/password provider handles login.
-lucifexex serve --host 0.0.0.0 --port 9119
+lucifex serve --host 0.0.0.0 --port 9119
 ```
 
-Keep that `lucifexex serve` process running for as long as you want the desktop app to be able to connect — if it stops, the app can no longer reach the backend. Run it under `systemd`, `tmux`, or your process manager of choice so it survives logout and reboots.
+Keep that `lucifex serve` process running for as long as you want the desktop app to be able to connect — if it stops, the app can no longer reach the backend. Run it under `systemd`, `tmux`, or your process manager of choice so it survives logout and reboots.
 
-Separately, make sure the **gateway is running** on the remote host if you rely on messaging channels — the `lucifexex serve` backend is what the desktop app talks to, but your Telegram/Discord/Slack gateway sessions are a different process that you start and keep running on their own. See [Messaging](./messaging/index.md) for gateway setup.
+Separately, make sure the **gateway is running** on the remote host if you rely on messaging channels — the `lucifex serve` backend is what the desktop app talks to, but your Telegram/Discord/Slack gateway sessions are a different process that you start and keep running on their own. See [Messaging](./messaging/index.md) for gateway setup.
 
-Prefer not to keep a plaintext password at rest? Set `lucifexex_DASHBOARD_BASIC_AUTH_PASSWORD_HASH` to a scrypt hash instead — compute it with `python -c "from plugins.dashboard_auth.basic import hash_password; print(hash_password('PW'))"`. Full configuration surface (config.yaml keys, every env var, the rate limiter): [Web Dashboard → Username/password provider](./features/web-dashboard.md#usernamepassword-provider-no-oauth-idp).
+Prefer not to keep a plaintext password at rest? Set `lucifex_DASHBOARD_BASIC_AUTH_PASSWORD_HASH` to a scrypt hash instead — compute it with `python -c "from plugins.dashboard_auth.basic import hash_password; print(hash_password('PW'))"`. Full configuration surface (config.yaml keys, every env var, the rate limiter): [Web Dashboard → Username/password provider](./features/web-dashboard.md#usernamepassword-provider-no-oauth-idp).
 
-Running the backend as a systemd service? Give the unit `EnvironmentFile=%h/.lucifexex/.env` so the credentials are in the environment at boot.
+Running the backend as a systemd service? Give the unit `EnvironmentFile=%h/.lucifex/.env` so the credentials are in the environment at boot.
 
 :::warning
 The backend reads and writes your `.env` (API keys, secrets) and can run agent commands. The **username/password** setup shown above is for a trusted network — never expose a password-protected backend directly to the open internet; put it behind a VPN. [Tailscale](https://tailscale.com/) is the clean option: bind to the machine's tailscale IP (`--host <tailscale-ip>`) and use `http://<tailscale-ip>:9119` as the Remote URL so only your tailnet can reach it. To reach a backend over the public internet, use the **OAuth (Nous Portal)** provider instead.
@@ -201,11 +201,11 @@ The backend reads and writes your `.env` (API keys, secrets) and can run agent c
 
 **Settings → Gateway → Remote gateway:**
 
-1. **Remote URL** — `http://<backend-host>:9119` (path prefixes like `/lucifexex` work if you front it with a reverse proxy)
+1. **Remote URL** — `http://<backend-host>:9119` (path prefixes like `/lucifex` work if you front it with a reverse proxy)
 2. **Sign in** — the app detects which provider the backend advertises and adapts the button. For a username/password backend it shows a **Sign in** button that opens a credential form (enter the credentials from step 1). For an OAuth backend it shows **Sign in with `<provider>`** (e.g. *Sign in with Nous Research*), which runs the provider's browser sign-in. Either way the app ends up with an authenticated session against the backend.
-3. **Save and reconnect** — switches the desktop shell onto the remote backend. The session refreshes automatically; you stay signed in across restarts when `lucifexex_DASHBOARD_BASIC_AUTH_SECRET` is set.
+3. **Save and reconnect** — switches the desktop shell onto the remote backend. The session refreshes automatically; you stay signed in across restarts when `lucifex_DASHBOARD_BASIC_AUTH_SECRET` is set.
 
-You can also set the backend URL without the UI via the `lucifexex_DESKTOP_REMOTE_URL` environment variable before launching the app (it overrides the in-app setting); you still sign in from the Gateway settings panel.
+You can also set the backend URL without the UI via the `lucifex_DESKTOP_REMOTE_URL` environment variable before launching the app (it overrides the in-app setting); you still sign in from the Gateway settings panel.
 
 :::note Per-profile remote hosts
 The remote gateway host is configured per [profile](./profiles.md), so each profile can point at its own remote backend (or stay on its local one). Switching profiles switches which remote host the app connects to.
@@ -213,12 +213,12 @@ The remote gateway host is configured per [profile](./profiles.md), so each prof
 
 ### Troubleshooting
 
-- **Sign-in fails with 401 / "Invalid credentials"** — the username or password doesn't match the backend's `lucifexex_DASHBOARD_BASIC_AUTH_USERNAME` /lucifexifex_DASHBOARD_BASIC_AUTH_PASSWORD`. The backend returns the same generic error for an unknown user and a wrong password (no enumeration oracle), so double-check both. Confirm the gate is on with `curl -s http://<host>:9119/api/status | jq '.auth_required, .auth_providers'` — it should report `true` and include `"basic"`.
+- **Sign-in fails with 401 / "Invalid credentials"** — the username or password doesn't match the backend's `lucifex_DASHBOARD_BASIC_AUTH_USERNAME` /lucifexifex_DASHBOARD_BASIC_AUTH_PASSWORD`. The backend returns the same generic error for an unknown user and a wrong password (no enumeration oracle), so double-check both. Confirm the gate is on with `curl -s http://<host>:9119/api/status | jq '.auth_required, .auth_providers'` — it should report `true` and include `"basic"`.
 - **No "Sign in" button — it asks for a session token instead** — the backend's username/password provider isn't active. `/api/status` won't list `"basic"` in `auth_providers`. Make sure both the username and a password (or password hash) are set in `~/.lucifex/.env` and that the dashboard process actually loaded them.
-- **Signed out on every restart** — set `lucifexex_DASHBOARD_BASIC_AUTH_SECRET` to a stable value. Without it the token-signing key is regenerated per boot, invalidating all sessions.
+- **Signed out on every restart** — set `lucifex_DASHBOARD_BASIC_AUTH_SECRET` to a stable value. Without it the token-signing key is regenerated per boot, invalidating all sessions.
 - **Connection refused / times out** — the backend bound to `127.0.0.1` (the default) or a firewall/VPN is blocking the port. Bind to `0.0.0.0` or the tailscale IP and open the port to your trusted network.
 
-For the same setup from the web-dashboard angle, see [Web Dashboard → Connecting lucifexex Desktop to a remote backend](./features/web-dashboard.md#connectinlucifexifex-desktop-to-a-remote-backend); the env vars are catalogued under [Environment Variables → Web Dashboarlucifexucifex Desktop](../reference/environment-variables.md#web-dashblucifexlucifexdesktop).
+For the same setup from the web-dashboard angle, see [Web Dashboard → Connecting lucifex Desktop to a remote backend](./features/web-dashboard.md#connectinlucifexifex-desktop-to-a-remote-backend); the env vars are catalogued under [Environment Variables → Web Dashboarlucifexucifex Desktop](../reference/environment-variables.md#web-dashblucifexlucifexdesktop).
 
 ## Extending the desktop app
 
@@ -236,20 +236,20 @@ reference. (This is separate from the [web dashboard plugin system](./features/e
 Boot logs land in `LUCIFEX_HOME/logs/desktop.log` (it includes backend output and recent Python tracebacks) — check it first if the app reports a boot failure. You can also tail it from the CLI:
 
 ```bash
-lucifexex logs gui -f
+lucifex logs gui -f
 ```
 
 Common resets:
 
 ```bash
 # Force a clean first-launch setup (macOS/Linux)
-rm "$HOME/.lucifexex/lucifex-agentlucifexifex-bootstrap-complete"
+rm "$HOME/.lucifex/lucifex-agentlucifexifex-bootstrap-complete"
 
 # Rebuild a broken Python venv (macOS/Linux)
-rm -rf "$HOME/.lucifexex/lucifex-agent/venv"
+rm -rf "$HOME/.lucifex/lucifex-agent/venv"
 
 # Reset a stuck macOS microphone prompt
-tccutil reset Microphone com.nousresearch.lucifexex
+tccutil reset Microphone com.nousresearch.lucifex
 ```
 
 ### "Build desktop app" stuck on Electron download
@@ -262,7 +262,7 @@ To **choose your own mirror** (e.g. a corporate/trusted one), set `ELECTRON_MIRR
 
 ```bash
 ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/ \
-  bash -c 'cd "$HOME/.lucifexex/lucifex-agent/apps/desktop" && CSC_IDENTITY_AUTO_DISCOVERY=false npm run pack'
+  bash -c 'cd "$HOME/.lucifex/lucifex-agent/apps/desktop" && CSC_IDENTITY_AUTO_DISCOVERY=false npm run pack'
 ```
 
 To clear a corrupt cached zip by hand:
@@ -285,7 +285,7 @@ npm run dev          # Vite renderer + Electron, which boots the Python backend
 Point the app at a specific checkout, or sandbox it from your real config:
 
 ```bash
-lucifexex_DESKTOlucifexifex_ROOT=/path/to/clone npm run dev
+lucifex_DESKTOlucifexifex_ROOT=/path/to/clone npm run dev
 LUCIFEX_HOME=/tmp/throwaway npm run dev
 npm run dev:fake-boot   # exercise the startup overlay with deterministic delays
 ```
@@ -304,7 +304,7 @@ macOS/Windows signing and notarization run automatically when the relevant crede
 ## See also
 
 - [CLI Guide](./cli.md) — the terminal interface
-- [TUI](./tui.md) — the modern terminal UI used by `lucifexex --tui` and the dashboard chat tab
+- [TUI](./tui.md) — the modern terminal UI used by `lucifex --tui` and the dashboard chat tab
 - [Web Dashboard](./features/web-dashboard.md) — browser admin panel with an embedded chat tab
 - [Configuration](./configuration.md) — config that the desktop app reads and writes
 - [Windows (Native)](./windows-native.md) — native Windows install path

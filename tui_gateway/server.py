@@ -141,7 +141,7 @@ _cfg_mtime: float | None = None
 _cfg_path = None
 _session_resume_lock = threading.Lock()
 try:
-    _slash_timeout = float(os.environ.get("lucifexex_TUI_SLASH_TIMEOUT_S") or "45")
+    _slash_timeout = float(os.environ.get("lucifex_TUI_SLASH_TIMEOUT_S") or "45")
 except (ValueError, TypeError):
     _slash_timeout = 45.0
 _SLASH_WORKER_TIMEOUT_S = max(5.0, _slash_timeout)
@@ -158,7 +158,7 @@ _SLASH_WORKER_TIMEOUT_S = max(5.0, _slash_timeout)
 # Set to 0 to disable (park forever, pre-fix behaviour).
 try:
     _ws_orphan_reap_grace = float(
-        os.environ.get("lucifexex_TUI_WS_ORPHAN_REAP_GRACE_S") or "20"
+        os.environ.get("lucifex_TUI_WS_ORPHAN_REAP_GRACE_S") or "20"
     )
 except (ValueError, TypeError):
     _ws_orphan_reap_grace = 20.0
@@ -260,7 +260,7 @@ _LONG_HANDLERS = frozenset(
 
 try:
     _rpc_pool_workers = max(
-        2, int(os.environ.get("lucifexex_TUI_RPC_POOL_WORKERS") or "8")
+        2, int(os.environ.get("lucifex_TUI_RPC_POOL_WORKERS") or "8")
     )
 except (ValueError, TypeError):
     _rpc_pool_workers = 8
@@ -320,7 +320,7 @@ class _SlashWorker:
         self._closed = False
         from lucifex_cli._subprocess_compat import windows_hide_flags
 
-        # slash_worker runs the lucifexex agent → needs provider credentials.
+        # slash_worker runs the lucifex agent → needs provider credentials.
         # Tier-1 secrets (gateway/GitHub/infra) are still stripped (#29157).
         env = lucifex_subprocess_env(inherit_credentials=True)
         if profile_home:
@@ -872,7 +872,7 @@ def _close_sessions_for_transport(
         else:
             # Point detached sessions at the drop sentinel (NOT real stdio) so
             # _ws_session_is_orphaned recognizes them and the grace-reap can
-            # actually fire; a standalone `lucifexex --tui` keeps real _stdio.
+            # actually fire; a standalone `lucifex --tui` keeps real _stdio.
             session["transport"] = _detached_ws_transport
             detached += 1
             try:
@@ -893,7 +893,7 @@ def _shutdown_sessions() -> None:
 # hours-scale because last_active freezes during a long turn and on passive
 # viewing — running/pending/starting/live-transport are hard exemptions instead.
 try:
-    _SESSION_TTL_S = float(os.environ.get("lucifexex_TUI_SESSION_TTL_S") or 6 * 3600)
+    _SESSION_TTL_S = float(os.environ.get("lucifex_TUI_SESSION_TTL_S") or 6 * 3600)
 except (TypeError, ValueError):
     _SESSION_TTL_S = float(6 * 3600)
 _SESSION_TTL_S = max(0.0, _SESSION_TTL_S)
@@ -903,7 +903,7 @@ _REAPER_SCAN_S = 300.0
 def _transport_is_dead(transport) -> bool:
     # _detached_ws_transport is the post-WS-disconnect drop sentinel; a session
     # parked on it has no live client. _stdio_transport is the REAL transport
-    # for a standalone `lucifexex --tui`, so it must NOT count as dead here (doing
+    # for a standalone `lucifex --tui`, so it must NOT count as dead here (doing
     # so let the idle reaper evict healthy standalone TUI sessions).
     if transport is _detached_ws_transport:
         return True
@@ -1148,7 +1148,7 @@ def _launch_configured_cwd() -> str | None:
     process's in-memory TUI gateway. The Node PTY child receives a bridged
     ``TERMINAL_CWD`` env var, but this in-memory process does not — so reading
     the process env alone leaves a fresh chat starting in ``os.getcwd()``
-    (wherever ``lucifexex dashboard`` was launched) instead of the configured
+    (wherever ``lucifex dashboard`` was launched) instead of the configured
     ``terminal.cwd``. Read config directly so changing ``terminal.cwd`` affects
     new in-memory TUI sessions too.
     """
@@ -1202,7 +1202,7 @@ _compute_host_supervisor_lock = threading.Lock()
 
 
 def _inside_compute_host_child() -> bool:
-    return os.environ.get("lucifexex_COMPUTE_HOST_CHILD") == "1"
+    return os.environ.get("lucifex_COMPUTE_HOST_CHILD") == "1"
 
 
 def _turn_isolation_enabled(cfg: dict | None = None) -> bool:
@@ -1534,7 +1534,7 @@ def _wait_agent(session: dict, rid: str, timeout: float = 30.0) -> dict | None:
 def _start_agent_build(sid: str, session: dict) -> None:
     """Start building the real AIAgent for a TUI session, once.
 
-    Classic `lucifexex` shows the prompt before constructing AIAgent; the TUI used
+    Classic `lucifex` shows the prompt before constructing AIAgent; the TUI used
     to eagerly build it during session.create, making startup feel blocked on
     tool discovery/model metadata even though the composer was visible.  Keep
     the shell responsive by deferring this work until the first prompt (or any
@@ -2321,9 +2321,9 @@ def _clear_session_context(tokens: list) -> None:
 
 def _enable_gateway_prompts() -> None:
     """Route approvals through gateway callbacks instead of CLI input()."""
-    os.environ["lucifexex_GATEWAY_SESSION"] = "1"
-    os.environ["lucifexex_EXEC_ASK"] = "1"
-    os.environ["lucifexex_INTERACTIVE"] = "1"
+    os.environ["lucifex_GATEWAY_SESSION"] = "1"
+    os.environ["lucifex_EXEC_ASK"] = "1"
+    os.environ["lucifex_INTERACTIVE"] = "1"
 
 
 # ── Blocking prompt factory ──────────────────────────────────────────
@@ -2398,7 +2398,7 @@ def resolve_skin() -> dict:
 
 def _resolve_model() -> str:
     env = (
-        os.environ.get("lucifexex_MODEL", "")
+        os.environ.get("lucifex_MODEL", "")
         or os.environ.get("LUCIFEX_INFERENCE_MODEL", "")
     ).strip()
     if env:
@@ -2429,17 +2429,17 @@ def _resolve_session_platform() -> str:
     TUI-only slash commands (``/reload-mcp``, …) to chat-panel users.
 
     Resolution:
-      * ``lucifexex_DESKTOP=1`` and lucifexifex_DESKTOP_TERMINAL`` unset → "desktop"
+      * ``lucifex_DESKTOP=1`` and lucifexifex_DESKTOP_TERMINAL`` unset → "desktop"
         (the chat-panel backend — a graphical React surface, not a terminal).
-      * ``lucifexex_DESKTOP_TERMINAL=1`` → "tui"
-        (``lucifexex --tui`` running in the desktop's embedded terminal pane;
+      * ``lucifex_DESKTOP_TERMINAL=1`` → "tui"
+        (``lucifex --tui`` running in the desktop's embedded terminal pane;
         it IS a TUI, just embedded. The clarifier attached to the tui hint
         in system_prompt.py tells the agent about the embedding.)
       * neither set → "tui"
-        (standalone ``lucifexex --tui``.)
+        (standalone ``lucifex --tui``.)
     """
-    if is_truthy_value(os.environ.get("lucifexex_DESKTOP")) and not is_truthy_value(
-        os.environ.get("lucifexex_DESKTOP_TERMINAL")
+    if is_truthy_value(os.environ.get("lucifex_DESKTOP")) and not is_truthy_value(
+        os.environ.get("lucifex_DESKTOP_TERMINAL")
     ):
         return "desktop"
     return "tui"
@@ -2465,9 +2465,9 @@ def _resolve_agent_platform(source: str | None) -> str:
 def _config_model_target() -> tuple[str, str]:
     """(model, provider) currently selected by config.yaml — and ONLY config.
 
-    Unlike `_resolve_model()`, this never reads lucifexex_MODEL /
+    Unlike `_resolve_model()`, this never reads lucifex_MODEL /
     LUCIFEX_INFERENCE_MODEL. Those env vars are a launch-scoped seed
-    (`lucifexex --tui -m <model>`, hosted-instance provisioning); if they
+    (`lucifex --tui -m <model>`, hosted-instance provisioning); if they
     fed the per-turn sync, the seed would be replayed as a /model switch
     and persisted globally, or would pin the session so dashboard/CLI
     model changes never reach an open chat.
@@ -2482,8 +2482,8 @@ def _config_model_target() -> tuple[str, str]:
             provider = ""
     elif isinstance(cfg_model, str):
         model = cfg_model.strip()
-    # No fallback to _resolve_model() here: that reads lucifexex_MODEL /
-    # LUCIFEX_INFERENCE_MODEL, which `lucifexex --tui -m <model>` sets as a
+    # No fallback to _resolve_model() here: that reads lucifex_MODEL /
+    # LUCIFEX_INFERENCE_MODEL, which `lucifex --tui -m <model>` sets as a
     # session-scoped seed for THIS launch. When config.yaml has no
     # model.default (custom-provider-only setups), falling back to the env
     # seed made the per-turn sync treat the -m flag as "the configured
@@ -2496,12 +2496,12 @@ def _config_model_target() -> tuple[str, str]:
 
 def _resolve_startup_runtime() -> tuple[str, str | None]:
     model = _resolve_model()
-    explicit_provider = os.environ.get("lucifexex_TUI_PROVIDER", "").strip()
+    explicit_provider = os.environ.get("lucifex_TUI_PROVIDER", "").strip()
     if explicit_provider:
         return model, explicit_provider
 
     explicit_model = (
-        os.environ.get("lucifexex_MODEL", "")
+        os.environ.get("lucifex_MODEL", "")
         or os.environ.get("LUCIFEX_INFERENCE_MODEL", "")
     ).strip()
     if not explicit_model:
@@ -2517,7 +2517,7 @@ def _resolve_startup_runtime() -> tuple[str, str | None]:
                 if isinstance(cfg, dict)
                 else ""
             )
-            or os.environ.get("lucifexex_INFERENCE_PROVIDER", "").strip().lower()
+            or os.environ.get("lucifex_INFERENCE_PROVIDER", "").strip().lower()
             or "auto"
         )
         detected = detect_static_provider_for_model(explicit_model, current_provider)
@@ -2934,7 +2934,7 @@ def _load_memory_notifications() -> str:
 
 
 def _load_tool_progress_mode() -> str:
-    env = os.environ.get("lucifexex_TUI_TOOL_PROGRESS", "").strip().lower()
+    env = os.environ.get("lucifex_TUI_TOOL_PROGRESS", "").strip().lower()
     if env in {"off", "new", "all", "verbose"}:
         return env
     raw = (_load_cfg().get("display") or {}).get("tool_progress", "all")
@@ -2949,15 +2949,15 @@ def _load_tool_progress_mode() -> str:
 def _load_enabled_toolsets() -> list[str] | None:
     explicit = [
         item.strip()
-        for item in os.environ.get("lucifexex_TUI_TOOLSETS", "").split(",")
+        for item in os.environ.get("lucifex_TUI_TOOLSETS", "").split(",")
         if item.strip()
     ]
     cfg = None
     fallback_notice = None
 
-    # Coding posture (base lucifexex): with no explicit pin, collapse to the
+    # Coding posture (base lucifex): with no explicit pin, collapse to the
     # coding toolset (+ enabled MCP servers) when sitting in a code workspace.
-    # The desktop app and `lucifexex --tui` both land here. See
+    # The desktop app and `lucifex --tui` both land here. See
     # agent/coding_context.py. No config is loaded yet at this point, so we let
     # coding_selection() load it lazily (cli.py passes its already-resolved
     # CLI_CONFIG instead, purely to avoid a redundant read).
@@ -3001,7 +3001,7 @@ def _load_enabled_toolsets() -> list[str] | None:
             ignored = [name for name in explicit if name not in {"all", "*"}]
             if ignored:
                 print(
-                    "[tui] lucifexex_TUI_TOOLSETS=all enables every toolset; "
+                    "[tui] lucifex_TUI_TOOLSETS=all enables every toolset; "
                     f"ignoring additional entries: {', '.join(ignored)}",
                     file=sys.stderr,
                     flush=True,
@@ -3045,13 +3045,13 @@ def _load_enabled_toolsets() -> list[str] | None:
 
         if unknown:
             print(
-                f"[tui] ignoring unknown lucifexex_TUI_TOOLSETS entries: {', '.join(unknown)}",
+                f"[tui] ignoring unknown lucifex_TUI_TOOLSETS entries: {', '.join(unknown)}",
                 file=sys.stderr,
                 flush=True,
             )
         if disabled:
             print(
-                "[tui] ignoring disabled MCP servers in lucifexex_TUI_TOOLSETS "
+                "[tui] ignoring disabled MCP servers in lucifex_TUI_TOOLSETS "
                 "(set enabled: true in config.yaml to use): "
                 f"{', '.join(disabled)}",
                 file=sys.stderr,
@@ -3062,7 +3062,7 @@ def _load_enabled_toolsets() -> list[str] | None:
             return valid
 
         fallback_notice = (
-            "[tui] no valid lucifexex_TUI_TOOLSETS entries; using configured CLI toolsets"
+            "[tui] no valid lucifex_TUI_TOOLSETS entries; using configured CLI toolsets"
         )
 
     try:
@@ -3082,9 +3082,9 @@ def _load_enabled_toolsets() -> list[str] | None:
             print(fallback_notice, file=sys.stderr, flush=True)
         if not enabled:
             return None
-        # The desktop Project tools are off _lucifexex_CORE_TOOLS (every other
+        # The desktop Project tools are off _lucifex_CORE_TOOLS (every other
         # platform would carry their schema for nothing), so the platform
-        # recovery above — which keys off lucifexex-cli's tool universe — can't
+        # recovery above — which keys off lucifex-cli's tool universe — can't
         # surface them. This resolver runs ONLY in the desktop/TUI gateway, so
         # folding in the `project` toolset here is the gate that exposes them on
         # exactly the surface that can follow a project move.
@@ -3092,7 +3092,7 @@ def _load_enabled_toolsets() -> list[str] | None:
     except Exception:
         if fallback_notice is not None:
             print(
-                "[tui] no valid lucifexex_TUI_TOOLSETS entries and configured CLI toolsets could not be loaded; enabling all toolsets",
+                "[tui] no valid lucifex_TUI_TOOLSETS entries and configured CLI toolsets could not be loaded; enabling all toolsets",
                 file=sys.stderr,
                 flush=True,
             )
@@ -3372,8 +3372,8 @@ def _apply_model_switch(
     # session (e.g. /new via _reset_session_agent, or resume) re-derives the
     # user's chosen model/provider instead of falling back to global config.
     #
-    # We deliberately do NOT write process-global env vars (lucifexex_MODEL /
-    # LUCIFEX_INFERENCE_MODEL / lucifexex_TUI_PROVIDER lucifexifex_INFERENCE_PROVIDER)
+    # We deliberately do NOT write process-global env vars (lucifex_MODEL /
+    # LUCIFEX_INFERENCE_MODEL / lucifex_TUI_PROVIDER lucifexifex_INFERENCE_PROVIDER)
     # here. The desktop backend hosts every same-profile session in ONE process,
     # so mutating os.environ on a /model switch leaked the new model/provider
     # into every OTHER live session's next agent rebuild — switching the model
@@ -3434,7 +3434,7 @@ def _sync_agent_model_with_config(sid: str, session: dict) -> None:
             # This sync ADOPTS a config.yaml change into the live session; it
             # must never write config back. Without this, the flag/config
             # default (persist_switch_by_default=True) re-persisted whatever
-            # target the sync computed — the path that leaked `lucifexex --tui -m`
+            # target the sync computed — the path that leaked `lucifex --tui -m`
             # into config.yaml as the permanent global model.
             persist_override=False,
         )
@@ -3637,8 +3637,8 @@ def _get_usage(agent) -> dict:
     except Exception:
         pass
     # Dev-only live credits-spent readout (L0 usage-aware-credits). Gated on
-    # lucifexex_DEV_CREDITS so the payload stays clean when the flag is off.
-    if is_truthy_value(os.environ.get("lucifexex_DEV_CREDITS")):
+    # lucifex_DEV_CREDITS so the payload stays clean when the flag is off.
+    if is_truthy_value(os.environ.get("lucifex_DEV_CREDITS")):
         try:
             spent = agent.get_credits_spent_micros()
             if spent is not None:
@@ -4559,7 +4559,7 @@ def _apply_personality_to_session(
 
 def _cfg_max_turns(cfg: dict, default: int) -> int:
     try:
-        env_max = int(os.environ.get("lucifexex_TUI_MAX_TURNS", "") or 0)
+        env_max = int(os.environ.get("lucifex_TUI_MAX_TURNS", "") or 0)
         if env_max > 0:
             return env_max
     except (TypeError, ValueError):
@@ -4569,7 +4569,7 @@ def _cfg_max_turns(cfg: dict, default: int) -> int:
 
 
 def _parse_tui_skills_env() -> list[str]:
-    raw = os.environ.get("lucifexex_TUI_SKILLS", "")
+    raw = os.environ.get("lucifex_TUI_SKILLS", "")
     skills: list[str] = []
     seen: set[str] = set()
     for part in raw.replace("\n", ",").split(","):
@@ -5005,7 +5005,7 @@ def _make_agent(
                 logger.warning(
                     "Unknown skill(s) requested, skipping: %s. "
                     "Continuing with: %s. "
-                    "List available skills with `lucifexex skills list`.",
+                    "List available skills with `lucifex skills list`.",
                     missing_display,
                     ", ".join(loaded_skills),
                 )
@@ -5120,10 +5120,10 @@ def _make_agent(
         session_id=session_id or key,
         session_db=session_db if session_db is not None else _get_db(),
         ephemeral_system_prompt=system_prompt or None,
-        checkpoints_enabled=is_truthy_value(os.environ.get("lucifexex_TUI_CHECKPOINTS")),
-        pass_session_id=is_truthy_value(os.environ.get("lucifexex_TUI_PASS_SESSION_ID")),
-        skip_context_files=is_truthy_value(os.environ.get("lucifexex_IGNORE_RULES")),
-        skip_memory=is_truthy_value(os.environ.get("lucifexex_IGNORE_RULES")),
+        checkpoints_enabled=is_truthy_value(os.environ.get("lucifex_TUI_CHECKPOINTS")),
+        pass_session_id=is_truthy_value(os.environ.get("lucifex_TUI_PASS_SESSION_ID")),
+        skip_context_files=is_truthy_value(os.environ.get("lucifex_IGNORE_RULES")),
+        skip_memory=is_truthy_value(os.environ.get("lucifex_IGNORE_RULES")),
         fallback_model=_load_fallback_model(),
         **_agent_cbs(sid),
     )
@@ -5893,7 +5893,7 @@ def _(rid, params: dict) -> dict:
         # Resume picker should surface human conversation sessions from every
         # user-facing surface — CLI, TUI, all gateway platforms (including new
         # ones not enumerated here), ACP adapter clients, webhook sessions,
-        # custom `lucifexex_SESSION_SOURCE` values, and older installs with
+        # custom `lucifex_SESSION_SOURCE` values, and older installs with
         # different source labels. We deny-list only the noisy internal
         # sources (``tool`` sub-agent runs) rather than allow-listing a
         # fixed set of platform names that goes stale whenever a new
@@ -6691,7 +6691,7 @@ def _(rid, params: dict) -> dict:
     # filter on ``transport is _detached_ws_transport`` (the WS-detached drop
     # sentinel): a detached session is still attachable via a quick reconnect /
     # session.resume until the grace-reap finalizes it, and a standalone
-    # ``lucifexex --tui`` session legitimately rides the real stdio transport and
+    # ``lucifex --tui`` session legitimately rides the real stdio transport and
     # must stay visible.
     # Keep the natural creation/insertion order from ``_sessions``.  The
     # frontend marks the focused session with ``current``; it should not jump to
@@ -6938,7 +6938,7 @@ def _(rid, params: dict) -> dict:
 
     Desktop parity with the CLI ``/handoff`` command: we only write
     ``handoff_state='pending'`` onto the persisted session row. The actual
-    transfer is performed by the separate ``lucifexex gateway`` process, whose
+    transfer is performed by the separate ``lucifex gateway`` process, whose
     ``_handoff_watcher`` claims the row, re-binds the session to the platform's
     home channel, and forges a synthetic turn. The desktop then polls
     ``handoff.state`` for the terminal result.
@@ -7289,7 +7289,7 @@ def _pet_active_selection():
 def _pet_state_rows(spritesheet) -> list[str]:
     """Row taxonomy for the concrete active pet sheet.
 
-    lucifexex has to support both the legacy 8-row petdex atlas and the current
+    lucifex has to support both the legacy 8-row petdex atlas and the current
     Codex/petdex 9-row atlas. The desktop canvas gets this list and indexes it
     with the same `PetState` names the Python renderer uses.
     """
@@ -7790,7 +7790,7 @@ _PET_REFERENCE_MIME_EXT = {
 try:
     _PET_REFERENCE_MAX_BYTES = max(
         1,
-        int(os.environ.get("lucifexex_PET_REFERENCE_MAX_BYTES") or str(16 * 1024 * 1024)),
+        int(os.environ.get("lucifex_PET_REFERENCE_MAX_BYTES") or str(16 * 1024 * 1024)),
     )
 except (TypeError, ValueError):
     _PET_REFERENCE_MAX_BYTES = 16 * 1024 * 1024
@@ -8688,7 +8688,7 @@ def _(rid, params: dict) -> dict:
     model = getattr(agent, "model", None) or mirror.get("model") or "(unknown)"
     project = _project_info_for_cwd(_display_session_cwd(session))
     lines = [
-        "lucifexex TUI Status",
+        "lucifex TUI Status",
         "",
         f"Session ID: {key}",
         f"Path: {display_lucifex_home()}",
@@ -8888,7 +8888,7 @@ def _(rid, params: dict) -> dict:
         return err
 
     agent = session["agent"]
-    # Mirror the classic CLI /save: snapshot under the lucifexex profile home
+    # Mirror the classic CLI /save: snapshot under the lucifex profile home
     # (~/.lucifex/sessions/saved/) rather than the project/workspace CWD, and
     # include the system prompt so the export matches the dashboard save.
     saved_dir = get_lucifex_home() / "sessions" / "saved"
@@ -8898,7 +8898,7 @@ def _(rid, params: dict) -> dict:
         return _err(rid, 5011, f"failed to create save directory {saved_dir}: {e}")
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    path = saved_dir / f"lucifexex_conversation_{timestamp}.json"
+    path = saved_dir / f"lucifex_conversation_{timestamp}.json"
 
     with session["history_lock"]:
         messages = list(session.get("history", []))
@@ -10826,7 +10826,7 @@ def _attachment_ref_path(session: dict, target: Path) -> str:
 
 
 def _desktop_attachment_dir(session: dict) -> Path:
-    root = Path(_session_cwd(session)).resolve() / ".lucifexex" / "desktop-attachments"
+    root = Path(_session_cwd(session)).resolve() / ".lucifex" / "desktop-attachments"
     root.mkdir(parents=True, exist_ok=True)
     return root
 
@@ -10906,10 +10906,10 @@ def _stage_session_file_attachment(
       1. The path resolves to a file already INSIDE the session workspace — use
          it as-is (no copy, ``uploaded=False``).
       2. The path resolves to a gateway-visible file OUTSIDE the workspace — copy
-         it into ``.lucifexex/desktop-attachments/`` so the ``@file:`` ref resolves.
+         it into ``.lucifex/desktop-attachments/`` so the ``@file:`` ref resolves.
       3. The path doesn't exist on the gateway (the common remote case: it's a
          path on the CLIENT's disk) — decode the uploaded ``data_url`` bytes and
-         write them into ``.lucifexex/desktop-attachments/``.
+         write them into ``.lucifex/desktop-attachments/``.
 
     Returns ``(stored_path, uploaded)``.
     """
@@ -11126,14 +11126,14 @@ def _(rid, params: dict) -> dict:
                 if has_history
                 else None
             ),
-            "Restart exactly the app intended for the Preview URL, not lucifexex Desktop itself.",
+            "Restart exactly the app intended for the Preview URL, not lucifex Desktop itself.",
             "The Preview URL and port are the target. Preserve that target unless you conclude it is impossible.",
             "If the prior conversation shows a specific command that bound this URL/port, prefer re-running THAT exact command (in the same cwd) over guessing a new one.",
-            "First inspect what process, if any, owns the Preview URL port. If a stale server exists, inspect its cwd and prefer that cwd over the lucifexex/Desktop process cwd.",
+            "First inspect what process, if any, owns the Preview URL port. If a stale server exists, inspect its cwd and prefer that cwd over the lucifex/Desktop process cwd.",
             "The Current working directory is only a hint. Do not assume it is the preview app root when the port owner or files indicate another root.",
             "If the console shows a module-script MIME error for src/main.tsx or similar, a static server is serving source files. Do not restart python -m http.server or any dumb static server for that app.",
             "For module-script MIME failures, inspect package.json/vite config in the candidate app root and start the real dev server/bundler (for example npm/pnpm/yarn dev) so module transforms happen.",
-            "Before declaring success, verify the Preview URL responds with the intended app, not lucifexex Desktop. If it servelucifexifex/Desktop UI or another unrelated app, stop that process and report failure.",
+            "Before declaring success, verify the Preview URL responds with the intended app, not lucifex Desktop. If it servelucifexifex/Desktop UI or another unrelated app, stop that process and report failure.",
             "Do not modify files. Do not ask the user unless blocked.",
             "Prefer existing project scripts or commands when they are clear.",
             "If a stale process owns the needed port, handle it safely.",
@@ -11541,13 +11541,13 @@ def _(rid, params: dict) -> dict:
                         _session_info(agent, session),
                     )
             else:
-                current = is_truthy_value(os.environ.get("lucifexex_YOLO_MODE"))
+                current = is_truthy_value(os.environ.get("lucifex_YOLO_MODE"))
                 enable = _resolve_toggle(current)
                 if enable:
-                    os.environ["lucifexex_YOLO_MODE"] = "1"
+                    os.environ["lucifex_YOLO_MODE"] = "1"
                     nv = "1"
                 else:
-                    os.environ.pop("lucifexex_YOLO_MODE", None)
+                    os.environ.pop("lucifex_YOLO_MODE", None)
                     nv = "0"
             return _ok(rid, {"key": key, "value": nv, "scope": "session"})
         except Exception as e:
@@ -12003,7 +12003,7 @@ def _(rid, params, pdb, conn) -> dict:
 
 def _is_repo_junk(root: str) -> bool:
     """A git root we never auto-surface as a project: the bare home dir or
-    anything under LUCIFEX_HOME (~/.lucifexex by default) — config/sessions/skills,
+    anything under LUCIFEX_HOME (~/.lucifex by default) — config/sessions/skills,
     not a workspace. User-created projects pointing there are still honored."""
     if not root:
         return True
@@ -12040,8 +12040,8 @@ def _discover_repos_payload(db, *, conn=None, backfill: bool = True) -> list[dic
     """Merge filesystem-scanned repos (cached) with session-derived repo roots.
 
     Repo-first: the disk scan (persisted by `projects.record_repos`) surfaces
-    repos even with zero lucifexex sessions. Session-derived roots cover repos
-    outside the scan roots. Both are junk-filtered (lucifexex home subtree + bare
+    repos even with zero lucifex sessions. Session-derived roots cover repos
+    outside the scan roots. Both are junk-filtered (lucifex home subtree + bare
     home) and carry their session totals for the overview.
 
     ``conn`` reuses an already-open projects.db connection (the tree path holds
@@ -12502,7 +12502,7 @@ def _(rid, params: dict) -> dict:
                     "provider": provider,
                     "model": runtime.get("model"),
                     "source": source,
-                    "error": "No lucifexex provider is configured.",
+                    "error": "No lucifex provider is configured.",
                 },
             )
 
@@ -12872,14 +12872,14 @@ def _(rid, params: dict) -> dict:
 def _cli_exec_blocked(argv: list[str]) -> str | None:
     """Return user hint if this argv must not run headless in the gateway process."""
     if not argv:
-        return "bare `lucifexex` is interactive — use lucifexifex chat -q …` or rlucifexucifex` in another terminal"
+        return "bare `lucifex` is interactive — use lucifexifex chat -q …` or rlucifexucifex` in another terminal"
     a0 = argv[0].lower()
     if a0 == "setup":
-        return "`lucifexex setup` needs a full terminal — run it outside the TUI"
+        return "`lucifex setup` needs a full terminal — run it outside the TUI"
     if a0 == "gateway":
-        return "`lucifexex gateway` is long-running — run it in another terminal"
+        return "`lucifex gateway` is long-running — run it in another terminal"
     if a0 == "sessions" and len(argv) > 1 and argv[1].lower() == "browse":
-        return "`lucifexex sessions browse` is interactive — use /resume here, or run browse in another terminal"
+        return "`lucifex sessions browse` is interactive — use /resume here, or run browse in another terminal"
     if a0 == "config" and len(argv) > 1 and argv[1].lower() == "edit":
         return "`lucifex config edit` needs $EDITOR in a real terminal"
     return None
@@ -14080,7 +14080,7 @@ def _(rid, params: dict) -> dict:
                 rid,
                 4003,
                 f"{pconfig.name} uses {pconfig.auth_type} auth — "
-                f"run `lucifexex model` to configure",
+                f"run `lucifex model` to configure",
             )
         if not pconfig.api_key_env_vars:
             return _err(rid, 4004, f"no env var defined for {pconfig.name}")
@@ -14267,7 +14267,7 @@ def _format_live_history_output(session: dict) -> str:
     lines = ["Conversation History", "────────────────────────────────────────"]
     for idx, message in enumerate(messages, start=1):
         role = str(message.get("role") or "unknown")
-        label = "You" if role == "user" else "lucifexex" if role == "assistant" else role.title()
+        label = "You" if role == "user" else "lucifex" if role == "assistant" else role.title()
         text = str(message.get("text") or message.get("context") or "").strip()
         if len(text) > 400:
             text = f"{text[:400]}..."
@@ -14708,12 +14708,12 @@ def _voice_mode_enabled() -> bool:
     avoids the TUI auto-starting in REC the next time the user opens it
     just because they happened to enable voice in a prior session.
     """
-    return os.environ.get("lucifexex_VOICE", "").strip() == "1"
+    return os.environ.get("lucifex_VOICE", "").strip() == "1"
 
 
 def _voice_tts_enabled() -> bool:
     """Whether agent replies should be spoken back via TTS (runtime only)."""
-    return os.environ.get("lucifexex_VOICE_TTS", "").strip() == "1"
+    return os.environ.get("lucifex_VOICE_TTS", "").strip() == "1"
 
 
 def _voice_cfg_dict() -> dict:
@@ -14789,7 +14789,7 @@ def _(rid, params: dict) -> dict:
         # Runtime-only flag (CLI parity) — no _write_config_key, so the
         # next TUI launch starts with voice OFF instead of auto-REC from a
         # persisted stale toggle.
-        os.environ["lucifexex_VOICE"] = "1" if enabled else "0"
+        os.environ["lucifex_VOICE"] = "1" if enabled else "0"
 
         if not enabled:
             # Disabling the mode must tear the continuous loop down; the
@@ -14804,7 +14804,7 @@ def _(rid, params: dict) -> dict:
                 logger.warning("voice: stop_continuous failed during toggle off: %s", e)
 
             # Clear TTS so it can be toggled independently after voice is off.
-            os.environ["lucifexex_VOICE_TTS"] = "0"
+            os.environ["lucifex_VOICE_TTS"] = "0"
 
         return _ok(
             rid,
@@ -14820,7 +14820,7 @@ def _(rid, params: dict) -> dict:
             return _err(rid, 4014, "enable voice mode first: /voice on")
         new_value = not _voice_tts_enabled()
         # Runtime-only flag (CLI parity) — see voice.toggle on/off above.
-        os.environ["lucifexex_VOICE_TTS"] = "1" if new_value else "0"
+        os.environ["lucifex_VOICE_TTS"] = "1" if new_value else "0"
         # Include ``record_key`` on every branch so a /voice tts toggle
         # doesn't reset the TUI's cached shortcut to the default when a
         # user has a custom binding configured (Copilot review, round 2
@@ -15367,9 +15367,9 @@ def _(rid, params: dict) -> dict:
     try:
         cfg = _load_cfg()
         model = _resolve_model()
-        api_key = os.environ.get("lucifexex_API_KEY", "") or cfg.get("api_key", "")
+        api_key = os.environ.get("lucifex_API_KEY", "") or cfg.get("api_key", "")
         masked = f"****{api_key[-4:]}" if len(api_key) > 4 else "(not set)"
-        base_url = os.environ.get("lucifexex_BASE_URL", "") or cfg.get("base_url", "")
+        base_url = os.environ.get("lucifex_BASE_URL", "") or cfg.get("base_url", "")
 
         sections = [
             {
@@ -15628,7 +15628,7 @@ def _(rid, params: dict) -> dict:
 
     Returns ``frames`` (reveal 0→1) plus static legend/summary/bucket metadata,
     so Ink can render and walk the tree locally without round-tripping the
-    gateway. Shares its renderer with the ``lucifexex journey`` CLI.
+    gateway. Shares its renderer with the ``lucifex journey`` CLI.
     """
     try:
         cols = int(params.get("cols", 80) or 80)
@@ -15768,7 +15768,7 @@ def _(rid, params: dict) -> dict:
     """List installed plugins with activation state, or toggle one on/off.
 
     Backs the TUI Plugins Hub. Uses the same disk-discovery + enable/disable
-    primitives as ``lucifexex plugins`` / the dashboard, so the three surfaces
+    primitives as ``lucifex plugins`` / the dashboard, so the three surfaces
     agree on what's installed and what's enabled.
 
     Actions:

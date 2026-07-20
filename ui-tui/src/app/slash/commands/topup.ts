@@ -1,4 +1,4 @@
-import { driveChargeSettlement, type SettlementOutcome } from '@lucifexex/shared/charge-settlement'
+import { driveChargeSettlement, type SettlementOutcome } from '@lucifex/shared/charge-settlement'
 
 import type {
   BillingChargeResponse,
@@ -110,7 +110,7 @@ const renderBillingError = (
     case 'no_payment_method':
       sys(
         '💳 No saved card for terminal charges yet. Set one up on the portal ' +
-          "(one-time credit buys don't save a reusable card)."
+        "(one-time credit buys don't save a reusable card)."
       )
 
       break
@@ -210,7 +210,7 @@ const pollCharge = (sys: Sys, ctx: SlashRunCtx, chargeId: string, portalUrl?: st
       case 'timed_out':
         sys(
           '🟡 Still processing after 5 minutes — this is a timeout, not a failure. ' +
-            'Check /topup or the portal shortly.'
+          'Check /topup or the portal shortly.'
         )
 
         if (portalUrl) {

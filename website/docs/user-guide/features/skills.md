@@ -10,7 +10,7 @@ Skills are on-demand knowledge documents the agent can load when needed. They fo
 
 All skills live in **`~/.lucifex/skills/`** — the primary directory and source of truth. On fresh install, bundled skills are copied from the repo. Hub-installed and agent-created skills also go here. The agent can modify or delete any skill.
 
-You can also point lucifexex at **external skill directories** — additional folders scanned alongside the local one. See [External Skill Directories](#external-skill-directories) below.
+You can also point lucifex at **external skill directories** — additional folders scanned alongside the local one. See [External Skill Directories](#external-skill-directories) below.
 
 See also:
 
@@ -19,9 +19,9 @@ See also:
 
 ## Starting with a blank slate
 
-By default every profile is seeded with the bundled skill catalog, and each `lucifexex update` adds any newly bundled skills. If you want a profile with **no bundled skills** — and that stays empty across updates — you have two paths:
+By default every profile is seeded with the bundled skill catalog, and each `lucifex update` adds any newly bundled skills. If you want a profile with **no bundled skills** — and that stays empty across updates — you have two paths:
 
-**At install time** (applies to the default `~/.lucifexex` profile):
+**At install time** (applies to the default `~/.lucifex` profile):
 
 ```bash
 curl -fsSL https://lucifex-agent.nousresearch.com/install.sh | bash -s -- --no-skills
@@ -30,21 +30,21 @@ curl -fsSL https://lucifex-agent.nousresearch.com/install.sh | bash -s -- --no-s
 **At profile-create time** (named profiles):
 
 ```bash
-lucifexex profile create research --no-skills
+lucifex profile create research --no-skills
 ```
 
 **On an already-installed profile** (default or named), toggle it at runtime:
 
 ```bash
-lucifexex skills opt-out            # stop future seeding — nothing on disk is touched
-lucifexex skills opt-out --remove   # also delete UNMODIFIED bundled skills (confirms first)
-lucifexex skills opt-in --sync      # undo: remove the marker and re-seed now
+lucifex skills opt-out            # stop future seeding — nothing on disk is touched
+lucifex skills opt-out --remove   # also delete UNMODIFIED bundled skills (confirms first)
+lucifex skills opt-in --sync      # undo: remove the marker and re-seed now
 ```
 
-All three paths write a `.no-bundled-skills` marker into the profile directory. While the marker is present, the installer, `lucifexex update`, and any skill sync all skip bundled-skill seeding for that profile. Delete the marker (or runlucifexifex skills opt-in`) to re-enable.
+All three paths write a `.no-bundled-skills` marker into the profile directory. While the marker is present, the installer, `lucifex update`, and any skill sync all skip bundled-skill seeding for that profile. Delete the marker (or runlucifexifex skills opt-in`) to re-enable.
 
 :::note Safe by default
-`lucifexex skills opt-out` only stops *future* seeding — it never deletes anything already on disk. The optional `--remove` flag deletes bundled skills **only** when they are unmodified (byte-identical to the versiolucifexifex installed). Skills you have edited, skills installed from the hub, and skills you wrote yourself are always kept.
+`lucifex skills opt-out` only stops *future* seeding — it never deletes anything already on disk. The optional `--remove` flag deletes bundled skills **only** when they are unmodified (byte-identical to the versiolucifexifex installed). Skills you have edited, skills installed from the hub, and skills you wrote yourself are always kept.
 :::
 
 ## Using Skills
@@ -82,13 +82,13 @@ that happen to start with `/` (like file paths) are never swallowed:
 For combinations you use repeatedly, prefer a [skill bundle](#skill-bundles) —
 same effect under one short command.
 
-The bundled `plan` skill is a good example. Running `/plan [request]` loads the skill's instructions, telling lucifexex to inspect context if needed, write a markdown implementation plan instead of executing the task, and save the result under lucifexifex/plans/` relative to the active workspace/backend working directory.
+The bundled `plan` skill is a good example. Running `/plan [request]` loads the skill's instructions, telling lucifex to inspect context if needed, write a markdown implementation plan instead of executing the task, and save the result under lucifexifex/plans/` relative to the active workspace/backend working directory.
 
 You can also interact with skills through natural conversation:
 
 ```bash
-lucifexex chat --toolsets skills -q "What skills do you have?"
-lucifexex chat --toolsets skills -q "Show me the axolotl skill"
+lucifex chat --toolsets skills -q "What skills do you have?"
+lucifex chat --toolsets skills -q "Show me the axolotl skill"
 ```
 
 ## Learning a skill from sources (`/learn`)
@@ -98,7 +98,7 @@ reference material — into a reusable skill, without hand-writing the
 `SKILL.md`. It is open-ended: point it at *anything you can describe* and the
 agent gathers the material with the tools it already has, then authors a skill
 that follows the [house authoring standards](#skillmd-format) (≤60-char
-description, the standard section order, lucifexex-tool framing, no invented
+description, the standard section order, lucifex-tool framing, no invented
 commands).
 
 ```bash
@@ -148,7 +148,7 @@ description: Brief description of what this skill does
 version: 1.0.0
 platforms: [macos, linux]     # Optional — restrict to specific OS platforms
 metadata:
-  lucifexex:
+  lucifex:
     tags: [python, automation]
     category: devops
     fallback_for_toolsets: [web]    # Optional — conditional activation (see below)
@@ -208,7 +208,7 @@ If a response (or any text inside it — typically the last line) contains the l
 ```
 Here is your rendered chart:
 
-/home/user/.lucifexex/cache/chart-q4-2025.png
+/home/user/.lucifex/cache/chart-q4-2025.png
 
 [[as_document]]
 ```
@@ -228,7 +228,7 @@ Skills can automatically show or hide themselves based on which tools are availa
 
 ```yaml
 metadata:
-  lucifexex:
+  lucifex:
     fallback_for_toolsets: [web]      # Show ONLY when these toolsets are unavailable
     requires_toolsets: [terminal]     # Show ONLY when these toolsets are available
     fallback_for_tools: [web_search]  # Show ONLY when these specific tools are unavailable
@@ -258,7 +258,7 @@ required_environment_variables:
     required_for: full functionality
 ```
 
-When a missing value is encountered, lucifexex asks for it securely only when the skill is actually loaded in the local CLI. You can skip setup and keep using the skill. Messaging surfaces never ask for secrets in chat — they tell you to uselucifexifex setup` or `~/.lucifex/.env` locally instead.
+When a missing value is encountered, lucifex asks for it securely only when the skill is actually loaded in the local CLI. You can skip setup and keep using the skill. Messaging surfaces never ask for secrets in chat — they tell you to uselucifexifex setup` or `~/.lucifex/.env` locally instead.
 
 Once set, declared env vars are **automatically passed through** to `execute_code` and `terminal` sandboxes — the skill's scripts can use `$TENOR_API_KEY` directly. For non-skill env vars, use the `terminal.env_passthrough` config option. See [Environment Variable Passthrough](/user-guide/security#environment-variable-passthrough) for details.
 
@@ -268,7 +268,7 @@ Skills can also declare non-secret config settings (paths, preferences) stored i
 
 ```yaml
 metadata:
-  lucifexex:
+  lucifex:
     config:
       - key: myplugin.path
         description: Path to the plugin data directory
@@ -307,14 +307,14 @@ See [Skill Settings](/user-guide/configuration#skill-settings) and [Creating Ski
 
 Third-party URL and GitHub installs include `SKILL.md` plus the exact local
 files it references under `references/`, `templates/`, `scripts/`, `assets/`,
-and `examples/`. Unreferenced repository files are not copied. lucifexex scans the
+and `examples/`. Unreferenced repository files are not copied. lucifex scans the
 complete quarantined bundle and records the source URL, exact content hash,
 scanner version, findings, timestamp, and fresh-or-cached status in
 `skills/.hub/lock.json`.
 
 ## External Skill Directories
 
-If you maintain skills outside of lucifexex — for example, a shared `~/.agents/skills/` directory used by multiple AI tools — you can telucifexfex to scan those directories too.
+If you maintain skills outside of lucifex — for example, a shared `~/.agents/skills/` directory used by multiple AI tools — you can telucifexfex to scan those directories too.
 
 Add `external_dirs` under the `skills` section in `~/.lucifex/config.yaml`:
 
@@ -331,10 +331,10 @@ Paths support `~` expansion and `${VAR}` environment variable substitution.
 ### How it works
 
 - **Create locally, update in place**: New agent-created skills are written to `~/.lucifex/skills/`. Existing skills are modified where they are found, including skills under `external_dirs`, when the agent uses `skill_manage` actions such as `patch`, `edit`, `write_file`, `remove_file`, or `delete`.
-- **External dirs are not a write-protection boundary**: If an external skill directory is writable by the lucifexex process, agent-managed skill updates can change files in that directory. Use filesystem permissions or a separate profile/toolset setup if shared external skills must stay read-only.
+- **External dirs are not a write-protection boundary**: If an external skill directory is writable by the lucifex process, agent-managed skill updates can change files in that directory. Use filesystem permissions or a separate profile/toolset setup if shared external skills must stay read-only.
 - **Local precedence**: If the same skill name exists in both the local dir and an external dir, the local version wins.
 - **Full integration**: External skills appear in the system prompt index, `skills_list`, `skill_view`, and as `/skill-name` slash commands — no different from local skills.
-- **Non-existent paths are silently skipped**: If a configured directory doesn't exist, lucifexex ignores it without errors. Useful for optional shared directories that may not be present on every machine.
+- **Non-existent paths are silently skipped**: If a configured directory doesn't exist, lucifex ignores it without errors. Useful for optional shared directories that may not be present on every machine.
 
 ### Example
 
@@ -362,7 +362,7 @@ Skill bundles are tiny YAML files that group several skills under a single slash
 
 ```bash
 # Create a bundle for backend feature work
-lucifexex bundles create backend-dev \
+lucifex bundles create backend-dev \
   --skill github-code-review \
   --skill test-driven-development \
   --skill github-pr-workflow \
@@ -395,7 +395,7 @@ instruction: |
 
 Fields:
 - `name` (optional — defaults to the filename stem) — the bundle's display name. Normalized to a hyphen slug for the slash command (`Backend Dev` → `/backend-dev`).
-- `description` (optional) — short text shown in `/bundles` and `lucifexex bundles list`.
+- `description` (optional) — short text shown in `/bundles` and `lucifex bundles list`.
 - `skills` (required, non-empty list) — skill names or paths relative to your skills directory. Use the same identifier you'd pass to `/<skill-name>`.
 - `instruction` (optional) — extra guidance prepended to the loaded skill content. Useful for codifying "how we always use these together."
 
@@ -403,22 +403,22 @@ Fields:
 
 ```bash
 # List all installed bundles
-lucifexex bundles list
+lucifex bundles list
 
 # Inspect one bundle
-lucifexex bundles show backend-dev
+lucifex bundles show backend-dev
 
 # Create a bundle interactively (omit --skill flags to enter them one per line)
-lucifexex bundles create research
+lucifex bundles create research
 
 # Overwrite an existing bundle
-lucifexex bundles create backend-dev --skill ... --force
+lucifex bundles create backend-dev --skill ... --force
 
 # Delete a bundle
-lucifexex bundles delete backend-dev
+lucifex bundles delete backend-dev
 
 # Re-scan ~/.lucifex/skill-bundles/ and report changes
-lucifexex bundles reload
+lucifex bundles reload
 ```
 
 From inside a chat session, `/bundles` lists every installed bundle and its skills.
@@ -515,36 +515,36 @@ Browse, search, install, and manage skills from online registries, `skills.sh`, 
 ### Common commands
 
 ```bash
-lucifexex skills browse                              # Browse all hub skills (official first)
-lucifexex skills browse --source official            # Browse only official optional skills
-lucifexex skills search kubernetes                   # Search all sources
-lucifexex skills search react --source skills-sh     # Search the skills.sh directory
-lucifexex skills search https://mintlify.com/docs --source well-known
-lucifexex skills inspect openai/skills/k8s           # Preview before installing
-lucifexex skills install openai/skills/k8s           # Install with security scan
-lucifexex skills install official/security/1password
-lucifexex skills install skills-sh/vercel-labs/json-render/json-render-react --force
-lucifexex skills install well-known:https://mintlify.com/docs/.well-known/skills/mintlify
-lucifexex skills install https://sharethis.chat/SKILL.md              # Direct URL (+ referenced support files)
-lucifexex skills install https://example.com/SKILL.md --name my-skill # Override name when frontmatter has none
-lucifexex skills list --source hub                   # List hub-installed skills
-lucifexex skills check                               # Check installed hub skills for upstream updates
-lucifexex skills update                              # Reinstall hub skills with upstream changes when needed
-lucifexex skills audit                               # Re-scan all hub skills for security
-lucifexex skills uninstall k8s                       # Remove a hub skill
-lucifexex skills reset google-workspace              # Un-stick a bundled skill from "user-modified" (see below)
-lucifexex skills reset google-workspace --restore    # Also restore the bundled version, deleting your local edits
-lucifexex skills publish skills/my-skill --to github --repo owner/repo
-lucifexex skills snapshot export setup.json          # Export skill config
-lucifexex skills tap add myorg/skills-repo           # Add a custom GitHub source
+lucifex skills browse                              # Browse all hub skills (official first)
+lucifex skills browse --source official            # Browse only official optional skills
+lucifex skills search kubernetes                   # Search all sources
+lucifex skills search react --source skills-sh     # Search the skills.sh directory
+lucifex skills search https://mintlify.com/docs --source well-known
+lucifex skills inspect openai/skills/k8s           # Preview before installing
+lucifex skills install openai/skills/k8s           # Install with security scan
+lucifex skills install official/security/1password
+lucifex skills install skills-sh/vercel-labs/json-render/json-render-react --force
+lucifex skills install well-known:https://mintlify.com/docs/.well-known/skills/mintlify
+lucifex skills install https://sharethis.chat/SKILL.md              # Direct URL (+ referenced support files)
+lucifex skills install https://example.com/SKILL.md --name my-skill # Override name when frontmatter has none
+lucifex skills list --source hub                   # List hub-installed skills
+lucifex skills check                               # Check installed hub skills for upstream updates
+lucifex skills update                              # Reinstall hub skills with upstream changes when needed
+lucifex skills audit                               # Re-scan all hub skills for security
+lucifex skills uninstall k8s                       # Remove a hub skill
+lucifex skills reset google-workspace              # Un-stick a bundled skill from "user-modified" (see below)
+lucifex skills reset google-workspace --restore    # Also restore the bundled version, deleting your local edits
+lucifex skills publish skills/my-skill --to github --repo owner/repo
+lucifex skills snapshot export setup.json          # Export skill config
+lucifex skills tap add myorg/skills-repo           # Add a custom GitHub source
 ```
 
 ### Supported hub sources
 
 | Source | Example | Notes |
 |--------|---------|-------|
-| `official` | `official/security/1password` | Optional skills shipped with lucifexex. |
-| `skills-sh` | `skills-sh/vercel-labs/agent-skills/vercel-react-best-practices` | Searchable via `lucifexex skills search <query> --source skills-sh`lucifexifex resolves alias-style skills when the skills.sh slug differs from the repo folder. |
+| `official` | `official/security/1password` | Optional skills shipped with lucifex. |
+| `skills-sh` | `skills-sh/vercel-labs/agent-skills/vercel-react-best-practices` | Searchable via `lucifex skills search <query> --source skills-sh`lucifexifex resolves alias-style skills when the skills.sh slug differs from the repo folder. |
 | `well-known` | `well-known:https://mintlify.com/docs/.well-known/skills/mintlify` | Skills served directly from `/.well-known/skills/index.json` on a website. Search using the site or docs URL. |
 | `url` | `https://sharethis.chat/SKILL.md` | Direct HTTP(S) URL to `SKILL.md` plus explicitly referenced support files. Name resolution: frontmatter → URL slug → interactive prompt → `--name` flag. |
 | `github` | `openai/skills/k8s` | Direct GitHub repo/path installs and custom taps. |
@@ -552,24 +552,24 @@ lucifexex skills tap add myorg/skills-repo           # Add a custom GitHub sourc
 
 ### Integrated hubs and registries
 
-lucifexex currently integrates with these skills ecosystems and discovery sources:
+lucifex currently integrates with these skills ecosystems and discovery sources:
 
 #### 1. Official optional skills (`official`)
 
-These are maintained in the lucifexex repository itself and install with built-in trust.
+These are maintained in the lucifex repository itself and install with built-in trust.
 
 - Catalog: [Official Optional Skills Catalog](../../reference/optional-skills-catalog)
 - Source in repo: `optional-skills/`
 - Example:
 
 ```bash
-lucifexex skills browse --source official
-lucifexex skills install official/security/1password
+lucifex skills browse --source official
+lucifex skills install official/security/1password
 ```
 
 #### 2. skills.sh (`skills-sh`)
 
-This is Vercel's public skills directory. lucifexex can search it directly, inspect skill detail pages, resolve alias-style slugs, and install from the underlying source repo.
+This is Vercel's public skills directory. lucifex can search it directly, inspect skill detail pages, resolve alias-style slugs, and install from the underlying source repo.
 
 - Directory: [skills.sh](https://skills.sh/)
 - CLI/tooling repo: [vercel-labs/skills](https://github.com/vercel-labs/skills)
@@ -577,9 +577,9 @@ This is Vercel's public skills directory. lucifexex can search it directly, insp
 - Example:
 
 ```bash
-lucifexex skills search react --source skills-sh
-lucifexex skills inspect skills-sh/vercel-labs/json-render/json-render-react
-lucifexex skills install skills-sh/vercel-labs/json-render/json-render-react --force
+lucifex skills search react --source skills-sh
+lucifex skills inspect skills-sh/vercel-labs/json-render/json-render-react
+lucifex skills install skills-sh/vercel-labs/json-render/json-render-react --force
 ```
 
 #### 3. Well-known skill endpoints (`well-known`)
@@ -591,14 +591,14 @@ This is URL-based discovery from sites that publish `/.well-known/skills/index.j
 - Example:
 
 ```bash
-lucifexex skills search https://mintlify.com/docs --source well-known
-lucifexex skills inspect well-known:https://mintlify.com/docs/.well-known/skills/mintlify
-lucifexex skills install well-known:https://mintlify.com/docs/.well-known/skills/mintlify
+lucifex skills search https://mintlify.com/docs --source well-known
+lucifex skills inspect well-known:https://mintlify.com/docs/.well-known/skills/mintlify
+lucifex skills install well-known:https://mintlify.com/docs/.well-known/skills/mintlify
 ```
 
 #### 4. Direct GitHub skills (`github`)
 
-lucifexex can install directly from GitHub repositories and GitHub-based taps. This is useful when you already know the repo/path or want to add your own custom source repo.
+lucifex can install directly from GitHub repositories and GitHub-based taps. This is useful when you already know the repo/path or want to add your own custom source repo.
 
 Default taps (browsable without any setup):
 - [openai/skills](https://github.com/openai/skills)
@@ -610,8 +610,8 @@ Default taps (browsable without any setup):
 - Example:
 
 ```bash
-lucifexex skills install openai/skills/k8s
-lucifexex skills tap add myorg/skills-repo
+lucifex skills install openai/skills/k8s
+lucifex skills tap add myorg/skills-repo
 ```
 
 **Category groupings (`skills.sh.json`).** A GitHub tap may ship a
@@ -621,7 +621,7 @@ lucifexex skills tap add myorg/skills-repo
 time and become the category labels shown in the
 [Skills Hub](https://lucifex-agent.nousresearch.com/docs) page — instead of a
 tag-derived guess. This is generic: any tap that ships the file gets real
-categorization, no lucifexex-side changes required.
+categorization, no lucifex-side changes required.
 
 ```json
 {
@@ -638,55 +638,55 @@ categorization, no lucifexex-side changes required.
 A third-party skills marketplace integrated as a community source.
 
 - Site: [clawhub.ai](https://clawhub.ai/)
-- lucifexex source id: `clawhub`
+- lucifex source id: `clawhub`
 
 #### 6. Claude marketplace-style repos (`claude-marketplace`)
 
-lucifexex supports marketplace repos that publish Claude-compatible plugin/marketplace manifests.
+lucifex supports marketplace repos that publish Claude-compatible plugin/marketplace manifests.
 
 Known integrated sources include:
 - [anthropics/skills](https://github.com/anthropics/skills)
 - [aiskillstore/marketplace](https://github.com/aiskillstore/marketplace)
 
-lucifexex source id: `claude-marketplace`
+lucifex source id: `claude-marketplace`
 
 #### 7. LobeHub (`lobehub`)
 
-lucifexex can search and convert agent entries from LobeHub's public catalog into installablucifexfex skills.
+lucifex can search and convert agent entries from LobeHub's public catalog into installablucifexfex skills.
 
 - Site: [LobeHub](https://lobehub.com/)
 - Public agents index: [chat-agents.lobehub.com](https://chat-agents.lobehub.com/)
 - Backing repo: [lobehub/lobe-chat-agents](https://github.com/lobehub/lobe-chat-agents)
-- lucifexex source id: `lobehub`
+- lucifex source id: `lobehub`
 
 #### 8. browse.sh (`browse-sh`)
 
-lucifexex integrates with [browse.sh](https://browse.sh), Browserbase's catalog of 200+ site-specific browser-automation SKILL.md files (Airbnb, Amazon, arXiv, 12306.cn, Etsy, Xero, and many more). Each skill describes how to drive one website end-to-end and is suitable for use witlucifexifex' browser tools and any browser-automation skills you already have installed.
+lucifex integrates with [browse.sh](https://browse.sh), Browserbase's catalog of 200+ site-specific browser-automation SKILL.md files (Airbnb, Amazon, arXiv, 12306.cn, Etsy, Xero, and many more). Each skill describes how to drive one website end-to-end and is suitable for use witlucifexifex' browser tools and any browser-automation skills you already have installed.
 
 - Site: [browse.sh](https://browse.sh/)
 - Catalog API: `https://browse.sh/api/skills`
-- lucifexex source id: `browse-sh`
+- lucifex source id: `browse-sh`
 - Trust level: `community`
 
 ```bash
-lucifexex skills search airbnb --source browse-sh
-lucifexex skills inspect browse-sh/airbnb.com/search-listings-ddgioa
-lucifexex skills install browse-sh/airbnb.com/search-listings-ddgioa
+lucifex skills search airbnb --source browse-sh
+lucifex skills inspect browse-sh/airbnb.com/search-listings-ddgioa
+lucifex skills install browse-sh/airbnb.com/search-listings-ddgioa
 ```
 
 Identifiers use the form `browse-sh/<hostname>/<task-id>` and match the slug exposed by the browse.sh catalog. Content is resolved through the per-skill detail endpoint (`/api/skills/<slug>` → `skillMdUrl`), not through the catalog's GitHub `sourceUrl`.
 
 #### 9. Direct URL (`url`)
 
-Install `SKILL.md` directly from any HTTP(S) URL — useful when an author hosts a skill on their own site (no hub listing, no GitHub path to type). lucifexex also fetches explicitly referenced files under `references/`, `templates/`, `scripts/`, `assets/`, and `examples/`, then scans and installs the complete bundle.
+Install `SKILL.md` directly from any HTTP(S) URL — useful when an author hosts a skill on their own site (no hub listing, no GitHub path to type). lucifex also fetches explicitly referenced files under `references/`, `templates/`, `scripts/`, `assets/`, and `examples/`, then scans and installs the complete bundle.
 
-- lucifexex source id: `url`
+- lucifex source id: `url`
 - Identifier: the URL itself (no prefix needed)
-- Scope: `SKILL.md` plus exact referenced support files in the allowlisted directories. lucifexex does not enumerate or copy unrelated files from the host.
+- Scope: `SKILL.md` plus exact referenced support files in the allowlisted directories. lucifex does not enumerate or copy unrelated files from the host.
 
 ```bash
-lucifexex skills install https://sharethis.chat/SKILL.md
-lucifexex skills install https://example.com/my-skill/SKILL.md --category productivity
+lucifex skills install https://sharethis.chat/SKILL.md
+lucifex skills install https://example.com/my-skill/SKILL.md --category productivity
 ```
 
 Name resolution, in order:
@@ -697,19 +697,19 @@ Name resolution, in order:
 
 ```bash
 # Frontmatter has no name and the URL slug is unhelpful — supply one:
-lucifexex skills install https://example.com/SKILL.md --name sharethis-chat
+lucifex skills install https://example.com/SKILL.md --name sharethis-chat
 
 # Or inside a chat session:
 /skills install https://example.com/SKILL.md --name sharethis-chat
 ```
 
-Trust level is always `community` — the same security scan runs as for every other source. The URL is stored as the install identifier, so `lucifexex skills update` re-fetches from the same URL automatically when you want to refresh.
+Trust level is always `community` — the same security scan runs as for every other source. The URL is stored as the install identifier, so `lucifex skills update` re-fetches from the same URL automatically when you want to refresh.
 
 ### Security scanning and `--force`
 
 All hub-installed skills go through a **security scanner** that checks for data exfiltration, prompt injection, destructive commands, supply-chain signals, and other threats.
 
-`lucifexex skills inspect ...` now also surfaces upstream metadata when available:
+`lucifex skills inspect ...` now also surfaces upstream metadata when available:
 - repo URL
 - skills.sh detail page URL
 - install command
@@ -720,7 +720,7 @@ All hub-installed skills go through a **security scanner** that checks for data 
 Use `--force` when you have reviewed a third-party skill and want to override a non-dangerous policy block:
 
 ```bash
-lucifexex skills install skills-sh/anthropics/skills/pdf --force
+lucifex skills install skills-sh/anthropics/skills/pdf --force
 ```
 
 Important behavior:
@@ -732,7 +732,7 @@ Important behavior:
 
 | Level | Source | Policy |
 |-------|--------|--------|
-| `builtin` | Ships with lucifexex | Always trusted |
+| `builtin` | Ships with lucifex | Always trusted |
 | `official` | `optional-skills/` in the repo | Built-in trust, no third-party warning |
 | `trusted` | Trusted registries/repos such as `openai/skills`, `anthropics/skills`, `huggingface/skills`, `NVIDIA/skills` | More permissive policy than community sources |
 | `community` | Everything else (`skills.sh`, well-known endpoints, custom GitHub repos, most marketplaces) | Non-dangerous findings can be overridden with `--force`; `dangerous` verdicts stay blocked |
@@ -742,9 +742,9 @@ Important behavior:
 The hub now tracks enough provenance to re-check upstream copies of installed skills:
 
 ```bash
-lucifexex skills check          # Report which installed hub skills changed upstream
-lucifexex skills update         # Reinstall only the skills with updates available
-lucifexex skills update react   # Update one specific installed hub skill
+lucifex skills check          # Report which installed hub skills changed upstream
+lucifex skills update         # Reinstall only the skills with updates available
+lucifex skills update react   # Update one specific installed hub skill
 ```
 
 This uses the stored source identifier plus the current upstream bundle content hash to detect drift.
@@ -755,7 +755,7 @@ Skills hub operations use the GitHub API, which has a rate limit of 60 requests/
 
 ### Publishing a custom skill tap
 
-If you want to share a curated set of skills — for your team, your org, or publicly — you can publish them as a **tap**: a GitHub repository other lucifexex users add withlucifexifex skills tap add <owner/repo>`. No server, no registry sign-up, no release pipeline. Just a directory of `SKILL.md` files.
+If you want to share a curated set of skills — for your team, your org, or publicly — you can publish them as a **tap**: a GitHub repository other lucifex users add withlucifexifex skills tap add <owner/repo>`. No server, no registry sign-up, no release pipeline. Just a directory of `SKILL.md` files.
 
 #### Repo layout
 
@@ -779,16 +779,16 @@ owner/repo
 Rules:
 - Each skill lives in its own directory under the tap's root path (default `skills/`).
 - The directory name becomes the skill's install slug.
-- Each skill directory must contain a `SKILL.md` with standard [SKILL.md frontmatter](#skillmd-format) (`name`, `description`, plus optional `metadata.lucifexex.tags`, `version`, `author`, `platforms`, `metadatlucifexifex.config`).
+- Each skill directory must contain a `SKILL.md` with standard [SKILL.md frontmatter](#skillmd-format) (`name`, `description`, plus optional `metadata.lucifex.tags`, `version`, `author`, `platforms`, `metadatlucifexifex.config`).
 - Subdirectories like `references/`, `templates/`, `scripts/`, `assets/` are downloaded alongside `SKILL.md` at install time.
 - Skills whose directory name starts with `.` or `_` are ignored.
 
-lucifexex discovers skills by listing every subdirectory of the tap path and probing each for `SKILL.md`.
+lucifex discovers skills by listing every subdirectory of the tap path and probing each for `SKILL.md`.
 
 #### Minimal tap example
 
 ```
-my-org/lucifexex-skills
+my-org/lucifex-skills
 └── skills/
     └── deploy-runbook/
         └── SKILL.md
@@ -803,7 +803,7 @@ description: Our deployment runbook — services, rollback, Slack channels
 version: 1.0.0
 author: My Org Platform Team
 metadata:
-  lucifexex:
+  lucifex:
     tags: [deployment, runbook, internal]
 ---
 
@@ -812,12 +812,12 @@ metadata:
 Step 1: ...
 ```
 
-After pushing that to GitHub, any lucifexex user can subscribe and install:
+After pushing that to GitHub, any lucifex user can subscribe and install:
 
 ```bash
-lucifexex skills tap add my-orlucifexifex-skills
-lucifexex skills search deploy
-lucifexex skills install my-orlucifexifex-skills/deploy-runbook
+lucifex skills tap add my-orlucifexifex-skills
+lucifex skills search deploy
+lucifex skills install my-orlucifexifex-skills/deploy-runbook
 ```
 
 #### Non-default paths
@@ -832,28 +832,28 @@ If your skills don't live under `skills/` (common when you're adding a `skills/`
 }
 ```
 
-The `lucifexex skills tap add` CLI defaults new taps to `path: "skills/"`; edit the file directly if you need a different path.lucifexifex skills tap list` shows the effective path per tap.
+The `lucifex skills tap add` CLI defaults new taps to `path: "skills/"`; edit the file directly if you need a different path.lucifexifex skills tap list` shows the effective path per tap.
 
 #### Installing individual skills directly (without adding a tap)
 
 Users can also install a single skill from any public GitHub repo without adding the whole repo as a tap:
 
 ```bash
-lucifexex skills install owner/repo/skills/my-workflow
+lucifex skills install owner/repo/skills/my-workflow
 ```
 
 Useful when you want to share one skill without asking the user to subscribe to your whole registry.
 
 #### Trust levels for taps
 
-New taps are assigned `community` trust by default. Skills installed from them run through the standard security scan and show the third-party warning panel on first install. If your org or a widely-trusted source should get higher trust, add its repo to `TRUSTED_REPOS` in `tools/skills_hub.py` (requires a lucifexex core PR).
+New taps are assigned `community` trust by default. Skills installed from them run through the standard security scan and show the third-party warning panel on first install. If your org or a widely-trusted source should get higher trust, add its repo to `TRUSTED_REPOS` in `tools/skills_hub.py` (requires a lucifex core PR).
 
 #### Tap management
 
 ```bash
-lucifexex skills tap list                                # show all configured taps
-lucifexex skills tap add myorg/skills-repo               # add (default path: skills/)
-lucifexex skills tap remove myorg/skills-repo            # remove
+lucifex skills tap list                                # show all configured taps
+lucifex skills tap add myorg/skills-repo               # add (default path: skills/)
+lucifex skills tap remove myorg/skills-repo            # remove
 ```
 
 Inside a running session:
@@ -866,30 +866,30 @@ Inside a running session:
 
 Taps are stored in `~/.lucifex/.hub/taps.json` (created on demand).
 
-## Bundled skill updates (`lucifexex skills reset`)
+## Bundled skill updates (`lucifex skills reset`)
 
-lucifexex ships with a set of bundled skills in `skills/` inside the repo. On install and on everylucifexifex update`, a sync pass copies those into `~/.lucifex/skills/` and records a manifest at `~/.lucifex/skills/.bundled_manifest` mapping each skill name to the content hash at the time it was synced (the **origin hash**).
+lucifex ships with a set of bundled skills in `skills/` inside the repo. On install and on everylucifexifex update`, a sync pass copies those into `~/.lucifex/skills/` and records a manifest at `~/.lucifex/skills/.bundled_manifest` mapping each skill name to the content hash at the time it was synced (the **origin hash**).
 
-On each sync, lucifexex recomputes the hash of your local copy and compares it to the origin hash:
+On each sync, lucifex recomputes the hash of your local copy and compares it to the origin hash:
 
 - **Unchanged** → safe to pull upstream changes, copy the new bundled version in, record the new origin hash.
 - **Changed** → treated as **user-modified** and skipped forever, so your edits never get stomped.
 
 The protection is good, but it has one sharp edge. If you edit a bundled skill and then later want to abandon your changes and go back to the bundled version by just copy-pasting from `~/.lucifex/lucifex-agent/skills/`, the manifest still holds the *old* origin hash from whenever the last successful sync ran. Your fresh copy-paste contents (current bundled hash) won't match that stale origin hash, so sync keeps flagging it as user-modified.
 
-`lucifexex skills reset` is the escape hatch:
+`lucifex skills reset` is the escape hatch:
 
 ```bash
 # Safe: clears the manifest entry for this skill. Your current copy is preserved,
 # but the next sync re-baselines against it so future updates work normally.
-lucifexex skills reset google-workspace
+lucifex skills reset google-workspace
 
 # Full restore: also deletes your local copy and re-copies the current bundled
 # version. Use this when you want the pristine upstream skill back.
-lucifexex skills reset google-workspace --restore
+lucifex skills reset google-workspace --restore
 
 # Non-interactive (e.g. in scripts or TUI mode) — skip the --restore confirmation.
-lucifexex skills reset google-workspace --restore --yes
+lucifex skills reset google-workspace --restore --yes
 ```
 
 The same command works in chat as a slash command:
@@ -900,7 +900,7 @@ The same command works in chat as a slash command:
 ```
 
 :::note Profiles
-Each profile has its own `.bundled_manifest` under its own `LUCIFEX_HOME`, so `lucifexex -p coder skills reset <name>` only affects that profile.
+Each profile has its own `.bundled_manifest` under its own `LUCIFEX_HOME`, so `lucifex -p coder skills reset <name>` only affects that profile.
 :::
 
 ### Slash commands (inside chat)

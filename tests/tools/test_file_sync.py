@@ -23,7 +23,7 @@ def tmp_files(tmp_path):
     return files
 
 
-def _make_get_files(tmp_files, remote_base="/root/.lucifexex"):
+def _make_get_files(tmp_files, remote_base="/root/.lucifex"):
     """Return a get_files_fn that maps local files to remote paths."""
     mapping = [(hp, f"{remote_base}/{name}") for name, hp in tmp_files.items()]
 
@@ -33,7 +33,7 @@ def _make_get_files(tmp_files, remote_base="/root/.lucifexex"):
     return get_files
 
 
-def _make_manager(tmp_files, remote_base="/root/.lucifexex", upload=None, delete=None):
+def _make_manager(tmp_files, remote_base="/root/.lucifex", upload=None, delete=None):
     """Create a FileSyncManager with test callbacks."""
     return FileSyncManager(
         get_files_fn=_make_get_files(tmp_files, remote_base),
@@ -283,7 +283,7 @@ class TestEdgeCases:
 
         upload = MagicMock()
         mgr = FileSyncManager(
-            get_files_fn=lambda: [(str(f), "/root/.lucifexex/ephemeral.txt")],
+            get_files_fn=lambda: [(str(f), "/root/.lucifex/ephemeral.txt")],
             upload_fn=upload,
             delete_fn=MagicMock(),
         )
@@ -307,13 +307,13 @@ class TestSyncBackSecurity:
             lambda: [
                 {
                     "host_path": str(credential),
-                    "container_path": "/root/.lucifexex/credentials/token.json",
+                    "container_path": "/root/.lucifex/credentials/token.json",
                 }
             ],
         )
         monkeypatch.setattr(
             "tools.credential_files.iter_skills_files",
-            lambda container_base="/root/.lucifexex": [
+            lambda container_base="/root/.lucifex": [
                 {
                     "host_path": str(skill),
                     "container_path": f"{container_base}/skills/skill.py",
@@ -322,21 +322,21 @@ class TestSyncBackSecurity:
         )
         monkeypatch.setattr(
             "tools.credential_files.iter_cache_files",
-            lambda container_base="/root/.lucifexex": [],
+            lambda container_base="/root/.lucifex": [],
         )
 
         def bulk_download(dest: Path) -> None:
             with tarfile.open(dest, "w") as tar:
                 for name, data in {
-                    "root/.lucifexex/credentials/token.json": b"remote-token",
-                    "root/.lucifexex/skills/skill.py": b"remote-skill",
+                    "root/.lucifex/credentials/token.json": b"remote-token",
+                    "root/.lucifex/skills/skill.py": b"remote-skill",
                 }.items():
                     info = tarfile.TarInfo(name)
                     info.size = len(data)
                     tar.addfile(info, io.BytesIO(data))
 
         mgr = FileSyncManager(
-            get_files_fn=lambda: iter_sync_files("/root/.lucifexex"),
+            get_files_fn=lambda: iter_sync_files("/root/.lucifex"),
             upload_fn=MagicMock(),
             delete_fn=MagicMock(),
             bulk_download_fn=bulk_download,

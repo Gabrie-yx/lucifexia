@@ -106,7 +106,7 @@ describe('openExternalUrl', () => {
       // extends EventEmitter.
       const child = new EventEmitter() as FakeChild
 
-      child.unref = () => {}
+      child.unref = () => { }
       lastChild = child
 
       return child as unknown as ChildProcess
@@ -180,7 +180,7 @@ describe('openExternalUrl', () => {
 
   it('on win32, common http URLs with & query params are forwarded intact', () => {
     const { spawn, calls } = mockSpawn()
-    const url = 'https://example.com/search?q=foo&page=2&utm_source=lucifexex'
+    const url = 'https://example.com/search?q=foo&page=2&utm_source=lucifex'
 
     openExternalUrl(url, { spawn, platform: () => 'win32' })
     expect(calls[0]!.args).toEqual([url])

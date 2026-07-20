@@ -9,7 +9,7 @@ the properties required for correct production behaviour:
   subprocesses (MCP stdio servers, git, bun, browser daemons) get reaped
   instead of accumulating as zombies (#15012).
 - Signal forwarding runs through the init so ``docker stop`` triggers
-  lucifexex's own graceful-shutdown path.
+  lucifex's own graceful-shutdown path.
 
 The init can be any reaper-capable PID-1: the historical lineage was
 ``tini``; the current image uses s6-overlay's ``/init`` (which execs
@@ -90,7 +90,7 @@ def _instruction_text(dockerfile_text: str) -> str:
 def test_dockerfile_installs_an_init_for_zombie_reaping(dockerfile_text):
     """Some init (tini, dumb-init, catatonit, s6-overlay) must be installed.
 
-    Without a PID-1 init that handles SIGCHLD, lucifexex accumulates zombie
+    Without a PID-1 init that handles SIGCHLD, lucifex accumulates zombie
     processes from MCP stdio subprocesses, git operations, browser
     daemons, etc.  In long-running Docker deployments this eventually
     exhausts the PID table.
@@ -107,7 +107,7 @@ def test_dockerfile_installs_an_init_for_zombie_reaping(dockerfile_text):
     assert installed, (
         "No PID-1 init detected in Dockerfile instructions (looked for: "
         f"{', '.join(_KNOWN_INIT_TOKENS)}). Without an init process to "
-        "reap orphaned subprocesses, lucifexex accumulates zombies in Docker "
+        "reap orphaned subprocesses, lucifex accumulates zombies in Docker "
         "deployments. See issue #15012."
     )
 
@@ -117,7 +117,7 @@ def test_dockerfile_entrypoint_routes_through_the_init(dockerfile_text):
 
     Installing the init is only half the fix — the container must actually
     run with it as PID 1.  If the ENTRYPOINT executes the shell script
-    directly, the shell becomes PID 1 and will ``exec`` into lucifexex,
+    directly, the shell becomes PID 1 and will ``exec`` into lucifex,
     which then runs as PID 1 without any zombie reaping.
     """
     # Find the last uncommented ENTRYPOINT line — Docker honours the final one.
@@ -135,14 +135,14 @@ def test_dockerfile_entrypoint_routes_through_the_init(dockerfile_text):
     assert routes_through_init, (
         f"ENTRYPOINT does not route through a PID-1 init: {entrypoint_line!r}. "
         f"Expected one of {_KNOWN_INIT_TOKENS}. If the init is installed but "
-        "not wired into ENTRYPOINT, lucifexex still runs as PID 1 and zombies "
+        "not wired into ENTRYPOINT, lucifex still runs as PID 1 and zombies "
         "will accumulate (#15012)."
     )
 
 
 def test_dockerfile_installs_tui_dependencies(dockerfile_text):
     # The TUI workspace manifests must be present so ``npm install`` can
-    # resolve dependencies. The bundled ``lucifexex-ink`` workspace package is
+    # resolve dependencies. The bundled ``lucifex-ink`` workspace package is
     # now COPIED into the image as a whole tree (not just its lockfile)
     # because it's referenced as a ``file:`` workspace dependency from
     # ``ui-tui/package.json`` — copying the tree avoids npm stopping at a
@@ -150,7 +150,7 @@ def test_dockerfile_installs_tui_dependencies(dockerfile_text):
     # With a single workspace root lockfile, only the root package-lock.json
     # is copied; per-workspace lockfiles no longer exist.
     assert "ui-tui/package.json" in dockerfile_text
-    assert "ui-tui/packages/lucifexex-ink/" in dockerfile_text
+    assert "ui-tui/packages/lucifex-ink/" in dockerfile_text
     assert "package-lock.json" in dockerfile_text
     assert any(
         "npm" in step and (" install" in step or " ci" in step)
@@ -207,7 +207,7 @@ def test_dockerfile_preinstalls_hindsight_memory_dependency(dockerfile_text):
     assert any("--extra hindsight" in step for step in sync_steps), (
         "Published Docker images must preload the [hindsight] extra so the "
         "native Hindsight memory provider's client (hindsight-client) is baked "
-        "into /opt/lucifexex/.venv. It lazy-installs into the image layer (not the "
+        "into /opt/lucifex/.venv. It lazy-installs into the image layer (not the "
         "mounted /opt/data volume), so without baking it in recall/retain fails "
         "with `ModuleNotFoundError: No module named 'hindsight_client'` after "
         "every container recreate / image update (#38128)."
@@ -222,17 +222,17 @@ def test_dockerfile_builds_tui_assets(dockerfile_text):
 
 
 def test_dockerfile_materializes_local_tui_ink_package(dockerfile_text):
-    # ``lucifexex-ink`` is a bundled workspace package referenced from
+    # ``lucifex-ink`` is a bundled workspace package referenced from
     # ``ui-tui/package.json`` via ``file:`` — not pulled from the npm
     # registry. The contract this test pins is just that the image
-    # actually carries the package source so ``await import('@lucifexex/ink')``
+    # actually carries the package source so ``await import('@lucifex/ink')``
     # can resolve at runtime; the previous, much pickier assertion (manual
-    # ``rm -rf`` + ``npm install --omit=dev --prefix node_modules/@lucifexex/ink``)
+    # ``rm -rf`` + ``npm install --omit=dev --prefix node_modules/@lucifex/ink``)
     # baked in implementation details of an older materialisation flow that
     # was simplified once npm workspaces handled the resolution natively.
-    assert "ui-tui/packages/lucifexex-ink/" in dockerfile_text, (
-        "Dockerfile must COPY the bundled lucifexex-ink workspace package "
-        "so ``await import('@lucifexex/ink')`` resolves at runtime."
+    assert "ui-tui/packages/lucifex-ink/" in dockerfile_text, (
+        "Dockerfile must COPY the bundled lucifex-ink workspace package "
+        "so ``await import('@lucifex/ink')`` resolves at runtime."
     )
 
 

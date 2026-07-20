@@ -4,15 +4,15 @@ sidebar_position: 7
 
 # Profile 命令参考
 
-本页涵盖所有与 [lucifexex profiles](../user-guide/profiles.md) 相关的命令。通用 CLI 命令请参阅 [CLI 命令参考](./cli-commands.md)。
+本页涵盖所有与 [lucifex profiles](../user-guide/profiles.md) 相关的命令。通用 CLI 命令请参阅 [CLI 命令参考](./cli-commands.md)。
 
-## `lucifexex profile`
+## `lucifex profile`
 
 ```bash
-lucifexex profile <subcommand>
+lucifex profile <subcommand>
 ```
 
-管理 profile 的顶级命令。不带子命令运行 `lucifexex profile` 将显示帮助信息。
+管理 profile 的顶级命令。不带子命令运行 `lucifex profile` 将显示帮助信息。
 
 | 子命令 | 描述 |
 |------------|-------------|
@@ -29,10 +29,10 @@ lucifexex profile <subcommand>
 | `update` | 重新拉取发行版管理的 profile 并重新应用其 bundle。 |
 | `info` | 显示 profile 的发行版元数据（来源 URL、commit、最后更新时间）。 |
 
-## `lucifexex profile list`
+## `lucifex profile list`
 
 ```bash
-lucifexex profile list
+lucifex profile list
 ```
 
 列出所有 profile。当前活跃的 profile 以 `*` 标记。
@@ -40,7 +40,7 @@ lucifexex profile list
 **示例：**
 
 ```bash
-$ lucifexex profile list
+$ lucifex profile list
   default
 * work
   dev
@@ -49,13 +49,13 @@ $ lucifexex profile list
 
 无选项。
 
-## `lucifexex profile use`
+## `lucifex profile use`
 
 ```bash
-lucifexex profile use <name>
+lucifex profile use <name>
 ```
 
-将 `<name>` 设为活跃 profile。此后所有 `lucifexex` 命令（不带 `-p`）都将使用该 profile。
+将 `<name>` 设为活跃 profile。此后所有 `lucifex` 命令（不带 `-p`）都将使用该 profile。
 
 | 参数 | 描述 |
 |----------|-------------|
@@ -64,14 +64,14 @@ lucifexex profile use <name>
 **示例：**
 
 ```bash
-lucifexex profile use work
-lucifexex profile use default
+lucifex profile use work
+lucifex profile use default
 ```
 
-## `lucifexex profile create`
+## `lucifex profile create`
 
 ```bash
-lucifexex profile create <name> [options]
+lucifex profile create <name> [options]
 ```
 
 创建新 profile。
@@ -83,8 +83,8 @@ lucifexex profile create <name> [options]
 | `--clone-all` | 从当前 profile 复制所有内容（config、memories、skills、cron、plugins）。会排除每个 profile 自己的历史数据：sessions、`state.db`、backups、state-snapshots、checkpoints。 |
 | `--clone-from <profile>` | 从指定 profile 克隆 config/skills/SOUL，而非当前 profile。除非与 `--clone-all` 配合使用，否则会隐含 `--clone`。 |
 | `--no-alias` | 跳过 wrapper 脚本创建。 |
-| `--description "<text>"` | 一到两句话描述该 profile 的用途。供 kanban 编排器根据角色而非仅凭 profile 名称来路由任务。可跳过，稍后通过 `lucifexex profile describe` 添加。持久化保存在 `<profile_dir>/profile.yaml` 中。 |
-| `--no-skills` | 创建一个**空** profile，不启用任何内置 skill。会在 profile 目录中写入 `.no-bundled-skills` 标记，使后续 `lucifexex update` 不再重新植入内置 skill 集，且拒绝与 `--clone`、`--clone-from` 或 `--clone-all` 组合使用（因为这些选项会复制 skill）。适用于不应继承完整 skill 目录的窄化编排器 profile 或沙箱 profile。 |
+| `--description "<text>"` | 一到两句话描述该 profile 的用途。供 kanban 编排器根据角色而非仅凭 profile 名称来路由任务。可跳过，稍后通过 `lucifex profile describe` 添加。持久化保存在 `<profile_dir>/profile.yaml` 中。 |
+| `--no-skills` | 创建一个**空** profile，不启用任何内置 skill。会在 profile 目录中写入 `.no-bundled-skills` 标记，使后续 `lucifex update` 不再重新植入内置 skill 集，且拒绝与 `--clone`、`--clone-from` 或 `--clone-all` 组合使用（因为这些选项会复制 skill）。适用于不应继承完整 skill 目录的窄化编排器 profile 或沙箱 profile。 |
 
 创建 profile **不会**将该 profile 目录设为终端命令的默认项目/工作目录。如需让某个 profile 从特定项目目录启动，请在该 profile 的 `config.yaml` 中设置 `terminal.cwd`。
 
@@ -92,25 +92,25 @@ lucifexex profile create <name> [options]
 
 ```bash
 # 空白 profile — 需要完整配置
-lucifexex profile create mybot
+lucifex profile create mybot
 
 # 仅从当前 profile 克隆 config
-lucifexex profile create work --clone
+lucifex profile create work --clone
 
 # 从当前 profile 克隆所有内容
-lucifexex profile create backup --clone-all
+lucifex profile create backup --clone-all
 
 # 从指定 profile 克隆 config
-lucifexex profile create work2 --clone-from work
+lucifex profile create work2 --clone-from work
 
 # 从指定 profile 克隆所有内容
-lucifexex profile create work2-backup --clone-from work --clone-all
+lucifex profile create work2-backup --clone-from work --clone-all
 ```
 
-## `lucifexex profile describe`
+## `lucifex profile describe`
 
 ```bash
-lucifexex profile describe [<name>] [options]
+lucifex profile describe [<name>] [options]
 ```
 
 读取或设置 profile 的描述。描述由 kanban 编排器使用，用于根据每个 profile 的能力路由任务，而非仅凭 profile 名称猜测。持久化保存在 `<profile_dir>/profile.yaml` 中，重启后仍有效，并与 gateway 共享。
@@ -129,22 +129,22 @@ lucifexex profile describe [<name>] [options]
 
 ```bash
 # 读取当前描述
-lucifexex profile describe researcher
+lucifex profile describe researcher
 
 # 显式设置描述
-lucifexex profile describe researcher --text "Reads source code and writes findings."
+lucifex profile describe researcher --text "Reads source code and writes findings."
 
 # 让 LLM 生成描述
-lucifexex profile describe researcher --auto
+lucifex profile describe researcher --auto
 
 # 为所有没有描述的 profile 填充描述
-lucifexex profile describe --all --auto
+lucifex profile describe --all --auto
 ```
 
-## `lucifexex profile delete`
+## `lucifex profile delete`
 
 ```bash
-lucifexex profile delete <name> [options]
+lucifex profile delete <name> [options]
 ```
 
 删除 profile 并移除其 shell alias。
@@ -157,23 +157,23 @@ lucifexex profile delete <name> [options]
 **示例：**
 
 ```bash
-lucifexex profile delete mybot
-lucifexex profile delete mybot --yes
+lucifex profile delete mybot
+lucifex profile delete mybot --yes
 ```
 
 :::warning
 此操作将永久删除 profile 的整个目录，包括所有 config、memories、sessions 和 skills。无法删除当前活跃的 profile。
 :::
 
-## `lucifexex profile show`
+## `lucifex profile show`
 
 ```bash
-lucifexex profile show <name>
+lucifex profile show <name>
 ```
 
 显示 profile 的详细信息，包括其主目录、配置的模型、gateway 状态、skill 数量和配置文件状态。
 
-此处显示的是 profile 的 lucifexex 主目录，而非终端工作目录。终端命令从 `terminal.cwd` 启动（或在本地后端 `cwd: "."` 时从启动目录启动）。
+此处显示的是 profile 的 lucifex 主目录，而非终端工作目录。终端命令从 `terminal.cwd` 启动（或在本地后端 `cwd: "."` 时从启动目录启动）。
 
 | 参数 | 描述 |
 |----------|-------------|
@@ -182,7 +182,7 @@ lucifexex profile show <name>
 **示例：**
 
 ```bash
-$ lucifexex profile show work
+$ lucifex profile show work
 Profile: work
 Path:    ~/.lucifex/profiles/work
 Model:   anthropic/claude-sonnet-4 (anthropic)
@@ -193,13 +193,13 @@ SOUL.md: exists
 Alias:   ~/.local/bin/work
 ```
 
-## `lucifexex profile alias`
+## `lucifex profile alias`
 
 ```bash
-lucifexex profile alias <name> [options]
+lucifex profile alias <name> [options]
 ```
 
-重新生成位于 `~/.local/bin/<name>` 的 shell alias 脚本。适用于 alias 被意外删除，或移动 lucifexex 安装目录后需要更新的情况。
+重新生成位于 `~/.local/bin/<name>` 的 shell alias 脚本。适用于 alias 被意外删除，或移动 lucifex 安装目录后需要更新的情况。
 
 | 参数 / 选项 | 描述 |
 |-------------------|-------------|
@@ -210,20 +210,20 @@ lucifexex profile alias <name> [options]
 **示例：**
 
 ```bash
-lucifexex profile alias work
+lucifex profile alias work
 # 创建/更新 ~/.local/bin/work
 
-lucifexex profile alias work --name mywork
+lucifex profile alias work --name mywork
 # 创建 ~/.local/bin/mywork
 
-lucifexex profile alias work --remove
+lucifex profile alias work --remove
 # 移除 wrapper 脚本
 ```
 
-## `lucifexex profile rename`
+## `lucifex profile rename`
 
 ```bash
-lucifexex profile rename <old-name> <new-name>
+lucifex profile rename <old-name> <new-name>
 ```
 
 重命名 profile，同时更新目录和 shell alias。
@@ -236,15 +236,15 @@ lucifexex profile rename <old-name> <new-name>
 **示例：**
 
 ```bash
-lucifexex profile rename mybot assistant
+lucifex profile rename mybot assistant
 # ~/.lucifex/profiles/mybot → ~/.lucifex/profiles/assistant
 # ~/.local/bin/mybot → ~/.local/bin/assistant
 ```
 
-## `lucifexex profile export`
+## `lucifex profile export`
 
 ```bash
-lucifexex profile export <name> [options]
+lucifex profile export <name> [options]
 ```
 
 将 profile 导出为压缩的 tar.gz 归档文件。
@@ -257,16 +257,16 @@ lucifexex profile export <name> [options]
 **示例：**
 
 ```bash
-lucifexex profile export work
+lucifex profile export work
 # 在当前目录创建 work.tar.gz
 
-lucifexex profile export work -o ./work-2026-03-29.tar.gz
+lucifex profile export work -o ./work-2026-03-29.tar.gz
 ```
 
-## `lucifexex profile import`
+## `lucifex profile import`
 
 ```bash
-lucifexex profile import <archive> [options]
+lucifex profile import <archive> [options]
 ```
 
 从 tar.gz 归档文件导入 profile。
@@ -279,10 +279,10 @@ lucifexex profile import <archive> [options]
 **示例：**
 
 ```bash
-lucifexex profile import ./work-2026-03-29.tar.gz
+lucifex profile import ./work-2026-03-29.tar.gz
 # 从归档文件推断 profile 名称
 
-lucifexex profile import ./work-2026-03-29.tar.gz --name work-restored
+lucifex profile import ./work-2026-03-29.tar.gz --name work-restored
 ```
 
 ## 发行版命令
@@ -298,13 +298,13 @@ lucifexex profile import ./work-2026-03-29.tar.gz --name work-restored
 接收方的用户数据（memories、sessions、auth、对 `.env` 的自有编辑）在初次安装和后续更新中始终得到保留。
 
 :::info
-`lucifexex profile export` / `import` 仍是在**本机进行 profile 本地备份和恢复**的正确命令。发行版（`install` / `update` / `info`）是独立概念：通过 git 分发 profile，供他人安装。
+`lucifex profile export` / `import` 仍是在**本机进行 profile 本地备份和恢复**的正确命令。发行版（`install` / `update` / `info`）是独立概念：通过 git 分发 profile，供他人安装。
 :::
 
-### `lucifexex profile install`
+### `lucifex profile install`
 
 ```bash
-lucifexex profile install <source> [--name <name>] [--alias] [--force] [--yes]
+lucifex profile install <source> [--name <name>] [--alias] [--force] [--yes]
 ```
 
 从 git URL 或本地目录安装 profile 发行版。
@@ -313,7 +313,7 @@ lucifexex profile install <source> [--name <name>] [--alias] [--force] [--yes]
 |--------|-------------|
 | `<source>` | Git URL（`github.com/user/repo`、`https://...`、`git@...`、`ssh://`、`git://`）或包含 `distribution.yaml` 的本地目录根路径。 |
 | `--name NAME` | 覆盖 manifest 中的 profile 名称。 |
-| `--alias` | 同时创建 shell wrapper（例如 `telemetry` → `lucifexex -p telemetry`）。 |
+| `--alias` | 同时创建 shell wrapper（例如 `telemetry` → `lucifex -p telemetry`）。 |
 | `--force` | 覆盖同名的已有 profile。用户数据仍会保留。 |
 | `-y`, `--yes` | 跳过 manifest 预览确认提示。 |
 
@@ -323,37 +323,37 @@ lucifexex profile install <source> [--name <name>] [--alias] [--force] [--yes]
 
 ```bash
 # 从 GitHub 仓库安装（简写）
-lucifexex profile install github.com/kyle/telemetry-distribution --alias
+lucifex profile install github.com/kyle/telemetry-distribution --alias
 
 # 从完整 HTTPS git URL 安装
-lucifexex profile install https://github.com/kyle/telemetry-distribution.git
+lucifex profile install https://github.com/kyle/telemetry-distribution.git
 
 # 从 SSH 安装
-lucifexex profile install git@github.com:kyle/telemetry-distribution.git
+lucifex profile install git@github.com:kyle/telemetry-distribution.git
 
 # 开发时从本地目录安装
-lucifexex profile install ./telemetry/
+lucifex profile install ./telemetry/
 ```
 
-### `lucifexex profile update`
+### `lucifex profile update`
 
 ```bash
-lucifexex profile update <name> [--force-config] [--yes]
+lucifex profile update <name> [--force-config] [--yes]
 ```
 
 从记录的来源重新克隆发行版并应用更新。发行版所有的文件（SOUL.md、skills/、cron/、mcp.json）会被覆盖；用户数据（memories、sessions、auth、.env）不会被修改。
 
 默认保留 `config.yaml` 以保持本地覆盖设置。传入 `--force-config` 可将其重置为发行版附带的 config。
 
-### `lucifexex profile info`
+### `lucifex profile info`
 
 ```bash
-lucifexex profile info <name>
+lucifex profile info <name>
 ```
 
-打印 profile 的发行版 manifest — 名称、版本、所需 lucifexex 版本、作者、环境变量要求、来源 URL/路径，以及发行版最后一次 `install` 或 `update` 时记录的 `Installed:` 时间戳。适用于安装前检查共享 profile 的需求，以及发现"该 profile 已安装 6 个月未更新"等情况。
+打印 profile 的发行版 manifest — 名称、版本、所需 lucifex 版本、作者、环境变量要求、来源 URL/路径，以及发行版最后一次 `install` 或 `update` 时记录的 `Installed:` 时间戳。适用于安装前检查共享 profile 的需求，以及发现"该 profile 已安装 6 个月未更新"等情况。
 
-`lucifexex profile list` 也会在 `Distribution` 列中显示发行版名称和版本lucifexifex profile show <name>` / `delete <name>` 会显示来源 URL，让你一眼看出哪些 profile 来自 git 仓库，哪些是本地创建的。
+`lucifex profile list` 也会在 `Distribution` 列中显示发行版名称和版本lucifexifex profile show <name>` / `delete <name>` 会显示来源 URL，让你一眼看出哪些 profile 来自 git 仓库，哪些是本地创建的。
 
 ### 私有发行版
 
@@ -361,10 +361,10 @@ lucifexex profile info <name>
 
 ```bash
 # 使用 SSH 密钥，与普通 `git clone` 相同
-lucifexex profile install git@github.com:your-org/internal-assistant.git
+lucifex profile install git@github.com:your-org/internal-assistant.git
 
 # 使用 git credential helper
-lucifexex profile install https://github.com/your-org/internal-assistant.git
+lucifex profile install https://github.com/your-org/internal-assistant.git
 ```
 
 如果克隆时在终端交互式提示输入凭据，该提示会正常显示。请先按照对同一仓库执行 `git clone` 的方式配置好认证，再执行安装。
@@ -377,7 +377,7 @@ lucifexex profile install https://github.com/your-org/internal-assistant.git
 name: telemetry
 version: 0.1.0
 description: "Compliance monitoring harness"
-lucifexex_requires: ">=0.12.0"
+lucifex_requires: ">=0.12.0"
 author: "Your Name"
 license: "MIT"
 env_requires:
@@ -395,7 +395,7 @@ distribution_owned:   # optional; defaults to SOUL.md, config.yaml,
   - cron/
 ```
 
-`lucifexex_requires` 支持 `>=`、`<=`、`==`、`!=`、`>`、`<`，或裸版本号（视为 `>=`）。若当lucifexifex 版本不满足规格，安装将失败并给出明确错误。
+`lucifex_requires` 支持 `>=`、`<=`、`==`、`!=`、`>`、`<`，或裸版本号（视为 `>=`）。若当lucifexifex 版本不满足规格，安装将失败并给出明确错误。
 
 `distribution_owned` 为可选项。若设置，更新时仅替换这些路径；profile 中的其他内容保持用户所有。若省略，则应用上述默认值。
 
@@ -404,19 +404,19 @@ distribution_owned:   # optional; defaults to SOUL.md, config.yaml,
 编写发行版就是一次 git push：
 
 1. 在你的 profile 目录中创建 `distribution.yaml`，至少包含 `name` 和 `version`。
-2. 初始化 git 仓库（或使用已有仓库），推送到 GitHub / GitLab / 任何 lucifexex 可克隆的托管平台。
-3. 告知接收方运行 `lucifexex profile install <your-repo-url>`。
+2. 初始化 git 仓库（或使用已有仓库），推送到 GitHub / GitLab / 任何 lucifex 可克隆的托管平台。
+3. 告知接收方运行 `lucifex profile install <your-repo-url>`。
 
 使用 git tag 进行版本化发布 — 克隆 `HEAD` 的接收方将获得最新状态，你也可以随时在 manifest 中更新 `version:`。
 
-## `lucifexex -p` /lucifexifex --profile`
+## `lucifex -p` /lucifexifex --profile`
 
 ```bash
-lucifexex -p <name> <command> [options]
-lucifexex --profile <name> <command> [options]
+lucifex -p <name> <command> [options]
+lucifex --profile <name> <command> [options]
 ```
 
-全局标志，用于在不更改默认 profile 的情况下，在指定 profile 下运行任意 lucifexex 命令。仅在该命令执行期间覆盖活跃 profile。
+全局标志，用于在不更改默认 profile 的情况下，在指定 profile 下运行任意 lucifex 命令。仅在该命令执行期间覆盖活跃 profile。
 
 | 选项 | 描述 |
 |--------|-------------|
@@ -425,16 +425,16 @@ lucifexex --profile <name> <command> [options]
 **示例：**
 
 ```bash
-lucifexex -p work chat -q "Check the server status"
-lucifexex --profile dev gateway start
-lucifexex -p personal skills list
-lucifexex -p work config edit
+lucifex -p work chat -q "Check the server status"
+lucifex --profile dev gateway start
+lucifex -p personal skills list
+lucifex -p work config edit
 ```
 
-## `lucifexex completion`
+## `lucifex completion`
 
 ```bash
-lucifexex completion <shell>
+lucifex completion <shell>
 ```
 
 生成 shell 补全脚本。包含对 profile 名称和 profile 子命令的补全。
@@ -447,18 +447,18 @@ lucifexex completion <shell>
 
 ```bash
 # 安装补全脚本
-lucifexex completion bash >> ~/.bashrc
-lucifexex completion zsh >> ~/.zshrc
-lucifexex completion fish > ~/.config/fish/completionlucifexifex.fish
+lucifex completion bash >> ~/.bashrc
+lucifex completion zsh >> ~/.zshrc
+lucifex completion fish > ~/.config/fish/completionlucifexifex.fish
 
 # 重新加载 shell
 source ~/.bashrc
 ```
 
 安装后，Tab 补全适用于：
-- `lucifexex profile <TAB>` — 子命令（list、use、create 等）
-- `lucifexex profile use <TAB>` — profile 名称
-- `lucifexex -p <TAB>` — profile 名称
+- `lucifex profile <TAB>` — 子命令（list、use、create 等）
+- `lucifex profile use <TAB>` — profile 名称
+- `lucifex -p <TAB>` — profile 名称
 
 ## 另请参阅
 

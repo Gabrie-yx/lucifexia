@@ -19,7 +19,7 @@ def _response(content="composed report"):
 
 @pytest.fixture
 def agent(tmp_path, monkeypatch):
-    monkeypatch.setenv("LUCIFEX_HOME", str(tmp_path / ".lucifexex"))
+    monkeypatch.setenv("LUCIFEX_HOME", str(tmp_path / ".lucifex"))
     with (
         patch("run_agent.get_tool_definitions", return_value=[]),
         patch("run_agent.check_toolset_requirements", return_value={}),
@@ -66,7 +66,7 @@ def test_verify_on_stop_preserves_composed_report_at_budget_limit(agent, monkeyp
 
     agent._interruptible_api_call = model_call
     agent._handle_max_iterations = MagicMock(return_value="replacement summary")
-    monkeypatch.setenv("lucifexex_VERIFY_ON_STOP", "1")
+    monkeypatch.setenv("lucifex_VERIFY_ON_STOP", "1")
 
     with (
         patch("agent.verification_stop.build_verify_on_stop_nudge", return_value="verify it"),
@@ -86,7 +86,7 @@ def test_pre_verify_preserves_composed_report_at_budget_limit(agent, monkeypatch
 
     agent._interruptible_api_call = model_call
     agent._handle_max_iterations = MagicMock(return_value="replacement summary")
-    monkeypatch.setenv("lucifexex_VERIFY_ON_STOP", "0")
+    monkeypatch.setenv("lucifex_VERIFY_ON_STOP", "0")
 
     with (
         patch("lucifex_cli.plugins.has_hook", side_effect=lambda name: name == "pre_verify"),
@@ -110,7 +110,7 @@ def test_intermediate_ack_uses_summary_instead_of_premature_text(agent, monkeypa
     agent._looks_like_codex_intermediate_ack = MagicMock(return_value=True)
     agent._interruptible_api_call = lambda _kwargs: _response("I'll inspect the files now")
     agent._handle_max_iterations = MagicMock(return_value="verified summary.")
-    monkeypatch.setenv("lucifexex_VERIFY_ON_STOP", "0")
+    monkeypatch.setenv("lucifex_VERIFY_ON_STOP", "0")
 
     with (
         patch("lucifex_cli.plugins.has_hook", return_value=False),
@@ -129,7 +129,7 @@ def test_later_verified_response_supersedes_pending_report(agent, monkeypatch):
     answers = iter([_response("premature report"), _response("verified final report")])
     agent._interruptible_api_call = lambda _kwargs: next(answers)
     agent._handle_max_iterations = MagicMock(return_value="replacement summary")
-    monkeypatch.setenv("lucifexex_VERIFY_ON_STOP", "1")
+    monkeypatch.setenv("lucifex_VERIFY_ON_STOP", "1")
 
     with (
         patch(

@@ -72,7 +72,7 @@ class GetSpillConfigTests(unittest.TestCase):
 
 class SpillIfOversizedTests(unittest.TestCase):
     def setUp(self):
-        self.tmpdir = tempfile.mkdtemp(prefix="lucifexex-spill-test-")
+        self.tmpdir = tempfile.mkdtemp(prefix="lucifex-spill-test-")
 
     def tearDown(self):
         import shutil
@@ -141,7 +141,7 @@ class SpillIfOversizedTests(unittest.TestCase):
         # base directory.
         hos.spill_if_oversized(big, session_id="../../etc/passwd", config=cfg)
         # Nothing leaks outside self.tmpdir.
-        self.assertFalse(Path("/etc/passwd-lucifexex-test").exists())
+        self.assertFalse(Path("/etc/passwd-lucifex-test").exists())
         # A sanitised path should exist under tmpdir.
         entries = list(Path(self.tmpdir).rglob("*.txt"))
         self.assertEqual(len(entries), 1)
@@ -181,7 +181,7 @@ class SpillIfOversizedTests(unittest.TestCase):
 
     def test_default_directory_uses_LUCIFEX_HOME(self):
         """When no directory override, spill under LUCIFEX_HOME/hook_outputs."""
-        test_home = tempfile.mkdtemp(prefix="lucifexex-home-")
+        test_home = tempfile.mkdtemp(prefix="lucifex-home-")
         try:
             with patch.dict(os.environ, {"LUCIFEX_HOME": test_home}):
                 # Also patch get_lucifex_home to the env var to mirror production.

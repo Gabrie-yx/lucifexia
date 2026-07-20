@@ -38,15 +38,15 @@ class TestApprovalHeartbeat:
         _clear_approval_state()
         self._saved_env = {
             k: os.environ.get(k)
-            for k in ("lucifexex_GATEWAY_SESSION",lucifexifex_YOLO_MODE",
-                      "lucifexex_SESSION_KEY")
+            for k in ("lucifex_GATEWAY_SESSION",lucifexifex_YOLO_MODE",
+                      "lucifex_SESSION_KEY")
         }
-        os.environ.pop("lucifexex_YOLO_MODE", None)
-        os.environ["lucifexex_GATEWAY_SESSION"] = "1"
+        os.environ.pop("lucifex_YOLO_MODE", None)
+        os.environ["lucifex_GATEWAY_SESSION"] = "1"
         # The blocking wait path reads the session key via contextvar OR
         # os.environ fallback.  Contextvars don't propagate across threads
         # by default, so env var is the portable way to drive this in tests.
-        os.environ["lucifexex_SESSION_KEY"] = self.SESSION_KEY
+        os.environ["lucifex_SESSION_KEY"] = self.SESSION_KEY
 
     def teardown_method(self):
         for k, v in self._saved_env.items():

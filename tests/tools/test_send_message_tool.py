@@ -286,7 +286,7 @@ class TestSendMessageTool:
 
     def test_ntfy_topic_target_bypasses_channel_directory(self):
         ntfy_platform = Platform("ntfy")
-        ntfy_cfg = SimpleNamespace(enabled=True, token=None, extra={"topic": "lucifexex-in"})
+        ntfy_cfg = SimpleNamespace(enabled=True, token=None, extra={"topic": "lucifex-in"})
         config = SimpleNamespace(
             platforms={ntfy_platform: ntfy_cfg},
             get_home_channel=lambda _platform: None,
@@ -327,8 +327,8 @@ class TestSendMessageTool:
         with patch.dict(
             os.environ,
             {
-                "lucifexex_CRON_AUTO_DELIVER_PLATFORM": "telegram",
-                "lucifexex_CRON_AUTO_DELIVER_CHAT_ID": "-1001",
+                "lucifex_CRON_AUTO_DELIVER_PLATFORM": "telegram",
+                "lucifex_CRON_AUTO_DELIVER_CHAT_ID": "-1001",
             },
             clear=False,
         ), \
@@ -508,8 +508,8 @@ class TestSendMessageTool:
              patch("gateway.session_context.get_session_env") as get_session_env_mock, \
              patch("gateway.mirror.mirror_to_session", return_value=True) as mirror_mock:
             get_session_env_mock.side_effect = lambda name, default="": {
-                "lucifexex_SESSION_PLATFORM": "telegram",
-                "lucifexex_SESSION_USER_ID": "user-123",
+                "lucifex_SESSION_PLATFORM": "telegram",
+                "lucifex_SESSION_USER_ID": "user-123",
             }.get(name, default)
             result = json.loads(
                 send_message_tool(
@@ -537,8 +537,8 @@ class TestSendMessageTool:
         # not auto-accepted by the trust window. (Recency trust is covered
         # in test_platform_base.py. The public default flipped to non-strict
         # in 2026-05; this test pins strict on explicitly.)
-        monkeypatch.setenv("lucifexex_MEDIA_DELIVERY_STRICT", "1")
-        monkeypatch.setenv("lucifexex_MEDIA_TRUST_RECENT_FILES", "0")
+        monkeypatch.setenv("lucifex_MEDIA_DELIVERY_STRICT", "1")
+        monkeypatch.setenv("lucifex_MEDIA_TRUST_RECENT_FILES", "0")
         config, telegram_cfg = _make_config()
         secret = tmp_path / "secret.pdf"
         secret.write_bytes(b"%PDF secret")
@@ -743,7 +743,7 @@ class TestSendToPlatformChunking:
                     Platform.SLACK,
                     SimpleNamespace(enabled=True, token="***", extra={}),
                     "C123",
-                    "**hello** from [lucifexex](<https://example.com>)",
+                    "**hello** from [lucifex](<https://example.com>)",
                 )
             )
 
@@ -751,7 +751,7 @@ class TestSendToPlatformChunking:
         send.assert_awaited_once_with(
             "***",
             "C123",
-            "*hello* from <https://example.com|lucifexex>",
+            "*hello* from <https://example.com|lucifex>",
             thread_ts=None,
         )
 
@@ -1490,8 +1490,8 @@ class TestParseTargetRefMatrix:
 
     def test_matrix_user_mxid_is_explicit(self):
         """Matrix user MXIDs (@) are recognized as explicit targets."""
-        chat_id, thread_id, is_explicit = _parse_target_ref("matrix", "@lucifexex:matrix.org")
-        assert chat_id == "@lucifexex:matrix.org"
+        chat_id, thread_id, is_explicit = _parse_target_ref("matrix", "@lucifex:matrix.org")
+        assert chat_id == "@lucifex:matrix.org"
         assert thread_id is None
         assert is_explicit is True
 
@@ -2994,8 +2994,8 @@ class _FakePlatform:
 class TestSendViaAdapterStandaloneFallback:
     """Coverage for the out-of-process plugin-platform send path.
 
-    When the gateway runner is not in this process (e.g. ``lucifexex cron``
-    runs separately from ``lucifexex gateway``), ``_send_via_adapter`` should
+    When the gateway runner is not in this process (e.g. ``lucifex cron``
+    runs separately from ``lucifex gateway``), ``_send_via_adapter`` should
     fall through to the plugin's ``standalone_sender_fn`` registered on
     its ``PlatformEntry``.  Without the hook, the existing error string
     is returned (with a more helpful tail).
@@ -3196,10 +3196,10 @@ class TestCheckSendMessage:
     """The tool's check_fn governs whether the model sees ``send_message`` as
     callable for a given session. The four passing conditions are:
 
-    1. ``lucifexex_KANBAN_TASK`` is set (worker spawned by the kanban dispatcher
+    1. ``lucifex_KANBAN_TASK`` is set (worker spawned by the kanban dispatcher
        — parent gateway is by definition running, but the worker's
        ``LUCIFEX_HOME`` may be a profile dir without a ``gateway.pid``).
-    2. ``lucifexex_SESSION_PLATFORM`` resolves to a non-empty, non-``local`` value
+    2. ``lucifex_SESSION_PLATFORM`` resolves to a non-empty, non-``local`` value
        (the session is wired to a messaging platform like Telegram).
     3. ``is_gateway_running()`` returns True (CLI / orchestrator profile with
        a live gateway colocated under the same ``LUCIFEX_HOME``).
@@ -3207,50 +3207,50 @@ class TestCheckSendMessage:
     """
 
     def test_kanban_task_env_grants_access(self, monkeypatch):
-        """Workers spawned by the dispatcher (lucifexex_KANBAN_TASK set) must be
+        """Workers spawned by the dispatcher (lucifex_KANBAN_TASK set) must be
         allowed regardless of session_platform / gateway-pid state."""
         from tools.send_message_tool import _check_send_message
 
-        monkeypatch.setenv("lucifexex_KANBAN_TASK", "t_abc12345")
-        monkeypatch.delenv("lucifexex_SESSION_PLATFORM", raising=False)
+        monkeypatch.setenv("lucifex_KANBAN_TASK", "t_abc12345")
+        monkeypatch.delenv("lucifex_SESSION_PLATFORM", raising=False)
 
         with patch("gateway.session_context.get_session_env", return_value=""), \
              patch("gateway.status.is_gateway_running", return_value=False):
             assert _check_send_message() is True
 
     def test_kanban_task_env_short_circuits_before_gateway_check(self, monkeypatch):
-        """Honoring lucifexex_KANBAN_TASK must not depend on importing or calling
+        """Honoring lucifex_KANBAN_TASK must not depend on importing or calling
         gateway.status — the worker may run with a LUCIFEX_HOME that has no
         gateway.pid, and we don't want that import path to be load-bearing."""
         from tools.send_message_tool import _check_send_message
 
-        monkeypatch.setenv("lucifexex_KANBAN_TASK", "t_abc12345")
+        monkeypatch.setenv("lucifex_KANBAN_TASK", "t_abc12345")
 
         with patch("gateway.session_context.get_session_env",
                    side_effect=AssertionError("session_context not consulted "
-                                              "when lucifexex_KANBAN_TASK is set")), \
+                                              "when lucifex_KANBAN_TASK is set")), \
              patch("gateway.status.is_gateway_running",
                    side_effect=AssertionError("gateway.status not consulted "
-                                              "when lucifexex_KANBAN_TASK is set")):
+                                              "when lucifex_KANBAN_TASK is set")):
             assert _check_send_message() is True
 
     def test_messaging_platform_session_grants_access(self, monkeypatch):
         """Telegram/Discord/etc. sessions pass via the platform branch even
-        without lucifexex_KANBAN_TASK."""
+        without lucifex_KANBAN_TASK."""
         from tools.send_message_tool import _check_send_message
 
-        monkeypatch.delenv("lucifexex_KANBAN_TASK", raising=False)
+        monkeypatch.delenv("lucifex_KANBAN_TASK", raising=False)
 
         with patch("gateway.session_context.get_session_env", return_value="telegram"), \
              patch("gateway.status.is_gateway_running", return_value=False):
             assert _check_send_message() is True
 
     def test_local_platform_falls_through_to_gateway_check(self, monkeypatch):
-        """``lucifexex_SESSION_PLATFORM=local`` means CLI-style — must defer to
+        """``lucifex_SESSION_PLATFORM=local`` means CLI-style — must defer to
         is_gateway_running() rather than auto-grant."""
         from tools.send_message_tool import _check_send_message
 
-        monkeypatch.delenv("lucifexex_KANBAN_TASK", raising=False)
+        monkeypatch.delenv("lucifex_KANBAN_TASK", raising=False)
 
         with patch("gateway.session_context.get_session_env", return_value="local"), \
              patch("gateway.status.is_gateway_running", return_value=True) as gw_mock:
@@ -3262,7 +3262,7 @@ class TestCheckSendMessage:
         gateway: tool is callable."""
         from tools.send_message_tool import _check_send_message
 
-        monkeypatch.delenv("lucifexex_KANBAN_TASK", raising=False)
+        monkeypatch.delenv("lucifex_KANBAN_TASK", raising=False)
 
         with patch("gateway.session_context.get_session_env", return_value=""), \
              patch("gateway.status.is_gateway_running", return_value=True):
@@ -3272,7 +3272,7 @@ class TestCheckSendMessage:
         """No kanban task, no platform, no gateway: tool is hidden."""
         from tools.send_message_tool import _check_send_message
 
-        monkeypatch.delenv("lucifexex_KANBAN_TASK", raising=False)
+        monkeypatch.delenv("lucifex_KANBAN_TASK", raising=False)
 
         with patch("gateway.session_context.get_session_env", return_value=""), \
              patch("gateway.status.is_gateway_running", return_value=False):
@@ -3283,7 +3283,7 @@ class TestCheckSendMessage:
         install), the check returns False rather than raising."""
         from tools.send_message_tool import _check_send_message
 
-        monkeypatch.delenv("lucifexex_KANBAN_TASK", raising=False)
+        monkeypatch.delenv("lucifex_KANBAN_TASK", raising=False)
 
         with patch("gateway.session_context.get_session_env", return_value=""), \
              patch("gateway.status.is_gateway_running",

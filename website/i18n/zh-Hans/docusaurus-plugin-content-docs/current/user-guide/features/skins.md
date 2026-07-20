@@ -1,12 +1,12 @@
 ﻿---
 sidebar_position: 10
 title: "皮肤与主题"
-description: "使用内置和用户自定义皮肤定制 lucifexex CLI 的外观"
+description: "使用内置和用户自定义皮肤定制 lucifex CLI 的外观"
 ---
 
 # 皮肤与主题
 
-皮肤控制 lucifexex CLI 的**视觉呈现**：横幅颜色、spinner（加载动画）面孔与动词、响应框标签、品牌文本以及工具活动前缀。
+皮肤控制 lucifex CLI 的**视觉呈现**：横幅颜色、spinner（加载动画）面孔与动词、响应框标签、品牌文本以及工具活动前缀。
 
 对话风格与视觉风格是两个独立的概念：
 
@@ -32,12 +32,12 @@ display:
 
 | 皮肤 | 描述 | Agent 品牌 | 视觉特征 |
 |------|------|-----------|---------|
-| `default` | 经典 lucifexex — 金色与 kawaii 风格 |lucifexifex Agent` | 暖金色边框，cornsilk 文字，spinner 中的 kawaii 面孔。熟悉的双蛇杖横幅。简洁亲切。 |
+| `default` | 经典 lucifex — 金色与 kawaii 风格 |lucifexifex Agent` | 暖金色边框，cornsilk 文字，spinner 中的 kawaii 面孔。熟悉的双蛇杖横幅。简洁亲切。 |
 | `ares` | 战神主题 — 深红与青铜 | `Ares Agent` | 深红色边框配青铜点缀。激进的 spinner 动词（"forging"、"marching"、"tempering steel"）。自定义剑盾 ASCII 艺术横幅。 |
-| `mono` | 单色 — 简洁灰度 | `lucifexex Agent` | 全灰色，无彩色。边框为 `#555555`，文字为 `#c9d1d9`。适合极简终端或录屏场景。 |
-| `slate` | 冷蓝色 — 面向开发者 | `lucifexex Agent` | 皇家蓝边框（`#4169e1`），柔和蓝色文字。沉稳专业。无自定义 spinner，使用默认面孔。 |
-| `daylight` | 适用于亮色终端的浅色主题，深色文字配冷蓝点缀 | `lucifexex Agent` | 专为白色或亮色终端设计。深石板色文字配蓝色边框，浅色状态面板，补全菜单在亮色终端配置下保持清晰可读。 |
-| `warm-lightmode` | 适用于浅色终端背景的暖棕/金色文字 | `lucifexex Agent` | 适合浅色终端的暖羊皮纸色调。深棕色文字配马鞍棕点缀，奶油色状态面板。比 daylight 主题更温暖的大地色系选择。 |
+| `mono` | 单色 — 简洁灰度 | `lucifex Agent` | 全灰色，无彩色。边框为 `#555555`，文字为 `#c9d1d9`。适合极简终端或录屏场景。 |
+| `slate` | 冷蓝色 — 面向开发者 | `lucifex Agent` | 皇家蓝边框（`#4169e1`），柔和蓝色文字。沉稳专业。无自定义 spinner，使用默认面孔。 |
+| `daylight` | 适用于亮色终端的浅色主题，深色文字配冷蓝点缀 | `lucifex Agent` | 专为白色或亮色终端设计。深石板色文字配蓝色边框，浅色状态面板，补全菜单在亮色终端配置下保持清晰可读。 |
+| `warm-lightmode` | 适用于浅色终端背景的暖棕/金色文字 | `lucifex Agent` | 适合浅色终端的暖羊皮纸色调。深棕色文字配马鞍棕点缀，奶油色状态面板。比 daylight 主题更温暖的大地色系选择。 |
 | `poseidon` | 海神主题 — 深蓝与海沫绿 | `Poseidon Agent` | 深蓝到海沫绿渐变。海洋主题 spinner（"charting currents"、"sounding the depth"）。三叉戟 ASCII 艺术横幅。 |
 | `sisyphus` | 西西弗斯主题 — 朴素灰度，彰显坚韧 | `Sisyphus Agent` | 浅灰色配强烈对比。巨石主题 spinner（"pushing uphill"、"resetting the boulder"、"enduring the loop"）。巨石与山丘 ASCII 艺术横幅。 |
 | `charizard` | 火山主题 — 焦橙与余烬色 | `Charizard Agent` | 暖焦橙到余烬色渐变。火焰主题 spinner（"banking into the draft"、"measuring burn"）。龙剪影 ASCII 艺术横幅。 |
@@ -92,10 +92,10 @@ CLI 界面中使用的文字字符串。
 
 | 键 | 描述 | 默认值 |
 |----|------|--------|
-| `agent_name` | 横幅标题和状态显示中的名称 | `lucifexex Agent` |
-| `welcome` | CLI 启动时显示的欢迎消息 | `Welcome to lucifexex Agent! Type your message or /help for commands.` |
+| `agent_name` | 横幅标题和状态显示中的名称 | `lucifex Agent` |
+| `welcome` | CLI 启动时显示的欢迎消息 | `Welcome to lucifex Agent! Type your message or /help for commands.` |
 | `goodbye` | 退出时显示的消息 | `Goodbye! ⚕` |
-| `response_label` | 响应框标题上的标签 | ` ⚕ lucifexex ` |
+| `response_label` | 响应框标题上的标签 | ` ⚕ lucifex ` |
 | `prompt_symbol` | 用户输入 prompt 前的符号（裸 token，渲染器会在后面添加空格） | `❯` |
 | `help_header` | `/help` 命令输出的标题文字 | `(^_^)? Available Commands` |
 
@@ -105,7 +105,7 @@ CLI 界面中使用的文字字符串。
 |----|------|------|--------|
 | `tool_prefix` | 字符串 | CLI 中工具输出行的前缀字符 | `┊` |
 | `tool_emojis` | 字典 | 各工具的 emoji 覆盖，用于 spinner 和进度显示（`{tool_name: emoji}`） | `{}` |
-| `banner_logo` | 字符串 | Rich 标记 ASCII 艺术 logo（替换默认的 lucifexex_AGENT 横幅） | `""` |
+| `banner_logo` | 字符串 | Rich 标记 ASCII 艺术 logo（替换默认的 lucifex_AGENT 横幅） | `""` |
 | `banner_hero` | 字符串 | Rich 标记英雄艺术图（替换默认的双蛇杖图案） | `""` |
 
 ## 自定义皮肤
@@ -212,16 +212,16 @@ branding:
 tool_prefix: "▏"
 ```
 
-## lucifexex Mod — 可视化皮肤编辑器
+## lucifex Mod — 可视化皮肤编辑器
 
-[lucifexex Mod](https://github.com/cocktailpeanulucifexifex-mod) 是一个社区构建的 Web UI，用于可视化创建和管理皮肤。无需手写 YAML，提供带实时预览的点击式编辑器。
+[lucifex Mod](https://github.com/cocktailpeanulucifexifex-mod) 是一个社区构建的 Web UI，用于可视化创建和管理皮肤。无需手写 YAML，提供带实时预览的点击式编辑器。
 
-![lucifexex Mod skin editor](https://raw.githubusercontent.com/cocktailpeanulucifexifex-mod/master/nous.png)
+![lucifex Mod skin editor](https://raw.githubusercontent.com/cocktailpeanulucifexifex-mod/master/nous.png)
 
 **功能说明：**
 
 - 列出所有内置和自定义皮肤
-- 将任意皮肤在可视化编辑器中打开，涵盖所有 lucifexex 皮肤字段（颜色、spinner、品牌、工具前缀、工具 emoji）
+- 将任意皮肤在可视化编辑器中打开，涵盖所有 lucifex 皮肤字段（颜色、spinner、品牌、工具前缀、工具 emoji）
 - 根据文字 prompt 生成 `banner_logo` 文字艺术
 - 将上传的图片（PNG、JPG、GIF、WEBP）转换为 `banner_hero` ASCII 艺术，支持多种渲染风格（盲文点阵、ASCII 字符渐变、方块、点阵）
 - 直接保存到 `~/.lucifex/skins/`
@@ -237,14 +237,14 @@ tool_prefix: "▏"
 **方式二 — npx（终端最快方式）：**
 
 ```bash
-npx -y lucifexex-mod
+npx -y lucifex-mod
 ```
 
 **方式三 — 手动安装：**
 
 ```bash
-git clone https://github.com/cocktailpeanut/lucifexex-mod.git
-cd lucifexex-mod/app
+git clone https://github.com/cocktailpeanut/lucifex-mod.git
+cd lucifex-mod/app
 npm install
 npm start
 ```
@@ -259,7 +259,7 @@ npm start
 6. 点击 **Save** 将皮肤 YAML 写入 `~/.lucifex/skins/`。
 7. 点击 **Activate** 将其设为当前皮肤（更新 `config.yaml` 中的 `display.skin`）。
 
-lucifexex Mod 遵循 `LUCIFEX_HOME` 环境变量，因此也适用于[配置文件](/user-guide/profiles)。
+lucifex Mod 遵循 `LUCIFEX_HOME` 环境变量，因此也适用于[配置文件](/user-guide/profiles)。
 
 ## 操作说明
 

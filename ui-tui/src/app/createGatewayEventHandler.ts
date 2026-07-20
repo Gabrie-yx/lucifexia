@@ -51,8 +51,8 @@ const dropBgTask = (taskId: string) =>
 
 const pushUnique =
   (max: number) =>
-  <T>(xs: T[], x: T): T[] =>
-    xs.at(-1) === x ? xs : [...xs, x].slice(-max)
+    <T>(xs: T[], x: T): T[] =>
+      xs.at(-1) === x ? xs : [...xs, x].slice(-max)
 
 const pushThinking = pushUnique(6)
 const pushNote = pushUnique(6)
@@ -233,7 +233,7 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
     lastDelegationFetchAt = now
     rpc<DelegationStatusResponse>('delegation.status', {})
       .then(r => applyDelegationStatus(r))
-      .catch(() => {})
+      .catch(() => { })
   }
 
   const setStatus = (status: string) => {
@@ -364,8 +364,8 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
 
     // Opt-in: when `display.tui_auto_resume_recent` is true, look up
     // the most recent human-facing session and resume it instead of
-    // forging a brand-new one.  Mirrors classic CLI's `lucifexex -c` /
-    // `lucifexex --tui` muscle memory and addresses the audit's "session
+    // forging a brand-new one.  Mirrors classic CLI's `lucifex -c` /
+    // `lucifex --tui` muscle memory and addresses the audit's "session
     // unrecoverable after disconnection" gap.  Default off so existing
     // users aren't surprised.  (Shares the memoized full-config read.)
     getFullConfigOnce()

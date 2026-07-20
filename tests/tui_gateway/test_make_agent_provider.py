@@ -211,10 +211,10 @@ def test_make_agent_honors_tui_launch_env_flags():
         patch.dict(
             os.environ,
             {
-                "lucifexex_TUI_MAX_TURNS": "7",
-                "lucifexex_TUI_CHECKPOINTS": "1",
-                "lucifexex_TUI_PASS_SESSION_ID": "1",
-                "lucifexex_IGNORE_RULES": "1",
+                "lucifex_TUI_MAX_TURNS": "7",
+                "lucifex_TUI_CHECKPOINTS": "1",
+                "lucifex_TUI_PASS_SESSION_ID": "1",
+                "lucifex_IGNORE_RULES": "1",
             },
         ),
         patch("tui_gateway.server._load_cfg", return_value=fake_cfg),
@@ -381,10 +381,10 @@ def test_make_agent_honors_per_session_model_override():
         patch("run_agent.AIAgent") as mock_agent,
     ):
         for var in (
-            "lucifexex_MODEL",
+            "lucifex_MODEL",
             "LUCIFEX_INFERENCE_MODEL",
-            "lucifexex_TUI_PROVIDER",
-            "lucifexex_INFERENCE_PROVIDER",
+            "lucifex_TUI_PROVIDER",
+            "lucifex_INFERENCE_PROVIDER",
         ):
             os.environ.pop(var, None)
 
@@ -432,10 +432,10 @@ def test_apply_model_switch_does_not_leak_process_env():
             self.provider = kw["new_provider"]
 
     env_keys = (
-        "lucifexex_MODEL",
+        "lucifex_MODEL",
         "LUCIFEX_INFERENCE_MODEL",
-        "lucifexex_TUI_PROVIDER",
-        "lucifexex_INFERENCE_PROVIDER",
+        "lucifex_TUI_PROVIDER",
+        "lucifex_INFERENCE_PROVIDER",
     )
 
     sess_b = {"agent": _FakeAgent(), "session_key": "k-B", "model_override": None}

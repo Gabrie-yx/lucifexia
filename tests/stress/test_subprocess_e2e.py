@@ -33,8 +33,8 @@ def make_spawn_fn(home: str):
             "LUCIFEX_HOME": home,
             "HOME": home,
             "PYTHONPATH": WT,
-            "lucifexex_KANBAN_TASK": task.id,
-            "lucifexex_KANBAN_WORKSPACE": workspace,
+            "lucifex_KANBAN_TASK": task.id,
+            "lucifex_KANBAN_WORKSPACE": workspace,
             "PATH": f"{os.path.dirname(PY)}:{os.environ.get('PATH','')}",
         }
         log_f = open(log_path, "ab")
@@ -52,17 +52,17 @@ def make_spawn_fn(home: str):
 
 
 def main():
-    home = tempfile.mkdtemp(prefix="lucifexex_e2e_")
+    home = tempfile.mkdtemp(prefix="lucifex_e2e_")
     os.environ["LUCIFEX_HOME"] = home
     os.environ["HOME"] = home
     sys.path.insert(0, WT)
     from lucifex_cli import kanban_db as kb
 
-    # Point the `lucifexex` CLI child processes will run at the worktree
+    # Point the `lucifex` CLI child processes will run at the worktree
     # lucifex_cli.main. We do this by putting a shim on PATH.
     shim_dir = os.path.join(home, "bin")
     os.makedirs(shim_dir, exist_ok=True)
-    shim_path = os.path.join(shim_dir, "lucifexex")
+    shim_path = os.path.join(shim_dir, "lucifex")
     with open(shim_path, "w") as f:
         f.write(f"""#!/bin/sh
 exec {PY} -m lucifex_cli.main "$@"
@@ -211,7 +211,7 @@ exec {PY} -m lucifex_cli.main "$@"
     print("=" * 60)
     print("C. Worker log captured to disk")
     print("=" * 60)
-    # Scenario A workers wrote to /tmp/lucifexex_e2e_*/worker_*.log
+    # Scenario A workers wrote to /tmp/lucifex_e2e_*/worker_*.log
     import glob
     logs = glob.glob(os.path.join(home, "worker_*.log"))
     print(f"  {len(logs)} worker log files")

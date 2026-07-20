@@ -8,15 +8,15 @@ import pytest
 
 
 @pytest.fixture(autouse=True)
-def _isolate_lucifexex(tmp_path, monkeypatch):
-    monkeypatch.setenv("LUCIFEX_HOME", str(tmp_path / ".lucifexex"))
-    (tmp_path / ".lucifexex").mkdir(exist_ok=True)
+def _isolate_lucifex(tmp_path, monkeypatch):
+    monkeypatch.setenv("LUCIFEX_HOME", str(tmp_path / ".lucifex"))
+    (tmp_path / ".lucifex").mkdir(exist_ok=True)
 
 
 def _make_agent(monkeypatch):
     """Create a minimal AIAgent-like object with just the methods under test."""
     monkeypatch.setenv("OPENROUTER_API_KEY", "")
-    monkeypatch.setenv("lucifexex_INFERENCE_PROVIDER", "")
+    monkeypatch.setenv("lucifex_INFERENCE_PROVIDER", "")
     # Avoid full AIAgent init — just import the class and build a stub
     import run_agent as _ra
 

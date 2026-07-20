@@ -28,9 +28,9 @@ def deny_config(monkeypatch):
 @pytest.fixture
 def clean_env(monkeypatch):
     """Non-interactive, non-gateway, non-cron, non-yolo baseline."""
-    for var in ("lucifexex_YOLO_MODE",lucifexifex_GATEWAY_SESSION",
-                "lucifexex_CRON_SESSION",lucifexifex_INTERACTIVE",
-                "lucifexex_EXEC_ASK"):
+    for var in ("lucifex_YOLO_MODE",lucifexifex_GATEWAY_SESSION",
+                "lucifex_CRON_SESSION",lucifexifex_INTERACTIVE",
+                "lucifex_EXEC_ASK"):
         monkeypatch.delenv(var, raising=False)
     monkeypatch.setattr(mod, "_YOLO_MODE_FROZEN", False)
 

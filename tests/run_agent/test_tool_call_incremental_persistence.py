@@ -47,7 +47,7 @@ def _make_tool_defs(*names: str) -> list:
 
 
 def _make_agent():
-    LUCIFEX_HOME = Path(tempfile.mkdtemp(prefix="lucifexex-test-home-"))
+    LUCIFEX_HOME = Path(tempfile.mkdtemp(prefix="lucifex-test-home-"))
     (LUCIFEX_HOME / "logs").mkdir(parents=True, exist_ok=True)
     with (
         patch(

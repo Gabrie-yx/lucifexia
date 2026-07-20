@@ -285,7 +285,7 @@ def _pinned_guard(name: str) -> Optional[str]:
             return (
                 f"Skill '{name}' is pinned and cannot be deleted by "
                 f"skill_manage. Ask the user to run "
-                f"`lucifexex curator unpin {name}` if they want to delete it. "
+                f"`lucifex curator unpin {name}` if they want to delete it. "
                 f"Patches and edits are allowed on pinned skills; only "
                 f"deletion is blocked."
             )
@@ -328,7 +328,7 @@ def _background_review_write_guard(
                     f"Refusing background curator {action} for pinned skill "
                     f"'{name}': pinned skills are off-limits to autonomous "
                     "maintenance. Ask the user to run "
-                    f"`lucifexex curator unpin {name}` if they want it changed."
+                    f"`lucifex curator unpin {name}` if they want it changed."
                 ),
             }
     except Exception:
@@ -623,7 +623,7 @@ def _find_skill(name: str) -> Optional[Dict[str, Any]]:
 
 
 def _find_skill_in_other_profiles(name: str) -> List[Tuple[str, Path]]:
-    """Look for ``name`` under SKILL.md across OTHER lucifexex profiles.
+    """Look for ``name`` under SKILL.md across OTHER lucifex profiles.
 
     Returns a list of ``(profile_name, skill_dir)`` pairs. Used to make
     the "Skill X not found" error explain when the user is editing the
@@ -707,7 +707,7 @@ def _skill_not_found_error(name: str, suffix: str = "") -> str:
             base += (
                 f" A skill by that name exists in profile "
                 f"'{other_profile}' ({other_path}). To edit a skill in "
-                f"another profile, switch profiles (`lucifexex -p "
+                f"another profile, switch profiles (`lucifex -p "
                 f"{other_profile}`) or operate via explicit file tools "
                 f"with ``cross_profile=True``."
             )
@@ -715,7 +715,7 @@ def _skill_not_found_error(name: str, suffix: str = "") -> str:
             names = ", ".join(f"'{p}'" for p, _ in others)
             base += (
                 f" Skills by that name exist in other profiles: {names}. "
-                f"Switch profiles (`lucifexex -p <name>`) to edit there, or "
+                f"Switch profiles (`lucifex -p <name>`) to edit there, or "
                 f"operate via explicit file tools with ``cross_profile=True``."
             )
     else:
@@ -1109,7 +1109,7 @@ def _delete_skill(name: str, absorbed_into: Optional[str] = None) -> Dict[str, A
     # During the curator consolidation pass, a verified consolidation must be
     # RECOVERABLE: archival into ~/.lucifex/skills/.archive/ is documented as
     # the maximum destructive action the curator may take, and
-    # `lucifexex curator restore` promises the skill can be brought back. Route
+    # `lucifex curator restore` promises the skill can be brought back. Route
     # through the recoverable archive primitive instead of permanent rmtree so
     # a misjudged consolidation can be undone (#29912). Foreground,
     # user-directed deletes keep their existing hard-delete semantics.
@@ -1428,7 +1428,7 @@ def skill_manage(
                 bump_patch(name)
             elif action == "delete":
                 # A recoverable curator archive (routed through archive_skill)
-                # keeps its usage record as STATE_ARCHIVED so `lucifexex curator
+                # keeps its usage record as STATE_ARCHIVED so `lucifex curator
                 # status`/`restore` still see it. Only a hard delete forgets.
                 if not result.get("_archived"):
                     forget(name)
@@ -1470,7 +1470,7 @@ SKILL_MANAGE_SCHEMA = {
         "Good skills: trigger conditions, numbered steps with exact commands, "
         "pitfalls section, verification steps. Use skill_view() to see format examples.\n\n"
         "Pinned skills are protected from deletion only — skill_manage(action='delete') "
-        "will refuse with a message pointing the user to `lucifexex curator unpin <name>`. "
+        "will refuse with a message pointing the user to `lucifex curator unpin <name>`. "
         "Patches and edits go through on pinned skills so you can still improve them as "
         "pitfalls come up; pin only guards against irrecoverable loss."
     ),

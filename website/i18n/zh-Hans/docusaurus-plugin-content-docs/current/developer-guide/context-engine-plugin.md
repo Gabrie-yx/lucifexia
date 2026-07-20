@@ -157,7 +157,7 @@ def register(ctx):
 
 ## 配置
 
-用户通过 `lucifexex plugins` → Provider Plugins → Context Engine 选择引擎，或直接编辑 `config.yaml`：
+用户通过 `lucifex plugins` → Provider Plugins → Context Engine 选择引擎，或直接编辑 `config.yaml`：
 
 ```yaml
 context:

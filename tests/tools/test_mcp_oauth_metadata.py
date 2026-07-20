@@ -3,7 +3,7 @@
 Covers:
 - :class:`LucifexTokenStorage` ``.meta.json`` roundtrip (save / load / remove)
 - The production manager provider
-  (:class:`tools.mcp_oauth_manager.lucifexexMCPOAuthProvider`) restoring metadata
+  (:class:`tools.mcp_oauth_manager.lucifexMCPOAuthProvider`) restoring metadata
   on cold-load init and persisting metadata at the end of ``async_auth_flow``.
 
 Context
@@ -27,7 +27,7 @@ import pytest
 from mcp.shared.auth import OAuthMetadata
 
 from tools.mcp_oauth import LucifexTokenStorage
-from tools.mcp_oauth_manager import _lucifexex_PROVIDER_CLS
+from tools.mcp_oauth_manager import _lucifex_PROVIDER_CLS
 
 
 def _make_metadata(token_endpoint: str = "https://auth.example.com/oauth/token") -> OAuthMetadata:
@@ -90,7 +90,7 @@ class TestMetadataStorage:
 
 
 # ---------------------------------------------------------------------------
-# Manager-path provider (lucifexexMCPOAuthProvider) — production code path
+# Manager-path provider (lucifexMCPOAuthProvider) — production code path
 # ---------------------------------------------------------------------------
 
 
@@ -100,10 +100,10 @@ def _manager_provider_with_context(storage: LucifexTokenStorage, **context_attrs
     Bypasses the full OAuthClientProvider init so we can exercise the
     override logic in isolation.
     """
-    if _lucifexex_PROVIDER_CLS is None:
+    if _lucifex_PROVIDER_CLS is None:
         pytest.skip("MCP SDK auth not available")
-    provider = _lucifexex_PROVIDER_CLS.__new__lucifexifex_PROVIDER_CLS)
-    provider._lucifexex_server_name = context_attrs.get("server_name", "srv")
+    provider = _lucifex_PROVIDER_CLS.__new__lucifexifex_PROVIDER_CLS)
+    provider._lucifex_server_name = context_attrs.get("server_name", "srv")
     context = MagicMock()
     context.storage = storage
     context.oauth_metadata = context_attrs.get("oauth_metadata")
@@ -123,7 +123,7 @@ class TestManagerOAuthProviderMetadata:
         provider = _manager_provider_with_context(storage, oauth_metadata=None)
 
         with patch.object(
-            _lucifexex_PROVIDER_CLS.__bases__[0], "_initialize", new=AsyncMock()
+            _lucifex_PROVIDER_CLS.__bases__[0], "_initialize", new=AsyncMock()
         ):
             asyncio.run(provider._initialize())
 
@@ -141,7 +141,7 @@ class TestManagerOAuthProviderMetadata:
         provider = _manager_provider_with_context(storage, oauth_metadata=in_memory)
 
         with patch.object(
-            _lucifexex_PROVIDER_CLS.__bases__[0], "_initialize", new=AsyncMock()
+            _lucifex_PROVIDER_CLS.__bases__[0], "_initialize", new=AsyncMock()
         ):
             asyncio.run(provider._initialize())
 
@@ -197,7 +197,7 @@ class TestManagerOAuthProviderMetadata:
         manager.invalidate_if_disk_changed = AsyncMock(return_value=False)
 
         with patch.object(
-            _lucifexex_PROVIDER_CLS.__bases__[0],
+            _lucifex_PROVIDER_CLS.__bases__[0],
             "async_auth_flow",
             new=fake_parent_flow,
         ), patch("tools.mcp_oauth_manager.get_manager", return_value=manager):

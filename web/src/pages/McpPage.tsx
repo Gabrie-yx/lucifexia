@@ -448,7 +448,7 @@ export default function McpPage() {
                   )}
                   {httpAuth === "oauth" && (
                     <p className="text-xs text-muted-foreground">
-                      Add the server, then use Authenticate. lucifexex opens the
+                      Add the server, then use Authenticate. lucifex opens the
                       OAuth browser on the machine running the Dashboard
                       backend.
                     </p>
@@ -664,8 +664,8 @@ export default function McpPage() {
                           {result.tools.length === 0
                             ? "Connected — no tools"
                             : `Tools: ${result.tools
-                                .map((tool) => tool.name)
-                                .join(", ")}`}
+                              .map((tool) => tool.name)
+                              .join(", ")}`}
                         </p>
                       ) : (
                         <p className="text-destructive">

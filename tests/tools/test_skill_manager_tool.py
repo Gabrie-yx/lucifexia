@@ -1056,7 +1056,7 @@ class TestExternalSkillMutations:
 # ---------------------------------------------------------------------------
 # Pinned-skill guard — skill_manage refuses only `delete` on pinned skills.
 # Patches and edits go through so pinned skills can still evolve as pitfalls
-# come up. The user unpins via `lucifexex curator unpin <name>` to delete.
+# come up. The user unpins via `lucifex curator unpin <name>` to delete.
 # ---------------------------------------------------------------------------
 
 class TestPinnedGuard:
@@ -1111,7 +1111,7 @@ class TestPinnedGuard:
         assert result["success"] is False
         assert "pinned" in result["error"].lower()
         assert "cannot be deleted" in result["error"]
-        assert "lucifexex curator unpin my-skill" in result["error"]
+        assert "lucifex curator unpin my-skill" in result["error"]
         # Skill still exists
         assert (tmp_path / "my-skill" / "SKILL.md").exists()
 
@@ -1241,12 +1241,12 @@ class TestDeleteSkillRmtreeGuard:
 def _curator_pass(tmp_path, *, monkeypatch):
     """Run the body as the curator/background-review fork.
 
-    Points LUCIFEX_HOME at ``tmp_path/.lucifexex`` so skill_usage's archive path
+    Points LUCIFEX_HOME at ``tmp_path/.lucifex`` so skill_usage's archive path
     (``get_lucifex_home()``) resolves into the same tree the skill manager
     searches, and flips ``is_background_review()`` → True so the consolidation
     guard fires.
     """
-    LUCIFEX_HOME = tmp_path / ".lucifexex"
+    LUCIFEX_HOME = tmp_path / ".lucifex"
     skills_root = LUCIFEX_HOME / "skills"
     skills_root.mkdir(parents=True, exist_ok=True)
     monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
@@ -1348,7 +1348,7 @@ class TestCuratorConsolidationDeleteGuard:
     def test_dispatcher_preserves_usage_record_on_curator_archive(self, tmp_path, monkeypatch):
         # skill_manage(delete) post-action telemetry must NOT forget a
         # recoverable curator archive — the record persists as archived so
-        # `lucifexex curator restore` can bring it back.
+        # `lucifex curator restore` can bring it back.
         from tools import skill_usage
         with _curator_pass(tmp_path, monkeypatch=monkeypatch):
             _create_skill("umbrella", _skill_content("umbrella"))
@@ -1398,7 +1398,7 @@ class TestCuratorConsolidationDeleteGuard:
         _reset_background_review_read_marks()
         with _curator_pass(tmp_path, monkeypatch=monkeypatch):
             _create_skill("reviewed", _skill_content("reviewed"))
-            ref = tmp_path / ".lucifexex" / "skills" / "reviewed" / "references"
+            ref = tmp_path / ".lucifex" / "skills" / "reviewed" / "references"
             ref.mkdir()
             (ref / "workflow.md").write_text("old workflow\n", encoding="utf-8")
 

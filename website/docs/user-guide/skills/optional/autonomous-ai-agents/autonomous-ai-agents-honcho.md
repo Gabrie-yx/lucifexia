@@ -1,23 +1,23 @@
 ﻿---
 title: "Honcho"
 sidebar_label: "Honcho"
-description: "Configure and use Honcho memory with lucifexex -- cross-session user modeling, multi-profile peer isolation, observation config, dialectic reasoning, session su..."
+description: "Configure and use Honcho memory with lucifex -- cross-session user modeling, multi-profile peer isolation, observation config, dialectic reasoning, session su..."
 ---
 
 {/* This page is auto-generated from the skill's SKILL.md by website/scripts/generate-skill-docs.py. Edit the source SKILL.md, not this page. */}
 
 # Honcho
 
-Configure and use Honcho memory with lucifexex -- cross-session user modeling, multi-profile peer isolation, observation config, dialectic reasoning, session summaries, and context budget enforcement. Use when setting up Honcho, troubleshooting memory, managing profiles with Honcho peers, or tuning observation, recall, and dialectic settings.
+Configure and use Honcho memory with lucifex -- cross-session user modeling, multi-profile peer isolation, observation config, dialectic reasoning, session summaries, and context budget enforcement. Use when setting up Honcho, troubleshooting memory, managing profiles with Honcho peers, or tuning observation, recall, and dialectic settings.
 
 ## Skill metadata
 
 | | |
 |---|---|
-| Source | Optional — install with `lucifexex skills install official/autonomous-ai-agents/honcho` |
+| Source | Optional — install with `lucifex skills install official/autonomous-ai-agents/honcho` |
 | Path | `optional-skills/autonomous-ai-agents/honcho` |
 | Version | `2.0.0` |
-| Author | lucifexex Agent |
+| Author | lucifex Agent |
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `Honcho`, `Memory`, `Profiles`, `Observation`, `Dialectic`, `User-Modeling`, `Session-Summary` |
@@ -26,12 +26,12 @@ Configure and use Honcho memory with lucifexex -- cross-session user modeling, m
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that lucifexex loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that lucifex loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
-# Honcho Memory for lucifexex
+# Honcho Memory for lucifex
 
-Honcho provides AI-native cross-session user modeling. It learns who the user is across conversations and gives every lucifexex profile its own peer identity while sharing a unified view of the user.
+Honcho provides AI-native cross-session user modeling. It learns who the user is across conversations and gives every lucifex profile its own peer identity while sharing a unified view of the user.
 
 ## When to Use
 
@@ -47,23 +47,23 @@ Honcho provides AI-native cross-session user modeling. It learns who the user is
 ### Cloud (app.honcho.dev)
 
 ```bash
-lucifexex memory setup honcho
+lucifex memory setup honcho
 # select "cloud", paste API key from https://app.honcho.dev
 ```
 
 ### Self-hosted
 
 ```bash
-lucifexex memory setup honcho
+lucifex memory setup honcho
 # select "local", enter base URL (e.g. http://localhost:8000)
 ```
 
-See: https://docs.honcho.dev/v3/guides/integrations/lucifexex#running-honcho-locally-witlucifexifex
+See: https://docs.honcho.dev/v3/guides/integrations/lucifex#running-honcho-locally-witlucifexifex
 
 ### Verify
 
 ```bash
-lucifexex honcho status    # shows resolved config, connection test, peer info
+lucifex honcho status    # shows resolved config, connection test, peer info
 ```
 
 ## Architecture
@@ -74,7 +74,7 @@ When Honcho injects context into the system prompt (in `hybrid` or `context` rec
 
 1. **Session summary** -- a short digest of the current session so far (placed first so the model has immediate conversational continuity)
 2. **User representation** -- Honcho's accumulated model of the user (preferences, facts, patterns)
-3. **AI peer card** -- the identity card for this lucifexex profile's AI peer
+3. **AI peer card** -- the identity card for this lucifex profile's AI peer
 
 The session summary is generated automatically by Honcho at the start of each turn (when a prior session exists). It gives the model a warm start without replaying full history.
 
@@ -91,10 +91,10 @@ You do not need to configure this -- it is automatic based on session state.
 
 ### Peers
 
-Honcho models conversations as interactions between **peers**. lucifexex creates two peers per session:
+Honcho models conversations as interactions between **peers**. lucifex creates two peers per session:
 
 - **User peer** (`peerName`): represents the human. Honcho builds a user representation from observed messages.
-- **AI peer** (`aiPeer`): represents this lucifexex instance. Each profile gets its own AI peer so agents develop independent views.
+- **AI peer** (`aiPeer`): represents this lucifex instance. Each profile gets its own AI peer so agents develop independent views.
 
 ### Observation
 
@@ -135,10 +135,10 @@ Honcho sessions scope where messages and observations land. Strategy options:
 |----------|----------|
 | `per-directory` (default) | One session per working directory |
 | `per-repo` | One session per git repository root |
-| `per-session` | New Honcho session each lucifexex run |
+| `per-session` | New Honcho session each lucifex run |
 | `global` | Single session across all directories |
 
-Manual override: `lucifexex honcho map my-project-name`
+Manual override: `lucifex honcho map my-project-name`
 
 ### Recall Modes
 
@@ -211,7 +211,7 @@ Higher levels produce richer synthesis but cost more tokens on Honcho's backend.
 
 ## Multi-Profile Setup
 
-Each lucifexex profile gets its own Honcho AI peer while sharing the same workspace (user context). This means:
+Each lucifex profile gets its own Honcho AI peer while sharing the same workspace (user context). This means:
 
 - All profiles see the same user representation
 - Each profile builds its own AI identity and observations
@@ -220,12 +220,12 @@ Each lucifexex profile gets its own Honcho AI peer while sharing the same worksp
 ### Create a profile with Honcho peer
 
 ```bash
-lucifexex profile create coder --clone
-# creates host block lucifexex.coder, AI peer "coder", inherits config from default
+lucifex profile create coder --clone
+# creates host block lucifex.coder, AI peer "coder", inherits config from default
 ```
 
 What `--clone` does for Honcho:
-1. Creates a `lucifexex.coder` host block in `honcho.json`
+1. Creates a `lucifex.coder` host block in `honcho.json`
 2. Sets `aiPeer: "coder"` (the profile name)
 3. Inherits `workspace`, `peerName`, `writeFrequency`, `recallMode`, etc. from default
 4. Eagerly creates the peer in Honcho so it exists before first message
@@ -233,7 +233,7 @@ What `--clone` does for Honcho:
 ### Backfill existing profiles
 
 ```bash
-lucifexex honcho sync    # creates host blocks for all profiles that don't have one yet
+lucifex honcho sync    # creates host blocks for all profiles that don't have one yet
 ```
 
 ### Per-profile config
@@ -243,7 +243,7 @@ Override any setting in the host block:
 ```json
 {
   "hosts": {
-    "lucifexex.coder": {
+    "lucifex.coder": {
       "aiPeer": "coder",
       "recallMode": "tools",
       "dialecticDepth": 2,
@@ -303,7 +303,7 @@ honcho_conclude delete_id="abc123"    # PII removal
 
 ## Agent Usage Patterns
 
-Guidelines for lucifexex when Honcho memory is active.
+Guidelines for lucifex when Honcho memory is active.
 
 ### On conversation start
 
@@ -404,13 +404,13 @@ This fix addresses edge cases where raw user conclusions containing markup or sp
 ## Troubleshooting
 
 ### "Honcho not configured"
-Run `lucifexex honcho setup`. Ensure `memory.provider: honcho` is in `~/.lucifex/config.yaml`.
+Run `lucifex honcho setup`. Ensure `memory.provider: honcho` is in `~/.lucifex/config.yaml`.
 
 ### Memory not persisting across sessions
-Check `lucifexex honcho status` -- verify `saveMessages: true` and `writeFrequency` isn't `session` (which only writes on exit).
+Check `lucifex honcho status` -- verify `saveMessages: true` and `writeFrequency` isn't `session` (which only writes on exit).
 
 ### Profile not getting its own peer
-Use `--clone` when creating: `lucifexex profile create <name> --clone`. For existing profiles:lucifexifex honcho sync`.
+Use `--clone` when creating: `lucifex profile create <name> --clone`. For existing profiles:lucifexifex honcho sync`.
 
 ### Observation changes in dashboard not reflected
 Observation config is synced from the server on each session init. Start a new session after changing settings in the Honcho UI.
@@ -428,19 +428,19 @@ Session summary requires at least one prior turn in the current Honcho session. 
 
 | Command | Description |
 |---------|-------------|
-| `lucifexex honcho setup` | Interactive setup wizard (cloud/local, identity, observation, recall, sessions) |
-| `lucifexex honcho status` | Show resolved config, connection test, peer info for active profile |
-| `lucifexex honcho enable` | Enable Honcho for the active profile (creates host block if needed) |
-| `lucifexex honcho disable` | Disable Honcho for the active profile |
-| `lucifexex honcho peer` | Show or update peer names (`--user <name>`, `--ai <name>`, `--reasoning <level>`) |
-| `lucifexex honcho peers` | Show peer identities across all profiles |
-| `lucifexex honcho mode` | Show or set recall mode (`hybrid`, `context`, `tools`) |
-| `lucifexex honcho tokens` | Show or set token budgets (`--context <N>`, `--dialectic <N>`) |
-| `lucifexex honcho sessions` | List known directory-to-session-name mappings |
-| `lucifexex honcho map <name>` | Map current working directory to a Honcho session name |
-| `lucifexex honcho identity` | Seed AI peer identity or show both peer representations |
-| `lucifexex honcho sync` | Create host blocks for alucifexfex profiles that don't have one yet |
-| `lucifexex honcho migrate` | Step-by-step migration guide from OpenClaw native memory tlucifexifex + Honcho |
-| `lucifexex memory setup` | Generic memory provider picker (selecting "honcho" runs the same wizard) |
-| `lucifexex memory status` | Show active memory provider and config |
-| `lucifexex memory off` | Disable external memory provider |
+| `lucifex honcho setup` | Interactive setup wizard (cloud/local, identity, observation, recall, sessions) |
+| `lucifex honcho status` | Show resolved config, connection test, peer info for active profile |
+| `lucifex honcho enable` | Enable Honcho for the active profile (creates host block if needed) |
+| `lucifex honcho disable` | Disable Honcho for the active profile |
+| `lucifex honcho peer` | Show or update peer names (`--user <name>`, `--ai <name>`, `--reasoning <level>`) |
+| `lucifex honcho peers` | Show peer identities across all profiles |
+| `lucifex honcho mode` | Show or set recall mode (`hybrid`, `context`, `tools`) |
+| `lucifex honcho tokens` | Show or set token budgets (`--context <N>`, `--dialectic <N>`) |
+| `lucifex honcho sessions` | List known directory-to-session-name mappings |
+| `lucifex honcho map <name>` | Map current working directory to a Honcho session name |
+| `lucifex honcho identity` | Seed AI peer identity or show both peer representations |
+| `lucifex honcho sync` | Create host blocks for alucifexfex profiles that don't have one yet |
+| `lucifex honcho migrate` | Step-by-step migration guide from OpenClaw native memory tlucifexifex + Honcho |
+| `lucifex memory setup` | Generic memory provider picker (selecting "honcho" runs the same wizard) |
+| `lucifex memory status` | Show active memory provider and config |
+| `lucifex memory off` | Disable external memory provider |

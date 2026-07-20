@@ -208,7 +208,7 @@ def test_resolve_user_uses_env_fallback(monkeypatch):
 def test_resolve_user_errors_when_missing(monkeypatch, tmp_path):
     mod = load_module()
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setenv("LUCIFEX_HOME", str(tmp_path / ".lucifexex"))
+    monkeypatch.setenv("LUCIFEX_HOME", str(tmp_path / ".lucifex"))
     monkeypatch.delenv("HYPERLIQUID_USER_ADDRESS", raising=False)
 
     try:
@@ -240,9 +240,9 @@ def test_main_state_json_uses_env_fallback(monkeypatch, capsys):
     assert mock_post.call_args[0][0]["user"] == "0xenv999"
 
 
-def test_env_lookup_reads_lucifexex_dotenv(tmp_path, monkeypatch):
+def test_env_lookup_reads_lucifex_dotenv(tmp_path, monkeypatch):
     mod = load_module()
-    LUCIFEX_HOME = tmp_path / ".lucifexex"
+    LUCIFEX_HOME = tmp_path / ".lucifex"
     LUCIFEX_HOME.mkdir(parents=True)
     (LUCIFEX_HOME / ".env").write_text(
         "HYPERLIQUID_USER_ADDRESS=0xdotenv123\nHYPERLIQUID_API_URL=https://api.hyperliquid-testnet.xyz\n",
@@ -263,7 +263,7 @@ def test_user_dotenv_overrides_project_dotenv(tmp_path, monkeypatch):
     project_dir.mkdir()
     (project_dir / ".env").write_text("HYPERLIQUID_USER_ADDRESS=0xproject\n", encoding="utf-8")
 
-    LUCIFEX_HOME = tmp_path / ".lucifexex"
+    LUCIFEX_HOME = tmp_path / ".lucifex"
     LUCIFEX_HOME.mkdir()
     (LUCIFEX_HOME / ".env").write_text("HYPERLIQUID_USER_ADDRESS=0xuserhome\n", encoding="utf-8")
 

@@ -19,7 +19,7 @@ This page covers:
 ### Validate the config snapshot
 
 ```bash
-lucifexex teams-pipeline validate
+lucifex teams-pipeline validate
 ```
 
 Use this first after any config change.
@@ -27,8 +27,8 @@ Use this first after any config change.
 ### Inspect token health
 
 ```bash
-lucifexex teams-pipeline token-health
-lucifexex teams-pipeline token-health --force-refresh
+lucifex teams-pipeline token-health
+lucifex teams-pipeline token-health --force-refresh
 ```
 
 Use `--force-refresh` when you suspect stale auth state.
@@ -36,14 +36,14 @@ Use `--force-refresh` when you suspect stale auth state.
 ### Inspect subscriptions
 
 ```bash
-lucifexex teams-pipeline subscriptions
+lucifex teams-pipeline subscriptions
 ```
 
 ### Renew near-expiry subscriptions
 
 ```bash
-lucifexex teams-pipeline maintain-subscriptions
-lucifexex teams-pipeline maintain-subscriptions --dry-run
+lucifex teams-pipeline maintain-subscriptions
+lucifex teams-pipeline maintain-subscriptions --dry-run
 ```
 
 ### Automating subscription renewal (REQUIRED for production)
@@ -52,15 +52,15 @@ lucifexex teams-pipeline maintain-subscriptions --dry-run
 
 You MUST run `maintain-subscriptions` on a schedule. Pick one of these three options:
 
-#### Option 1: lucifexex cron (recommended if you already run thlucifexifex gateway)
+#### Option 1: lucifex cron (recommended if you already run thlucifexifex gateway)
 
-lucifexex ships a built-in cron scheduler. The `--no-agent` mode runs a script as the job (rather than using an LLM), and `--script` must point at a file under `~/.lucifex/scripts/`. First create the script:
+lucifex ships a built-in cron scheduler. The `--no-agent` mode runs a script as the job (rather than using an LLM), and `--script` must point at a file under `~/.lucifex/scripts/`. First create the script:
 
 ```bash
 mkdir -p ~/.lucifex/scripts
 cat > ~/.lucifex/scripts/maintain-teams-subscriptions.sh <<'EOF'
 #!/usr/bin/env bash
-exec lucifexex teams-pipeline maintain-subscriptions
+exec lucifex teams-pipeline maintain-subscriptions
 EOF
 chmod +x ~/.lucifex/scripts/maintain-teams-subscriptions.sh
 ```
@@ -68,7 +68,7 @@ chmod +x ~/.lucifex/scripts/maintain-teams-subscriptions.sh
 Then register a script-only cron job that runs every 12 hours (gives 6x headroom against the 72h expiry window):
 
 ```bash
-lucifexex cron create "0 */12 * * *" \
+lucifex cron create "0 */12 * * *" \
   --name "teams-pipeline-maintain-subscriptions" \
   --no-agent \
   --script maintain-teams-subscriptions.sh \
@@ -78,31 +78,31 @@ lucifexex cron create "0 */12 * * *" \
 Verify it was registered and inspect the next run time:
 
 ```bash
-lucifexex cron list
-lucifexex cron status        # scheduler status
+lucifex cron list
+lucifex cron status        # scheduler status
 ```
 
 #### Option 2: systemd timer (recommended for Linux production deployments)
 
-Create `/etc/systemd/system/lucifexex-teams-pipeline-maintain.service`:
+Create `/etc/systemd/system/lucifex-teams-pipeline-maintain.service`:
 
 ```ini
 [Unit]
-Description=lucifexex Teams pipeline subscription maintenance
+Description=lucifex Teams pipeline subscription maintenance
 After=network-online.target
 
 [Service]
 Type=oneshot
-User=lucifexex
-EnvironmentFile=/etc/lucifexex/env
-ExecStart=/usr/local/bin/lucifexex teams-pipeline maintain-subscriptions
+User=lucifex
+EnvironmentFile=/etc/lucifex/env
+ExecStart=/usr/local/bin/lucifex teams-pipeline maintain-subscriptions
 ```
 
-And `/etc/systemd/system/lucifexex-teams-pipeline-maintain.timer`:
+And `/etc/systemd/system/lucifex-teams-pipeline-maintain.timer`:
 
 ```ini
 [Unit]
-Description=Run lucifexex Teams pipeline subscription maintenance every 12 hours
+Description=Run lucifex Teams pipeline subscription maintenance every 12 hours
 
 [Timer]
 OnBootSec=5min
@@ -117,14 +117,14 @@ Enable:
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable --now lucifexex-teams-pipeline-maintain.timer
-systemctl list-timers lucifexex-teams-pipeline-maintain.timer
+sudo systemctl enable --now lucifex-teams-pipeline-maintain.timer
+systemctl list-timers lucifex-teams-pipeline-maintain.timer
 ```
 
 #### Option 3: Plain crontab
 
 ```cron
-0 */12 * * * /usr/local/bin/lucifexex teams-pipeline maintain-subscriptions >> /var/lolucifexifex/teams-pipeline-maintain.log 2>&1
+0 */12 * * * /usr/local/bin/lucifex teams-pipeline maintain-subscriptions >> /var/lolucifexifex/teams-pipeline-maintain.log 2>&1
 ```
 
 Make sure the cron environment has the `MSGRAPH_*` credentials. Simplest fix: source `~/.lucifex/.env` at the top of a wrapper script that crontab calls.
@@ -134,8 +134,8 @@ Make sure the cron environment has the `MSGRAPH_*` credentials. Simplest fix: so
 After you've set up the schedule, check renewal activity after the first scheduled run:
 
 ```bash
-lucifexex teams-pipeline subscriptions   # should show expirationDateTime advanced
-lucifexex teams-pipeline maintain-subscriptions --dry-run   # should show "0 expiring soon" most of the time
+lucifex teams-pipeline subscriptions   # should show expirationDateTime advanced
+lucifex teams-pipeline maintain-subscriptions --dry-run   # should show "0 expiring soon" most of the time
 ```
 
 If you ever see your Graph webhook mysteriously "stop working" after exactly ~72 hours, this is the first thing to check: did the renewal job actually run?
@@ -143,22 +143,22 @@ If you ever see your Graph webhook mysteriously "stop working" after exactly ~72
 ### Inspect recent jobs
 
 ```bash
-lucifexex teams-pipeline list
-lucifexex teams-pipeline list --status failed
-lucifexex teams-pipeline show <job-id>
+lucifex teams-pipeline list
+lucifex teams-pipeline list --status failed
+lucifex teams-pipeline show <job-id>
 ```
 
 ### Replay a stored job
 
 ```bash
-lucifexex teams-pipeline run <job-id>
+lucifex teams-pipeline run <job-id>
 ```
 
 ### Dry-run meeting artifact fetches
 
 ```bash
-lucifexex teams-pipeline fetch --meeting-id <meeting-id>
-lucifexex teams-pipeline fetch --join-web-url "<join-url>"
+lucifex teams-pipeline fetch --meeting-id <meeting-id>
+lucifex teams-pipeline fetch --join-web-url "<join-url>"
 ```
 
 ## Routine Runbook
@@ -168,28 +168,28 @@ lucifexex teams-pipeline fetch --join-web-url "<join-url>"
 Run these in order:
 
 ```bash
-lucifexex teams-pipeline validate
-lucifexex teams-pipeline token-health --force-refresh
-lucifexex teams-pipeline subscriptions
+lucifex teams-pipeline validate
+lucifex teams-pipeline token-health --force-refresh
+lucifex teams-pipeline subscriptions
 ```
 
 Then trigger or wait for a real meeting event and confirm:
 
 ```bash
-lucifexex teams-pipeline list
-lucifexex teams-pipeline show <job-id>
+lucifex teams-pipeline list
+lucifex teams-pipeline show <job-id>
 ```
 
 ### Daily or periodic checks
 
-- run `lucifexex teams-pipeline maintain-subscriptions --dry-run`
-- inspect `lucifexex teams-pipeline list --status failed`
+- run `lucifex teams-pipeline maintain-subscriptions --dry-run`
+- inspect `lucifex teams-pipeline list --status failed`
 - verify the Teams delivery target is still the correct chat or channel
 
 ### Before changing webhook URLs or delivery targets
 
 - update the public notification URL or Teams target config
-- run `lucifexex teams-pipeline validate`
+- run `lucifex teams-pipeline validate`
 - renew or recreate affected subscriptions
 - confirm new events land in the expected sink
 
@@ -223,7 +223,7 @@ Check:
 ### Duplicate or unexpected replays
 
 Check:
-- whether you manually replayed a job with `lucifexex teams-pipeline run`
+- whether you manually replayed a job with `lucifex teams-pipeline run`
 - whether the sink record already exists for that meeting
 - whether you intentionally enabled a resend path in your local config
 
@@ -237,9 +237,9 @@ Check:
 - [ ] `ffmpeg` is installed if recording fallback is enabled
 - [ ] Teams outbound delivery target is configured and verified
 - [ ] Notion and Linear sinks are configured only if actually needed
-- [ ] `lucifexex teams-pipeline validate` returns an OK snapshot
-- [ ] `lucifexex teams-pipeline token-health --force-refresh` succeeds
-- [ ] **`maintain-subscriptions` is scheduled** (lucifexex cron, systemd timer, or crontab — see [Automating subscription renewal](#automating-subscription-renewal-required-for-production)). Without this, Graph subscriptions silently expire within 72 hours.
+- [ ] `lucifex teams-pipeline validate` returns an OK snapshot
+- [ ] `lucifex teams-pipeline token-health --force-refresh` succeeds
+- [ ] **`maintain-subscriptions` is scheduled** (lucifex cron, systemd timer, or crontab — see [Automating subscription renewal](#automating-subscription-renewal-required-for-production)). Without this, Graph subscriptions silently expire within 72 hours.
 - [ ] a real end-to-end meeting event has produced a stored job
 - [ ] at least one summary has reached the intended delivery sink
 

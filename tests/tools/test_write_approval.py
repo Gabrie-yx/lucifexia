@@ -17,8 +17,8 @@ import pytest
 
 @pytest.fixture
 def LUCIFEX_HOME(monkeypatch):
-    d = tempfile.mkdtemp(prefix="lucifexex_wa_test_")
-    home = os.path.join(d, ".lucifexex")
+    d = tempfile.mkdtemp(prefix="lucifex_wa_test_")
+    home = os.path.join(d, ".lucifex")
     os.makedirs(home)
     monkeypatch.setenv("LUCIFEX_HOME", home)
     yield home
@@ -402,7 +402,7 @@ def test_gateway_context_stages_not_prompts(LUCIFEX_HOME, monkeypatch):
     from tools.memory_tool import memory_tool, MemoryStore
     from tools import write_approval as wa
     _set_approval("memory", True)
-    monkeypatch.setenv("lucifexex_GATEWAY_SESSION", "1")
+    monkeypatch.setenv("lucifex_GATEWAY_SESSION", "1")
 
     store = MemoryStore(); store.load_from_disk()
     r = json.loads(memory_tool("add", "memory", "gateway fact", store=store))

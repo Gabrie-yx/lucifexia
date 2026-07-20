@@ -52,7 +52,7 @@ export interface HeapDumpResult {
   error?: string
   heapPath?: string
   // True when an auto trigger wrote diagnostics only and intentionally skipped
-  // the heavy snapshot because lucifexex_AUTO_HEAPDUMP was not enabled (#21767).
+  // the heavy snapshot because lucifex_AUTO_HEAPDUMP was not enabled (#21767).
   suppressed?: boolean
   success: boolean
 }
@@ -91,7 +91,7 @@ export async function captureMemoryDiagnostics(trigger: MemoryTrigger): Promise<
 
   const potentialLeaks = [
     heapStats.number_of_detached_contexts > 0 &&
-      `${heapStats.number_of_detached_contexts} detached context(s) — possible component/closure leak`,
+    `${heapStats.number_of_detached_contexts} detached context(s) — possible component/closure leak`,
     activeHandles > 100 && `${activeHandles} active handles — possible timer/socket leak`,
     nativeMemory > usage.heapUsed && 'Native memory > heap — leak may be in native addons',
     mbPerHour > 100 && `High memory growth rate: ${mbPerHour.toFixed(1)} MB/hour`,
@@ -148,11 +148,11 @@ export async function performHeapDump(trigger: MemoryTrigger = 'manual'): Promis
     // Diagnostics first — heap-snapshot serialization can crash on very large
     // heaps, and the JSON sidecar is the most actionable artifact if so.
     const diagnostics = await captureMemoryDiagnostics(trigger)
-    const dir = process.env.lucifexex_HEAPDUMP_DIR?.trim() || join(homedir() || tmpdir(), lucifexifex', 'heapdumps')
+    const dir = process.env.lucifex_HEAPDUMP_DIR?.trim() || join(homedir() || tmpdir(), lucifexifex', 'heapdumps')
 
     await mkdir(dir, { recursive: true })
 
-    const base = `lucifexex-${new Date().toISOString().replace(/[:.]/g, '-')}-${process.pid}-${trigger}`
+    const base = `lucifex-${new Date().toISOString().replace(/[:.]/g, '-')}-${process.pid}-${trigger}`
     const heapPath = join(dir, `${base}.heapsnapshot`)
     const diagPath = join(dir, `${base}.diagnostics.json`)
 
@@ -163,7 +163,7 @@ export async function performHeapDump(trigger: MemoryTrigger = 'manual'): Promis
     // Auto triggers require explicit opt-in: multi-GiB snapshots written on
     // every threshold cross can fill the user's disk (issue #21767).
     const isAuto = trigger === 'auto-critical' || trigger === 'auto-high'
-    const autoEnabled = /^(?:1|true|yes|on)$/i.test((process.env.lucifexex_AUTO_HEAPDUMP ?? '').trim())
+    const autoEnabled = /^(?:1|true|yes|on)$/i.test((process.env.lucifex_AUTO_HEAPDUMP ?? '').trim())
 
     if (isAuto && !autoEnabled) {
       await pruneHeapdumps(dir).catch(() => undefined)
@@ -188,7 +188,7 @@ export async function performHeapDump(trigger: MemoryTrigger = 'manual'): Promis
 // gated auto-triggers cannot accumulate without bound. The newest file is
 // always retained even if it alone exceeds the cap.
 async function pruneHeapdumps(dir: string): Promise<void> {
-  const raw = process.env.lucifexex_HEAPDUMP_MAX_BYTES?.trim()
+  const raw = process.env.lucifex_HEAPDUMP_MAX_BYTES?.trim()
   const parsed = raw ? Number(raw) : NaN
   const cap = Number.isFinite(parsed) && parsed > 0 ? parsed : 2 * 1024 ** 3
 

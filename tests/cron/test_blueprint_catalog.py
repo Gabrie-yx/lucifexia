@@ -143,20 +143,20 @@ class TestRenderers:
 
     def test_deeplink_shape(self):
         url = blueprint_deeplink(get_blueprint("morning-brief"), {"time": "07:15"})
-        assert url.startswith("lucifexex://blueprint/morning-brief?")
+        assert url.startswith("lucifex://blueprint/morning-brief?")
         assert "time=07" in url
 
     def test_catalog_entry_has_all_surfaces(self):
         entry = blueprint_catalog_entry(get_blueprint("morning-brief"))
         assert entry["command"].startswith("/blueprint")
-        assert entry["appUrl"].startswith("lucifexex://")
+        assert entry["appUrl"].startswith("lucifex://")
         assert entry["scheduleHuman"]
         assert "fields" in entry
 
 
 @pytest.fixture
 def isolated_home(tmp_path, monkeypatch):
-    home = tmp_path / ".lucifexex"
+    home = tmp_path / ".lucifex"
     home.mkdir()
     monkeypatch.setenv("LUCIFEX_HOME", str(home))
     import lucifex_constants

@@ -30,16 +30,16 @@ class TestWriteDenyExactPaths:
         assert _is_write_denied(path) is True
 
 
-    def test_lucifexex_env(self):
+    def test_lucifex_env(self):
         # ``.env`` under the active LUCIFEX_HOME (profile-aware, not just
-        # ``~/.lucifexex``) must be write-denied. The hermetic test conftest
+        # ``~/.lucifex``) must be write-denied. The hermetic test conftest
         # points LUCIFEX_HOME at a tempdir — resolve via get_lucifex_home()
         # to match the denylist.
         from lucifex_constants import get_lucifex_home
         path = str(get_lucifex_home() / ".env")
         assert _is_write_denied(path) is True
 
-    def test_lucifexex_root_env_when_running_under_profile(self, tmp_path, monkeypatch):
+    def test_lucifex_root_env_when_running_under_profile(self, tmp_path, monkeypatch):
         """Top-level ``<root>/.env`` stays write-denied even when running under
         a profile (#15981).
 
@@ -49,7 +49,7 @@ class TestWriteDenyExactPaths:
         could be silently overwritten by ``write_file`` while a profile was
         active.
         """
-        root = tmp_path / "lucifexex_root"
+        root = tmp_path / "lucifex_root"
         profile_home = root / "profiles" / "coder"
         profile_home.mkdir(parents=True)
         global_env = root / ".env"
@@ -120,7 +120,7 @@ class TestWriteAllowed:
     def test_project_file(self):
         assert _is_write_denied("/home/user/project/main.py") is False
 
-    def test_lucifexex_control_files_requested_writable(self):
+    def test_lucifex_control_files_requested_writable(self):
         from lucifex_constants import get_lucifex_home
 
         home = get_lucifex_home()

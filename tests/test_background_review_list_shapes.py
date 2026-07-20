@@ -47,7 +47,7 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 def _isolate_LUCIFEX_HOME():
-    os.environ.setdefault("LUCIFEX_HOME", "/tmp/lucifexex-bg-review-test")
+    os.environ.setdefault("LUCIFEX_HOME", "/tmp/lucifex-bg-review-test")
 
 
 def _load_module():

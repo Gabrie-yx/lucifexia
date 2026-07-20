@@ -32,13 +32,13 @@ import { api } from "@/lib/api";
 
 /** LocalStorage key — pre-applied before the React tree mounts to avoid
  *  a visible flash of the default palette on theme-overridden installs. */
-const STORAGE_KEY = "lucifexex-dashboard-theme";
+const STORAGE_KEY = "lucifex-dashboard-theme";
 
 /** LocalStorage key for the font override (independent of theme). Holds a
  *  font id from the catalog in `fonts.ts`, or the `THEME_DEFAULT_FONT_ID`
  *  sentinel / absent = "use the active theme's font". Pre-applied before
  *  the React tree mounts (see `main.tsx`) to avoid a font flash. */
-const FONT_STORAGE_KEY = "lucifexex-dashboard-font";
+const FONT_STORAGE_KEY = "lucifex-dashboard-font";
 
 /** Renames of built-in theme keys we've shipped previously. Without this,
  *  users who saved one of the old names in localStorage (or had it
@@ -257,7 +257,7 @@ let _PREV_DYNAMIC_VAR_KEYS: Set<string> = new Set();
 
 /** ID for the injected <style> tag that carries a theme's customCSS.
  *  A single tag is reused + replaced on every theme switch. */
-const CUSTOM_CSS_STYLE_ID = "lucifexex-theme-custom-css";
+const CUSTOM_CSS_STYLE_ID = "lucifex-theme-custom-css";
 
 function applyCustomCSS(css: string | undefined) {
   if (typeof document === "undefined") return;
@@ -269,7 +269,7 @@ function applyCustomCSS(css: string | undefined) {
   if (!el) {
     el = document.createElement("style");
     el.id = CUSTOM_CSS_STYLE_ID;
-    el.setAttribute("data-lucifexex-theme-css", "true");
+    el.setAttribute("data-lucifex-theme-css", "true");
     document.head.appendChild(el);
   }
   el.textContent = css;
@@ -301,7 +301,7 @@ function injectFontStylesheet(url: string | undefined) {
   const link = document.createElement("link");
   link.rel = "stylesheet";
   link.href = url;
-  link.setAttribute("data-lucifexex-theme-font", "true");
+  link.setAttribute("data-lucifex-theme-font", "true");
   document.head.appendChild(link);
   INJECTED_FONT_URLS.add(url);
 }
@@ -505,11 +505,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
           // migrated value back so it converges too — otherwise every
           // future page load would re-trigger this branch.
           if (migratedActive !== resp.active) {
-            api.setTheme(migratedActive).catch(() => {});
+            api.setTheme(migratedActive).catch(() => { });
           }
         }
       })
-      .catch(() => {});
+      .catch(() => { });
     return () => {
       cancelled = true;
     };
@@ -533,7 +533,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
           }
         }
       })
-      .catch(() => {});
+      .catch(() => { });
     return () => {
       cancelled = true;
     };
@@ -553,7 +553,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       if (typeof window !== "undefined") {
         window.localStorage.setItem(STORAGE_KEY, next);
       }
-      api.setTheme(next).catch(() => {});
+      api.setTheme(next).catch(() => { });
     },
     [availableThemes, userThemeDefs],
   );
@@ -564,7 +564,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     if (typeof window !== "undefined") {
       window.localStorage.setItem(FONT_STORAGE_KEY, next);
     }
-    api.setFontPref(next).catch(() => {});
+    api.setFontPref(next).catch(() => { });
   }, []);
 
   const value = useMemo<ThemeContextValue>(
@@ -595,10 +595,10 @@ const ThemeContext = createContext<ThemeContextValue>({
     label: t.label,
     description: t.description,
   })),
-  setTheme: () => {},
+  setTheme: () => { },
   fontId: THEME_DEFAULT_FONT_ID,
   fontChoices: FONT_CHOICES,
-  setFont: () => {},
+  setFont: () => { },
 });
 
 interface ThemeContextValue {

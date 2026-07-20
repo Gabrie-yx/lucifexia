@@ -121,7 +121,7 @@ def reclaimer_loop(LUCIFEX_HOME: str, result_file: str) -> None:
 
 
 def main():
-    home = tempfile.mkdtemp(prefix="lucifexex_reclaim_race_")
+    home = tempfile.mkdtemp(prefix="lucifex_reclaim_race_")
     os.environ["LUCIFEX_HOME"] = home
     os.environ["HOME"] = home
     sys.path.insert(0, WT)

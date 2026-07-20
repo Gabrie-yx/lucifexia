@@ -58,9 +58,9 @@ export function ProfileSwitcher({ collapsed }: ProfileSwitcherProps) {
           "[&_[role=listbox]>div]:font-sans [&_[role=listbox]>div]:text-xs",
           "[&_[role=listbox]>div]:normal-case [&_[role=listbox]>div]:tracking-normal",
           isOther &&
-            "[&_button]:border-amber-500/50 [&_button]:text-amber-300",
+          "[&_button]:border-amber-500/50 [&_button]:text-amber-300",
         )}
-        id="lucifexex-profile-switcher"
+        id="lucifex-profile-switcher"
         onValueChange={setProfile}
         value={profile}
       >

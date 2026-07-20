@@ -1,14 +1,14 @@
 ﻿---
 sidebar_position: 7
-title: "Use SOUL.md with lucifexex"
-description: "How to use SOUL.md to shape lucifexex Agent's default voice, what belongs there, and how it differs from AGENTS.md and /personality"
+title: "Use SOUL.md with lucifex"
+description: "How to use SOUL.md to shape lucifex Agent's default voice, what belongs there, and how it differs from AGENTS.md and /personality"
 ---
 
-# Use SOUL.md with lucifexex
+# Use SOUL.md with lucifex
 
-`SOUL.md` is the **primary identity** for your lucifexex instance. It's the first thing in the system prompt — it defines who the agent is, how it speaks, and what it avoids.
+`SOUL.md` is the **primary identity** for your lucifex instance. It's the first thing in the system prompt — it defines who the agent is, how it speaks, and what it avoids.
 
-If you want lucifexex to feel like the same assistant every time you talk to it — or if you want to replace thlucifexifex persona entirely with your own — this is the file to use.
+If you want lucifex to feel like the same assistant every time you talk to it — or if you want to replace thlucifexifex persona entirely with your own — this is the file to use.
 
 ## What SOUL.md is for
 
@@ -16,12 +16,12 @@ Use `SOUL.md` for:
 - tone
 - personality
 - communication style
-- how direct or warm lucifexex should be
-- what lucifexex should avoid stylistically
-- how lucifexex should relate to uncertainty, disagreement, and ambiguity
+- how direct or warm lucifex should be
+- what lucifex should avoid stylistically
+- how lucifex should relate to uncertainty, disagreement, and ambiguity
 
 In short:
-- `SOUL.md` is about who lucifexex is and holucifexifex speaks
+- `SOUL.md` is about who lucifex is and holucifexifex speaks
 
 ## What SOUL.md is not for
 
@@ -41,13 +41,13 @@ A good rule:
 
 ## Where it lives
 
-lucifexex now uses only the global SOUL file for the current instance:
+lucifex now uses only the global SOUL file for the current instance:
 
 ```text
 ~/.lucifex/SOUL.md
 ```
 
-If you run lucifexex with a custom home directory, it becomes:
+If you run lucifex with a custom home directory, it becomes:
 
 ```text
 $LUCIFEX_HOME/SOUL.md
@@ -55,19 +55,19 @@ $LUCIFEX_HOME/SOUL.md
 
 ## First-run behavior
 
-lucifexex automatically seeds a starter `SOUL.md` for you if one does not already exist.
+lucifex automatically seeds a starter `SOUL.md` for you if one does not already exist.
 
 That means most users now begin with a real file they can read and edit immediately.
 
 Important:
-- if you already have a `SOUL.md`, lucifexex does not overwrite it
-- if the file exists but is empty, lucifexex adds nothing from it to the prompt
+- if you already have a `SOUL.md`, lucifex does not overwrite it
+- if the file exists but is empty, lucifex adds nothing from it to the prompt
 
-## How lucifexex uses it
+## How lucifex uses it
 
-When lucifexex starts a session, it reads `SOUL.md` from `LUCIFEX_HOME`, scans it for prompt-injection patterns, truncates it if needed, and uses it as the **agent identity** — slot #1 in the system prompt. This means SOUL.md completely replaces the built-in default identity text.
+When lucifex starts a session, it reads `SOUL.md` from `LUCIFEX_HOME`, scans it for prompt-injection patterns, truncates it if needed, and uses it as the **agent identity** — slot #1 in the system prompt. This means SOUL.md completely replaces the built-in default identity text.
 
-If SOUL.md is missing, empty, or cannot be loaded, lucifexex falls back to a built-in default identity.
+If SOUL.md is missing, empty, or cannot be loaded, lucifex falls back to a built-in default identity.
 
 No wrapper language is added around the file. The content itself matters — write the way you want your agent to think and speak.
 
@@ -84,7 +84,7 @@ Push back clearly when an idea is weak.
 Keep answers compact unless deeper detail is useful.
 ```
 
-That alone can noticeably change how lucifexex feels.
+That alone can noticeably change how lucifex feels.
 
 ## Example styles
 
@@ -159,7 +159,7 @@ A weak `SOUL.md` is:
 - trying to micro-manage every response shape
 - mostly generic filler like "be helpful" and "be clear"
 
-lucifexex already tries to be helpful and clear. `SOUL.md` should add real personality and style, not restate obvious defaults.
+lucifex already tries to be helpful and clear. `SOUL.md` should add real personality and style, not restate obvious defaults.
 
 ## Suggested structure
 
@@ -169,16 +169,16 @@ A simple structure that works well:
 
 ```markdown
 # Identity
-Who lucifexex is.
+Who lucifex is.
 
 # Style
-How lucifexex should sound.
+How lucifex should sound.
 
 # Avoid
-What lucifexex should not do.
+What lucifex should not do.
 
 # Defaults
-How lucifexex should behave when ambiguity appears.
+How lucifex should behave when ambiguity appears.
 ```
 
 ## SOUL.md vs /personality
@@ -221,21 +221,21 @@ or
 vim ~/.lucifex/SOUL.md
 ```
 
-Then restart lucifexex or start a new session.
+Then restart lucifex or start a new session.
 
 ## A practical workflow
 
 1. Start with the seeded default file
 2. Trim anything that does not feel like the voice you want
 3. Add 4–8 lines that clearly define tone and defaults
-4. Talk to lucifexex for a while
+4. Talk to lucifex for a while
 5. Adjust based on what still feels off
 
 That iterative approach works better than trying to design the perfect personality in one shot.
 
 ## Troubleshooting
 
-### I edited SOUL.md but lucifexex still sounds the same
+### I edited SOUL.md but lucifex still sounds the same
 
 Check:
 - you edited `~/.lucifex/SOUL.md` or `$LUCIFEX_HOME/SOUL.md`
@@ -244,7 +244,7 @@ Check:
 - your session was restarted after the edit
 - a `/personality` overlay is not dominating the result
 
-### lucifexex is ignoring parts of my SOUL.md
+### lucifex is ignoring parts of my SOUL.md
 
 Possible causes:
 - higher-priority instructions are overriding it

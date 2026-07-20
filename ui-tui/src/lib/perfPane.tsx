@@ -4,9 +4,9 @@
 //   logFrameEvent (ink.onFrame) → yoga / renderer / diff / optimize / write
 //                                 phases + yoga counters + scroll fast-path
 //
-// Both gate on lucifexex_DEV_PERF=1 and dump JSON-lines (default ~/.lucifex/perf.log,
-// override lucifexex_DEV_PERF_LOG). Tagged { src: 'react' | 'frame' } for jq.
-// lucifexex_DEV_PERF_MS (default 2) skips sub-ms idle frames; set 0 to capture all.
+// Both gate on lucifex_DEV_PERF=1 and dump JSON-lines (default ~/.lucifex/perf.log,
+// override lucifex_DEV_PERF_LOG). Tagged { src: 'react' | 'frame' } for jq.
+// lucifex_DEV_PERF_MS (default 2) skips sub-ms idle frames; set 0 to capture all.
 //
 // Zero cost when unset: PerfPane returns children directly, logFrameEvent is
 // undefined so ink doesn't pay the timing cost.
@@ -19,9 +19,9 @@ import type { FrameEvent } from '@lucifex/ink'
 import { scrollFastPathStats } from '@lucifex/ink'
 import { Profiler, type ProfilerOnRenderCallback, type ReactNode } from 'react'
 
-const ENABLED = /^(?:1|true|yes|on)$/i.test((process.env.lucifexex_DEV_PERF ?? '').trim())
-const THRESHOLD_MS = Number(process.env.lucifexex_DEV_PERF_MS ?? '2') || 0
-const LOG_PATH = process.env.lucifexex_DEV_PERF_LOG?.trim() || join(homedir(), lucifexifex', 'perf.log')
+const ENABLED = /^(?:1|true|yes|on)$/i.test((process.env.lucifex_DEV_PERF ?? '').trim())
+const THRESHOLD_MS = Number(process.env.lucifex_DEV_PERF_MS ?? '2') || 0
+const LOG_PATH = process.env.lucifex_DEV_PERF_LOG?.trim() || join(homedir(), lucifexifex', 'perf.log')
 
 let logReady = false
 
@@ -76,31 +76,31 @@ export function PerfPane({ children, id }: { children: ReactNode; id: string }) 
 
 export const logFrameEvent = ENABLED
   ? (event: FrameEvent) => {
-      if (event.durationMs < THRESHOLD_MS) {
-        return
-      }
-
-      writeRow({
-        durationMs: round2(event.durationMs),
-        // Cumulative counters — consumers diff pairs to get per-frame deltas.
-        fastPath: { ...scrollFastPathStats, declined: { ...scrollFastPathStats.declined } },
-        flickers: event.flickers.length ? event.flickers : undefined,
-        phases: event.phases
-          ? {
-              ...event.phases,
-              commit: round2(event.phases.commit),
-              diff: round2(event.phases.diff),
-              optimize: round2(event.phases.optimize),
-              prevFrameDrainMs: round2(event.phases.prevFrameDrainMs),
-              renderer: round2(event.phases.renderer),
-              write: round2(event.phases.write),
-              yoga: round2(event.phases.yoga)
-            }
-          : undefined,
-        src: 'frame',
-        ts: Date.now()
-      })
+    if (event.durationMs < THRESHOLD_MS) {
+      return
     }
+
+    writeRow({
+      durationMs: round2(event.durationMs),
+      // Cumulative counters — consumers diff pairs to get per-frame deltas.
+      fastPath: { ...scrollFastPathStats, declined: { ...scrollFastPathStats.declined } },
+      flickers: event.flickers.length ? event.flickers : undefined,
+      phases: event.phases
+        ? {
+          ...event.phases,
+          commit: round2(event.phases.commit),
+          diff: round2(event.phases.diff),
+          optimize: round2(event.phases.optimize),
+          prevFrameDrainMs: round2(event.phases.prevFrameDrainMs),
+          renderer: round2(event.phases.renderer),
+          write: round2(event.phases.write),
+          yoga: round2(event.phases.yoga)
+        }
+        : undefined,
+      src: 'frame',
+      ts: Date.now()
+    })
+  }
   : undefined
 
 export const PERF_ENABLED = ENABLED

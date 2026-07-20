@@ -40,8 +40,8 @@ const DEFAULT_LAYOUT: ThemeLayout = {
 
 export const defaultTheme: DashboardTheme = {
   name: "default",
-  label: "lucifexex Teal",
-  description: "Classic dark teal — the canonical lucifexex look",
+  label: "lucifex Teal",
+  description: "Classic dark teal — the canonical lucifex look",
   palette: {
     background: { hex: "#041c1c", alpha: 1 },
     midground: { hex: "#ffe6cb", alpha: 1 },
@@ -214,8 +214,8 @@ export const nousBlueTheme: DashboardTheme = {
  */
 export const defaultLargeTheme: DashboardTheme = {
   name: "default-large",
-  label: "lucifexex Teal (Large)",
-  description: "lucifexex Teal with bigger fonts and roomier spacing",
+  label: "lucifex Teal (Large)",
+  description: "lucifex Teal with bigger fonts and roomier spacing",
   palette: defaultTheme.palette,
   typography: {
     ...DEFAULT_TYPOGRAPHY,

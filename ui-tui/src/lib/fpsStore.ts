@@ -2,7 +2,7 @@
 // frame (React commit + drain-only frames) — the right notion for
 // user-perceived motion.
 //
-// Zero-cost when lucifexex_TUI_FPS is unset: trackFrame is undefined so the
+// Zero-cost when lucifex_TUI_FPS is unset: trackFrame is undefined so the
 // onFrame callback short-circuits at the optional chain.
 
 import { atom } from 'nanostores'
@@ -26,26 +26,26 @@ let totalFrames = 0
 
 export const trackFrame = SHOW_FPS
   ? (durationMs: number) => {
-      timestamps.push(performance.now())
+    timestamps.push(performance.now())
 
-      if (timestamps.length > WINDOW_SIZE) {
-        timestamps.shift()
-      }
-
-      totalFrames++
-
-      if (timestamps.length < 2) {
-        return
-      }
-
-      const elapsed = (timestamps[timestamps.length - 1]! - timestamps[0]!) / 1000
-
-      if (elapsed > 0) {
-        $fpsState.set({
-          fps: Math.round(((timestamps.length - 1) / elapsed) * 10) / 10,
-          lastDurationMs: Math.round(durationMs * 100) / 100,
-          totalFrames
-        })
-      }
+    if (timestamps.length > WINDOW_SIZE) {
+      timestamps.shift()
     }
+
+    totalFrames++
+
+    if (timestamps.length < 2) {
+      return
+    }
+
+    const elapsed = (timestamps[timestamps.length - 1]! - timestamps[0]!) / 1000
+
+    if (elapsed > 0) {
+      $fpsState.set({
+        fps: Math.round(((timestamps.length - 1) / elapsed) * 10) / 10,
+        lastDurationMs: Math.round(durationMs * 100) / 100,
+        totalFrames
+      })
+    }
+  }
   : undefined

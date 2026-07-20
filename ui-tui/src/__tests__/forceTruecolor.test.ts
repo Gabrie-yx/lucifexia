@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-const ENV_KEYS = ['COLORTERM', 'FORCE_COLOR', 'lucifexex_TUI_TRUECOLOR', 'NO_COLOR', 'TERM', 'TERM_PROGRAM'] as const
+const ENV_KEYS = ['COLORTERM', 'FORCE_COLOR', 'lucifex_TUI_TRUECOLOR', 'NO_COLOR', 'TERM', 'TERM_PROGRAM'] as const
 let importId = 0
 
 async function withCleanEnv(setup: () => void, body: () => Promise<void>) {
@@ -28,7 +28,7 @@ async function withCleanEnv(setup: () => void, body: () => Promise<void>) {
 describe('forceTruecolor', () => {
   it('does not force truecolor by default', async () => {
     await withCleanEnv(
-      () => {},
+      () => { },
       async () => {
         await import('../lib/forceTruecolor.js?t=default-' + importId++)
         expect(process.env.COLORTERM).toBeUndefined()
@@ -99,7 +99,7 @@ describe('forceTruecolor', () => {
   it('sets COLORTERM=truecolor and FORCE_COLOR=3 when explicitly enabled', async () => {
     await withCleanEnv(
       () => {
-        process.env.lucifexex_TUI_TRUECOLOR = '1'
+        process.env.lucifex_TUI_TRUECOLOR = '1'
       },
       async () => {
         await import('../lib/forceTruecolor.js?t=enabled-' + importId++)
@@ -109,10 +109,10 @@ describe('forceTruecolor', () => {
     )
   })
 
-  it('respects lucifexex_TUI_TRUECOLOR=0 opt-out', async () => {
+  it('respects lucifex_TUI_TRUECOLOR=0 opt-out', async () => {
     await withCleanEnv(
       () => {
-        process.env.lucifexex_TUI_TRUECOLOR = '0'
+        process.env.lucifex_TUI_TRUECOLOR = '0'
         process.env.TERM_PROGRAM = 'Apple_Terminal'
       },
       async () => {
@@ -129,7 +129,7 @@ describe('forceTruecolor', () => {
         process.env.TERM_PROGRAM = 'Apple_Terminal'
         process.env.COLORTERM = 'truecolor'
         process.env.FORCE_COLOR = '3'
-        process.env.lucifexex_TUI_TRUECOLOR = '1'
+        process.env.lucifex_TUI_TRUECOLOR = '1'
       },
       async () => {
         const mod = await import('../lib/forceTruecolor.js?t=apple-explicit-on-' + importId++)
@@ -138,7 +138,7 @@ describe('forceTruecolor', () => {
             TERM_PROGRAM: 'Apple_Terminal',
             COLORTERM: 'truecolor',
             FORCE_COLOR: '3',
-            lucifexex_TUI_TRUECOLOR: '1'
+            lucifex_TUI_TRUECOLOR: '1'
           } as NodeJS.ProcessEnv)
         ).toBe(false)
         expect(process.env.COLORTERM).toBe('truecolor')
@@ -151,7 +151,7 @@ describe('forceTruecolor', () => {
     await withCleanEnv(
       () => {
         process.env.NO_COLOR = '1'
-        process.env.lucifexex_TUI_TRUECOLOR = '1'
+        process.env.lucifex_TUI_TRUECOLOR = '1'
       },
       async () => {
         await import('../lib/forceTruecolor.js?t=no-color-' + importId++)
@@ -161,7 +161,7 @@ describe('forceTruecolor', () => {
     )
   })
 
-  it('respects existing FORCE_COLOR unless lucifexex truecolor is explicit', async () => {
+  it('respects existing FORCE_COLOR unless lucifex truecolor is explicit', async () => {
     await withCleanEnv(
       () => {
         process.env.FORCE_COLOR = ''
@@ -175,11 +175,11 @@ describe('forceTruecolor', () => {
     )
   })
 
-  it('lets explicit lucifexex truecolor override existing FORCE_COLOR', async () => {
+  it('lets explicit lucifex truecolor override existing FORCE_COLOR', async () => {
     await withCleanEnv(
       () => {
         process.env.FORCE_COLOR = '0'
-        process.env.lucifexex_TUI_TRUECOLOR = '1'
+        process.env.lucifex_TUI_TRUECOLOR = '1'
       },
       async () => {
         await import('../lib/forceTruecolor.js?t=explicit-force-' + importId++)

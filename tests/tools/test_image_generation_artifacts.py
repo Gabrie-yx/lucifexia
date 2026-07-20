@@ -5,7 +5,7 @@ from types import SimpleNamespace
 def test_postprocess_adds_agent_visible_image_for_active_ssh_env(monkeypatch, tmp_path):
     from tools import image_generation_tool
 
-    LUCIFEX_HOME = tmp_path / ".lucifexex"
+    LUCIFEX_HOME = tmp_path / ".lucifex"
     image_dir = LUCIFEX_HOME / "cache" / "images"
     image_dir.mkdir(parents=True)
     image_path = image_dir / "xai_grok-imagine-image_test.jpg"
@@ -33,7 +33,7 @@ def test_postprocess_adds_agent_visible_image_for_active_ssh_env(monkeypatch, tm
     assert result["image"] == str(image_path)
     assert result["host_image"] == str(image_path)
     assert result["agent_visible_image"] == (
-        "/home/remotesshuser/.lucifexex/cache/images/xai_grok-imagine-image_test.jpg"
+        "/home/remotesshuser/.lucifex/cache/images/xai_grok-imagine-image_test.jpg"
     )
     assert sync_calls == [True]
 
@@ -41,7 +41,7 @@ def test_postprocess_adds_agent_visible_image_for_active_ssh_env(monkeypatch, tm
 def test_postprocess_maps_docker_cache_path_without_active_env(monkeypatch, tmp_path):
     from tools import image_generation_tool
 
-    LUCIFEX_HOME = tmp_path / ".lucifexex"
+    LUCIFEX_HOME = tmp_path / ".lucifex"
     image_dir = LUCIFEX_HOME / "cache" / "images"
     image_dir.mkdir(parents=True)
     image_path = image_dir / "generated.png"
@@ -55,13 +55,13 @@ def test_postprocess_maps_docker_cache_path_without_active_env(monkeypatch, tmp_
     result = json.loads(image_generation_tool._postprocess_image_generate_result(raw))
 
     assert result["image"] == str(image_path)
-    assert result["agent_visible_image"] == "/root/.lucifexex/cache/images/generated.png"
+    assert result["agent_visible_image"] == "/root/.lucifex/cache/images/generated.png"
 
 
 def test_postprocess_maps_ssh_cache_path_without_active_env(monkeypatch, tmp_path):
     from tools import image_generation_tool
 
-    LUCIFEX_HOME = tmp_path / ".lucifexex"
+    LUCIFEX_HOME = tmp_path / ".lucifex"
     image_dir = LUCIFEX_HOME / "cache" / "images"
     image_dir.mkdir(parents=True)
     image_path = image_dir / "first-call.png"
@@ -91,7 +91,7 @@ def test_postprocess_leaves_remote_image_urls_unchanged(monkeypatch):
 def test_handle_image_generate_postprocesses_plugin_result(monkeypatch, tmp_path):
     from tools import image_generation_tool
 
-    LUCIFEX_HOME = tmp_path / ".lucifexex"
+    LUCIFEX_HOME = tmp_path / ".lucifex"
     image_dir = LUCIFEX_HOME / "cache" / "images"
     image_dir.mkdir(parents=True)
     image_path = image_dir / "plugin.png"
@@ -121,4 +121,4 @@ def test_handle_image_generate_postprocesses_plugin_result(monkeypatch, tmp_path
     )
 
     assert seen_task_ids == ["plugin-task"]
-    assert result["agent_visible_image"] == "/home/remote/.lucifexex/cache/images/plugin.png"
+    assert result["agent_visible_image"] == "/home/remote/.lucifex/cache/images/plugin.png"

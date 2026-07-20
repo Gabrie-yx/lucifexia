@@ -1,7 +1,7 @@
 import os
 
 replacements = [
-    ("lucifexex_GIT_BASH_PATH", "LUCIFEX_GIT_BASH_PATH"),
+    ("lucifex_GIT_BASH_PATH", "LUCIFEX_GIT_BASH_PATH"),
 ]
 
 files_to_update = [

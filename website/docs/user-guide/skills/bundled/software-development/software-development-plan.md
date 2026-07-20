@@ -8,7 +8,7 @@ description: "Plan mode: write an actionable markdown plan to"
 
 # Plan
 
-Plan mode: write an actionable markdown plan to .lucifexex/plans/, no execution. Bite-sized tasks, exact paths, complete code.
+Plan mode: write an actionable markdown plan to .lucifex/plans/, no execution. Bite-sized tasks, exact paths, complete code.
 
 ## Skill metadata
 
@@ -17,7 +17,7 @@ Plan mode: write an actionable markdown plan to .lucifexex/plans/, no execution.
 | Source | Bundled (installed by default) |
 | Path | `skills/software-development/plan` |
 | Version | `2.0.0` |
-| Author | lucifexex Agent (writing-craft adapted from obra/superpowers) |
+| Author | lucifex Agent (writing-craft adapted from obra/superpowers) |
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `planning`, `plan-mode`, `implementation`, `workflow`, `design`, `documentation` |
@@ -26,7 +26,7 @@ Plan mode: write an actionable markdown plan to .lucifexex/plans/, no execution.
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that lucifexex loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that lucifex loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # Plan Mode
@@ -41,7 +41,7 @@ For this turn, you are planning only.
 - Do not edit project files except the plan markdown file.
 - Do not run mutating terminal commands, commit, push, or perform external actions.
 - You may inspect the repo or other context with read-only commands/tools when needed.
-- Your deliverable is a markdown plan saved inside the active workspace under `.lucifexex/plans/`.
+- Your deliverable is a markdown plan saved inside the active workspace under `.lucifex/plans/`.
 
 ## Output requirements
 
@@ -61,12 +61,12 @@ If the task is code-related, include exact file paths, likely test targets, and 
 ## Save location
 
 Save the plan with `write_file` under:
-- `.lucifexex/plans/YYYY-MM-DD_HHMMSS-<slug>.md`
+- `.lucifex/plans/YYYY-MM-DD_HHMMSS-<slug>.md`
 
-Treat that as relative to the active working directory / backend workspace. lucifexex file tools are backend-aware, so using this relative path keeps the plan with the workspace on local, docker, ssh, modal, and daytona backends.
+Treat that as relative to the active working directory / backend workspace. lucifex file tools are backend-aware, so using this relative path keeps the plan with the workspace on local, docker, ssh, modal, and daytona backends.
 
 If the runtime provides a specific target path, use that exact path.
-If not, create a sensible timestamped filename yourself under `.lucifexex/plans/`.
+If not, create a sensible timestamped filename yourself under `.lucifex/plans/`.
 
 ## Interaction style
 
@@ -139,7 +139,7 @@ Every plan MUST start with:
 ```markdown
 # [Feature Name] Implementation Plan
 
-> **For lucifexex:** Use subagent-driven-development skill to implement this plan task-by-task.
+> **For lucifex:** Use subagent-driven-development skill to implement this plan task-by-task.
 
 **Goal:** [One sentence describing what this builds]
 
@@ -209,7 +209,7 @@ Read and understand:
 
 ### Step 2: Explore the Codebase
 
-Use lucifexex tools to understand the project:
+Use lucifex tools to understand the project:
 
 ```python
 # Understand project structure

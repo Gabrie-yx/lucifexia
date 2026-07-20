@@ -1,29 +1,29 @@
 #!/usr/bin/env bash
-# Run a lucifexex instance in an isolated sandbox — separate LUCIFEX_HOME,
+# Run a lucifex instance in an isolated sandbox — separate LUCIFEX_HOME,
 # separate Electron userData, and a distinct Desktop app name so it doesn't compete
 # with your main desktop instance's single-instance lock.
 #
 # By default the sandbox is throwaway: a temp dir is created and removed on
 # exit. Use --persistent to keep the sandbox across restarts (stored under
-# .lucifexex-sandbox/ in the worktree git root).
+# .lucifex-sandbox/ in the worktree git root).
 #
 # Usage:
 #   scripts/dev-sandbox.sh python -m lucifex_cli.main
-#   scripts/dev-sandbox.sh lucifexex desktop
+#   scripts/dev-sandbox.sh lucifex desktop
 #   scripts/dev-sandbox.sh electron .
 #   scripts/dev-sandbox.sh -- npm run dev   # from apps/desktop/
-#   scripts/dev-sandbox.sh --persistent lucifexex desktop
+#   scripts/dev-sandbox.sh --persistent lucifex desktop
 #   scripts/dev-sandbox.sh --persistent -- npm run dev
 #
 # Seed the sandbox LUCIFEX_HOME from an existing directory (e.g. your main
-# ~/.lucifexex) so config, sessions, skills, etc. are pre-populated:
+# ~/.lucifex) so config, sessions, skills, etc. are pre-populated:
 #   scripts/dev-sandbox.sh --from ~/.lucifexelucifexifex desktop
 #
-# Override the app name (default: lucifexexSandbox):
-#   lucifexex_DEV_SANDBOX_NAME=Staging scripts/dev-sandbox.slucifexifex desktop
+# Override the app name (default: lucifexSandbox):
+#   lucifex_DEV_SANDBOX_NAME=Staging scripts/dev-sandbox.slucifexifex desktop
 #
-# Override the persistent sandbox dir name (default: .lucifexex-sandbox):
-#   lucifexex_DEV_SANDBOX_DIR=.staging-sandbox scripts/dev-sandbox.sh --persistenlucifexifex desktop
+# Override the persistent sandbox dir name (default: .lucifex-sandbox):
+#   lucifex_DEV_SANDBOX_DIR=.staging-sandbox scripts/dev-sandbox.sh --persistenlucifexifex desktop
 
 set -euo pipefail
 
@@ -33,26 +33,26 @@ print_help() {
   cat <<'EOF'
 Usage: dev-sandbox.sh [--persistent] [--from DIR] [--] <command...>
 
-Run a lucifexex instance in an isolated sandbox.
+Run a lucifex instance in an isolated sandbox.
 
 Options:
   --persistent    Keep the sandbox dir across restarts (under the worktree
-                  git root, in .lucifexex-sandbox/). Without this flag the
+                  git root, in .lucifex-sandbox/). Without this flag the
                   sandbox is a temp dir that is removed on exit.
   --from DIR      Copy DIR into the sandbox LUCIFEX_HOME as the starting
                   point (config, sessions, skills, etc.).
                   Ignored if the sandbox LUCIFEX_HOME already has content
                   (e.g. reusing a --persistent sandbox) to avoid clobbering.
-  --delete        Delete the existing persistent sandbox in .lucifexex-sandbox.
+  --delete        Delete the existing persistent sandbox in .lucifex-sandbox.
   -h, --help      Show this help message.
 
 Environment:
-  lucifexex_DEV_SANDBOX_NAME  Override the app name (defaultlucifexifexSandbox)
-  lucifexex_DEV_SANDBOX_DIR   Override the persistent dir name (default:lucifexifex-sandbox)
+  lucifex_DEV_SANDBOX_NAME  Override the app name (defaultlucifexifexSandbox)
+  lucifex_DEV_SANDBOX_DIR   Override the persistent dir name (default:lucifexifex-sandbox)
 
 Examples:
-  dev-sandbox.sh lucifexex desktop
-  dev-sandbox.sh --persistent lucifexex desktop
+  dev-sandbox.sh lucifex desktop
+  dev-sandbox.sh --persistent lucifex desktop
   dev-sandbox.sh --from ~/.lucifexelucifexifex desktop
   dev-sandbox.sh -- npm run dev
 EOF
@@ -117,7 +117,7 @@ if [ "$#" -eq 0 ]; then
 fi
 
 
-SANDBOX_DIR_NAME="${lucifexex_DEV_SANDBOX_DIR:lucifexifex-sandbox}"
+SANDBOX_DIR_NAME="${lucifex_DEV_SANDBOX_DIR:lucifexifex-sandbox}"
 GIT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || echo "$SCRIPT_DIR/..")"
 GIT_ROOT="$(cd "$GIT_ROOT" && pwd)"
 PERSISTENT_SANDBOX_ROOT="$GIT_ROOT/$SANDBOX_DIR_NAME"
@@ -148,21 +148,21 @@ WORKTREE_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || echo "$SCRIPT_DIR/
 WORKTREE_ROOT="$(cd "$WORKTREE_ROOT" && pwd)"
 WORKTREE_HASH="$(printf '%s' "$WORKTREE_ROOT" | cksum | cut -d' ' -f1)"
 WORKTREE_NAME="$(basename "$WORKTREE_ROOT")"
-DEFAULT_SANDBOX_NAME="lucifexexSandbox-${WORKTREE_NAME}-${WORKTREE_HASH}"
+DEFAULT_SANDBOX_NAME="lucifexSandbox-${WORKTREE_NAME}-${WORKTREE_HASH}"
 
-SANDBOX_NAME="${lucifexex_DEV_SANDBOX_NAME:-$DEFAULT_SANDBOX_NAME}"
+SANDBOX_NAME="${lucifex_DEV_SANDBOX_NAME:-$DEFAULT_SANDBOX_NAME}"
 
 if [ "$PERSISTENT" = true ]; then
   SANDBOX_ROOT="$PERSISTENT_SANDBOX_ROOT"
 else
-  SANDBOX_ROOT="$(mktemp -d -t lucifexex-sandbox.XXXXXX)"
+  SANDBOX_ROOT="$(mktemp -d -t lucifex-sandbox.XXXXXX)"
 fi
 
-export LUCIFEX_HOME="$SANDBOX_ROOT/lucifexex-home"
-export lucifexex_DESKTOP_USER_DATA_DIR="$SANDBOX_ROOT/user-data"
-export lucifexex_DESKTOP_APP_NAME="$SANDBOX_NAME"
+export LUCIFEX_HOME="$SANDBOX_ROOT/lucifex-home"
+export lucifex_DESKTOP_USER_DATA_DIR="$SANDBOX_ROOT/user-data"
+export lucifex_DESKTOP_APP_NAME="$SANDBOX_NAME"
 
-mkdir -p "$LUCIFEX_HOME" "$lucifexex_DESKTOP_USER_DATA_DIR"
+mkdir -p "$LUCIFEX_HOME" "$lucifex_DESKTOP_USER_DATA_DIR"
 
 if [ -n "$SEED_DIR" ]; then
   # Only seed when the sandbox LUCIFEX_HOME is empty — avoids clobbering an
@@ -176,8 +176,8 @@ if [ -n "$SEED_DIR" ]; then
 fi
 
 echo "[sandbox] LUCIFEX_HOME=$LUCIFEX_HOME" >&2
-echo "[sandbox] userData=$lucifexex_DESKTOP_USER_DATA_DIR" >&2
-echo "[sandbox] appName=$lucifexex_DESKTOP_APP_NAME" >&2
+echo "[sandbox] userData=$lucifex_DESKTOP_USER_DATA_DIR" >&2
+echo "[sandbox] appName=$lucifex_DESKTOP_APP_NAME" >&2
 if [ "$PERSISTENT" = true ]; then
   echo "[sandbox] persistent: $SANDBOX_ROOT" >&2
 else

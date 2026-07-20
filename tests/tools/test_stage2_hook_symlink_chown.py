@@ -19,7 +19,7 @@ def stage2_text() -> str:
     return STAGE2_HOOK.read_text()
 
 
-def _chown_lucifexex_tree_function(text: str) -> str:
+def _chown_lucifex_tree_function(text: str) -> str:
     start = text.index("path_has_symlink_component() {")
     end = text.index("\n\nneeds_chown=false", start)
     return text[start:end]
@@ -39,9 +39,9 @@ def _run_helper(
     script = (
         "set -eu\n"
         f'LUCIFEX_HOME="{LUCIFEX_HOME}"\n'
-        f"{_chown_lucifexex_tree_function(text)}\n"
+        f"{_chown_lucifex_tree_function(text)}\n"
         f'chown() {{ printf "%s\\n" "$*" >> "{log_path}"; }}\n'
-        f'chown_lucifexex_tree "{target}"\n'
+        f'chown_lucifex_tree "{target}"\n'
     )
     return subprocess.run([shell, "-c", script], capture_output=True, text=True)
 
@@ -62,7 +62,7 @@ def test_chown_helper_repairs_real_directories(stage2_text: str, tmp_path: Path)
 def test_chown_helper_refuses_symlinked_directories(stage2_text: str, tmp_path: Path) -> None:
     real_home = tmp_path / "real-home"
     real_home.mkdir()
-    symlinked_home = tmp_path / "lucifexex-home"
+    symlinked_home = tmp_path / "lucifex-home"
     try:
         symlinked_home.symlink_to(real_home, target_is_directory=True)
     except (NotImplementedError, OSError):
@@ -131,9 +131,9 @@ def test_chown_helper_refuses_target_with_symlinked_ancestor(
 
 
 def test_stage2_uses_symlink_safe_helper_for_LUCIFEX_HOME_trees(stage2_text: str) -> None:
-    assert 'chown_lucifexex_tree "$LUCIFEX_HOME/$sub"' in stage2_text
-    assert 'chown_lucifexex_tree "$LUCIFEX_HOME/profiles"' in stage2_text
-    assert 'chown_lucifexex_tree "$LUCIFEX_HOME/cron"' in stage2_text
+    assert 'chown_lucifex_tree "$LUCIFEX_HOME/$sub"' in stage2_text
+    assert 'chown_lucifex_tree "$LUCIFEX_HOME/profiles"' in stage2_text
+    assert 'chown_lucifex_tree "$LUCIFEX_HOME/cron"' in stage2_text
     assert 'chown -R lucifexelucifexifex "$LUCIFEX_HOME/$sub"' not in stage2_text
     assert 'chown -R lucifexelucifexifex "$LUCIFEX_HOME/profiles"' not in stage2_text
     assert 'chown -R lucifexelucifexifex "$LUCIFEX_HOME/cron"' not in stage2_text

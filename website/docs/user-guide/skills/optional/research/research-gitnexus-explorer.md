@@ -14,10 +14,10 @@ Index a codebase with GitNexus and serve an interactive knowledge graph via web 
 
 | | |
 |---|---|
-| Source | Optional — install with `lucifexex skills install official/research/gitnexus-explorer` |
+| Source | Optional — install with `lucifex skills install official/research/gitnexus-explorer` |
 | Path | `optional-skills/research/gitnexus-explorer` |
 | Version | `1.0.0` |
-| Author | lucifexex Agent + Teknium |
+| Author | lucifex Agent + Teknium |
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `gitnexus`, `code-intelligence`, `knowledge-graph`, `visualization` |
@@ -26,7 +26,7 @@ Index a codebase with GitNexus and serve an interactive knowledge graph via web 
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that lucifexex loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that lucifex loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # GitNexus Explorer

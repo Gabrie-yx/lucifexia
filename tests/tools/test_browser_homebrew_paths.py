@@ -263,8 +263,8 @@ class TestRunBrowserCommandPathConstruction:
             "cdp_url": None,
         }
         fake_json = json.dumps({"success": True})
-        browser_path = "/Users/test/Library/Application Support/lucifexex/node_modules/.bin/agent-browser"
-        LUCIFEX_HOME = str(tmp_path / "lucifexex-home")
+        browser_path = "/Users/test/Library/Application Support/lucifex/node_modules/.bin/agent-browser"
+        LUCIFEX_HOME = str(tmp_path / "lucifex-home")
 
         with patch("tools.browser_tool._find_agent_browser", return_value=browser_path), \
  patch("tools.browser_tool._chromium_installed", return_value=True), \
@@ -316,7 +316,7 @@ class TestRunBrowserCommandPathConstruction:
             "cdp_url": None,
         }
         fake_json = json.dumps({"success": True})
-        LUCIFEX_HOME = str(tmp_path / "lucifexex-home")
+        LUCIFEX_HOME = str(tmp_path / "lucifex-home")
 
         with patch("tools.browser_tool._find_agent_browser", return_value="npx agent-browser"), \
  patch("tools.browser_tool._chromium_installed", return_value=True), \

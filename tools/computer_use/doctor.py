@@ -1,10 +1,10 @@
 """
-`lucifexex computer-use doctor` — thin client for cua-driver's `health_report` MCP tool.
+`lucifex computer-use doctor` — thin client for cua-driver's `health_report` MCP tool.
 
 cua-driver owns the health model (#1908 / be761fac on `main`). This module
 just drives the stdio JSON-RPC handshake, calls `health_report`, and
 renders the structured response. When the driver gets new checks, they
-flow through here without code changes on the lucifexex side — the only
+flow through here without code changes on the lucifex side — the only
 contract is the stable `schema_version="1"` payload shape.
 
 Exit code conventions:
@@ -38,7 +38,7 @@ _OVERALL_GLYPH = {
 
 
 def _cua_child_env() -> Dict[str, str]:
-    """cua-driver child env with the lucifexex telemetry policy applied.
+    """cua-driver child env with the lucifex telemetry policy applied.
 
     Delegates to ``cua_backend.cua_driver_child_env`` (telemetry disabled by
     default unless the user opts in). Falls back to the current environment
@@ -53,7 +53,7 @@ def _cua_child_env() -> Dict[str, str]:
 
 
 def _sanitized_cua_env() -> Dict[str, str]:
-    """Telemetry-policy env with lucifexex provider secrets stripped.
+    """Telemetry-policy env with lucifex provider secrets stripped.
 
     cua-driver is a third-party binary — it must never inherit provider
     API keys (#53503/#55709/#58889 lineage). Falls back to the unsanitized
@@ -240,7 +240,7 @@ def run_doctor(
 ) -> int:
     """Resolve the cua-driver binary, call `health_report`, render the result.
 
-    Honors `lucifexex_CUA_DRIVER_CMD` via the same `_cua_driver_cmd()` resolver
+    Honors `lucifex_CUA_DRIVER_CMD` via the same `_cua_driver_cmd()` resolver
     that `install_cua_driver` + the runtime backend use, so the doctor
     diagnoses what your `computer_use` toolset will actually invoke.
     """
@@ -260,12 +260,12 @@ def run_doctor(
             from lucifex_cli.tools_config import _cua_driver_cmd
             driver_cmd = _cua_driver_cmd()
         except Exception:
-            driver_cmd = os.environ.get("lucifexex_CUA_DRIVER_CMD") or "cua-driver"
+            driver_cmd = os.environ.get("lucifex_CUA_DRIVER_CMD") or "cua-driver"
 
     binary = shutil.which(driver_cmd)
     if not binary:
         print(f"cua-driver: not installed (looked for {driver_cmd!r}).")
-        print("  Run: lucifexex computer-use install")
+        print("  Run: lucifex computer-use install")
         return 2
 
     try:

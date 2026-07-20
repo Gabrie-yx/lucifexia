@@ -1,4 +1,4 @@
-"""Tests for `lucifexex photon setup`'s access auto-configuration.
+"""Tests for `lucifex photon setup`'s access auto-configuration.
 
 `_autoconfigure_access` allowlists the operator and points the cron home
 channel at their DM, writing to the per-test ~/.lucifex/.env (the hermetic

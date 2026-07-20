@@ -18,8 +18,8 @@ from typing import Optional
 
 from tools.environments.base import BaseEnvironment, _popen_bash
 from tools.environments.local import (
-    _lucifexex_PROVIDER_ENV_BLOCKLIST,
-    _is_lucifexex_internal_secret,
+    _lucifex_PROVIDER_ENV_BLOCKLIST,
+    _is_lucifex_internal_secret,
 )
 
 logger = logging.getLogger(__name__)
@@ -93,7 +93,7 @@ def _normalize_env_dict(env: dict | None) -> dict[str, str]:
     return normalized
 
 
-def _load_lucifexex_env_vars() -> dict[str, str]:
+def _load_lucifex_env_vars() -> dict[str, str]:
     """Load ~/.lucifex/.env values without failing Docker command execution."""
     try:
         from lucifex_cli.config import load_env
@@ -124,7 +124,7 @@ def _sanitize_label_value(value: str) -> str:
 
 
 def _get_active_profile_name() -> str:
-    """Return the active lucifexex profile name, or ``"default"`` on any error.
+    """Return the active lucifex profile name, or ``"default"`` on any error.
 
     Resolved at container-create time so a single container is permanently
     tagged with the profile that created it. Profile switches inside the
@@ -144,16 +144,16 @@ def reap_orphan_containers(
     profile_filter: str | None = None,
     docker_exe: str | None = None,
 ) -> int:
-    """Remove stale lucifexex-tagged containers left behind by prior processes.
+    """Remove stale lucifex-tagged containers left behind by prior processes.
 
     Targets containers that match all of:
 
     * ``label=lucifex-agent=1`` (created by this codebase)
     * ``status=exited`` (running containers are NEVER reaped — they may
-      belong to a sibling lucifexex process whose reuse path will pick them
+      belong to a sibling lucifex process whose reuse path will pick them
       up; killing them would crash the sibling mid-command)
-    * (optional) ``label=lucifexex-profile=<profile_filter>`` (sweep only the
-      caller's profile by default; a lucifexex process in profile A must not
+    * (optional) ``label=lucifex-profile=<profile_filter>`` (sweep only the
+      caller's profile by default; a lucifex process in profile A must not
       tear down profile B's containers)
     * ``State.FinishedAt`` older than *max_age_seconds* ago (so a sibling
       process that just exited and is about to be replaced doesn't get
@@ -166,15 +166,15 @@ def reap_orphan_containers(
 
     Issue #20561 — this is the safety net for SIGKILL / OOM / crashed
     terminal exits that bypass the ``atexit`` cleanup hook. Without it,
-    even with the cleanup-fix in the prior commit, a hard-killed lucifexex
+    even with the cleanup-fix in the prior commit, a hard-killed lucifex
     process leaves its container behind permanently because there's no
-    subsequent lucifexex process scheduled to reuse that exact (task, profile)
+    subsequent lucifex process scheduled to reuse that exact (task, profile)
     pair.
     """
     docker = docker_exe or find_docker() or "docker"
     filters = ["--filter", "label=lucifex-agent=1", "--filter", "status=exited"]
     if profile_filter:
-        filters.extend(["--filter", f"label=lucifexex-profile={_sanitize_label_value(profile_filter)}"])
+        filters.extend(["--filter", f"label=lucifex-profile={_sanitize_label_value(profile_filter)}"])
 
     try:
         listing = subprocess.run(
@@ -271,7 +271,7 @@ def find_docker() -> Optional[str]:
     """Locate the docker (or podman) CLI binary.
 
     Resolution order:
-    1. ``lucifexex_DOCKER_BINARY`` env var — explicit override (e.g. ``/usr/bin/podman``)
+    1. ``lucifex_DOCKER_BINARY`` env var — explicit override (e.g. ``/usr/bin/podman``)
     2. ``docker`` on PATH via ``shutil.which``
     3. ``podman`` on PATH via ``shutil.which``
     4. Well-known macOS Docker Desktop install locations
@@ -283,10 +283,10 @@ def find_docker() -> Optional[str]:
         return _docker_executable
 
     # 1. Explicit override via env var (e.g. for Podman on immutable distros)
-    override = os.getenv("lucifexex_DOCKER_BINARY")
+    override = os.getenv("lucifex_DOCKER_BINARY")
     if override and os.path.isfile(override) and os.access(override, os.X_OK):
         _docker_executable = override
-        logger.info("Using lucifexex_DOCKER_BINARY override: %s", override)
+        logger.info("Using lucifex_DOCKER_BINARY override: %s", override)
         return override
 
     # 2. docker on PATH
@@ -317,7 +317,7 @@ def find_docker() -> Optional[str]:
 # We drop all capabilities then add back the minimum needed:
 #   DAC_OVERRIDE - root can write to bind-mounted dirs owned by host user
 #   CHOWN/FOWNER - package managers (pip, npm, apt) need to set file ownership
-#   SETUID/SETGID - the image's init drops from root to the 'lucifexex'
+#   SETUID/SETGID - the image's init drops from root to the 'lucifex'
 #       user (via `s6-setuidgid` in the bundled image, or whatever
 #       privilege-drop helper a user image uses), which requires these
 #       caps. Combined with `no-new-privileges`, the dropped process
@@ -855,20 +855,20 @@ class DockerEnvironment(BaseEnvironment):
         logger.info(f"Docker run_args: {all_run_args}")
 
         # Start the container directly via `docker run -d`.
-        container_name = f"lucifexex-{uuid.uuid4().hex[:8]}"
-        # Labels make lucifexex-created containers identifiable to:
+        container_name = f"lucifex-{uuid.uuid4().hex[:8]}"
+        # Labels make lucifex-created containers identifiable to:
         #   * the orphan reaper (`lucifex-agent=1` for the global sweep filter)
-        #   * future cross-process reuse (`lucifexex-task-id`,lucifexifex-profile`)
+        #   * future cross-process reuse (`lucifex-task-id`,lucifexifex-profile`)
         #   * operators running `docker ps --filter label=lucifex-agent=1`
         # Values are limited to the safe character set defined by
-        # _sanitize_label_value(); the active lucifexex profile is captured at
+        # _sanitize_label_value(); the active lucifex profile is captured at
         # container-start time and never changes for the container's lifetime.
         profile_name = _sanitize_label_value(_get_active_profile_name())
         task_label = _sanitize_label_value(task_id)
         label_args = [
             "--label", "lucifex-agent=1",
-            "--label", f"lucifexex-task-id={task_label}",
-            "--label", f"lucifexex-profile={profile_name}",
+            "--label", f"lucifex-task-id={task_label}",
+            "--label", f"lucifex-profile={profile_name}",
         ]
         # Save args for container recreation on "No such container" recovery.
         self._image = image
@@ -878,12 +878,12 @@ class DockerEnvironment(BaseEnvironment):
 
         self._labels = {
             "lucifex-agent": "1",
-            "lucifexex-task-id": task_label,
-            "lucifexex-profile": profile_name,
+            "lucifex-task-id": task_label,
+            "lucifex-profile": profile_name,
         }
 
         # Cross-process container reuse (issue #20561 — docs claim "ONE long-lived
-        # container shared across sessions").  If a prior lucifexex process
+        # container shared across sessions").  If a prior lucifex process
         # already started a container for this (task_id, profile) and it
         # still exists, attach to it instead of starting a fresh one.  This
         # restores the documented contract; opt out via
@@ -1033,19 +1033,19 @@ class DockerEnvironment(BaseEnvironment):
         except Exception:
             pass
         # Explicit docker_forward_env entries are an intentional opt-in and must
-        # win over the generic lucifexex secret blocklist. Only implicit passthrough
-        # keys are filtered. Also strip lucifexex-internal dynamic secrets
+        # win over the generic lucifex secret blocklist. Only implicit passthrough
+        # keys are filtered. Also strip lucifex-internal dynamic secrets
         # (AUXILIARY_*_API_KEY / _BASE_URL, GATEWAY_RELAY_* auth) that the
-        # name-based blocklist doesn't cover — see _is_lucifexex_internal_secret.
+        # name-based blocklist doesn't cover — see _is_lucifex_internal_secret.
         _implicit_forward = {
-            k for k in passthrough_keys if not _is_lucifexex_internal_secret(k)
+            k for k in passthrough_keys if not _is_lucifex_internal_secret(k)
         }
-        forward_keys = explicit_forward_keys | (_implicit_forward - _lucifexex_PROVIDER_ENV_BLOCKLIST)
-        lucifexex_env = _loalucifexifex_env_vars() if forward_keys else {}
+        forward_keys = explicit_forward_keys | (_implicit_forward - _lucifex_PROVIDER_ENV_BLOCKLIST)
+        lucifex_env = _loalucifexifex_env_vars() if forward_keys else {}
         for key in sorted(forward_keys):
             value = os.getenv(key)
             if not value:
-                value = lucifexex_env.get(key)
+                value = lucifex_env.get(key)
             if value:
                 exec_env[key] = value
 
@@ -1106,8 +1106,8 @@ class DockerEnvironment(BaseEnvironment):
         self._container_id = None
 
         # 1. Try label-based reuse (another process may have recreated it).
-        task_label = self._labels.get("lucifexex-task-id", "")
-        profile_label = self._labels.get("lucifexex-profile", "")
+        task_label = self._labels.get("lucifex-task-id", "")
+        profile_label = self._labels.get("lucifex-profile", "")
         existing = self._find_reusable_container(task_label, profile_label)
         if existing is not None:
             cid, state = existing
@@ -1133,7 +1133,7 @@ class DockerEnvironment(BaseEnvironment):
                 return False
             try:
                 import uuid as _uuid
-                new_name = f"lucifexex-{_uuid.uuid4().hex[:8]}"
+                new_name = f"lucifex-{_uuid.uuid4().hex[:8]}"
                 init_args = [] if self._image_uses_s6_init else ["--init"]
                 label_args = []
                 for k, v in self._labels.items():
@@ -1277,7 +1277,7 @@ class DockerEnvironment(BaseEnvironment):
         whether the state warrants ``docker start`` before reuse.
 
         Restricted to the docker-stored label set this class creates; never
-        matches containers that happened to be named ``lucifexex-*`` but were
+        matches containers that happened to be named ``lucifex-*`` but were
         started by some other tool.
         """
         try:
@@ -1285,8 +1285,8 @@ class DockerEnvironment(BaseEnvironment):
                 [
                     self._docker_exe, "ps", "-a",
                     "--filter", "label=lucifex-agent=1",
-                    "--filter", f"label=lucifexex-task-id={task_label}",
-                    "--filter", f"label=lucifexex-profile={profile_label}",
+                    "--filter", f"label=lucifex-task-id={task_label}",
+                    "--filter", f"label=lucifex-profile={profile_label}",
                     "--format", "{{.ID}}\t{{.State}}",
                 ],
                 capture_output=True,
@@ -1308,7 +1308,7 @@ class DockerEnvironment(BaseEnvironment):
         if not lines:
             return None
         # Multiple matches are unusual (one (task, profile) should produce one
-        # container) but can happen if a previous lucifexex process crashed
+        # container) but can happen if a previous lucifex process crashed
         # mid-cleanup. Prefer a running one if present; otherwise pick the
         # first listed. Stale duplicates get reaped by the orphan-reaper in a
         # follow-up commit; we don't try to be heroic about them here.
@@ -1330,7 +1330,7 @@ class DockerEnvironment(BaseEnvironment):
 
         Persist-mode (``persist_across_processes=True``, the default) leaves the
         container **running** untouched. The docs promise "ONE long-lived
-        container shared across sessions" and stopping it on every lucifexex exit
+        container shared across sessions" and stopping it on every lucifex exit
         breaks that promise:
 
         * Background processes inside the container (``npm run dev``, watchers,
@@ -1343,8 +1343,8 @@ class DockerEnvironment(BaseEnvironment):
 
         Resource reclamation for the persist-mode case lives in the
         ``reap_orphan_containers()`` path (see issue #20561 commit 3): if no
-        lucifexex process touches a labeled container for ``2 × lifetime_seconds``
-        it gets ``docker rm -f``'d at the next lucifexex startup. That covers the
+        lucifex process touches a labeled container for ``2 × lifetime_seconds``
+        it gets ``docker rm -f``'d at the next lucifex startup. That covers the
         SIGKILL / OOM / abandoned-laptop cases without us needing to stop the
         container on every graceful exit.
 
@@ -1384,7 +1384,7 @@ class DockerEnvironment(BaseEnvironment):
         #   persist_across_processes=False → stop + rm (per-process isolation)
         #
         # The persist-mode no-op is the issue-#20561 contract: the container
-        # outlives lucifexex processes, processes inside it stay alive, and
+        # outlives lucifex processes, processes inside it stay alive, and
         # reuse on next startup is instant.
         if force_remove:
             should_stop = True
@@ -1431,7 +1431,7 @@ class DockerEnvironment(BaseEnvironment):
         # ``_atexit_cleanup`` in terminal_tool.py which waits up to ~60s for
         # outstanding cleanups, so most exits complete the work cleanly.
         import threading
-        t = threading.Thread(target=_do_cleanup, daemon=True, name=f"lucifexex-cleanup-{log_id}")
+        t = threading.Thread(target=_do_cleanup, daemon=True, name=f"lucifex-cleanup-{log_id}")
         t.start()
         self._cleanup_thread = t
         self._container_id = None
@@ -1450,7 +1450,7 @@ class DockerEnvironment(BaseEnvironment):
         Returns ``True`` if the thread finished (or no thread was started),
         ``False`` on timeout. The atexit hook in terminal_tool.py calls this
         on every active environment so docker stop/rm actually completes
-        before the Python process exits — without this, ``lucifexex /quit``
+        before the Python process exits — without this, ``lucifex /quit``
         races the interpreter shutdown and leaves stopped containers behind.
         """
         thread = getattr(self, "_cleanup_thread", None)

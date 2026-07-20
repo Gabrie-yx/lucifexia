@@ -170,7 +170,7 @@ def reclaimer_loop(LUCIFEX_HOME: str, result_file: str) -> None:
 
 
 def main():
-    home = tempfile.mkdtemp(prefix="lucifexex_mixed_stress_")
+    home = tempfile.mkdtemp(prefix="lucifex_mixed_stress_")
     print(f"LUCIFEX_HOME = {home}")
 
     os.environ["LUCIFEX_HOME"] = home

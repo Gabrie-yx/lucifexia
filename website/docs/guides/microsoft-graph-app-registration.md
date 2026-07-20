@@ -29,7 +29,7 @@ You need **tenant admin rights** (or an admin to grant consent on your behalf) t
 2. Navigate to **Identity → Applications → App registrations**.
 3. Click **New registration**.
 4. Fill in:
-   - **Name:** `lucifexex Teams Meeting Pipeline` (or any name you'll recognize).
+   - **Name:** `lucifex Teams Meeting Pipeline` (or any name you'll recognize).
    - **Supported account types:** *Accounts in this organizational directory only (Single tenant)*.
    - **Redirect URI:** leave blank — app-only auth does not need one.
 5. Click **Register**.
@@ -43,7 +43,7 @@ You'll land on the app's overview page. Copy two values:
 
 1. In the left nav, open **Certificates & secrets**.
 2. Click **New client secret**.
-3. **Description:** `lucifexex-graph-secret`. **Expires:** pick a value that matches your rotation policy (6-24 months is typical).
+3. **Description:** `lucifex-graph-secret`. **Expires:** pick a value that matches your rotation policy (6-24 months is typical).
 4. Click **Add**.
 5. Copy the **Value** column immediately — it's only shown once. That value is `MSGRAPH_CLIENT_SECRET`.
 
@@ -95,19 +95,19 @@ Microsoft provides **Application Access Policies** for Teams exactly for this. T
 From an admin PowerShell with the MicrosoftTeams module installed and connected (`Connect-MicrosoftTeams`):
 
 ```powershell
-# Create a policy scoped to the lucifexex app
+# Create a policy scoped to the lucifex app
 New-CsApplicationAccessPolicy `
-  -Identity "lucifexex-Meeting-Pipeline-Policy" `
+  -Identity "lucifex-Meeting-Pipeline-Policy" `
   -AppIds "<MSGRAPH_CLIENT_ID>" `
-  -Description "Restrict lucifexex meeting pipeline to allow-listed users"
+  -Description "Restrict lucifex meeting pipeline to allow-listed users"
 
 # Grant the policy to specific users whose meetings the pipeline may read
 Grant-CsApplicationAccessPolicy `
-  -PolicyName "lucifexex-Meeting-Pipeline-Policy" `
+  -PolicyName "lucifex-Meeting-Pipeline-Policy" `
   -Identity "alice@example.com"
 
 Grant-CsApplicationAccessPolicy `
-  -PolicyName "lucifexex-Meeting-Pipeline-Policy" `
+  -PolicyName "lucifex-Meeting-Pipeline-Policy" `
   -Identity "bob@example.com"
 ```
 
@@ -137,7 +137,7 @@ chmod 600 ~/.lucifex/.env
 
 ## Step 6: Verify the Token Flow
 
-lucifexex ships a Graph auth smoke-test. From youlucifexifex install:
+lucifex ships a Graph auth smoke-test. From youlucifexifex install:
 
 ```python
 python -c "
@@ -165,7 +165,7 @@ Azure client secrets have a hard expiry. Before yours expires:
 
 1. Create a second client secret in step 2 without deleting the first one.
 2. Update `MSGRAPH_CLIENT_SECRET` in `~/.lucifex/.env` with the new value.
-3. Restart the gateway so the new secret is picked up: `lucifexex gateway restart`.
+3. Restart the gateway so the new secret is picked up: `lucifex gateway restart`.
 4. Verify with the smoke test above.
 5. Delete the old secret from the Azure portal.
 

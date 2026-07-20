@@ -15,13 +15,13 @@
 
 import {
   JsonRpcGatewayClient,
-  buildlucifexexWebSocketUrl,
+  buildlucifexWebSocketUrl,
   type ConnectionState,
   type GatewayEvent,
   type GatewayEventName,
-} from "@lucifexex/shared";
+} from "@lucifex/shared";
 
-import { lucifexex_BASE_PATH, buildWsAuthParam } from "@/lib/api";
+import { lucifex_BASE_PATH, buildWsAuthParam } from "@/lib/api";
 
 export type { ConnectionState, GatewayEvent, GatewayEventName };
 
@@ -46,14 +46,14 @@ export class GatewayClient extends JsonRpcGatewayClient {
     const authParam = token ? (["token", token] as const) : await buildWsAuthParam();
     if (!authParam[1]) {
       throw new Error(
-        "Session token not available — page must be served by the lucifexex dashboard server",
+        "Session token not available — page must be served by the lucifex dashboard server",
       );
     }
 
     await super.connect(
-      buildlucifexexWebSocketUrl({
+      buildlucifexWebSocketUrl({
         authParam,
-        basePath: lucifexex_BASE_PATH,
+        basePath: lucifex_BASE_PATH,
         path: "/api/ws",
       }),
     );

@@ -9,17 +9,17 @@ export const isTermuxEnv = (env: NodeJS.ProcessEnv = process.env): boolean => {
 }
 
 /**
- * Return true when lucifexex should enable Termux-focused TUI defaults.
+ * Return true when lucifex should enable Termux-focused TUI defaults.
  *
  * Defaults to on in Termux, with an explicit opt-out for debugging:
- *   lucifexex_TUI_TERMUX_MODE=0
+ *   lucifex_TUI_TERMUX_MODE=0
  */
 export const isTermuxTuiMode = (env: NodeJS.ProcessEnv = process.env): boolean => {
   if (!isTermuxEnv(env)) {
     return false
   }
 
-  const override = String(env.lucifexex_TUI_TERMUX_MODE ?? '')
+  const override = String(env.lucifex_TUI_TERMUX_MODE ?? '')
     .trim()
     .toLowerCase()
 

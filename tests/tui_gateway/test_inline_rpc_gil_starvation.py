@@ -35,7 +35,7 @@ def _restore_stdout():
 @pytest.fixture()
 def server():
     with patch.dict("sys.modules", {
-        "lucifex_constants": MagicMock(get_lucifex_home=MagicMock(return_value="/tmp/lucifexex_test")),
+        "lucifex_constants": MagicMock(get_lucifex_home=MagicMock(return_value="/tmp/lucifex_test")),
         "lucifex_cli.env_loader": MagicMock(),
         "lucifex_cli.banner": MagicMock(),
         "lucifex_state": MagicMock(),

@@ -6,7 +6,7 @@ description: "Security model, dangerous command approval, user authorization, co
 
 # Security
 
-lucifexex Agent is designed with a defense-in-depth security model. This page covers every security boundary — from command approval to container isolation to user authorization on messaging platforms.
+lucifex Agent is designed with a defense-in-depth security model. This page covers every security boundary — from command approval to container isolation to user authorization on messaging platforms.
 
 ## Overview
 
@@ -23,7 +23,7 @@ The security model has eight layers:
 
 ## Dangerous Command Approval
 
-Before executing any command, lucifexex checks it against a curated list of dangerous patterns. If a match is found, the user must explicitly approve it.
+Before executing any command, lucifex checks it against a curated list of dangerous patterns. If a match is found, the user must explicitly approve it.
 
 ### Approval Modes
 
@@ -43,10 +43,10 @@ The full set of keys:
 | Key | Default | What it controls |
 |---|---|---|
 | `mode` | `smart` | Approval policy for dangerous shell commands — see the table below. |
-| `timeout` | `60` | Seconds lucifexex waits for an approval reply before timing out. |
+| `timeout` | `60` | Seconds lucifex waits for an approval reply before timing out. |
 | `cron_mode` | `deny` | How [cron jobs](./features/cron.md) behave headlessly when they trigger a dangerous-command prompt. `deny` blocks the command (the agent must find another path); `approve` auto-approves everything in cron context. |
 | `mcp_reload_confirm` | `true` | When true, `/reload-mcp` asks before rebuilding the MCP tool set. Rebuilding invalidates the provider prompt cache (tool schemas live in the system prompt), so the next message re-sends full input tokens. Users who click **Always Approve** flip this key to `false`. |
-| `destructive_slash_confirm` | `true` | When true, destructive session slash commands (`/clear`, `/new`, `/reset`, `/undo`) prompt before discarding conversation state. Three-option dialog (Approve Once / Always Approve / Cancel) routed through native yes/no buttons on Telegram, Discord, and Slack; text fallback elsewhere. Users who click **Always Approve** flip this key to `false`. TUI uses its own modal overlay (set `lucifexex_TUI_NO_CONFIRM=1` to opt out there). |
+| `destructive_slash_confirm` | `true` | When true, destructive session slash commands (`/clear`, `/new`, `/reset`, `/undo`) prompt before discarding conversation state. Three-option dialog (Approve Once / Always Approve / Cancel) routed through native yes/no buttons on Telegram, Discord, and Slack; text fallback elsewhere. Users who click **Always Approve** flip this key to `false`. TUI uses its own modal overlay (set `lucifex_TUI_NO_CONFIRM=1` to opt out there). |
 
 | Mode | Behavior |
 |------|----------|
@@ -62,9 +62,9 @@ Setting `approvals.mode: off` disables all safety prompts. Use only in trusted e
 
 YOLO mode bypasses **all** dangerous command approval prompts for the current session. It can be activated three ways:
 
-1. **CLI flag**: Start a session with `lucifexex --yolo` orlucifexifex chat --yolo`
+1. **CLI flag**: Start a session with `lucifex --yolo` orlucifexifex chat --yolo`
 2. **Slash command**: Type `/yolo` during a session to toggle it on/off
-3. **Environment variable**: Set `lucifexex_YOLO_MODE=1`
+3. **Environment variable**: Set `lucifex_YOLO_MODE=1`
 
 The `/yolo` command is a **toggle** — each use flips the mode on or off:
 
@@ -76,9 +76,9 @@ The `/yolo` command is a **toggle** — each use flips the mode on or off:
   ⚠ YOLO mode OFF — dangerous commands will require approval.
 ```
 
-YOLO mode is available in both CLI and gateway sessions. Internally, it sets the `lucifexex_YOLO_MODE` environment variable which is checked before every command execution.
+YOLO mode is available in both CLI and gateway sessions. Internally, it sets the `lucifex_YOLO_MODE` environment variable which is checked before every command execution.
 
-When YOLO is active, lucifexex shows two persistent visual reminders so it's hard to forget that approval prompts are bypassed:
+When YOLO is active, lucifex shows two persistent visual reminders so it's hard to forget that approval prompts are bypassed:
 
 - A red banner line at session start when YOLO is already active: `⚠ YOLO mode — all approval prompts bypassed`. Hidden when YOLO is off so the default banner stays uncluttered.
 - A `⚠ YOLO` fragment in the status bar across all width tiers, updated live as you toggle YOLO on or off (rich-text renderer and plain-text fallback).
@@ -91,7 +91,7 @@ For destructive session slash commands (`/clear`, `/new` / `/reset`, `/undo`, `/
 
 ### Hardline Blocklist (Always-On Floor)
 
-Some commands are so catastrophic — irreversible filesystem wipes, fork bombs, direct block-device writes — that lucifexex refuses to run them **regardless** of:
+Some commands are so catastrophic — irreversible filesystem wipes, fork bombs, direct block-device writes — that lucifex refuses to run them **regardless** of:
 
 - `--yolo` / `/yolo` toggled on
 - `approvals.mode: off`
@@ -180,7 +180,7 @@ The following patterns trigger approval prompts (defined in `tools/approval.py`)
 | `find -exec rm` / `find -delete` | Find with destructive actions |
 | `cp`/`mv`/`install` to `/etc/` | Copy/move file into system config |
 | `sed -i` / `sed --in-place` on `/etc/` | In-place edit of system config |
-| `pkill`/`killall` lucifexex/gateway | Self-termination prevention |
+| `pkill`/`killall` lucifex/gateway | Self-termination prevention |
 | `gateway run` with `&`/`disown`/`nohup`/`setsid` | Prevents starting gateway outside service manager |
 
 :::info
@@ -214,7 +214,7 @@ On messaging platforms, the agent sends the dangerous command details to the cha
 - Reply **yes**, **y**, **approve**, **ok**, or **go** to approve
 - Reply **no**, **n**, **deny**, or **cancel** to deny
 
-The `lucifexex_EXEC_ASK=1` environment variable is automatically set when running the gateway.
+The `lucifex_EXEC_ASK=1` environment variable is automatically set when running the gateway.
 
 ### Permanent Allowlist
 
@@ -235,41 +235,41 @@ Use `lucifex config edit` to review or remove patterns from your permanent allow
 
 ## File Write Safety {#file-write-safety}
 
-Before `write_file` or `patch` touches disk, lucifexex checks the target path against a denylist and an optional sandbox. Blocked writes return an error to the agent immediately — **there is no approval prompt** and no way to override from the chat UI. The model may still claim the edit succeeded; when `display.file_mutation_verifier` is on (default), trust the [file-mutation verifier footer](./configuration.md#file-mutation-verifier) over the assistant's closing summary.
+Before `write_file` or `patch` touches disk, lucifex checks the target path against a denylist and an optional sandbox. Blocked writes return an error to the agent immediately — **there is no approval prompt** and no way to override from the chat UI. The model may still claim the edit succeeded; when `display.file_mutation_verifier` is on (default), trust the [file-mutation verifier footer](./configuration.md#file-mutation-verifier) over the assistant's closing summary.
 
 ### Protected paths (always blocked)
 
-These categories are always denied, even when `lucifexex_WRITE_SAFE_ROOT` is unset:
+These categories are always denied, even when `lucifex_WRITE_SAFE_ROOT` is unset:
 
 | Category | Examples |
 |----------|----------|
 | OS credential stores | `~/.ssh/`, `~/.aws/`, `~/.kube/`, `/etc/sudoers`, `~/.netrc` |
-| lucifexex credential stores | `auth.json`, `.env`, `.anthropic_oauth.json`, `mcp-tokens/`, `pairing/` under LUCIFEX_HOME (active profile and global root) |
+| lucifex credential stores | `auth.json`, `.env`, `.anthropic_oauth.json`, `mcp-tokens/`, `pairing/` under LUCIFEX_HOME (active profile and global root) |
 | Project secret files | `.env`, `.env.local`, `.env.production`, `.envrc` anywhere on disk |
 
-Sensitive paths inside the safe root are still blocked — pointing `lucifexex_WRITE_SAFE_ROOT` at `$HOME` does not allow writing `~/.ssh/id_rsa`.
+Sensitive paths inside the safe root are still blocked — pointing `lucifex_WRITE_SAFE_ROOT` at `$HOME` does not allow writing `~/.ssh/id_rsa`.
 
-Safe-root violations return `Write denied: '…' is outside lucifexex_WRITE_SAFE_ROOT (…)`. Credential-path blocks use `Write denied: '…' is a protected system/credential file.`
+Safe-root violations return `Write denied: '…' is outside lucifex_WRITE_SAFE_ROOT (…)`. Credential-path blocks use `Write denied: '…' is a protected system/credential file.`
 
-### lucifexex_WRITE_SAFE_ROOT (optional sandbox)
+### lucifex_WRITE_SAFE_ROOT (optional sandbox)
 
 When set, `write_file` and `patch` may only target paths inside the listed directory prefix(es). Anything outside is **hard-blocked** — not routed through dangerous-command approval.
 
-- Set automatically in the [official Docker image](https://github.com/NousResearch/lucifex-agent) (`lucifexex_WRITE_SAFE_ROOT=/opt/data`)
+- Set automatically in the [official Docker image](https://github.com/NousResearch/lucifex-agent) (`lucifex_WRITE_SAFE_ROOT=/opt/data`)
 - Supports multiple roots separated by `:` on Unix or `;` on Windows
-- **Do not add to `~/.lucifex/.env` casually.** If you set it to a project directory, the agent cannot write to `~/.lucifex/cron/jobs.json`, profile skills, or other lucifexex state outside that prefix
+- **Do not add to `~/.lucifex/.env` casually.** If you set it to a project directory, the agent cannot write to `~/.lucifex/cron/jobs.json`, profile skills, or other lucifex state outside that prefix
 
-To allow both a workspace and lucifexex home:
+To allow both a workspace and lucifex home:
 
 ```bash
-export lucifexex_WRITE_SAFE_ROOT=/path/to/project:/home/youlucifexifex
+export lucifex_WRITE_SAFE_ROOT=/path/to/project:/home/youlucifexifex
 ```
 
-Unset the variable to restore unrestricted writes (subject to the protected-path denylist). Full reference: [lucifexex_WRITE_SAFE_ROOT](../reference/environment-variables.mlucifexifex_write_safe_root).
+Unset the variable to restore unrestricted writes (subject to the protected-path denylist). Full reference: [lucifex_WRITE_SAFE_ROOT](../reference/environment-variables.mlucifexifex_write_safe_root).
 
-### Cron and other lucifexex state
+### Cron and other lucifex state
 
-Do not ask the agent to `patch` `~/.lucifex/cron/jobs.json` directly. Use the `cronjob` tool, [`lucifexex cron`](./features/cron.md), or `/cron` — they update the job store through the supported API. The same applies to othelucifexifex control files when write safety blocks direct edits.
+Do not ask the agent to `patch` `~/.lucifex/cron/jobs.json` directly. Use the `cronjob` tool, [`lucifex cron`](./features/cron.md), or `/cron` — they update the job store through the supported API. The same applies to othelucifexifex control files when write safety blocks direct edits.
 
 :::note Defense-in-depth, not a hard boundary
 Write guards apply to `write_file` and `patch` only. The `terminal` tool runs as the same OS user and can still `cat` or overwrite denied paths via shell commands. The denylist reduces accidental damage and gives models a clear stop signal; it does not sandbox a hostile or compromised agent.
@@ -277,7 +277,7 @@ Write guards apply to `write_file` and `patch` only. The `terminal` tool runs as
 
 ## User Authorization (Gateway)
 
-When running the messaging gateway, lucifexex controls who can interact with the bot through a layered authorization system.
+When running the messaging gateway, lucifex controls who can interact with the bot through a layered authorization system.
 
 ### Authorization Check Order
 
@@ -323,13 +323,13 @@ or configure platform allowlists (e.g., TELEGRAM_ALLOWED_USERS=your_id).
 
 ### DM Pairing System
 
-For more flexible authorization, lucifexex includes a code-based pairing system. Instead of requiring user IDs upfront, unknown users receive a one-time pairing code that the bot owner approves via the CLI.
+For more flexible authorization, lucifex includes a code-based pairing system. Instead of requiring user IDs upfront, unknown users receive a one-time pairing code that the bot owner approves via the CLI.
 
 **How it works:**
 
 1. An unknown user sends a DM to the bot
 2. The bot replies with an 8-character pairing code
-3. The bot owner runs `lucifexex pairing approve <platform> <code>` on the CLI
+3. The bot owner runs `lucifex pairing approve <platform> <code>` on the CLI
 4. The user is permanently approved for that platform
 
 Control how unauthorized direct messages are handled in `~/.lucifex/config.yaml`:
@@ -363,28 +363,28 @@ whatsapp:
 
 ```bash
 # List pending and approved users
-lucifexex pairing list
+lucifex pairing list
 
 # Approve a pairing code
-lucifexex pairing approve telegram ABC12DEF
+lucifex pairing approve telegram ABC12DEF
 
 # Revoke a user's access
-lucifexex pairing revoke telegram 123456789
+lucifex pairing revoke telegram 123456789
 
 # Clear all pending codes
-lucifexex pairing clear-pending
+lucifex pairing clear-pending
 ```
 
-:::tip Docker users: run pairing commands as the `lucifexex` user
-The official Docker image runs the gateway as the unprivileged `lucifexex` user
+:::tip Docker users: run pairing commands as the `lucifex` user
+The official Docker image runs the gateway as the unprivileged `lucifex` user
 (uid 10000) via `gosu`, but `docker exec` defaults to root. Approval files
 created by root are written with mode `0600 root:root` and the gateway
 cannot read them — the approval is silently ignored ([#10270][i10270]).
 
-Always pass `-u lucifexex`:
+Always pass `-u lucifex`:
 
 ```bash
-docker exec -u lucifexex lucifex-agenlucifexifex pairing approve telegram ABC12DEF
+docker exec -u lucifex lucifex-agenlucifexifex pairing approve telegram ABC12DEF
 ```
 
 If you already ran the command as root and the user is still unauthorized,
@@ -400,7 +400,7 @@ restart the container — the entrypoint will fix ownership on the next start.
 
 ## Container Isolation
 
-When using the `docker` terminal backend, lucifexex applies strict security hardening to every container.
+When using the `docker` terminal backend, lucifex applies strict security hardening to every container.
 
 ### Docker Security Flags
 
@@ -509,7 +509,7 @@ required_credential_files:
     description: Google OAuth2 client credentials
 ```
 
-When loaded, lucifexex checks if these files exist in the active profile's `LUCIFEX_HOME` and registers them for mounting:
+When loaded, lucifex checks if these files exist in the active profile's `LUCIFEX_HOME` and registers them for mounting:
 
 - **Docker**: Read-only bind mounts (`-v host:container:ro`)
 - **Modal**: Mounted at sandbox creation + synced before each command (handles mid-session OAuth setup)
@@ -524,14 +524,14 @@ terminal:
     - my_custom_oauth_token.json
 ```
 
-Paths are relative to `~/.lucifex/`. Files are mounted to `/root/.lucifexex/` inside the container. This list is read by `tools/credential_files.py` (`terminal.credential_files`) — it lives under the `terminal:` block but is loaded by the credential-files module, not the core terminal backend, so it isn't part of the bundled `DEFAULT_CONFIG` snapshot.
+Paths are relative to `~/.lucifex/`. Files are mounted to `/root/.lucifex/` inside the container. This list is read by `tools/credential_files.py` (`terminal.credential_files`) — it lives under the `terminal:` block but is loaded by the credential-files module, not the core terminal backend, so it isn't part of the bundled `DEFAULT_CONFIG` snapshot.
 
 ### What Each Sandbox Filters
 
 | Sandbox | Default Filter | Passthrough Override |
 |---------|---------------|---------------------|
 | **execute_code** | Blocks vars containing `KEY`, `TOKEN`, `SECRET`, `PASSWORD`, `CREDENTIAL`, `PASSWD`, `AUTH` in name; only allows safe-prefix vars through | ✅ Passthrough vars bypass both checks |
-| **terminal** (local) | Blocks explicit lucifexex infrastructure vars (provider keys, gateway tokens, tool API keys) | ✅ Passthrough vars bypass the blocklist |
+| **terminal** (local) | Blocks explicit lucifex infrastructure vars (provider keys, gateway tokens, tool API keys) | ✅ Passthrough vars bypass the blocklist |
 | **terminal** (Docker) | No host env vars by default | ✅ Passthrough vars + `docker_forward_env` forwarded via `-e` |
 | **terminal** (Modal) | No host env/files by default | ✅ Credential files mounted; env passthrough via sync |
 | **MCP** | Blocks everything except safe system vars + explicitly configured `env` | ❌ Not affected by passthrough (use MCP `env` config instead) |
@@ -542,7 +542,7 @@ Paths are relative to `~/.lucifex/`. Files are mounted to `/root/.lucifexex/` in
 - Credential files are mounted **read-only** into Docker containers
 - Skills Guard scans skill content for suspicious env access patterns before installation
 - Missing/unset vars are never registered (you can't leak what doesn't exist)
-- lucifexex infrastructure secrets (provider API keys, gateway tokens) should never be added to `env_passthrough` — they have dedicated mechanisms
+- lucifex infrastructure secrets (provider API keys, gateway tokens) should never be added to `env_passthrough` — they have dedicated mechanisms
 
 ## MCP Credential Handling
 
@@ -591,7 +591,7 @@ security:
       - "*.internal.company.com"
       - "admin.example.com"
     shared_files:
-      - "/etc/lucifexex/blocked-sites.txt"
+      - "/etc/lucifex/blocked-sites.txt"
 ```
 
 When a blocked URL is requested, the tool returns an error explaining the domain is blocked by policy. The blocklist is enforced across `web_search`, `web_extract`, `browser_navigate`, and all URL-capable tools.
@@ -626,7 +626,7 @@ The host-substring guard (which blocks lookalike Unicode domain tricks even when
 
 ### Tirith Pre-Exec Security Scanning
 
-lucifexex integrates [tirith](https://github.com/sheeki03/tirith) for content-level command scanning before execution. Tirith detects threats that pattern matching alone misses:
+lucifex integrates [tirith](https://github.com/sheeki03/tirith) for content-level command scanning before execution. Tirith detects threats that pattern matching alone misses:
 
 - Homograph URL spoofing (internationalized domain attacks)
 - Pipe-to-interpreter patterns (`curl | bash`, `wget | sh`)
@@ -645,7 +645,7 @@ security:
 
 When `tirith_fail_open` is `true` (default), commands proceed if tirith is not installed or times out. Set to `false` in high-security environments to block commands when tirith is unavailable.
 
-Tirith ships prebuilt binaries for Linux (x86_64 / aarch64) and macOS (x86_64 / arm64). On platforms with no prebuilt binary (Windows, etc.), tirith is silently skipped — pattern-matching guards still run, and the CLI does not surface an "unavailable" banner. To use tirith on Windows, run lucifexex under WSL.
+Tirith ships prebuilt binaries for Linux (x86_64 / aarch64) and macOS (x86_64 / arm64). On platforms with no prebuilt binary (Windows, etc.), tirith is silently skipped — pattern-matching guards still run, and the CLI does not surface an "unavailable" banner. To use tirith on Windows, run lucifex under WSL.
 
 Tirith's verdict integrates with the approval flow: safe commands pass through, while both suspicious and blocked commands trigger user approval with the full tirith findings (severity, title, description, safer alternatives). Users can approve or deny — the default choice is deny to keep unattended scenarios secure.
 
@@ -678,7 +678,7 @@ Blocked files show a warning:
 7. **Set `terminal.cwd`** — don't let the agent operate from sensitive directories
 8. **Run as non-root** — never run the gateway as root
 9. **Monitor logs** — check `~/.lucifex/logs/` for unauthorized access attempts
-10. **Keep updated** — run `lucifexex update` regularly for security patches
+10. **Keep updated** — run `lucifex update` regularly for security patches
 
 ### Securing API Keys
 
@@ -703,26 +703,26 @@ terminal:
 ```bash
 # ~/.lucifex/.env
 TERMINAL_SSH_HOST=agent-worker.local
-TERMINAL_SSH_USER=lucifexex
-TERMINAL_SSH_KEY=~/.ssh/lucifexex_agent_key
+TERMINAL_SSH_USER=lucifex
+TERMINAL_SSH_KEY=~/.ssh/lucifex_agent_key
 ```
 
 The SSH connection details live in `.env` (not `config.yaml`) so they aren't checked in or shared along with profile exports. This keeps the gateway's messaging connections separate from the agent's command execution.
 
 ## Supply-chain advisory checking
 
-lucifexex ships with a built-in advisory scanner that flags Python packages in the active venv that match a curated catalog of known-compromised versions (supply-chain worms like the May 2026 `mistralai 2.4.6` poisoning). Implementation lives in `lucifex_cli/security_advisories.py`.
+lucifex ships with a built-in advisory scanner that flags Python packages in the active venv that match a curated catalog of known-compromised versions (supply-chain worms like the May 2026 `mistralai 2.4.6` poisoning). Implementation lives in `lucifex_cli/security_advisories.py`.
 
 How it runs:
 
-- **CLI startup banner.** A one-line warning is printed if any advisory matches, with a pointer to `lucifexex doctor` for the full remediation.
-- **`lucifexex doctor`.** Surfaces every active advisory with version specifics and 2-4 step remediation instructions.
+- **CLI startup banner.** A one-line warning is printed if any advisory matches, with a pointer to `lucifex doctor` for the full remediation.
+- **`lucifex doctor`.** Surfaces every active advisory with version specifics and 2-4 step remediation instructions.
 - **Gateway startup.** Logged to `gateway.log`; the first interactive message gets a short operator banner.
 
 Each advisory carries a stable id. Once you have read and acted on it you can dismiss it for good:
 
 ```bash
-lucifexex doctor --ack <advisory-id>
+lucifex doctor --ack <advisory-id>
 ```
 
 The ack is persisted to `config.security.acked_advisories` and survives restart. Old advisories are intentionally **not** removed from the catalog — leaving them in place keeps fresh installs warned about historically poisoned versions that might still be cached in a private mirror.
@@ -731,7 +731,7 @@ The check itself is stdlib-only and runs from one `importlib.metadata.version()`
 
 ### Lazy install of optional dependencies
 
-Many features (Mistral TTS, ElevenLabs, Honcho memory, Bedrock, Slack, Matrix, …) depend on Python packages that not every user needs. lucifexex installs these **lazily** on first use rather than eagerly under `lucifex-agent[all]`. The implementation lives in `tools/lazy_deps.py`.
+Many features (Mistral TTS, ElevenLabs, Honcho memory, Bedrock, Slack, Matrix, …) depend on Python packages that not every user needs. lucifex installs these **lazily** on first use rather than eagerly under `lucifex-agent[all]`. The implementation lives in `tools/lazy_deps.py`.
 
 The trade-off this fixes:
 
@@ -742,7 +742,7 @@ How it works:
 
 1. A backend module calls `ensure("feature.name")` at the top of its first-import path.
 2. If the deps are missing, `ensure` checks `security.allow_lazy_installs` in `config.yaml` (default `true`) and runs a venv-scoped `pip install` for the allowlisted specs.
-3. If the install fails or the user has disabled lazy installs, the call raises `FeatureUnavailable` with the actual pip stderr and a pointer at `lucifexex tools`.
+3. If the install fails or the user has disabled lazy installs, the call raises `FeatureUnavailable` with the actual pip stderr and a pointer at `lucifex tools`.
 
 Security guarantees enforced by `tools/lazy_deps.py`:
 
@@ -762,4 +762,4 @@ security:
   allow_lazy_installs: false
 ```
 
-When disabled, backends that need optional deps will tell the user to run the install manually (`pip install …`) or pick a different backend via `lucifexex tools`.
+When disabled, backends that need optional deps will tell the user to run the install manually (`pip install …`) or pick a different backend via `lucifex tools`.

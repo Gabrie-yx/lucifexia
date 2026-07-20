@@ -4,15 +4,15 @@ sidebar_position: 7
 
 # Profile Commands Reference
 
-This page covers all commands related to [lucifexex profiles](../user-guide/profiles.md). For general CLI commands, see [CLI Commands Reference](./cli-commands.md).
+This page covers all commands related to [lucifex profiles](../user-guide/profiles.md). For general CLI commands, see [CLI Commands Reference](./cli-commands.md).
 
-## `lucifexex profile`
+## `lucifex profile`
 
 ```bash
-lucifexex profile <subcommand>
+lucifex profile <subcommand>
 ```
 
-Top-level command for managing profiles. Running `lucifexex profile` without a subcommand shows help.
+Top-level command for managing profiles. Running `lucifex profile` without a subcommand shows help.
 
 | Subcommand | Description |
 |------------|-------------|
@@ -30,10 +30,10 @@ Top-level command for managing profiles. Running `lucifexex profile` without a s
 | `update` | Re-pull a distribution-managed profile and re-apply its bundle. |
 | `info` | Show distribution metadata for a profile (origin URL, commit, last update). |
 
-## `lucifexex profile list`
+## `lucifex profile list`
 
 ```bash
-lucifexex profile list
+lucifex profile list
 ```
 
 Lists all profiles. The currently active profile is marked with `*`.
@@ -41,7 +41,7 @@ Lists all profiles. The currently active profile is marked with `*`.
 **Example:**
 
 ```bash
-$ lucifexex profile list
+$ lucifex profile list
   default
 * work
   dev
@@ -50,13 +50,13 @@ $ lucifexex profile list
 
 No options.
 
-## `lucifexex profile use`
+## `lucifex profile use`
 
 ```bash
-lucifexex profile use <name>
+lucifex profile use <name>
 ```
 
-Sets `<name>` as the active profile. All subsequent `lucifexex` commands (without `-p`) will use this profile.
+Sets `<name>` as the active profile. All subsequent `lucifex` commands (without `-p`) will use this profile.
 
 | Argument | Description |
 |----------|-------------|
@@ -65,14 +65,14 @@ Sets `<name>` as the active profile. All subsequent `lucifexex` commands (withou
 **Example:**
 
 ```bash
-lucifexex profile use work
-lucifexex profile use default
+lucifex profile use work
+lucifex profile use default
 ```
 
-## `lucifexex profile create`
+## `lucifex profile create`
 
 ```bash
-lucifexex profile create <name> [options]
+lucifex profile create <name> [options]
 ```
 
 Creates a new profile.
@@ -84,8 +84,8 @@ Creates a new profile.
 | `--clone-all` | Copy everything (config, memories, skills, cron, plugins) from the current profile. Excludes per-profile history: sessions, `state.db`, backups, state-snapshots, checkpoints. |
 | `--clone-from <profile>` | Clone config/skills/SOUL from a specific profile instead of the current one. Implies `--clone` unless paired with `--clone-all`. |
 | `--no-alias` | Skip wrapper script creation. |
-| `--description "<text>"` | One- or two-sentence description of what this profile is good at. Used by the kanban orchestrator to route tasks based on role instead of profile name alone. Skip and add later via `lucifexex profile describe`. Persisted in `<profile_dir>/profile.yaml`. |
-| `--no-skills` | Create an **empty** profile with zero bundled skills enabled. Writes a `.no-bundled-skills` marker into the profile so future `lucifexex update` runs won't re-seed the bundled set, and refuses to combine with `--clone`, `--clone-from`, or `--clone-all` (which would copy skills in anyway). Useful for narrow orchestrator profiles or sandbox profiles that should not inherit the full skill catalog. To toggle this on an already-created profile (including the default `~lucifexifex`), ulucifexucifex skills opt-oulucifexlucifexskills opt-in`. |
+| `--description "<text>"` | One- or two-sentence description of what this profile is good at. Used by the kanban orchestrator to route tasks based on role instead of profile name alone. Skip and add later via `lucifex profile describe`. Persisted in `<profile_dir>/profile.yaml`. |
+| `--no-skills` | Create an **empty** profile with zero bundled skills enabled. Writes a `.no-bundled-skills` marker into the profile so future `lucifex update` runs won't re-seed the bundled set, and refuses to combine with `--clone`, `--clone-from`, or `--clone-all` (which would copy skills in anyway). Useful for narrow orchestrator profiles or sandbox profiles that should not inherit the full skill catalog. To toggle this on an already-created profile (including the default `~lucifexifex`), ulucifexucifex skills opt-oulucifexlucifexskills opt-in`. |
 
 Creating a profile does **not** make that profile directory the default project/workspace directory for terminal commands. If you want a profile to start in a specific project, set `terminal.cwd` in that profile's `config.yaml`.
 
@@ -93,25 +93,25 @@ Creating a profile does **not** make that profile directory the default project/
 
 ```bash
 # Blank profile — needs full setup
-lucifexex profile create mybot
+lucifex profile create mybot
 
 # Clone config only from current profile
-lucifexex profile create work --clone
+lucifex profile create work --clone
 
 # Clone everything from current profile
-lucifexex profile create backup --clone-all
+lucifex profile create backup --clone-all
 
 # Clone config from a specific profile
-lucifexex profile create work2 --clone-from work
+lucifex profile create work2 --clone-from work
 
 # Clone everything from a specific profile
-lucifexex profile create work2-backup --clone-from work --clone-all
+lucifex profile create work2-backup --clone-from work --clone-all
 ```
 
-## `lucifexex profile describe`
+## `lucifex profile describe`
 
 ```bash
-lucifexex profile describe [<name>] [options]
+lucifex profile describe [<name>] [options]
 ```
 
 Read or set a profile's description. The description is consumed by the kanban orchestrator to route tasks based on what each profile is good at, rather than guessing from the profile name alone. Persisted in `<profile_dir>/profile.yaml` so it survives reboots and is shared with the gateway.
@@ -130,22 +130,22 @@ With no flags, prints the current description (or `(no description set for '<nam
 
 ```bash
 # Read the current description
-lucifexex profile describe researcher
+lucifex profile describe researcher
 
 # Set it explicitly
-lucifexex profile describe researcher --text "Reads source code and writes findings."
+lucifex profile describe researcher --text "Reads source code and writes findings."
 
 # Let the LLM generate one
-lucifexex profile describe researcher --auto
+lucifex profile describe researcher --auto
 
 # Fill in descriptions for every profile that doesn't have one
-lucifexex profile describe --all --auto
+lucifex profile describe --all --auto
 ```
 
-## `lucifexex profile delete`
+## `lucifex profile delete`
 
 ```bash
-lucifexex profile delete <name> [options]
+lucifex profile delete <name> [options]
 ```
 
 Deletes a profile and removes its shell alias.
@@ -158,23 +158,23 @@ Deletes a profile and removes its shell alias.
 **Example:**
 
 ```bash
-lucifexex profile delete mybot
-lucifexex profile delete mybot --yes
+lucifex profile delete mybot
+lucifex profile delete mybot --yes
 ```
 
 :::warning
 This permanently deletes the profile's entire directory including all config, memories, sessions, and skills. Cannot delete the currently active profile.
 :::
 
-## `lucifexex profile show`
+## `lucifex profile show`
 
 ```bash
-lucifexex profile show <name>
+lucifex profile show <name>
 ```
 
 Displays details about a profile including its home directory, configured model, gateway status, skills count, and configuration file status.
 
-This shows the profile's lucifexex home directory, not the terminal working directory. Terminal commands start from `terminal.cwd` (or the launch directory on the local backend when `cwd: "."`).
+This shows the profile's lucifex home directory, not the terminal working directory. Terminal commands start from `terminal.cwd` (or the launch directory on the local backend when `cwd: "."`).
 
 | Argument | Description |
 |----------|-------------|
@@ -183,7 +183,7 @@ This shows the profile's lucifexex home directory, not the terminal working dire
 **Example:**
 
 ```bash
-$ lucifexex profile show work
+$ lucifex profile show work
 Profile: work
 Path:    ~/.lucifex/profiles/work
 Model:   anthropic/claude-sonnet-4 (anthropic)
@@ -194,13 +194,13 @@ SOUL.md: exists
 Alias:   ~/.local/bin/work
 ```
 
-## `lucifexex profile alias`
+## `lucifex profile alias`
 
 ```bash
-lucifexex profile alias <name> [options]
+lucifex profile alias <name> [options]
 ```
 
-Regenerates the shell alias script at `~/.local/bin/<name>`. Useful if the alias was accidentally deleted or if you need to update it after moving your lucifexex installation.
+Regenerates the shell alias script at `~/.local/bin/<name>`. Useful if the alias was accidentally deleted or if you need to update it after moving your lucifex installation.
 
 | Argument / Option | Description |
 |-------------------|-------------|
@@ -211,20 +211,20 @@ Regenerates the shell alias script at `~/.local/bin/<name>`. Useful if the alias
 **Example:**
 
 ```bash
-lucifexex profile alias work
+lucifex profile alias work
 # Creates/updates ~/.local/bin/work
 
-lucifexex profile alias work --name mywork
+lucifex profile alias work --name mywork
 # Creates ~/.local/bin/mywork
 
-lucifexex profile alias work --remove
+lucifex profile alias work --remove
 # Removes the wrapper script
 ```
 
-## `lucifexex profile rename`
+## `lucifex profile rename`
 
 ```bash
-lucifexex profile rename <old-name> <new-name>
+lucifex profile rename <old-name> <new-name>
 ```
 
 Renames a profile. Updates the directory and shell alias.
@@ -237,15 +237,15 @@ Renames a profile. Updates the directory and shell alias.
 **Example:**
 
 ```bash
-lucifexex profile rename mybot assistant
+lucifex profile rename mybot assistant
 # ~/.lucifex/profiles/mybot → ~/.lucifex/profiles/assistant
 # ~/.local/bin/mybot → ~/.local/bin/assistant
 ```
 
-## `lucifexex profile export`
+## `lucifex profile export`
 
 ```bash
-lucifexex profile export <name> [options]
+lucifex profile export <name> [options]
 ```
 
 Exports a profile as a compressed tar.gz archive.
@@ -258,16 +258,16 @@ Exports a profile as a compressed tar.gz archive.
 **Example:**
 
 ```bash
-lucifexex profile export work
+lucifex profile export work
 # Creates work.tar.gz in the current directory
 
-lucifexex profile export work -o ./work-2026-03-29.tar.gz
+lucifex profile export work -o ./work-2026-03-29.tar.gz
 ```
 
-## `lucifexex profile import`
+## `lucifex profile import`
 
 ```bash
-lucifexex profile import <archive> [options]
+lucifex profile import <archive> [options]
 ```
 
 Imports a profile from a tar.gz archive.
@@ -280,10 +280,10 @@ Imports a profile from a tar.gz archive.
 **Example:**
 
 ```bash
-lucifexex profile import ./work-2026-03-29.tar.gz
+lucifex profile import ./work-2026-03-29.tar.gz
 # Infers profile name from the archive
 
-lucifexex profile import ./work-2026-03-29.tar.gz --name work-restored
+lucifex profile import ./work-2026-03-29.tar.gz --name work-restored
 ```
 
 ## Distribution commands
@@ -305,16 +305,16 @@ The recipient's user data (memories, sessions, auth, their own edits to
 updates.
 
 :::info
-`lucifexex profile export` / `import` are still the right commands for
+`lucifex profile export` / `import` are still the right commands for
 **local backup and restore** of a profile on your own machine. Distribution
 (`install` / `update` / `info`) is a separate concept: ship a profile via
 git so someone else can install it.
 :::
 
-### `lucifexex profile install`
+### `lucifex profile install`
 
 ```bash
-lucifexex profile install <source> [--name <name>] [--alias] [--force] [--yes]
+lucifex profile install <source> [--name <name>] [--alias] [--force] [--yes]
 ```
 
 Installs a profile distribution from a git URL or a local directory.
@@ -323,7 +323,7 @@ Installs a profile distribution from a git URL or a local directory.
 |--------|-------------|
 | `<source>` | Git URL (`github.com/user/repo`, `https://...`, `git@...`, `ssh://`, `git://`) or a local directory containing `distribution.yaml` at its root. |
 | `--name NAME` | Override the profile name from the manifest. |
-| `--alias` | Also create a shell wrapper (e.g. `telemetry` → `lucifexex -p telemetry`). |
+| `--alias` | Also create a shell wrapper (e.g. `telemetry` → `lucifex -p telemetry`). |
 | `--force` | Overwrite an existing profile of the same name. User data is still preserved. |
 | `-y`, `--yes` | Skip the manifest-preview confirmation prompt. |
 
@@ -335,22 +335,22 @@ cron jobs before asking for confirmation. Required env vars go into a
 
 ```bash
 # Install from a GitHub repo (shorthand)
-lucifexex profile install github.com/kyle/telemetry-distribution --alias
+lucifex profile install github.com/kyle/telemetry-distribution --alias
 
 # Install from a full HTTPS git URL
-lucifexex profile install https://github.com/kyle/telemetry-distribution.git
+lucifex profile install https://github.com/kyle/telemetry-distribution.git
 
 # Install from SSH
-lucifexex profile install git@github.com:kyle/telemetry-distribution.git
+lucifex profile install git@github.com:kyle/telemetry-distribution.git
 
 # Install from a local directory during development
-lucifexex profile install ./telemetry/
+lucifex profile install ./telemetry/
 ```
 
-### `lucifexex profile update`
+### `lucifex profile update`
 
 ```bash
-lucifexex profile update <name> [--force-config] [--yes]
+lucifex profile update <name> [--force-config] [--yes]
 ```
 
 Re-clones the distribution from its recorded source and applies updates.
@@ -360,21 +360,21 @@ overwritten; user data (memories, sessions, auth, .env) is never touched.
 `config.yaml` is preserved by default to keep your local overrides.
 Pass `--force-config` to reset it to the distribution's shipped config.
 
-### `lucifexex profile info`
+### `lucifex profile info`
 
 ```bash
-lucifexex profile info <name>
+lucifex profile info <name>
 ```
 
 Prints the profile's distribution manifest — name, version, required
-lucifexex version, author, env var requirements, the source URL/path, and
+lucifex version, author, env var requirements, the source URL/path, and
 the `Installed:` timestamp recorded when the distribution was last
 `install`-ed or `update`-d. Useful for checking what a shared profile
 needs before installing it, and for spotting "this profile was installed
 6 months ago and hasn't been updated."
 
-`lucifexex profile list` also shows the distribution name and version in a
-`Distribution` column, and `lucifexex profile show <name>` / `delete <name>`
+`lucifex profile list` also shows the distribution name and version in a
+`Distribution` column, and `lucifex profile show <name>` / `delete <name>`
 surface the source URL so you can tell at a glance which profiles came
 from a git repo vs. were created locally.
 
@@ -388,10 +388,10 @@ transparently.
 
 ```bash
 # Uses your SSH key, the same as any other `git clone`
-lucifexex profile install git@github.com:your-org/internal-assistant.git
+lucifex profile install git@github.com:your-org/internal-assistant.git
 
 # Uses your git credential helper
-lucifexex profile install https://github.com/your-org/internal-assistant.git
+lucifex profile install https://github.com/your-org/internal-assistant.git
 ```
 
 If a clone prompts for credentials interactively in your terminal during
@@ -406,7 +406,7 @@ Every distribution has a `distribution.yaml` at the root of its repository:
 name: telemetry
 version: 0.1.0
 description: "Compliance monitoring harness"
-lucifexex_requires: ">=0.12.0"
+lucifex_requires: ">=0.12.0"
 author: "Your Name"
 license: "MIT"
 env_requires:
@@ -424,9 +424,9 @@ distribution_owned:   # optional; defaults to SOUL.md, config.yaml,
   - cron/
 ```
 
-`lucifexex_requires` supports `>=`, `<=`, `==`, `!=`, `>`, `<`, or a bare
+`lucifex_requires` supports `>=`, `<=`, `==`, `!=`, `>`, `<`, or a bare
 version (treated as `>=`). Install fails with a clear error if the current
-lucifexex version doesn't satisfy the spec.
+lucifex version doesn't satisfy the spec.
 
 `distribution_owned` is optional. If set, only those paths are replaced on
 update; anything else in the profile stays user-owned. If omitted, the
@@ -439,20 +439,20 @@ Authoring a distribution is just a git push:
 1. In your profile directory, create `distribution.yaml` with at least `name`
    and `version`.
 2. Initialize a git repo (or use an existing one) and push to GitHub /
-   GitLab / any host lucifexex can clone from.
-3. Tell recipients to run `lucifexex profile install <your-repo-url>`.
+   GitLab / any host lucifex can clone from.
+3. Tell recipients to run `lucifex profile install <your-repo-url>`.
 
 Use git tags for versioned releases — recipients who clone `HEAD` get your
 latest state, and you can always bump `version:` in the manifest.
 
-## `lucifexex -p` /lucifexifex --profile`
+## `lucifex -p` /lucifexifex --profile`
 
 ```bash
-lucifexex -p <name> <command> [options]
-lucifexex --profile <name> <command> [options]
+lucifex -p <name> <command> [options]
+lucifex --profile <name> <command> [options]
 ```
 
-Global flag to run any lucifexex command under a specific profile without changing the sticky default. This overrides the active profile for the duration of the command.
+Global flag to run any lucifex command under a specific profile without changing the sticky default. This overrides the active profile for the duration of the command.
 
 | Option | Description |
 |--------|-------------|
@@ -461,16 +461,16 @@ Global flag to run any lucifexex command under a specific profile without changi
 **Examples:**
 
 ```bash
-lucifexex -p work chat -q "Check the server status"
-lucifexex --profile dev gateway start
-lucifexex -p personal skills list
-lucifexex -p work config edit
+lucifex -p work chat -q "Check the server status"
+lucifex --profile dev gateway start
+lucifex -p personal skills list
+lucifex -p work config edit
 ```
 
-## `lucifexex completion`
+## `lucifex completion`
 
 ```bash
-lucifexex completion <shell>
+lucifex completion <shell>
 ```
 
 Generates shell completion scripts. Includes completions for profile names and profile subcommands.
@@ -483,18 +483,18 @@ Generates shell completion scripts. Includes completions for profile names and p
 
 ```bash
 # Install completions
-lucifexex completion bash >> ~/.bashrc
-lucifexex completion zsh >> ~/.zshrc
-lucifexex completion fish > ~/.config/fish/completionlucifexifex.fish
+lucifex completion bash >> ~/.bashrc
+lucifex completion zsh >> ~/.zshrc
+lucifex completion fish > ~/.config/fish/completionlucifexifex.fish
 
 # Reload shell
 source ~/.bashrc
 ```
 
 After installation, tab completion works for:
-- `lucifexex profile <TAB>` — subcommands (list, use, create, etc.)
-- `lucifexex profile use <TAB>` — profile names
-- `lucifexex -p <TAB>` — profile names
+- `lucifex profile <TAB>` — subcommands (list, use, create, etc.)
+- `lucifex profile use <TAB>` — profile names
+- `lucifex -p <TAB>` — profile names
 
 ## See also
 

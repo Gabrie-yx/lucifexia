@@ -1,6 +1,6 @@
 """Tests for the strict gateway command-line matcher.
 
-Regression guard for the Windows ``lucifexex gateway restart`` silent-outage bug:
+Regression guard for the Windows ``lucifex gateway restart`` silent-outage bug:
 the previous loose substring match (``"... gateway" in cmdline``) false-matched
 ``gateway status``/``dashboard`` siblings and unrelated processes such as
 ``python -m tui_gateway``, which let ``restart()`` race a still-draining old
@@ -19,25 +19,25 @@ from gateway.status import (
 
 ACCEPT = [
     "pythonw.exe -m lucifex_cli.main gateway run",
-    r"C:\Users\me\lucifexex\venv\Scripts\pythonw.exe -m lucifex_cli.main gateway run",
+    r"C:\Users\me\lucifex\venv\Scripts\pythonw.exe -m lucifex_cli.main gateway run",
     "python -m lucifex_cli.main --profile work gateway run",
     "python -m lucifex_cli.main gateway run --replace",
     "python -m lucifex_cli/main.py gateway run",
     "python gateway/run.py",
     "lucifex-gateway.exe",
-    "lucifexex gateway",          # barelucifexifex gateway` defaults to run
+    "lucifex gateway",          # barelucifexifex gateway` defaults to run
     "lucifex gateway run",
     # profile selector AFTER the `gateway` token (argv is profile-position
     # agnostic — _apply_profile_override strips --profile/-p anywhere)
-    "lucifexex gateway --profile work run",
+    "lucifex gateway --profile work run",
     "python -m lucifex_cli.main gateway -p work run",
-    "lucifexex gateway --profile=work run",
+    "lucifex gateway --profile=work run",
     # a profile literally NAMED "gateway"
-    "lucifexex -p gateway gateway run",
+    "lucifex -p gateway gateway run",
     "python -m lucifex_cli.main --profile gateway gateway run",
     # quoted Windows paths with spaces (shlex-aware tokenization)
-    r'"C:\Program Files\lucifexex\lucifex-gateway.exe"',
-    r'"C:\Program Files\lucifexex\gateway\run.py" run',
+    r'"C:\Program Files\lucifex\lucifex-gateway.exe"',
+    r'"C:\Program Files\lucifex\gateway\run.py" run',
     r'"C:\Program Files\Py\pythonw.exe" -m lucifex_cli.main gateway run',
 ]
 

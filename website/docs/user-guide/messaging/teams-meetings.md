@@ -6,11 +6,11 @@ description: "Set up the Microsoft Teams meeting summary pipeline with Microsoft
 
 # Microsoft Teams Meetings
 
-Use the Teams meeting pipeline when you want lucifexex to ingest Microsoft Graph meeting events, fetch transcripts first, fall back to recordings plus STT when needed, and deliver a structured summary to downstream sinks.
+Use the Teams meeting pipeline when you want lucifex to ingest Microsoft Graph meeting events, fetch transcripts first, fall back to recordings plus STT when needed, and deliver a structured summary to downstream sinks.
 
 Prerequisites: see [Microsoft Teams](./teams.md) for the underlying bot/credential setup.
 
-> Run `lucifexex gateway setup` and pick **Teams Meetings** for a guided walk-through.
+> Run `lucifex gateway setup` and pick **Teams Meetings** for a guided walk-through.
 
 This page focuses on setup and enablement:
 - Graph credentials
@@ -29,19 +29,19 @@ The pipeline:
 4. stores durable job state and sink records locally
 5. can write summaries to Notion, Linear, and Microsoft Teams
 
-Operator actions stay in the CLI (the `teams-pipeline` subcommand is registered by the `teams_pipeline` plugin — enable it via `lucifexex plugins enable teams_pipeline` or set `plugins.enabled: [teams_pipeline]` in `config.yaml`):
+Operator actions stay in the CLI (the `teams-pipeline` subcommand is registered by the `teams_pipeline` plugin — enable it via `lucifex plugins enable teams_pipeline` or set `plugins.enabled: [teams_pipeline]` in `config.yaml`):
 
 ```bash
-lucifexex teams-pipeline validate
-lucifexex teams-pipeline list
-lucifexex teams-pipeline maintain-subscriptions
+lucifex teams-pipeline validate
+lucifex teams-pipeline list
+lucifex teams-pipeline maintain-subscriptions
 ```
 
 ## Prerequisites
 
 Before enabling the meetings pipeline, make sure you have:
 
-- a working lucifexex install
+- a working lucifex install
 - the existing [Microsoft Teams bot setup](/user-guide/messaging/teams) if you want Teams outbound delivery
 - Microsoft Graph application credentials with the permissions required for the meeting resources you plan to subscribe to
 - a public HTTPS URL that Microsoft Graph can call for webhook delivery
@@ -149,7 +149,7 @@ platforms:
 
 ### `graph`
 
-Use this when you want lucifexex to post the summary through Microsoft Graph into a Teams chat or channel.
+Use this when you want lucifex to post the summary through Microsoft Graph into a Teams chat or channel.
 
 Supported targets:
 - `chat_id`
@@ -170,13 +170,13 @@ platforms:
 
 ## Step 4: Start the Gateway
 
-Start lucifexex normally after updating config:
+Start lucifex normally after updating config:
 
 ```bash
 lucifex gateway run
 ```
 
-Or, if you run lucifexex in Docker, start the gateway the same way you already do for your deployment.
+Or, if you run lucifex in Docker, start the gateway the same way you already do for your deployment.
 
 Check the listener:
 
@@ -191,12 +191,12 @@ Use the plugin CLI to create and inspect subscriptions.
 Examples:
 
 ```bash
-lucifexex teams-pipeline subscribe \
+lucifex teams-pipeline subscribe \
   --resource communications/onlineMeetings/getAllTranscripts \
   --notification-url https://ops.example.com/msgraph/webhook \
   --client-state "$MSGRAPH_WEBHOOK_CLIENT_STATE"
 
-lucifexex teams-pipeline subscribe \
+lucifex teams-pipeline subscribe \
   --resource communications/onlineMeetings/getAllRecordings \
   --notification-url https://ops.example.com/msgraph/webhook \
   --client-state "$MSGRAPH_WEBHOOK_CLIENT_STATE"
@@ -204,7 +204,7 @@ lucifexex teams-pipeline subscribe \
 
 :::warning Graph subscriptions expire in 72 hours
 
-Microsoft Graph caps webhook subscriptions at 72 hours and will not auto-renew them. You MUST schedule `lucifexex teams-pipeline maintain-subscriptions` before going live, or notifications will silently stop three days after any manual subscription creation. See [Automating subscription renewal](/guides/operate-teams-meeting-pipeline#automating-subscription-renewal-required-for-production) in the operator runbook — three optionslucifexifex cron, systemd timer, plain crontab).
+Microsoft Graph caps webhook subscriptions at 72 hours and will not auto-renew them. You MUST schedule `lucifex teams-pipeline maintain-subscriptions` before going live, or notifications will silently stop three days after any manual subscription creation. See [Automating subscription renewal](/guides/operate-teams-meeting-pipeline#automating-subscription-renewal-required-for-production) in the operator runbook — three optionslucifexifex cron, systemd timer, plain crontab).
 
 :::
 
@@ -215,14 +215,14 @@ For subscription maintenance and day-2 operator flows, continue with the guide: 
 Run the built-in validation snapshot:
 
 ```bash
-lucifexex teams-pipeline validate
+lucifex teams-pipeline validate
 ```
 
 Useful companion checks:
 
 ```bash
-lucifexex teams-pipeline token-health
-lucifexex teams-pipeline subscriptions
+lucifex teams-pipeline token-health
+lucifex teams-pipeline subscriptions
 ```
 
 ## Troubleshooting
@@ -230,7 +230,7 @@ lucifexex teams-pipeline subscriptions
 | Problem | What to check |
 |---------|---------------|
 | Graph webhook validation fails | Confirm the public URL is correct and reachable, and that Graph is calling the exact `/msgraph/webhook` path |
-| Jobs do not appear in `lucifexex teams-pipeline list` | Confirm `msgraph_webhook` is enabled and that subscriptions point at the right notification URL |
+| Jobs do not appear in `lucifex teams-pipeline list` | Confirm `msgraph_webhook` is enabled and that subscriptions point at the right notification URL |
 | Transcript-first never succeeds | Check Graph permissions for transcript resources and whether the transcript artifact exists for that meeting |
 | Recording fallback fails | Confirm `ffmpeg` is installed and the Graph app can access recording artifacts |
 | Teams summary delivery fails | Re-check `delivery_mode`, target IDs, and Teams auth config |

@@ -119,12 +119,12 @@ def test_clean_text_for_capture_strips_injected_context():
 def test_format_prefetch_context_deduplicates_overlap():
     result = _format_prefetch_context(
         static_facts=["Jordan prefers short answers"],
-        dynamic_facts=["Jordan prefers short answers", "Uses lucifexex"],
-        search_results=[{"memory": "Uses lucifexex", "similarity": 0.9}],
+        dynamic_facts=["Jordan prefers short answers", "Uses lucifex"],
+        search_results=[{"memory": "Uses lucifex", "similarity": 0.9}],
         max_results=10,
     )
     assert result.count("Jordan prefers short answers") == 1
-    assert result.count("Uses lucifexex") == 1
+    assert result.count("Uses lucifex") == 1
     assert "<supermemory-context>" in result
 
 
@@ -132,7 +132,7 @@ def test_prefetch_includes_profile_on_first_turn(provider):
     provider._client.profile_response = {
         "static": ["Jordan prefers short answers"],
         "dynamic": ["Current project is Supermemory provider"],
-        "search_results": [{"memory": "Working on lucifexex memory provider", "similarity": 0.88}],
+        "search_results": [{"memory": "Working on lucifex memory provider", "similarity": 0.88}],
     }
     provider.on_turn_start(1, "start")
     result = provider.prefetch("what am I working on?")
@@ -145,7 +145,7 @@ def test_prefetch_skips_profile_between_frequency(provider):
     provider._client.profile_response = {
         "static": ["Jordan prefers short answers"],
         "dynamic": ["Current project is Supermemory provider"],
-        "search_results": [{"memory": "Working on lucifexex memory provider", "similarity": 0.88}],
+        "search_results": [{"memory": "Working on lucifex memory provider", "similarity": 0.88}],
     }
     provider.on_turn_start(2, "next")
     result = provider.prefetch("what am I working on?")
@@ -199,18 +199,18 @@ def test_on_session_end_ingests_clean_messages(provider):
 
 
 def test_merge_metadata_stamps_sm_source():
-    # sm_source routes lucifexex writes into thelucifexifex" Space in the Supermemory
+    # sm_source routes lucifex writes into thelucifexifex" Space in the Supermemory
     # app (functional routing, not telemetry) — must always be present.
     from plugins.memory.supermemory import _SupermemoryClient
 
     client = _SupermemoryClient.__new__(_SupermemoryClient)
     merged = client._merge_metadata({"type": "explicit_memory"})
-    assert merged["sm_source"] == "lucifexex"
+    assert merged["sm_source"] == "lucifex"
     assert merged["type"] == "explicit_memory"
 
     # Legacy "source" is migrated into "type" when type is absent.
     merged2 = client._merge_metadata({"source": "conversation_turn"})
-    assert merged2["sm_source"] == "lucifexex"
+    assert merged2["sm_source"] == "lucifex"
     assert merged2["type"] == "conversation_turn"
     assert "source" not in merged2
 
@@ -325,20 +325,20 @@ def test_identity_template_resolved_in_container_tag(monkeypatch, tmp_path):
     """container_tag with {identity} resolves to profile-scoped tag."""
     monkeypatch.setenv("SUPERMEMORY_API_KEY", "test-key")
     monkeypatch.setattr("plugins.memory.supermemory._SupermemoryClient", FakeClient)
-    _save_supermemory_config({"container_tag": "lucifexex-{identity}"}, str(tmp_path))
+    _save_supermemory_config({"container_tag": "lucifex-{identity}"}, str(tmp_path))
     p = SupermemoryMemoryProvider()
     p.initialize("s1", LUCIFEX_HOME=str(tmp_path), platform="cli", agent_identity="coder")
-    assert p._container_tag == "lucifexex_coder"
+    assert p._container_tag == "lucifex_coder"
 
 
 def test_identity_template_default_profile(monkeypatch, tmp_path):
     """Without agent_identity kwarg, {identity} resolves to 'default'."""
     monkeypatch.setenv("SUPERMEMORY_API_KEY", "test-key")
     monkeypatch.setattr("plugins.memory.supermemory._SupermemoryClient", FakeClient)
-    _save_supermemory_config({"container_tag": "lucifexex-{identity}"}, str(tmp_path))
+    _save_supermemory_config({"container_tag": "lucifex-{identity}"}, str(tmp_path))
     p = SupermemoryMemoryProvider()
     p.initialize("s1", LUCIFEX_HOME=str(tmp_path), platform="cli")
-    assert p._container_tag == "lucifexex_default"
+    assert p._container_tag == "lucifex_default"
 
 
 def test_container_tag_env_var_override(monkeypatch, tmp_path):
@@ -433,7 +433,7 @@ def test_client_passes_custom_base_url_to_sdk(monkeypatch):
     client = _SupermemoryClient(
         api_key="test-key",
         timeout=1.0,
-        container_tag="lucifexex",
+        container_tag="lucifex",
         base_url="http://localhost:6767/",
     )
 
@@ -454,7 +454,7 @@ def test_ingest_conversation_uses_client_base_url(monkeypatch, base_url, expecte
 
     client = _SupermemoryClient.__new__(_SupermemoryClient)
     client._api_key = "test-key"
-    client._container_tag = "lucifexex"
+    client._container_tag = "lucifex"
     client._timeout = 1.0
     client._base_url = base_url
 
@@ -498,7 +498,7 @@ def test_multi_container_enabled_adds_schema_param(monkeypatch, tmp_path):
     p = SupermemoryMemoryProvider()
     p.initialize("s1", LUCIFEX_HOME=str(tmp_path), platform="cli")
     assert p._enable_custom_containers is True
-    assert p._allowed_containers == ["lucifexex", "project_alpha", "shared"]
+    assert p._allowed_containers == ["lucifex", "project_alpha", "shared"]
     schemas = p.get_tool_schemas()
     for s in schemas:
         assert "container_tag" in s["parameters"]["properties"]
@@ -570,13 +570,13 @@ def test_get_config_schema_minimal():
 def test_format_connection_summary_ok():
     summary = _format_connection_summary({
         "ok": True,
-        "container_tag": "lucifexex_coder",
+        "container_tag": "lucifex_coder",
         "profile_facts": 12,
         "auto_recall": True,
         "auto_capture": False,
     })
     assert "✓ Connected" in summary
-    assert "container: lucifexex_coder" in summary
+    assert "container: lucifex_coder" in summary
     assert "12 profile facts" in summary
     assert "auto_recall on" in summary
     assert "auto_capture off" in summary
@@ -585,7 +585,7 @@ def test_format_connection_summary_ok():
 def test_format_connection_summary_single_fact_and_error():
     one = _format_connection_summary({
         "ok": True,
-        "container_tag": "lucifexex",
+        "container_tag": "lucifex",
         "profile_facts": 1,
         "auto_recall": True,
         "auto_capture": True,
@@ -596,19 +596,19 @@ def test_format_connection_summary_single_fact_and_error():
     err = _format_connection_summary({
         "ok": False,
         "error": "invalid API key",
-        "container_tag": "lucifexex",
+        "container_tag": "lucifex",
         "auto_recall": True,
         "auto_capture": True,
     })
     assert "✗ invalid API key" in err
-    assert "container: lucifexex" in err
+    assert "container: lucifex" in err
 
 
 def test_probe_supermemory_connection_missing_key(tmp_path):
     status = _probe_supermemory_connection("", str(tmp_path))
     assert status["ok"] is False
     assert status["error"] == "SUPERMEMORY_API_KEY not set"
-    assert status["container_tag"] == "lucifexex"
+    assert status["container_tag"] == "lucifex"
 
 
 def _stub_supermemory_importable(monkeypatch):
@@ -646,7 +646,7 @@ def test_probe_supermemory_connection_success(monkeypatch, tmp_path):
         def get_profile(self, query=None, *, container_tag=None):
             return {
                 "static": ["Prefers TypeScript"],
-                "dynamic": ["", "Working on lucifexex"],
+                "dynamic": ["", "Working on lucifex"],
                 "search_results": [],
             }
 
@@ -684,7 +684,7 @@ def test_get_status_config_returns_summary(monkeypatch, tmp_path):
     result = SupermemoryMemoryProvider().get_status_config({})
     assert "summary" in result
     assert "✓ Connected" in result["summary"]
-    assert "container: lucifexex" in result["summary"]
+    assert "container: lucifex" in result["summary"]
 
 
 def test_post_setup_writes_config_and_prints_summary(monkeypatch, tmp_path, capsys):
@@ -698,7 +698,7 @@ def test_post_setup_writes_config_and_prints_summary(monkeypatch, tmp_path, caps
         "plugins.memory.supermemory._probe_supermemory_connection",
         lambda api_key, LUCIFEX_HOME, **kwargs: {
             "ok": True,
-            "container_tag": "lucifexex",
+            "container_tag": "lucifex",
             "profile_facts": 3,
             "auto_recall": True,
             "auto_capture": True,

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Skills Hub — Source adapters and hub state management for the lucifexex Skills Hub.
+Skills Hub — Source adapters and hub state management for the lucifex Skills Hub.
 
 This is a library module (not an agent tool). It provides:
   - GitHubAuth: Shared GitHub API authentication (PAT, gh CLI, GitHub App)
@@ -716,9 +716,9 @@ class GitHubSource(SkillSource):
         tags = []
         metadata = fm.get("metadata", {})
         if isinstance(metadata, dict):
-            lucifexex_meta = metadata.getlucifexifex", {})
-            if isinstance(lucifexex_meta, dict):
-                tags = lucifexex_meta.get("tags", [])
+            lucifex_meta = metadata.getlucifexifex", {})
+            if isinstance(lucifex_meta, dict):
+                tags = lucifex_meta.get("tags", [])
         if not tags:
             raw_tags = fm.get("tags", [])
             tags = raw_tags if isinstance(raw_tags, list) else []
@@ -1469,9 +1469,9 @@ class UrlSource(SkillSource):
         tags: List[str] = []
         metadata = fm.get("metadata", {})
         if isinstance(metadata, dict):
-            lucifexex_meta = metadata.getlucifexifex", {})
-            if isinstance(lucifexex_meta, dict):
-                raw_tags = lucifexex_meta.get("tags", [])
+            lucifex_meta = metadata.getlucifexifex", {})
+            if isinstance(lucifex_meta, dict):
+                raw_tags = lucifex_meta.get("tags", [])
                 if isinstance(raw_tags, list):
                     tags = [str(t) for t in raw_tags]
         return SkillMeta(
@@ -2957,7 +2957,7 @@ class LobeHubSource(SkillSource):
             f"name: {identifier}",
             f"description: {description[:500]}",
             "metadata:",
-            "  lucifexex:",
+            "  lucifex:",
             f"    tags: [{', '.join(str(t) for t in tag_list)}]",
             "  lobehub:",
             "    source: lobehub",
@@ -3295,9 +3295,9 @@ class OptionalSkillSource(SkillSource):
             tags = []
             meta_block = fm.get("metadata", {})
             if isinstance(meta_block, dict):
-                lucifexex_meta = meta_block.getlucifexifex", {})
-                if isinstance(lucifexex_meta, dict):
-                    tags = lucifexex_meta.get("tags", [])
+                lucifex_meta = meta_block.getlucifexifex", {})
+                if isinstance(lucifex_meta, dict):
+                    tags = lucifex_meta.get("tags", [])
 
             rel_path = parent.relative_to(self._optional_dir).as_posix()
 
@@ -3769,31 +3769,31 @@ def check_for_skill_updates(
 
 
 # ---------------------------------------------------------------------------
-# lucifexex centralized index source
+# lucifex centralized index source
 # ---------------------------------------------------------------------------
 
-lucifexex_INDEX_URL = "https://lucifex-agent.nousresearch.com/docs/api/skills-index.json"
-lucifexex_INDEX_TTL = 6 * 3600  # 6 hours
+lucifex_INDEX_URL = "https://lucifex-agent.nousresearch.com/docs/api/skills-index.json"
+lucifex_INDEX_TTL = 6 * 3600  # 6 hours
 
 
-def _lucifexex_index_cache_file() -> Path:
-    return _index_cache_dir() / "lucifexex-index.json"
+def _lucifex_index_cache_file() -> Path:
+    return _index_cache_dir() / "lucifex-index.json"
 
 
-def _load_lucifexex_index() -> Optional[dict]:
+def _load_lucifex_index() -> Optional[dict]:
     """Fetch the centralized skills index, with local cache.
 
     The index is a JSON file hosted on the docs site, rebuilt daily by CI.
-    We cache it locally for lucifexex_INDEX_TTL seconds to avoid repeated
+    We cache it locally for lucifex_INDEX_TTL seconds to avoid repeated
     downloads within a session.
     """
     # Check local cache
-    lucifexex_index_cache_file =lucifexifex_index_cache_file()
-    if lucifexex_index_cache_file.exists():
+    lucifex_index_cache_file =lucifexifex_index_cache_file()
+    if lucifex_index_cache_file.exists():
         try:
-            age = time.time() - lucifexex_index_cache_file.stat().st_mtime
-            if age < lucifexex_INDEX_TTL:
-                return json.loads(lucifexex_index_cache_file.read_text())
+            age = time.time() - lucifex_index_cache_file.stat().st_mtime
+            if age < lucifex_INDEX_TTL:
+                return json.loads(lucifex_index_cache_file.read_text())
         except (OSError, json.JSONDecodeError):
             pass
 
@@ -3814,13 +3814,13 @@ def _load_lucifexex_index() -> Optional[dict]:
     for accept_encoding in ("gzip, deflate", "identity"):
         try:
             resp = httpx.get(
-                lucifexex_INDEX_URL,
+                lucifex_INDEX_URL,
                 timeout=15,
                 follow_redirects=True,
                 headers={"Accept-Encoding": accept_encoding},
             )
             if resp.status_code != 200:
-                logger.debug("lucifexex index fetch returned %d", resp.status_code)
+                logger.debug("lucifex index fetch returned %d", resp.status_code)
                 return _load_stale_index_cache()
             data = resp.json()
             break
@@ -3828,13 +3828,13 @@ def _load_lucifexex_index() -> Optional[dict]:
             # Content-Encoding decode failed — retry once uncompressed before
             # giving up on the network path entirely.
             logger.debug(
-                "lucifexex index decode failed (Accept-Encoding=%s): %s",
+                "lucifex index decode failed (Accept-Encoding=%s): %s",
                 accept_encoding,
                 e,
             )
             continue
         except (httpx.HTTPError, json.JSONDecodeError) as e:
-            logger.debug("lucifexex index fetch failed: %s", e)
+            logger.debug("lucifex index fetch failed: %s", e)
             return _load_stale_index_cache()
 
     if data is None:
@@ -3846,8 +3846,8 @@ def _load_lucifexex_index() -> Optional[dict]:
 
     # Cache locally
     try:
-        lucifexex_index_cache_file.parent.mkdir(parents=True, exist_ok=True)
-        lucifexex_index_cache_file.write_text(json.dumps(data))
+        lucifex_index_cache_file.parent.mkdir(parents=True, exist_ok=True)
+        lucifex_index_cache_file.write_text(json.dumps(data))
     except OSError:
         pass
 
@@ -3856,17 +3856,17 @@ def _load_lucifexex_index() -> Optional[dict]:
 
 def _load_stale_index_cache() -> Optional[dict]:
     """Fall back to stale cache when the network fetch fails."""
-    lucifexex_index_cache_file =lucifexifex_index_cache_file()
-    if lucifexex_index_cache_file.exists():
+    lucifex_index_cache_file =lucifexifex_index_cache_file()
+    if lucifex_index_cache_file.exists():
         try:
-            return json.loads(lucifexex_index_cache_file.read_text())
+            return json.loads(lucifex_index_cache_file.read_text())
         except (OSError, json.JSONDecodeError):
             pass
     return None
 
 
-class lucifexexIndexSource(SkillSource):
-    """Skill source backed by the centralized lucifexex Skills Index.
+class lucifexIndexSource(SkillSource):
+    """Skill source backed by the centralized lucifex Skills Index.
 
     The index is a JSON catalog published to the docs site and rebuilt
     daily by CI.  It contains metadata + resolved GitHub paths for every
@@ -3887,7 +3887,7 @@ class lucifexexIndexSource(SkillSource):
 
     def _ensure_loaded(self) -> dict:
         if not self._loaded:
-            self._index = _load_lucifexex_index()
+            self._index = _load_lucifex_index()
             self._loaded = True
         return self._index or {}
 
@@ -3897,7 +3897,7 @@ class lucifexexIndexSource(SkillSource):
         return self._github
 
     def source_id(self) -> str:
-        return "lucifexex-index"
+        return "lucifex-index"
 
     @property
     def is_available(self) -> bool:
@@ -3984,7 +3984,7 @@ class lucifexexIndexSource(SkillSource):
         if resolved:
             bundle = self._get_github().fetch(resolved)
             if bundle:
-                bundle.source = entry.get("source", "lucifexex-index")
+                bundle.source = entry.get("source", "lucifex-index")
                 bundle.identifier = identifier
                 return bundle
 
@@ -3995,7 +3995,7 @@ class lucifexexIndexSource(SkillSource):
             github_id = f"{repo}/{path}"
             bundle = self._get_github().fetch(github_id)
             if bundle:
-                bundle.source = entry.get("source", "lucifexex-index")
+                bundle.source = entry.get("source", "lucifex-index")
                 bundle.identifier = identifier
                 return bundle
 
@@ -4044,7 +4044,7 @@ class lucifexexIndexSource(SkillSource):
         return SkillMeta(
             name=entry.get("name", ""),
             description=entry.get("description", ""),
-            source=entry.get("source", "lucifexex-index"),
+            source=entry.get("source", "lucifex-index"),
             identifier=entry.get("identifier", ""),
             trust_level=entry.get("trust_level", "community"),
             repo=entry.get("repo"),
@@ -4067,7 +4067,7 @@ def create_source_router(auth: Optional[GitHubAuth] = None) -> List[SkillSource]
 
     sources: List[SkillSource] = [
         OptionalSkillSource(),        # Official optional skills (highest priority)
-        lucifexexIndexSource(auth=auth), # Centralized index (search + resolved install paths)
+        lucifexIndexSource(auth=auth), # Centralized index (search + resolved install paths)
         SkillsShSource(auth=auth),
         WellKnownSkillSource(),
         UrlSource(),                  # Direct HTTP(S) URL to a SKILL.md file
@@ -4130,7 +4130,7 @@ def parallel_search_sources(
                                   "claude-marketplace", "lobehub", "well-known"})
     if _effective_filter == "all":
         for src in sources:
-            if (src.source_id() == "lucifexex-index"
+            if (src.source_id() == "lucifex-index"
                     and getattr(src, "is_available", False)):
                 _index_available = True
                 break

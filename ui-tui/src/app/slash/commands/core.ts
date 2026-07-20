@@ -119,7 +119,7 @@ export const coreCommands: SlashCommand[] = [
 
   {
     aliases: ['exit'],
-    help: 'exit lucifexex',
+    help: 'exit lucifex',
     name: 'quit',
     run: (_arg, ctx) => {
       // In the hosted dashboard chat there is no in-page restart path after
@@ -150,7 +150,7 @@ export const coreCommands: SlashCommand[] = [
       }
 
       ctx.transcript.sys('exiting TUI to run update...')
-      // Exit code 42 signals the Python wrapper to exec `lucifexex update`.
+      // Exit code 42 signals the Python wrapper to exec `lucifex update`.
       // Use dieWithCode for proper cleanup (gateway kill + Ink unmount).
       setTimeout(() => ctx.session.dieWithCode(42), 100)
     }
@@ -169,7 +169,7 @@ export const coreCommands: SlashCommand[] = [
       }
 
       patchUiState({ mouseTracking: next })
-      ctx.gateway.rpc<ConfigSetResponse>('config.set', { key: 'mouse', value: next }).catch(() => {})
+      ctx.gateway.rpc<ConfigSetResponse>('config.set', { key: 'mouse', value: next }).catch(() => { })
 
       queueMicrotask(() => ctx.transcript.sys(`mouse tracking ${next}`))
     }
@@ -285,7 +285,7 @@ export const coreCommands: SlashCommand[] = [
       }
 
       patchUiState({ compact: next })
-      ctx.gateway.rpc<ConfigSetResponse>('config.set', { key: 'compact', value: next ? 'on' : 'off' }).catch(() => {})
+      ctx.gateway.rpc<ConfigSetResponse>('config.set', { key: 'compact', value: next ? 'on' : 'off' }).catch(() => { })
 
       queueMicrotask(() => ctx.transcript.sys(`compact ${next ? 'on' : 'off'}`))
     }
@@ -335,7 +335,7 @@ export const coreCommands: SlashCommand[] = [
         patchUiState({ sections: mode ? { ...rest, [first]: mode } : rest })
         gateway
           .rpc<ConfigSetResponse>('config.set', { key: `details_mode.${first}`, value: mode ?? '' })
-          .catch(() => {})
+          .catch(() => { })
         transcript.sys(`details ${first}: ${mode ?? 'reset'}`)
 
         return
@@ -350,7 +350,7 @@ export const coreCommands: SlashCommand[] = [
       const sections = Object.fromEntries(SECTION_NAMES.map(section => [section, next]))
 
       patchUiState({ detailsMode: next, detailsModeCommandOverride: true, sections })
-      gateway.rpc<ConfigSetResponse>('config.set', { key: 'details_mode', value: next }).catch(() => {})
+      gateway.rpc<ConfigSetResponse>('config.set', { key: 'details_mode', value: next }).catch(() => { })
       transcript.sys(`details: ${next}`)
     }
   },
@@ -385,7 +385,7 @@ export const coreCommands: SlashCommand[] = [
         if (text) {
           return sys(`copied ${text.length} characters`)
         } else {
-          return sys('clipboard copy failed — try lucifexex_TUI_FORCE_OSC52=1 to force the escape sequence')
+          return sys('clipboard copy failed — try lucifex_TUI_FORCE_OSC52=1 to force the escape sequence')
         }
       }
 
@@ -507,7 +507,7 @@ export const coreCommands: SlashCommand[] = [
       const preview = Math.max(80, parseInt(arg, 10) || 400)
 
       const lines = items.map((m, i) => {
-        const tag = m.role === 'user' ? `You #${i + 1}` : `lucifexex #${i + 1}`
+        const tag = m.role === 'user' ? `You #${i + 1}` : `lucifex #${i + 1}`
         const body = m.text.trim() || (m.tools?.length ? `(${m.tools.length} tool calls)` : '(empty)')
         const clipped = body.length > preview ? `${body.slice(0, preview).trimEnd()}…` : body
 
@@ -573,7 +573,7 @@ export const coreCommands: SlashCommand[] = [
       }
 
       patchUiState({ statusBar: next })
-      ctx.gateway.rpc<ConfigSetResponse>('config.set', { key: 'statusbar', value: next }).catch(() => {})
+      ctx.gateway.rpc<ConfigSetResponse>('config.set', { key: 'statusbar', value: next }).catch(() => { })
 
       queueMicrotask(() => ctx.transcript.sys(`status bar ${next}`))
     }

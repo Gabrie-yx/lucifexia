@@ -483,7 +483,7 @@ export const opsCommands: SlashCommand[] = [
                   })
                 })
               )
-              .catch(() => {})
+              .catch(() => { })
           })
         )
         .catch(ctx.guardedErr)
@@ -675,7 +675,7 @@ export const opsCommands: SlashCommand[] = [
     run: (arg, ctx, cmd) => {
       // No argument → open the interactive Plugins Hub overlay. Any
       // subcommand (enable/disable/list/install/…) falls through to the
-      // text slash worker so it stays at parity with `lucifexex plugins`.
+      // text slash worker so it stays at parity with `lucifex plugins`.
       if (!arg.trim()) {
         return patchOverlayState({ pluginsHub: true })
       }

@@ -1,7 +1,7 @@
 ﻿---
 sidebar_position: 3
 title: "Nix & NixOS Setup"
-description: "Install and deploy lucifexex Agent with Nix — from quick `nix run` to fully declarative NixOS module with container mode"
+description: "Install and deploy lucifex Agent with Nix — from quick `nix run` to fully declarative NixOS module with container mode"
 ---
 
 # Nix & NixOS Setup
@@ -12,7 +12,7 @@ Nix and NixOS are [Tier 2 platforms](./platform-support.md#tier-2). The flake an
 For a supported setup, use one of the standard [installation](./installation.md) paths - either Docker or an FHS environment.
 :::
 
-lucifexex Agent ships a Nix flake & a NixOS module.
+lucifex Agent ships a Nix flake & a NixOS module.
 
 | Level | Who it's for | What you get |
 |-------|-------------|--------------|
@@ -23,9 +23,9 @@ lucifexex Agent ships a Nix flake & a NixOS module.
 :::info What's different from the standard install
 The `curl | bash` installer manages Python, Node, and dependencies itself. The Nix flake replaces all of that — every Python dependency is a Nix derivation built by [uv2nix](https://github.com/pyproject-nix/uv2nix), and runtime tools (Node.js, git, ripgrep, ffmpeg) are wrapped into the binary's PATH. There is no runtime pip, no venv activation, no `npm install`.
 
-**For non-NixOS users**, this only changes the install step. Everything after (`lucifexex setup`,lucifexifex gateway install`, config editing) works identically to the standard install.
+**For non-NixOS users**, this only changes the install step. Everything after (`lucifex setup`,lucifexifex gateway install`, config editing) works identically to the standard install.
 
-**For NixOS module users**, the entire lifecycle is different: configuration lives in `configuration.nix`, secrets go through sops-nix/agenix, the service is a systemd unit, and CLI config commands are blocked. You manage lucifexex the same way you manage any other NixOS service.
+**For NixOS module users**, the entire lifecycle is different: configuration lives in `configuration.nix`, secrets go through sops-nix/agenix, the service is a systemd unit, and CLI config commands are blocked. You manage lucifex the same way you manage any other NixOS service.
 :::
 
 ## Prerequisites
@@ -52,11 +52,11 @@ nix run github:NousResearch/lucifex-agent -- --tui
 
 # or install it in your profile
 nix profile install github:NousResearch/lucifex-agent
-lucifexex setup
-lucifexex --tui
+lucifex setup
+lucifex --tui
 ```
 
-After `nix profile install`, `lucifexex`, `lucifex-agent`, andlucifexifex-acp` are on your PATH. From here, the workflow is identical to the [standard installation](./installation.md)lucifexucifex setup` walks you through provider selectlucifexlucifexgateway install` sets up a launchd (macOS) or systemd user service, and config lives in `~/.lucifex/`.
+After `nix profile install`, `lucifex`, `lucifex-agent`, andlucifexifex-acp` are on your PATH. From here, the workflow is identical to the [standard installation](./installation.md)lucifexucifex setup` walks you through provider selectlucifexlucifexgateway install` sets up a launchd (macOS) or systemd user service, and config lives in `~/.lucifex/`.
 
 :::warning Messaging platforms (Discord, Telegram, Slack)
 The default package includes ALL libraries lucifex-agent might need. if you want a smaller variant, check the other flake outputs. 
@@ -72,7 +72,7 @@ The `default` package adds ~700 MB to the closure. If you only need messaging pl
 git clone https://github.com/NousResearch/lucifex-agent.git
 cd lucifex-agent
 nix develop
-lucifexex setup
+lucifex setup
 ```
 
 </details>
@@ -117,41 +117,41 @@ This module requires NixOS. For non-NixOS systems (macOS, other Linux distros), 
   services.lucifex-agent = {
     enable = true;
     settings.model.default = "anthropic/claude-sonnet-4";
-    environmentFiles = [ config.sops.secrets."lucifexex-env".path ];
+    environmentFiles = [ config.sops.secrets."lucifex-env".path ];
     addToSystemPackages = true;
   };
 }
 ```
 
-That's it. `nixos-rebuild switch` creates the `lucifexex` user, generates `config.yaml`, wires up secrets, and starts the gateway — a long-running service that connects the agent to messaging platforms (Telegram, Discord, etc.) and listens for incoming messages.
+That's it. `nixos-rebuild switch` creates the `lucifex` user, generates `config.yaml`, wires up secrets, and starts the gateway — a long-running service that connects the agent to messaging platforms (Telegram, Discord, etc.) and listens for incoming messages.
 
 :::warning Secrets are required
 The `environmentFiles` line above assumes you have [sops-nix](https://github.com/Mic92/sops-nix) or [agenix](https://github.com/ryantm/agenix) configured. The file should contain at least one LLM provider key (e.g., `OPENROUTER_API_KEY=sk-or-...`). See [Secrets Management](#secrets-management) for full setup. If you don't have a secrets manager yet, you can use a plain file as a starting point — just ensure it's not world-readable:
 
 ```bash
-echo "OPENROUTER_API_KEY=sk-or-your-key" | sudo install -m 0600 -o lucifexex /dev/stdin /var/lilucifexifex/env
+echo "OPENROUTER_API_KEY=sk-or-your-key" | sudo install -m 0600 -o lucifex /dev/stdin /var/lilucifexifex/env
 ```
 
 ```nix
-services.lucifex-agent.environmentFiles = [ "/var/lib/lucifexex/env" ];
+services.lucifex-agent.environmentFiles = [ "/var/lib/lucifex/env" ];
 ```
 :::
 
 :::tip addToSystemPackages
-Setting `addToSystemPackages = true` does two things: puts the `lucifexex` CLI on your system PATH **and** sets `LUCIFEX_HOME` system-wide so the interactive CLI shares state (sessions, skills, cron) with the gateway service. Without it, runninglucifexifex` in your shell creates a separate `~/.lucifex/` directory.
+Setting `addToSystemPackages = true` does two things: puts the `lucifex` CLI on your system PATH **and** sets `LUCIFEX_HOME` system-wide so the interactive CLI shares state (sessions, skills, cron) with the gateway service. Without it, runninglucifexifex` in your shell creates a separate `~/.lucifex/` directory.
 :::
 
 ### Container-aware CLI
 
 :::info
-When `container.enable = true` and `addToSystemPackages = true`, **every** `lucifexex` command on the host automatically routes into the managed container. This means your interactive CLI session runs inside the same environment as the gateway service — with access to all container-installed packages and tools.
+When `container.enable = true` and `addToSystemPackages = true`, **every** `lucifex` command on the host automatically routes into the managed container. This means your interactive CLI session runs inside the same environment as the gateway service — with access to all container-installed packages and tools.
 
-- The routing is transparent: `lucifexex chat`, `lucifex sessions list`,lucifexifex version`, etc. all exec into the container under the hood
+- The routing is transparent: `lucifex chat`, `lucifex sessions list`,lucifexifex version`, etc. all exec into the container under the hood
 - All CLI flags are forwarded as-is
 - If the container isn't running, the CLI retries briefly (5s with a spinner for interactive use, 10s silently for scripts) then fails with a clear error — no silent fallback
-- For developers working on the lucifexex codebase, setlucifexifex_DEV=1` to bypass container routing and run the local checkout directly
+- For developers working on the lucifex codebase, setlucifexifex_DEV=1` to bypass container routing and run the local checkout directly
 
-Set `container.hostUsers` to create a `~/.lucifexex` symlink to the service state directory, so the host CLI and the container share sessions, config, and memories:
+Set `container.hostUsers` to create a `~/.lucifex` symlink to the service state directory, so the host CLI and the container share sessions, config, and memories:
 
 ```nix
 services.lucifex-agent = {
@@ -161,7 +161,7 @@ services.lucifex-agent = {
 };
 ```
 
-Users listed in `hostUsers` are automatically added to the `lucifexex` group for file permission access.
+Users listed in `hostUsers` are automatically added to the `lucifex` group for file permission access.
 
 **Podman users:** The NixOS service runs the container as root. Docker users get access via the `docker` group socket, but Podman's rootful containers require sudo. Grant passwordless sudo for your container runtime:
 
@@ -175,7 +175,7 @@ security.sudo.extraRules = [{
 }];
 ```
 
-The CLI auto-detects when sudo is needed and uses it transparently. Without this, you'll need to run `sudo lucifexex chat` manually.
+The CLI auto-detects when sudo is needed and uses it transparently. Without this, you'll need to run `sudo lucifex chat` manually.
 :::
 
 ### Verify It Works
@@ -190,8 +190,8 @@ systemctl status lucifex-agent
 journalctl -u lucifex-agent -f
 
 # If addToSystemPackages is true, test the CLI
-lucifexex version
-lucifexex config       # shows the generated config
+lucifex version
+lucifex config       # shows the generated config
 ```
 
 ### Choosing a Deployment Mode
@@ -248,7 +248,7 @@ services.lucifex-agent.settings = {
 Both are deep-merged at evaluation time. Nix-declared keys always win over keys in an existing `config.yaml` on disk, but **user-added keys that Nix doesn't touch are preserved**. This means if the agent or a manual edit adds keys like `skills.disabled` or `streaming.enabled`, they survive `nixos-rebuild switch`.
 
 :::note Model naming
-`settings.model.default` uses the model identifier your provider expects. With [OpenRouter](https://openrouter.ai) (the default), these look like `"anthropic/claude-sonnet-4"` or `"google/gemini-3-flash"`. If you're using a provider directly (Anthropic, OpenAI), set `settings.model.base_url` to point at their API and use their native model IDs (e.g., `"claude-sonnet-4-20250514"`). When no `base_url` is set, lucifexex defaults to OpenRouter.
+`settings.model.default` uses the model identifier your provider expects. With [OpenRouter](https://openrouter.ai) (the default), these look like `"anthropic/claude-sonnet-4"` or `"google/gemini-3-flash"`. If you're using a provider directly (Anthropic, OpenAI), set `settings.model.base_url` to point at their API and use their native model IDs (e.g., `"claude-sonnet-4-20250514"`). When no `base_url` is set, lucifex defaults to OpenRouter.
 :::
 
 :::tip Discovering available config keys
@@ -284,7 +284,7 @@ Run `nix build .#configKeys && cat result` to see every leaf config key extracte
     };
 
     # ── Secrets ────────────────────────────────────────────────────────
-    environmentFiles = [ config.sops.secrets."lucifexex-env".path ];
+    environmentFiles = [ config.sops.secrets."lucifex-env".path ];
 
     # ── Documents ──────────────────────────────────────────────────────
     documents = {
@@ -322,7 +322,7 @@ Run `nix build .#configKeys && cat result` to see every leaf config key extracte
 If you'd rather manage `config.yaml` entirely outside Nix, use `configFile`:
 
 ```nix
-services.lucifex-agent.configFile = /etc/lucifexex/config.yaml;
+services.lucifex-agent.configFile = /etc/lucifex/config.yaml;
 ```
 
 This bypasses `settings` entirely — no merge, no generation. The file is copied as-is to `$LUCIFEX_HOME/config.yaml` on each activation.
@@ -335,8 +335,8 @@ Quick reference for the most common things Nix users want to customize:
 |---|---|---|
 | Change the LLM model | `settings.model.default` | `"anthropic/claude-sonnet-4"` |
 | Use a different provider endpoint | `settings.model.base_url` | `"https://openrouter.ai/api/v1"` |
-| Add API keys | `environmentFiles` | `[ config.sops.secrets."lucifexex-env".path ]` |
-| Give the agent a personality | `${services.lucifex-agent.stateDir}/.lucifexex/SOUL.md` | manage the file directly |
+| Add API keys | `environmentFiles` | `[ config.sops.secrets."lucifex-env".path ]` |
+| Give the agent a personality | `${services.lucifex-agent.stateDir}/.lucifex/SOUL.md` | manage the file directly |
 | Add MCP tool servers | `mcpServers.<name>` | See [MCP Servers](#mcp-servers) |
 | Enable Discord/Telegram/Slack | `extraDependencyGroups` | `[ "messaging" ]` |
 | Mount host directories into container | `container.extraVolumes` | `[ "/data:/data:rw" ]` |
@@ -345,8 +345,8 @@ Quick reference for the most common things Nix users want to customize:
 | Share state between host CLI and container | `container.hostUsers` | `[ "sidbin" ]` |
 | Make extra tools available to the agent | `extraPackages` | `[ pkgs.pandoc pkgs.imagemagick ]` |
 | Use a custom base image | `container.image` | `"ubuntu:24.04"` |
-| Override the lucifexex package | `package` | `inputs.lucifex-agent.packages.${system}.default.override { ... }` |
-| Change state directory | `stateDir` | `"/opt/lucifexex"` |
+| Override the lucifex package | `package` | `inputs.lucifex-agent.packages.${system}.default.override { ... }` |
+| Change state directory | `stateDir` | `"/opt/lucifex"` |
 | Set the agent's working directory | `workingDirectory` | `"/home/user/projects"` |
 
 ---
@@ -357,20 +357,20 @@ Quick reference for the most common things Nix users want to customize:
 Values in Nix expressions end up in `/nix/store`, which is world-readable. Always use `environmentFiles` with a secrets manager.
 :::
 
-Both `environment` (non-secret vars) and `environmentFiles` (secret files) are merged into `$LUCIFEX_HOME/.env` at activation time (`nixos-rebuild switch`). lucifexex reads this file on every startup, so changes take effect with a `systemctl restart lucifex-agent` — no container recreation needed.
+Both `environment` (non-secret vars) and `environmentFiles` (secret files) are merged into `$LUCIFEX_HOME/.env` at activation time (`nixos-rebuild switch`). lucifex reads this file on every startup, so changes take effect with a `systemctl restart lucifex-agent` — no container recreation needed.
 
 ### sops-nix
 
 ```nix
 {
   sops = {
-    defaultSopsFile = ./secrets/lucifexex.yaml;
+    defaultSopsFile = ./secrets/lucifex.yaml;
     age.keyFile = "/home/user/.config/sops/age/keys.txt";
-    secrets."lucifexex-env" = { format = "yaml"; };
+    secrets."lucifex-env" = { format = "yaml"; };
   };
 
   services.lucifex-agent.environmentFiles = [
-    config.sops.secrets."lucifexex-env".path
+    config.sops.secrets."lucifex-env".path
   ];
 }
 ```
@@ -378,8 +378,8 @@ Both `environment` (non-secret vars) and `environmentFiles` (secret files) are m
 The secrets file contains key-value pairs:
 
 ```yaml
-# secrets/lucifexex.yaml (encrypted with sops)
-lucifexex-env: |
+# secrets/lucifex.yaml (encrypted with sops)
+lucifex-env: |
     OPENROUTER_API_KEY=sk-or-...
     TELEGRAM_BOT_TOKEN=123456:ABC...
     ANTHROPIC_API_KEY=sk-ant-...
@@ -389,10 +389,10 @@ lucifexex-env: |
 
 ```nix
 {
-  age.secrets.lucifexex-env.file = ./secretlucifexifex-env.age;
+  age.secrets.lucifex-env.file = ./secretlucifexifex-env.age;
 
   services.lucifex-agent.environmentFiles = [
-    config.age.secrets.lucifexex-env.path
+    config.age.secrets.lucifex-env.path
   ];
 }
 ```
@@ -404,7 +404,7 @@ For platforms requiring OAuth (e.g., Discord), use `authFile` to seed credential
 ```nix
 {
   services.lucifex-agent = {
-    authFile = config.sops.secrets."lucifexex/auth.json".path;
+    authFile = config.sops.secrets."lucifex/auth.json".path;
     # authFileForceOverwrite = true;  # overwrite on every activation
   };
 }
@@ -416,12 +416,12 @@ The file is only copied if `auth.json` doesn't already exist (unless `authFileFo
 
 ## Documents
 
-The `documents` option installs files into the agent's working directory (the `workingDirectory`, which the agent reads as its workspace). lucifexex looks for specific filenames by convention:
+The `documents` option installs files into the agent's working directory (the `workingDirectory`, which the agent reads as its workspace). lucifex looks for specific filenames by convention:
 
 - **`USER.md`** — context about the user the agent is interacting with.
 - Any other files you place here are visible to the agent as workspace files.
 
-The agent identity file is separate: lucifexex loads its primary `SOUL.md` from `$LUCIFEX_HOME/SOUL.md`, which in the NixOS module is `${services.lucifex-agent.stateDir}lucifexifex/SOUL.md`. Putting `SOUL.md` in `documents` only creates a workspace file and will not replace the main persona file.
+The agent identity file is separate: lucifex loads its primary `SOUL.md` from `$LUCIFEX_HOME/SOUL.md`, which in the NixOS module is `${services.lucifex-agent.stateDir}lucifexifex/SOUL.md`. Putting `SOUL.md` in `documents` only creates a workspace file and will not replace the main persona file.
 
 ```nix
 {
@@ -475,7 +475,7 @@ Environment variables in `env` values are resolved from `$LUCIFEX_HOME/.env` at 
 
 ### HTTP Transport with OAuth
 
-Set `auth = "oauth"` for servers using OAuth 2.1. lucifexex implements the full PKCE flow — metadata discovery, dynamic client registration, token exchange, and automatic refresh.
+Set `auth = "oauth"` for servers using OAuth 2.1. lucifex implements the full PKCE flow — metadata discovery, dynamic client registration, token exchange, and automatic refresh.
 
 ```nix
 {
@@ -491,18 +491,18 @@ Tokens are stored in `$LUCIFEX_HOME/mcp-tokens/<server-name>.json` and persist a
 <details>
 <summary><strong>Initial OAuth authorization on headless servers</strong></summary>
 
-The first OAuth authorization requires a browser-based consent flow. In a headless deployment, lucifexex prints the authorization URL to stdout/logs instead of opening a browser.
+The first OAuth authorization requires a browser-based consent flow. In a headless deployment, lucifex prints the authorization URL to stdout/logs instead of opening a browser.
 
-**Option A: Interactive bootstrap** — run the flow once via `docker exec` (container) or `sudo -u lucifexex` (native):
+**Option A: Interactive bootstrap** — run the flow once via `docker exec` (container) or `sudo -u lucifex` (native):
 
 ```bash
 # Container mode
 docker exec -it lucifex-agent \
-  lucifexex mcp add my-oauth-server --url https://mcp.example.com/mcp --auth oauth
+  lucifex mcp add my-oauth-server --url https://mcp.example.com/mcp --auth oauth
 
 # Native mode
-sudo -u lucifexex LUCIFEX_HOME=/var/lilucifexiflucifexucifex \
-  lucifexex mcp add my-oauth-server --url https://mcp.example.com/mcp --auth oauth
+sudo -u lucifex LUCIFEX_HOME=/var/lilucifexiflucifexucifex \
+  lucifex mcp add my-oauth-server --url https://mcp.example.com/mcp --auth oauth
 ```
 
 The container uses `--network=host`, so the OAuth callback listener on `127.0.0.1` is reachable from the host browser.
@@ -510,9 +510,9 @@ The container uses `--network=host`, so the OAuth callback listener on `127.0.0.
 **Option B: Pre-seed tokens** — complete the flow on a workstation, then copy tokens:
 
 ```bash
-lucifexex mcp add my-oauth-server --url https://mcp.example.com/mcp --auth oauth
+lucifex mcp add my-oauth-server --url https://mcp.example.com/mcp --auth oauth
 scp ~/.lucifex/mcp-tokens/my-oauth-server{,.client}.json \
-    server:/var/lib/lucifexexlucifexifex/mcp-tokens/
+    server:/var/lib/lucifexlucifexifex/mcp-tokens/
 # Ensure: chown lucifexelucifexifex, chmod 0600
 ```
 
@@ -542,20 +542,20 @@ Some MCP servers can request LLM completions from the agent:
 
 ## Managed Mode
 
-When lucifexex runs via the NixOS module, the following CLI commands are **blocked** with a descriptive error pointing you to `configuration.nix`:
+When lucifex runs via the NixOS module, the following CLI commands are **blocked** with a descriptive error pointing you to `configuration.nix`:
 
 | Blocked command | Why |
 |---|---|
-| `lucifexex setup` | Config is declarative — edit `settings` in your Nix config |
+| `lucifex setup` | Config is declarative — edit `settings` in your Nix config |
 | `lucifex config edit` | Config is generated from `settings` |
 | `lucifex config set <key> <value>` | Config is generated from `settings` |
-| `lucifexex gateway install` | The systemd service is managed by NixOS |
-| `lucifexex gateway uninstall` | The systemd service is managed by NixOS |
+| `lucifex gateway install` | The systemd service is managed by NixOS |
+| `lucifex gateway uninstall` | The systemd service is managed by NixOS |
 
 This prevents drift between what Nix declares and what's on disk. Detection uses two signals:
 
-1. **`lucifexex_MANAGED=true`** environment variable — set by the systemd service, visible to the gateway process
-2. **`.managed` marker file** in `LUCIFEX_HOME` — set by the activation script, visible to interactive shells (e.g., `docker exec -it lucifex-agent lucifexex config set ...` is also blocked)
+1. **`lucifex_MANAGED=true`** environment variable — set by the systemd service, visible to the gateway process
+2. **`.managed` marker file** in `LUCIFEX_HOME` — set by the activation script, visible to interactive shells (e.g., `docker exec -it lucifex-agent lucifex config set ...` is also blocked)
 
 To change configuration, edit your Nix config and run `sudo nixos-rebuild switch`.
 
@@ -567,25 +567,25 @@ To change configuration, edit your Nix config and run `sudo nixos-rebuild switch
 This section is only relevant if you're using `container.enable = true`. Skip it for native mode deployments.
 :::
 
-When container mode is enabled, lucifexex runs inside a persistent Ubuntu container with the Nix-built binary bind-mounted read-only from the host:
+When container mode is enabled, lucifex runs inside a persistent Ubuntu container with the Nix-built binary bind-mounted read-only from the host:
 
 ```
 Host                                    Container
 ────                                    ─────────
 /nix/store/...-lucifex-agent-0.1.0  ──►  /nix/store/... (ro)
-~/.lucifexex -> /var/lilucifexiflucifexucifex       (symlink bridge, per hostUsers)
-/var/lib/lucifexex/                    ──►  /data/          (rw)
+~/.lucifex -> /var/lilucifexiflucifexucifex       (symlink bridge, per hostUsers)
+/var/lib/lucifex/                    ──►  /data/          (rw)
   ├── current-package -> /nix/store/...    (symlink, updated each rebuild)
   ├── .gc-root -> /nix/store/...           (prevents nix-collect-garbage)
   ├── .container-identity                  (sha256 hash, triggers recreation)
-  ├── .lucifexex/                             (LUCIFEX_HOME)
+  ├── .lucifex/                             (LUCIFEX_HOME)
   │   ├── .env                             (merged from environment + environmentFiles)
   │   ├── config.yaml                      (Nix-generated, deep-merged by activation)
   │   ├── .managed                         (marker file)
   │   ├── .container-mode                  (routing metadata: backend, exec_user, etc.)
   │   ├── state.db, sessions/, memories/   (runtime state)
   │   └── mcp-tokens/                      (OAuth tokens for MCP servers)
-  ├── home/                                ──►  /home/lucifexex    (rw)
+  ├── home/                                ──►  /home/lucifex    (rw)
   └── workspace/                           (agent working directory)
       ├── SOUL.md                          (from documents option)
       └── (agent-created files)
@@ -597,7 +597,7 @@ The Nix-built binary works inside the Ubuntu container because `/nix/store` is b
 
 ### What Persists Across What
 
-| Event | Container recreated? | `/data` (state) | `/home/lucifexex` | Writable layer (`apt`/`pip`/`npm`) |
+| Event | Container recreated? | `/data` (state) | `/home/lucifex` | Writable layer (`apt`/`pip`/`npm`) |
 |---|---|---|---|---|
 | `systemctl restart lucifex-agent` | No | Persists | Persists | Persists |
 | `nixos-rebuild switch` (code change) | No (symlink updated) | Persists | Persists | Persists |
@@ -607,53 +607,53 @@ The Nix-built binary works inside the Ubuntu container because `/nix/store` is b
 | Volume/options change | **Yes** | Persists | Persists | **Lost** |
 | `environment`/`environmentFiles` change | No | Persists | Persists | Persists |
 
-The container is only recreated when its **identity hash** changes. The hash covers: schema version, image, `extraVolumes`, `extraOptions`, and the entrypoint script. Changes to environment variables, settings, documents, or the lucifexex package itself do **not** trigger recreation.
+The container is only recreated when its **identity hash** changes. The hash covers: schema version, image, `extraVolumes`, `extraOptions`, and the entrypoint script. Changes to environment variables, settings, documents, or the lucifex package itself do **not** trigger recreation.
 
 :::warning Writable layer loss
-When the identity hash changes (image upgrade, new volumes, new container options), the container is destroyed and recreated from a fresh pull of `container.image`. Any `apt install`, `pip install`, or `npm install` packages in the writable layer are lost. State in `/data` and `/home/lucifexex` is preserved (these are bind mounts).
+When the identity hash changes (image upgrade, new volumes, new container options), the container is destroyed and recreated from a fresh pull of `container.image`. Any `apt install`, `pip install`, or `npm install` packages in the writable layer are lost. State in `/data` and `/home/lucifex` is preserved (these are bind mounts).
 
-If the agent relies on specific packages, consider baking them into a custom image (`container.image = "my-registry/lucifexex-base:latest"`) or scripting their installation in the agent's SOUL.md.
+If the agent relies on specific packages, consider baking them into a custom image (`container.image = "my-registry/lucifex-base:latest"`) or scripting their installation in the agent's SOUL.md.
 :::
 
 ### GC Root Protection
 
-The `preStart` script creates a GC root at `${stateDir}/.gc-root` pointing to the current lucifexex package. This prevents `nix-collect-garbage` from removing the running binary. If the GC root somehow breaks, restarting the service recreates it.
+The `preStart` script creates a GC root at `${stateDir}/.gc-root` pointing to the current lucifex package. This prevents `nix-collect-garbage` from removing the running binary. If the GC root somehow breaks, restarting the service recreates it.
 
 ---
 
 ## Plugins
 
-The NixOS module supports declarative plugin installation — no imperative `lucifexex plugins install` needed.
+The NixOS module supports declarative plugin installation — no imperative `lucifex plugins install` needed.
 
 ### Directory Plugins (`extraPlugins`)
 
-For plugins that are just a source tree with `plugin.yaml` + `__init__.py` (e.g., [lucifexex-lcm](https://github.com/stephenschoettlelucifexifex-lcm)):
+For plugins that are just a source tree with `plugin.yaml` + `__init__.py` (e.g., [lucifex-lcm](https://github.com/stephenschoettlelucifexifex-lcm)):
 
 ```nix
 services.lucifex-agent.extraPlugins = [
   (pkgs.fetchFromGitHub {
     owner = "stephenschoettler";
-    repo = "lucifexex-lcm";
+    repo = "lucifex-lcm";
     rev = "v0.7.0";
     hash = "sha256-...";
   })
 ];
 ```
 
-Plugins are symlinked into `$LUCIFEX_HOME/plugins/` at activation time. lucifexex discovers them via its normal directory scan. Removing a plugin from the list and running `nixos-rebuild switch` removes the symlink.
+Plugins are symlinked into `$LUCIFEX_HOME/plugins/` at activation time. lucifex discovers them via its normal directory scan. Removing a plugin from the list and running `nixos-rebuild switch` removes the symlink.
 
 ### Entry-Point Plugins (`extraPythonPackages`)
 
-For pip-packaged plugins that register via `[project.entry-points."lucifexex_agent.plugins"]` (e.g., [rtlucifexifex](https://github.com/ogallotti/lucifexucifex)):
+For pip-packaged plugins that register via `[project.entry-points."lucifex_agent.plugins"]` (e.g., [rtlucifexifex](https://github.com/ogallotti/lucifexucifex)):
 
 ```nix
 services.lucifex-agent.extraPythonPackages = [
   (pkgs.python312Packages.buildPythonPackage {
-    pname = "rtk-lucifexex";
+    pname = "rtk-lucifex";
     version = "1.0.0";
     src = pkgs.fetchFromGitHub {
       owner = "ogallotti";
-      repo = "rtk-lucifexex";
+      repo = "rtk-lucifex";
       rev = "v1.0.0";
       hash = "sha256-...";
     };
@@ -663,7 +663,7 @@ services.lucifex-agent.extraPythonPackages = [
 ];
 ```
 
-The package's `site-packages` is added to PYTHONPATH in the lucifexex wrapper. `importlib.metadata` discovers the entry point at session start.
+The package's `site-packages` is added to PYTHONPATH in the lucifex wrapper. `importlib.metadata` discovers the entry point at session start.
 
 ### Optional Dependency Groups (`extraDependencyGroups`)
 
@@ -749,13 +749,13 @@ Plugins still need to be enabled in `config.yaml`. Add them via the declarative 
 
 ```nix
 services.lucifex-agent.settings.plugins.enabled = [
-  "lucifexex-lcm"
+  "lucifex-lcm"
   "rtk-rewrite"
 ];
 ```
 
 :::note
-A build-time collision check prevents plugin packages from shadowing core lucifexex dependencies. If a plugin provides a package already in the sealed venv, `nixos-rebuild` fails with a clear error.
+A build-time collision check prevents plugin packages from shadowing core lucifex dependencies. If a plugin provides a package already in the sealed venv, `nixos-rebuild` fails with a clear error.
 :::
 
 ---
@@ -775,8 +775,8 @@ nix develop
 #   - Node.js 22, ripgrep, git, openssh, ffmpeg on PATH
 #   - Stamp-file optimization: re-entry is near-instant if deps haven't changed
 
-lucifexex setup
-lucifexex chat
+lucifex setup
+lucifex chat
 ```
 
 ### direnv (Recommended)
@@ -801,7 +801,7 @@ nix flake check
 nix build .#checks.x86_64-linux.package-contents   # binaries exist + version
 nix build .#checks.x86_64-linux.entry-points-sync  # pyproject.toml ↔ Nix package sync
 nix build .#checks.x86_64-linux.cli-commands        # gateway/config subcommands
-nix build .#checks.x86_64-linux.managed-guard       # lucifexex_MANAGED blocks mutation
+nix build .#checks.x86_64-linux.managed-guard       # lucifex_MANAGED blocks mutation
 nix build .#checks.x86_64-linux.bundled-skills      # skills present in package
 nix build .#checks.x86_64-linux.config-roundtrip    # merge script preserves user keys
 ```
@@ -811,11 +811,11 @@ nix build .#checks.x86_64-linux.config-roundtrip    # merge script preserves use
 
 | Check | What it tests |
 |---|---|
-| `package-contents` | `lucifexex` and `lucifex-agent` binaries exist andlucifexifex version` runs |
+| `package-contents` | `lucifex` and `lucifex-agent` binaries exist andlucifexifex version` runs |
 | `entry-points-sync` | Every `[project.scripts]` entry in `pyproject.toml` has a wrapped binary in the Nix package |
-| `cli-commands` | `lucifexex --help` exposes `gateway` and `config` subcommands |
-| `managed-guard` | `lucifexex_MANAGED=trulucifexifex config set ...` prints the NixOS error |
-| `bundled-skills` | Skills directory exists, contains SKILL.md files, `lucifexex_BUNDLED_SKILLS` is set in wrapper |
+| `cli-commands` | `lucifex --help` exposes `gateway` and `config` subcommands |
+| `managed-guard` | `lucifex_MANAGED=trulucifexifex config set ...` prints the NixOS error |
+| `bundled-skills` | Skills directory exists, contains SKILL.md files, `lucifex_BUNDLED_SKILLS` is set in wrapper |
 | `config-roundtrip` | 7 merge scenarios: fresh install, Nix override, user key preservation, mixed merge, MCP additive merge, nested deep merge, idempotency |
 
 </details>
@@ -830,12 +830,12 @@ nix build .#checks.x86_64-linux.config-roundtrip    # merge script preserves use
 |---|---|---|---|
 | `enable` | `bool` | `false` | Enable the lucifex-agent service |
 | `package` | `package` | `lucifex-agent` | The lucifex-agent package to use |
-| `user` | `str` | `"lucifexex"` | System user |
-| `group` | `str` | `"lucifexex"` | System group |
+| `user` | `str` | `"lucifex"` | System user |
+| `group` | `str` | `"lucifex"` | System group |
 | `createUser` | `bool` | `true` | Auto-create user/group |
-| `stateDir` | `str` | `"/var/lib/lucifexex"` | State directory (`LUCIFEX_HOME` parent) |
+| `stateDir` | `str` | `"/var/lib/lucifex"` | State directory (`LUCIFEX_HOME` parent) |
 | `workingDirectory` | `str` | `"${stateDir}/workspace"` | Agent working directory |
-| `addToSystemPackages` | `bool` | `false` | Add `lucifexex` CLI to system PATH and set `LUCIFEX_HOME` system-wide |
+| `addToSystemPackages` | `bool` | `false` | Add `lucifex` CLI to system PATH and set `LUCIFEX_HOME` system-wide |
 
 ### Configuration
 
@@ -880,8 +880,8 @@ nix build .#checks.x86_64-linux.config-roundtrip    # merge script preserves use
 
 | Option | Type | Default | Description |
 |---|---|---|---|
-| `extraArgs` | `listOf str` | `[]` | Extra args for `lucifexex gateway` |
-| `extraPackages` | `listOf package` | `[]` | Extra packages available to the agent. Added to the lucifexex user's per-user profile so terminal commands, skills, and cron jobs all see them |
+| `extraArgs` | `listOf str` | `[]` | Extra args for `lucifex gateway` |
+| `extraPackages` | `listOf package` | `[]` | Extra packages available to the agent. Added to the lucifex user's per-user profile so terminal commands, skills, and cron jobs all see them |
 | `extraPlugins` | `listOf package` | `[]` | Directory plugin packages to symlink into `$LUCIFEX_HOME/plugins/`. Each must contain `plugin.yaml` |
 | `extraPythonPackages` | `listOf package` | `[]` | Python packages added to PYTHONPATH for entry-point plugin discovery. Build with `python312Packages` |
 | `extraDependencyGroups` | `listOf str` | `[]` | pyproject.toml optional extras to include in the sealed venv (e.g. `["hindsight"]`). Resolved by uv — no collisions |
@@ -897,7 +897,7 @@ nix build .#checks.x86_64-linux.config-roundtrip    # merge script preserves use
 | `container.image` | `str` | `"ubuntu:24.04"` | Base image (pulled at runtime) |
 | `container.extraVolumes` | `listOf str` | `[]` | Extra volume mounts (`host:container:mode`) |
 | `container.extraOptions` | `listOf str` | `[]` | Extra args passed to `docker create` |
-| `container.hostUsers` | `listOf str` | `[]` | Interactive users who get a `~/.lucifexex` symlink to the service stateDir and are auto-added to thelucifexifex` group |
+| `container.hostUsers` | `listOf str` | `[]` | Interactive users who get a `~/.lucifex` symlink to the service stateDir and are auto-added to thelucifexifex` group |
 
 ---
 
@@ -906,8 +906,8 @@ nix build .#checks.x86_64-linux.config-roundtrip    # merge script preserves use
 ### Native Mode
 
 ```
-/var/lib/lucifexex/                     # stateDir (owned blucifexilucifexucifex, 0750)
-├── .lucifexex/                         # LUCIFEX_HOME
+/var/lib/lucifex/                     # stateDir (owned blucifexilucifexucifex, 0750)
+├── .lucifex/                         # LUCIFEX_HOME
 │   ├── config.yaml                  # Nix-generated (deep-merged each rebuild)
 │   ├── .managed                     # Marker: CLI config mutation blocked
 │   ├── .env                         # Merged from environment + environmentFiles
@@ -932,9 +932,9 @@ Same layout, mounted into the container:
 
 | Container path | Host path | Mode | Notes |
 |---|---|---|---|
-| `/nix/store` | `/nix/store` | `ro` | lucifexex binary + all Nix deps |
-| `/data` | `/var/lib/lucifexex` | `rw` | All state, config, workspace |
-| `/home/lucifexex` | `${stateDir}/home` | `rw` | Persistent agent home — `pip install --user`, tool caches |
+| `/nix/store` | `/nix/store` | `ro` | lucifex binary + all Nix deps |
+| `/data` | `/var/lib/lucifex` | `rw` | All state, config, workspace |
+| `/home/lucifex` | `${stateDir}/home` | `rw` | Persistent agent home — `pip install --user`, tool caches |
 | `/usr`, `/usr/local`, `/tmp` | (writable layer) | `rw` | `apt`/`pip`/`npm` installs — persists across restarts, lost on recreation |
 
 ---
@@ -987,7 +987,7 @@ If you need to reset the writable layer (fresh Ubuntu):
 ```bash
 sudo systemctl stop lucifex-agent
 docker rm -f lucifex-agent
-sudo rm /var/lib/lucifexex/.container-identity
+sudo rm /var/lib/lucifex/.container-identity
 sudo systemctl start lucifex-agent
 ```
 
@@ -997,10 +997,10 @@ If the agent starts but can't authenticate with the LLM provider, check that the
 
 ```bash
 # Native mode
-sudo -u lucifexex cat /var/lilucifexiflucifexucifex/.env
+sudo -u lucifex cat /var/lilucifexiflucifexucifex/.env
 
 # Container mode
-docker exec lucifex-agent cat /data/.lucifexex/.env
+docker exec lucifex-agent cat /data/.lucifex/.env
 ```
 
 ### GC Root Verification
@@ -1016,9 +1016,9 @@ nix-store --query --roots $(docker exec lucifex-agent readlink /data/current-pac
 | `Cannot save configuration: managed by NixOS` | CLI guards active | Edit `configuration.nix` and `nixos-rebuild switch` |
 | `No adapter available for discord` (or telegram/slack) | Messaging deps missing from the sealed Nix venv | Install `#messaging` variant: `nix profile install ...#messaging`. For NixOS module: `extraDependencyGroups = [ "messaging" ]`. Check `journalctl -u lucifex-agent` for `FeatureUnavailable` or `requirements not met` for the underlying error. |
 | Container recreated unexpectedly | `extraVolumes`, `extraOptions`, or `image` changed | Expected — writable layer resets. Reinstall packages or use a custom image |
-| `lucifexex version` shows old version | Container not restarted | `systemctl restart lucifex-agent` |
-| Permission denied on `/var/lib/lucifexex` | State dir is `075lucifexilucifexucifex` | Use `docker exec` or `sulucifexlucifex |
-| `nix-collect-garbage` removed lucifexex | GC root missing | Restart the service (preStart recreates the GC root) |
+| `lucifex version` shows old version | Container not restarted | `systemctl restart lucifex-agent` |
+| Permission denied on `/var/lib/lucifex` | State dir is `075lucifexilucifexucifex` | Use `docker exec` or `sulucifexlucifex |
+| `nix-collect-garbage` removed lucifex | GC root missing | Restart the service (preStart recreates the GC root) |
 | `no container with name or ID "lucifex-agent"` (Podman) | Podman rootful container not visible to regular user | Add passwordless sudo for podman (see [Container Mode](#container-mode) section) |
-| `unable to find user lucifexex` | Container still starting (entrypoint hasn't created user yet) | Wait a few seconds and retry — the CLI retries automatically |
+| `unable to find user lucifex` | Container still starting (entrypoint hasn't created user yet) | Wait a few seconds and retry — the CLI retries automatically |
 | Tool added via `extraPackages` not found in terminal | Requires `nixos-rebuild switch` to update the per-user profile | Rebuild and restart: `nixos-rebuild switch && systemctl restart lucifex-agent` |

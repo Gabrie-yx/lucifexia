@@ -8,7 +8,7 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def clean_env(monkeypatch):
-    for key in ("lucifexex_SESSION_PLATFORM",):
+    for key in ("lucifex_SESSION_PLATFORM",):
         monkeypatch.delenv(key, raising=False)
 
 
@@ -194,4 +194,4 @@ class TestDispatcherBranch:
         result = json.loads(text_to_speech_tool(text="Hello"))
         assert result["success"] is False
         assert "kittentts" in result["error"].lower()
-        assert "lucifexex setup tts" in result["error"].lower()
+        assert "lucifex setup tts" in result["error"].lower()

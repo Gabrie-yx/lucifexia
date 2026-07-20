@@ -17,7 +17,7 @@ Create, triage, label, assign GitHub issues via gh or REST.
 | Source | Bundled (installed by default) |
 | Path | `skills/github/github-issues` |
 | Version | `1.1.0` |
-| Author | lucifexex Agent |
+| Author | lucifex Agent |
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `GitHub`, `Issues`, `Project-Management`, `Bug-Tracking`, `Triage` |
@@ -26,7 +26,7 @@ Create, triage, label, assign GitHub issues via gh or REST.
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that lucifexex loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that lucifex loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # GitHub Issues Management
@@ -46,8 +46,8 @@ if command -v gh &>/dev/null && gh auth status &>/dev/null; then
 else
   AUTH="git"
   if [ -z "$GITHUB_TOKEN" ]; then
-    if _lucifexex_env="${LUCIFEX_HOME:-$HOMElucifexifex}/.env"; [ -flucifexucifex_env" ] && grep -q "^GITHUB_TOKENlucifexlucifexenv"; then
-      GITHUB_TOKEN=$(grep "^GITHUB_TOKEN=" "$_lucifexex_env" | head -1 | cut -d= -f2 | tr -d '\n\r')
+    if _lucifex_env="${LUCIFEX_HOME:-$HOMElucifexifex}/.env"; [ -flucifexucifex_env" ] && grep -q "^GITHUB_TOKENlucifexlucifexenv"; then
+      GITHUB_TOKEN=$(grep "^GITHUB_TOKEN=" "$_lucifex_env" | head -1 | cut -d= -f2 | tr -d '\n\r')
     elif grep -q "github.com" ~/.git-credentials 2>/dev/null; then
       GITHUB_TOKEN=$(grep "github.com" ~/.git-credentials 2>/dev/null | head -1 | sed 's|https://[^:]*:\([^@]*\)@.*|\1|')
     fi

@@ -1,7 +1,7 @@
 ---
 sidebar_position: 2
 title: "添加工具"
-description: "如何向 lucifexex Agent 添加新工具——schema、handler、注册与 toolset"
+description: "如何向 lucifex Agent 添加新工具——schema、handler、注册与 toolset"
 ---
 
 # 添加工具
@@ -9,11 +9,11 @@ description: "如何向 lucifexex Agent 添加新工具——schema、handler、
 在编写工具之前，先问自己：**这是否应该是一个 [skill](creating-skills.md)？**
 
 :::warning 仅限内置核心工具
-本页面用于向仓库本身添加 **lucifexex 内置工具**。
-如果你想要个人专用、项目本地或其他自定义工具，而不修改 lucifexex 核心，请使用插件方式：
+本页面用于向仓库本身添加 **lucifex 内置工具**。
+如果你想要个人专用、项目本地或其他自定义工具，而不修改 lucifex 核心，请使用插件方式：
 
 - [插件](/user-guide/features/plugins)
-- [构建 lucifexex 插件](/developer-guide/plugins)
+- [构建 lucifex 插件](/developer-guide/plugins)
 
 大多数自定义工具创建场景默认使用插件。只有当你明确希望在 `tools/` 和 `toolsets.py` 中发布新的内置工具时，才遵循本页面。
 :::
@@ -27,7 +27,7 @@ description: "如何向 lucifexex Agent 添加新工具——schema、handler、
 添加一个工具涉及 **2 个文件**：
 
 1. **`tools/your_tool.py`** — handler、schema、check 函数、`registry.register()` 调用
-2. **`toolsets.py`** — 将工具名称添加到 `_lucifexex_CORE_TOOLS`（或特定 toolset）
+2. **`toolsets.py`** — 将工具名称添加到 `_lucifex_CORE_TOOLS`（或特定 toolset）
 
 任何包含顶层 `registry.register()` 调用的 `tools/*.py` 文件都会在启动时被自动发现——无需手动维护导入列表。
 
@@ -122,7 +122,7 @@ registry.register(
 
 ```python
 # If it should be available on all platforms (CLI + messaging):
-_lucifexex_CORE_TOOLS = [
+_lucifex_CORE_TOOLS = [
     ...
     "weather",  # <-- add here
 ]
@@ -206,4 +206,4 @@ OPTIONAL_ENV_VARS = {
 - [ ] Handler 返回 JSON 字符串，错误以 `{"error": "..."}` 形式返回
 - [ ] 可选：已将 API 密钥添加到 `lucifex_cli/config.py` 的 `OPTIONAL_ENV_VARS`
 - [ ] 可选：已添加到 `toolset_distributions.py` 以支持批量处理
-- [ ] 已通过 `lucifexex chat -q "Use the weather tool for London"` 测试
+- [ ] 已通过 `lucifex chat -q "Use the weather tool for London"` 测试

@@ -20,7 +20,7 @@ def server():
         "sys.modules",
         {
             "lucifex_constants": MagicMock(
-                get_lucifex_home=MagicMock(return_value="/tmp/lucifexex_test_moa_emit")
+                get_lucifex_home=MagicMock(return_value="/tmp/lucifex_test_moa_emit")
             ),
             "lucifex_cli.env_loader": MagicMock(),
             "lucifex_cli.banner": MagicMock(),

@@ -1624,10 +1624,10 @@ def _spill_summary_to_file(task_index: int, summary: str) -> Optional[str]:
     the trimmed head+tail is still returned to the parent regardless).
     """
     try:
-        from lucifex_constants import get_lucifexex_dir
+        from lucifex_constants import get_lucifex_dir
         import datetime as _dt
 
-        cache_dir = get_lucifexex_dir("cache/delegation", "delegation_cache")
+        cache_dir = get_lucifex_dir("cache/delegation", "delegation_cache")
         cache_dir.mkdir(parents=True, exist_ok=True)
         ts = _dt.datetime.now().strftime("%Y%m%d_%H%M%S_%f")
         path = cache_dir / f"subagent-summary-{task_index}-{ts}.txt"
@@ -2927,7 +2927,7 @@ def delegate_task(
                 _sync_result["note"] = (
                     "background=true is not available in this session — it cannot "
                     "receive a detached subagent result after the turn ends (a "
-                    "one-shot runner such as `lucifexex -z` or a cron job, or a "
+                    "one-shot runner such as `lucifex -z` or a cron job, or a "
                     "stateless HTTP endpoint). The subagent(s) ran SYNCHRONOUSLY "
                     "and the result is included above."
                 )
@@ -2938,8 +2938,8 @@ def delegate_task(
         try:
             from gateway.session_context import get_session_env
 
-            _source = get_session_env("lucifexex_SESSION_SOURCE", "")
-            _origin_ui_session_id = get_session_env("lucifexex_UI_SESSION_ID", "")
+            _source = get_session_env("lucifex_SESSION_SOURCE", "")
+            _origin_ui_session_id = get_session_env("lucifex_UI_SESSION_ID", "")
             # In desktop/TUI, the routable session key is the durable
             # AIAgent.session_id. Context compression can rotate that id during
             # the same turn before the TUI-side session dict is re-anchored;
@@ -2955,7 +2955,7 @@ def delegate_task(
             _origin_ui_session_id = ""
         if not _session_key:
             # CLI (single-process) path: the approval contextvar is only bound
-            # during gateway/TUI turns and lucifexex_SESSION_KEY is not in the CLI
+            # during gateway/TUI turns and lucifex_SESSION_KEY is not in the CLI
             # environment, so the key resolves empty here. Since #64240 the CLI
             # drains completions through a positive-ownership filter keyed on
             # the durable AIAgent.session_id — an empty session_key would fail
@@ -3270,7 +3270,7 @@ def _resolve_delegation_credentials(cfg: dict, parent_agent) -> dict:
     if not api_key:
         raise ValueError(
             f"Delegation provider '{configured_provider}' resolved but has no API key. "
-            f"Set the appropriate environment variable or run 'lucifexex auth'."
+            f"Set the appropriate environment variable or run 'lucifex auth'."
         )
 
     return {
@@ -3287,7 +3287,7 @@ def _resolve_delegation_credentials(cfg: dict, parent_agent) -> dict:
 
 
 def _load_config() -> dict:
-    """Load delegation config from the active lucifexex config.
+    """Load delegation config from the active lucifex config.
 
     Prefer the shared persistent loader because it follows the active
     LUCIFEX_HOME/profile. ``cli.CLI_CONFIG`` is a legacy fallback for entry
@@ -3300,12 +3300,12 @@ def _load_config() -> dict:
     rebuild via ``_get_max_concurrent_children``, so skipping the defensive
     deepcopy matters. Do NOT mutate the returned dict.
 
-    ``lucifexex_IGNORE_USER_CONFIG=1`` (lucifexifex chat --ignore-user-config``) is
+    ``lucifex_IGNORE_USER_CONFIG=1`` (lucifexifex chat --ignore-user-config``) is
     only honored by the legacy ``cli`` loader, not the shared one, so when the
     flag is set we keep ``cli.CLI_CONFIG`` authoritative to preserve the
     flag's contract of suppressing user config.yaml settings.
     """
-    prefer_legacy = os.environ.get("lucifexex_IGNORE_USER_CONFIG") == "1"
+    prefer_legacy = os.environ.get("lucifex_IGNORE_USER_CONFIG") == "1"
     if not prefer_legacy:
         try:
             from lucifex_cli.config import load_config_readonly

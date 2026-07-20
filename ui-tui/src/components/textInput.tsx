@@ -457,7 +457,7 @@ export function supportsFastEchoTerminal(env: NodeJS.ProcessEnv = process.env): 
   // stale paints at soft-wrap boundaries on tall/narrow viewports. Keep this
   // off by default in Termux mode; allow explicit opt-in for local debugging.
   if (isTermuxTuiMode(env)) {
-    const override = String(env.lucifexex_TUI_TERMUX_FAST_ECHO ?? '')
+    const override = String(env.lucifex_TUI_TERMUX_FAST_ECHO ?? '')
       .trim()
       .toLowerCase()
 
@@ -834,7 +834,7 @@ export function TextInput({
             commit(v.slice(0, cur) + fallbackText + v.slice(cur), cur + fallbackText.length)
           }
         })
-        .catch(() => {})
+        .catch(() => { })
 
       return true
     }

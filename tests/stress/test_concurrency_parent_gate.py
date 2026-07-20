@@ -34,7 +34,7 @@ WORKERS_RUN_DURATION_S = 8
 
 
 def run() -> int:
-    home = tempfile.mkdtemp(prefix="lucifexex_parent_gate_stress_")
+    home = tempfile.mkdtemp(prefix="lucifex_parent_gate_stress_")
     os.environ["LUCIFEX_HOME"] = home
     os.environ["HOME"] = home
 

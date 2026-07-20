@@ -28,7 +28,7 @@ def _run_migration(LUCIFEX_HOME: Path, **env_overrides: str) -> subprocess.Compl
     env.update(
         {
             "LUCIFEX_HOME": str(LUCIFEX_HOME),
-            "lucifexex_SKIP_CHMOD": "1",
+            "lucifex_SKIP_CHMOD": "1",
             "PYTHONPATH": str(REPO_ROOT),
         }
     )
@@ -136,7 +136,7 @@ def test_docker_config_migrate_skip_env_leaves_config_unchanged(tmp_path: Path) 
     original = yaml.safe_dump({"_config_version": 11})
     config_path.write_text(original, encoding="utf-8")
 
-    proc = _run_migration(tmp_path, lucifexex_SKIP_CONFIG_MIGRATION="1")
+    proc = _run_migration(tmp_path, lucifex_SKIP_CONFIG_MIGRATION="1")
 
     assert proc.returncode == 0, proc.stderr
     assert "skipping config migration" in proc.stdout

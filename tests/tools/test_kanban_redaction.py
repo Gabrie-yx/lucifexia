@@ -19,11 +19,11 @@ import pytest
 @pytest.fixture
 def worker_env(monkeypatch, tmp_path):
     """Isolated LUCIFEX_HOME with a running task; returns the task id."""
-    home = tmp_path / ".lucifexex"
+    home = tmp_path / ".lucifex"
     home.mkdir()
     monkeypatch.setenv("LUCIFEX_HOME", str(home))
-    monkeypatch.setenv("lucifexex_PROFILE", "test-worker")
-    monkeypatch.delenv("lucifexex_SESSION_ID", raising=False)
+    monkeypatch.setenv("lucifex_PROFILE", "test-worker")
+    monkeypatch.delenv("lucifex_SESSION_ID", raising=False)
     from pathlib import Path as _Path
     monkeypatch.setattr(_Path, "home", lambda: tmp_path)
 
@@ -36,7 +36,7 @@ def worker_env(monkeypatch, tmp_path):
         kb.claim_task(conn, tid)
     finally:
         conn.close()
-    monkeypatch.setenv("lucifexex_KANBAN_TASK", tid)
+    monkeypatch.setenv("lucifex_KANBAN_TASK", tid)
     return tid
 
 
@@ -152,12 +152,12 @@ def test_kanban_comment_no_secret_passthrough(worker_env):
 
 
 # ---------------------------------------------------------------------------
-# Negative test — force=True bypasses lucifexex_REDACT_SECRETS=false
+# Negative test — force=True bypasses lucifex_REDACT_SECRETS=false
 # ---------------------------------------------------------------------------
 
 def test_scrub_respects_force_flag_regardless_of_config(worker_env, monkeypatch):
-    """force=True must fire even when lucifexex_REDACT_SECRETS=false is set."""
-    monkeypatch.setenv("lucifexex_REDACT_SECRETS", "false")
+    """force=True must fire even when lucifex_REDACT_SECRETS=false is set."""
+    monkeypatch.setenv("lucifex_REDACT_SECRETS", "false")
     from tools import kanban_tools as kt
     from lucifex_cli import kanban_db as kb
     secret = "ghp_" + "C" * 40

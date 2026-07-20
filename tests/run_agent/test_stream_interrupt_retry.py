@@ -190,8 +190,8 @@ class TestStreamInterruptBeforeRetry:
             _make_tool_call_delta,
         )
 
-        monkeypatch.setenv("lucifexex_STREAM_STALE_TIMEOUT", "0.05")
-        monkeypatch.setenv("lucifexex_STREAM_RETRIES", "1")
+        monkeypatch.setenv("lucifex_STREAM_STALE_TIMEOUT", "0.05")
+        monkeypatch.setenv("lucifex_STREAM_RETRIES", "1")
 
         class LateChunkAfterStaleStream:
             response = SimpleNamespace(headers={})

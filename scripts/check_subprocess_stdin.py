@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Check that subprocess calls in TUI-context code specify stdin=.
 
-When lucifexex runs in TUI mode, the gateway child process communicates with
+When lucifex runs in TUI mode, the gateway child process communicates with
 the Node.js parent over a JSON-RPC protocol on stdin. Subprocess calls that
 inherit this fd can cause the gateway to exit with stdin EOF during tool
 execution (issue #14036, PR #39257).
@@ -38,8 +38,8 @@ TUI_CONTEXT_DIRS = [
 ]
 
 # User plugin roots — scanned at runtime if they exist.  Plugins load from
-# ``get_lucifex_home() / "plugins"`` (user) and ``./.lucifexex/plugins/`` (project,
-# gated behind ``lucifexex_ENABLE_PROJECT_PLUGINS``) — see
+# ``get_lucifex_home() / "plugins"`` (user) and ``./.lucifex/plugins/`` (project,
+# gated behind ``lucifex_ENABLE_PROJECT_PLUGINS``) — see
 # ``lucifex_cli/plugins.py:10-12``.  The guard only checked the bundled
 # ``plugins/`` dir, missing user-installed code that spawns subprocesses
 # (gap reported in #67639).
@@ -187,11 +187,11 @@ def main() -> int:
 
     # Scan user plugin directories (Gap 1: guard missed user-installed
     # plugins in get_lucifex_home()/plugins/ and project plugins in
-    # ./.lucifexex/plugins/, where code like ori/hooks.py can spawn
+    # ./.lucifex/plugins/, where code like ori/hooks.py can spawn
     # subprocesses with inherited stdin — #67639).
     plugin_roots: list[Path] = [get_lucifex_home() / "plugins"]
-    if os.environ.get("lucifexex_ENABLE_PROJECT_PLUGINS"):
-        plugin_roots.append(Path.cwd() / ".lucifexex" / "plugins")
+    if os.environ.get("lucifex_ENABLE_PROJECT_PLUGINS"):
+        plugin_roots.append(Path.cwd() / ".lucifex" / "plugins")
     seen_roots: set[Path] = set()
     for plugin_root in plugin_roots:
         resolved = plugin_root.resolve()

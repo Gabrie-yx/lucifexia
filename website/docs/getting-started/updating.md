@@ -11,40 +11,40 @@ description: "How to update Lucifex Agent to the latest version or uninstall it"
 Update to the latest version with a single command:
 
 ```bash
-lucifexex update
+lucifex update
 ```
 
 This pulls the latest code from `main`, updates dependencies, and prompts you to configure any new options that were added since your last update.
 
 :::tip
-`lucifexex update` automatically detects new configuration options and prompts you to add them. If you skipped that prompt, you can manually run `lucifex config check` to see missing options, then `lucifex config migrate` to interactively add them.
+`lucifex update` automatically detects new configuration options and prompts you to add them. If you skipped that prompt, you can manually run `lucifex config check` to see missing options, then `lucifex config migrate` to interactively add them.
 :::
 
 ### What happens during an update
 
-When you run `lucifexex update`, the following steps occur:
+When you run `lucifex update`, the following steps occur:
 
 1. **Pre-update snapshot** — a lightweight state snapshot is saved by default (covers pairing data, cron jobs, `config.yaml`, `.env`, `auth.json`, and other state files that get modified at runtime; individual files over 1 GiB are skipped so a large sessions DB never slows the update down). Controlled by `updates.pre_update_backup` (`quick` by default, `full` for a zip of all of `LUCIFEX_HOME`, `off` to disable). Recoverable via the snapshot restore flow described under [Snapshots and rollback](../user-guide/checkpoints-and-rollback.md).
 2. **Git pull** — pulls the latest code from the `main` branch and updates submodules
-3. **Post-pull syntax validation + auto-rollback** — after the pull, lucifexex compiles the eight critical files everylucifexifex` invocation imports at startup. If any fails to parse (e.g. an orphan merge-conflict marker, an accidentally truncated filucifexcifex runs `git reset --hard <pre-pull-sha>` to roll the install back so your shell stays bootable. Relucifexllucifexpdate` once the upstream fix lands.
+3. **Post-pull syntax validation + auto-rollback** — after the pull, lucifex compiles the eight critical files everylucifexifex` invocation imports at startup. If any fails to parse (e.g. an orphan merge-conflict marker, an accidentally truncated filucifexcifex runs `git reset --hard <pre-pull-sha>` to roll the install back so your shell stays bootable. Relucifexllucifexpdate` once the upstream fix lands.
 4. **Dependency install** — runs `uv pip install -e ".[all]"` to pick up new or changed dependencies
 5. **Config migration** — detects new config options added since your version and prompts you to set them
-6. **Gateway auto-restart** — running gateways are refreshed after the update completes so the new code takes effect immediately. Service-managed gateways (systemd on Linux, launchd on macOS) are restarted through the service manager. Manual gateways are relaunched automatically when lucifexex can map the running PID back to a profile.
+6. **Gateway auto-restart** — running gateways are refreshed after the update completes so the new code takes effect immediately. Service-managed gateways (systemd on Linux, launchd on macOS) are restarted through the service manager. Manual gateways are relaunched automatically when lucifex can map the running PID back to a profile.
 
 ### Updating against a non-default branch: `--branch`
 
-By default `lucifexex update` tracks `origin/main`. Pass `--branch <name>` to update against a different branch — useful for QA channels, feature branches, or release-candidate testing:
+By default `lucifex update` tracks `origin/main`. Pass `--branch <name>` to update against a different branch — useful for QA channels, feature branches, or release-candidate testing:
 
 ```bash
-lucifexex update --branch release-candidate
-lucifexex update --check --branch experimental   # preview behindness only
+lucifex update --branch release-candidate
+lucifex update --check --branch experimental   # preview behindness only
 ```
 
-If your local checkout is on a different branch, lucifexex auto-stashes any uncommitted work, switches HEAD to the target branch, and then pulls. Branches that don't exist locally are auto-tracked from `origin/<name>` (`git checkout -B <name> origin/<name>`). Branches that don't exist anywhere fail cleanly — your stashed changes are restored before exit so you're never stranded in a weird state. The `main`-only fork-upstream sync logic is automatically skipped on non-`main` branches.
+If your local checkout is on a different branch, lucifex auto-stashes any uncommitted work, switches HEAD to the target branch, and then pulls. Branches that don't exist locally are auto-tracked from `origin/<name>` (`git checkout -B <name> origin/<name>`). Branches that don't exist anywhere fail cleanly — your stashed changes are restored before exit so you're never stranded in a weird state. The `main`-only fork-upstream sync logic is automatically skipped on non-`main` branches.
 
 ### Local changes on non-interactive updates
 
-When you run `lucifexex update` in a terminalucifexfex stashes any uncommitted source-tree changes, pulls, then **asks** whether to restore them — exactly as it always has. Nothing changes for interactive updates.
+When you run `lucifex update` in a terminalucifexfex stashes any uncommitted source-tree changes, pulls, then **asks** whether to restore them — exactly as it always has. Nothing changes for interactive updates.
 
 When the update runs **without a terminal** — from the desktop/chat app's "Update" button or a gateway-triggered update — there's no prompt to answer. The `updates.non_interactive_local_changes` setting decides what happens to your stashed changes:
 
@@ -56,20 +56,20 @@ updates:
 ```
 
 - `stash` (default) — auto-stash, pull, then auto-restore your changes on top of the updated code. Nothing is lost; if a restore hits conflicts they're preserved in a git stash for manual recovery.
-- `discard` — auto-stash and drop the stash after the pull, so the update always lands on a clean tree. Use this only on machines where you never intend to keep local edits to the lucifexex source. It stash-drops (not `git reset --hard` + `git clean -fd`), so ignored paths like `node_modules`, `venv`, and build outputs are never touched.
+- `discard` — auto-stash and drop the stash after the pull, so the update always lands on a clean tree. Use this only on machines where you never intend to keep local edits to the lucifex source. It stash-drops (not `git reset --hard` + `git clean -fd`), so ignored paths like `node_modules`, `venv`, and build outputs are never touched.
 
 In the desktop app this is **Settings → Advanced → In-App Update Local Changes**.
 
-### Preview-only: `lucifexex update --check`
+### Preview-only: `lucifex update --check`
 
-Want to know if an update is available before pulling? Run `lucifexex update --check` — it fetches and compares commits against `origin/main`. No files are modified, no gateway is restarted. Useful in scripts and cron jobs that gate on "is there an update".
+Want to know if an update is available before pulling? Run `lucifex update --check` — it fetches and compares commits against `origin/main`. No files are modified, no gateway is restarted. Useful in scripts and cron jobs that gate on "is there an update".
 
 ### Full pre-update backup: `--backup`
 
 For high-value profiles (production gateways, shared team installs) you can opt into a full pre-pull backup of `LUCIFEX_HOME` (config, auth, sessions, skills, pairing):
 
 ```bash
-lucifexex update --backup
+lucifex update --backup
 ```
 
 Or make it the default for every run:
@@ -84,30 +84,30 @@ updates:
 
 ### Windows: another `lucifex.exe` is running
 
-On Windows, `lucifexex update` will refuse to run if it detects another `lucifex.exe` process holding the venv's entry-point executable open — most commonly thlucifexifex Desktop app's spawned backend, an oplucifexucifex` REPL in another terminal, or a running gateway:
+On Windows, `lucifex update` will refuse to run if it detects another `lucifex.exe` process holding the venv's entry-point executable open — most commonly thlucifexifex Desktop app's spawned backend, an oplucifexucifex` REPL in another terminal, or a running gateway:
 
 ```
-$ lucifexex update
+$ lucifex update
 ✗ Another lucifex.exe is running:
     PID 12345  lucifex.exe
 
   Updating now would fail to overwrite ...\venv\Scripts\lucifex.exe because
   Windows blocks REPLACE on a running executable.
 
-  Close lucifexex Desktop, exit any openlucifexifex` REPLs, and
+  Close lucifex Desktop, exit any openlucifexifex` REPLs, and
   stop the gateway (`lucifex gateway stop`) before retrying.
-  Override with `lucifexex update --force` if you've already
+  Override with `lucifex update --force` if you've already
   confirmed those processes will not write to the venv.
 ```
 
 Close the listed processes and re-run. If you're sure the concurrent process won't interfere (rare — usually only useful when an antivirus shim is mis-attributed), pass `--force` to skip the check. In that case the updater will still retry the `.exe` rename with exponential backoff and, on stubborn locks, schedule the replacement for next reboot via `MoveFileEx(MOVEFILE_DELAY_UNTIL_REBOOT)` so the update can complete.
 
-A second, separate guard refuses to touch the venv while any process is running from its Python interpreter (the Desktop app's backend, a gateway, a Python REPL). Those processes keep native extension files (`.pyd`) locked, and a dependency sync that dies partway on an access-denied error strands the install between versions. This guard is **not** bypassed by `--force`; if you're certain the detected holders are false positives, use the explicit `lucifexex update --force-venv`.
+A second, separate guard refuses to touch the venv while any process is running from its Python interpreter (the Desktop app's backend, a gateway, a Python REPL). Those processes keep native extension files (`.pyd`) locked, and a dependency sync that dies partway on an access-denied error strands the install between versions. This guard is **not** bypassed by `--force`; if you're certain the detected holders are false positives, use the explicit `lucifex update --force-venv`.
 
 Expected output looks like:
 
 ```
-$ lucifexex update
+$ lucifex update
 Updating Lucifex Agent...
 📥 Pulling latest code...
 Already up to date.  (or: Updating abc1234..def5678)
@@ -117,26 +117,26 @@ Already up to date.  (or: Updating abc1234..def5678)
 ✅ Config is up to date  (or: Found 2 new options — running migration...)
 🔄 Restarting gateways...
 ✅ Gateway restarted
-✅ lucifexex Agent updated successfully!
+✅ lucifex Agent updated successfully!
 ```
 
 ### Recommended Post-Update Validation
 
-`lucifexex update` handles the main update path, but a quick validation confirms everything landed cleanly:
+`lucifex update` handles the main update path, but a quick validation confirms everything landed cleanly:
 
 1. `git status --short` — if the tree is unexpectedly dirty, inspect before continuing
-2. `lucifexex doctor` — checks config, dependencies, and service health
-3. `lucifexex --version` — confirm the version bumped as expected
-4. If you use the gateway: `lucifexex gateway status`
+2. `lucifex doctor` — checks config, dependencies, and service health
+3. `lucifex --version` — confirm the version bumped as expected
+4. If you use the gateway: `lucifex gateway status`
 5. If `doctor` reports npm audit issues: run `npm audit fix` in the flagged directory
 
 :::warning Dirty working tree after update
-If `git status --short` shows unexpected changes after `lucifexex update`, stop and inspect them before continuing. This usually means local modifications were reapplied on top of the updated code, or a dependency step refreshed lockfiles.
+If `git status --short` shows unexpected changes after `lucifex update`, stop and inspect them before continuing. This usually means local modifications were reapplied on top of the updated code, or a dependency step refreshed lockfiles.
 :::
 
 ### If your terminal disconnects mid-update
 
-`lucifexex update` protects itself against accidental terminal loss:
+`lucifex update` protects itself against accidental terminal loss:
 
 - The update ignores `SIGHUP`, so closing your SSH session or terminal window no longer kills it mid-install. `pip` and `git` child processes inherit this protection, so the Python environment cannot be left half-installed by a dropped connection.
 - All output is mirrored to `~/.lucifex/logs/update.log` while the update runs. If your terminal disappears, reconnect and inspect the log to see whether the update finished and whether the gateway restart succeeded:
@@ -147,12 +147,12 @@ tail -f ~/.lucifex/logs/update.log
 
 - `Ctrl-C` (SIGINT) and system shutdown (SIGTERM) are still honored — those are deliberate cancellations, not accidents.
 
-You no longer need to wrap `lucifexex update` in `screen` or `tmux` to survive a terminal drop.
+You no longer need to wrap `lucifex update` in `screen` or `tmux` to survive a terminal drop.
 
 ### Checking your current version
 
 ```bash
-lucifexex version
+lucifex version
 ```
 
 Compare against the latest release at the [GitHub releases page](https://github.com/NousResearch/lucifex-agent/releases).
@@ -174,7 +174,7 @@ If you installed manually (not via the quick installer):
 ```bash
 cd /path/to/lucifex-agent
 # Activate the venv you created during install (outside the source tree)
-export VIRTUAL_ENV="$HOME/.lucifexex/venvlucifexifex-dev"
+export VIRTUAL_ENV="$HOME/.lucifex/venvlucifexifex-dev"
 export PATH="$VIRTUAL_ENV/bin:$PATH"
 
 # Pull latest code
@@ -184,8 +184,8 @@ git pull origin main
 uv pip install -e ".[all]"
 
 # Check for new config options
-lucifexex config check
-lucifexex config migrate   # Interactively add any missing options
+lucifex config check
+lucifex config migrate   # Interactively add any missing options
 ```
 
 ### Rollback instructions
@@ -203,7 +203,7 @@ git checkout <commit-hash>
 uv pip install -e ".[all]"
 
 # Restart the gateway if running
-lucifexex gateway restart
+lucifex gateway restart
 ```
 
 To roll back to a specific release tag (substitute your previous tag — e.g. a recent release like `v2026.5.16`, or any earlier tag from `git tag --sort=-version:refname`):
@@ -242,7 +242,7 @@ See [Nix Setup](./nix-setup.md) for more details.
 ## Uninstalling
 
 ```bash
-lucifexex uninstall
+lucifex uninstall
 ```
 
 The uninstaller gives you the option to keep your configuration files (`~/.lucifex/`) for a future reinstall.
@@ -250,9 +250,9 @@ The uninstaller gives you the option to keep your configuration files (`~/.lucif
 ### Manual Uninstall
 
 ```bash
-rm -f ~/.local/bin/lucifexex
+rm -f ~/.local/bin/lucifex
 rm -rf /path/to/lucifex-agent
-rm -rf ~/.lucifexex            # Optional — keep if you plan to reinstall
+rm -rf ~/.lucifex            # Optional — keep if you plan to reinstall
 ```
 
 :::info
@@ -260,6 +260,6 @@ If you installed the gateway as a system service, stop and disable it first:
 ```bash
 lucifex gateway stop
 # Linux: systemctl --user disable lucifex-gateway
-# macOS: launchctl remove ai.lucifexex.gateway
+# macOS: launchctl remove ai.lucifex.gateway
 ```
 :::

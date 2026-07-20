@@ -1,23 +1,23 @@
-import { buildlucifexexWebSocketUrl } from lucifexifex/shared";
+import { buildlucifexWebSocketUrl } from lucifexifex / shared";
 
 // The dashboard can be served either at the root of its host (e.g.
 // https://kanban.tilos.com/) or under a URL prefix when reverse-proxied
-// (e.g. https://mission-control.tilos.com/lucifexex/). The Python backend
-// injects ``window.__lucifexex_BASE_PATH__`` into index.html based on the
+// (e.g. https://mission-control.tilos.com/lucifex/). The Python backend
+// injects ``window.__lucifex_BASE_PATH__`` into index.html based on the
 // incoming ``X-Forwarded-Prefix`` header so the SPA can address its own
 // ``/api/...`` and ``/dashboard-plugins/...`` URLs correctly without a
 // rebuild. Empty string means "served at root".
 function readBasePath(): string {
   if (typeof window === "undefined") return "";
-  const raw = window.__lucifexex_BASE_PATH__ ?? "";
+  const raw = window.__lucifex_BASE_PATH__ ?? "";
   if (!raw) return "";
   // Normalise: ensure leading slash, strip trailing slash.
   const withLead = raw.startsWith("/") ? raw : `/${raw}`;
   return withLead.replace(/\/+$/, "");
 }
 
-export const lucifexex_BASE_PATH = readBasePath();
-const BASE = lucifexex_BASE_PATH;
+export const lucifex_BASE_PATH = readBasePath();
+const BASE = lucifex_BASE_PATH;
 
 import type { DashboardTheme } from "@/themes/types";
 
@@ -25,16 +25,16 @@ import type { DashboardTheme } from "@/themes/types";
 // Injected into index.html by the server — never fetched via API.
 declare global {
   interface Window {
-    __lucifexex_SESSION_TOKEN__?: string;
-    __lucifexex_BASE_PATH__?: string;
+    __lucifex_SESSION_TOKEN__?: string;
+    __lucifex_BASE_PATH__?: string;
     /** Server-injected flag: ``true`` when the dashboard's OAuth gate is
      * engaged (public bind, no ``--insecure``). Toggles the SPA's
      * WS-upgrade path from legacy ``?token=`` to single-use ``?ticket=``
      * fetched via :func:`getWsTicket`. */
-    __lucifexex_AUTH_REQUIRED__?: boolean;
+    __lucifex_AUTH_REQUIRED__?: boolean;
   }
 }
-const SESSION_HEADER = "X-lucifexex-Session-Token";
+const SESSION_HEADER = "X-lucifex-Session-Token";
 
 function setSessionHeader(headers: Headers, token: string): void {
   if (!headers.has(SESSION_HEADER)) {
@@ -99,7 +99,7 @@ export async function fetchJSON<T>(
   url = withManagementProfile(url);
   // Inject the session token into all /api/ requests.
   const headers = new Headers(init?.headers);
-  const token = window.__lucifexex_SESSION_TOKEN__;
+  const token = window.__lucifex_SESSION_TOKEN__;
   if (token) {
     setSessionHeader(headers, token);
   }
@@ -136,7 +136,7 @@ export async function fetchJSON<T>(
       // fallback the post-login handler can read.
       try {
         sessionStorage.setItem(
-          "lucifexex.lastLocation",
+          "lucifex.lastLocation",
           window.location.pathname + window.location.search,
         );
       } catch {
@@ -144,42 +144,42 @@ export async function fetchJSON<T>(
       }
       window.location.assign(body.login_url);
       // Never resolve — the page is about to unload.
-      return new Promise<T>(() => {});
+      return new Promise<T>(() => { });
     }
     // Loopback mode: ``_SESSION_TOKEN`` rotates on every server restart
-    // (``lucifexex update``, lucifexifex gateway restart``, etc.). A tab kept
+    // (``lucifex update``, lucifexifex gateway restart``, etc.). A tab kept
     // open across the restart holds the OLD token in
-    // ``window.__lucifexex_SESSION_TOKEN__`` from the previous HTML render,
+    // ``window.__lucifex_SESSION_TOKEN__`` from the previous HTML render,
     // so every fetch returns 401. The HTML is served ``Cache-Control:
     // no-store`` so a reload picks up the freshly-injected token. Trigger
     // that reload once on the first stale-token 401 — gated mode is
     // handled above, so reaching here in gated mode means a real
     // middleware failure that should not reload-loop.
-    if (!window.__lucifexex_AUTH_REQUIRED__ && !options?.allowUnauthorized) {
+    if (!window.__lucifex_AUTH_REQUIRED__ && !options?.allowUnauthorized) {
       let alreadyReloaded = false;
       try {
         alreadyReloaded =
-          sessionStorage.getItem("lucifexex.tokenReloadAttempted") === "1";
+          sessionStorage.getItem("lucifex.tokenReloadAttempted") === "1";
       } catch {
         /* SSR / privacy mode — fall through to throw */
       }
       if (!alreadyReloaded) {
         try {
-          sessionStorage.setItem("lucifexex.tokenReloadAttempted", "1");
+          sessionStorage.setItem("lucifex.tokenReloadAttempted", "1");
         } catch {
           /* SSR / privacy mode — best effort */
         }
         window.location.reload();
-        return new Promise<T>(() => {});
+        return new Promise<T>(() => { });
       }
     }
   }
   if (res.ok) {
     // Clear the stale-token reload guard: a successful 2xx proves the
-    // current ``window.__lucifexex_SESSION_TOKEN__`` is valid, so the next
+    // current ``window.__lucifex_SESSION_TOKEN__`` is valid, so the next
     // 401 — if any — should be allowed to trigger its own reload cycle.
     try {
-      sessionStorage.removeItem("lucifexex.tokenReloadAttempted");
+      sessionStorage.removeItem("lucifex.tokenReloadAttempted");
     } catch {
       /* SSR / privacy mode — ignore */
     }
@@ -225,11 +225,11 @@ export async function getWsTicket(): Promise<{ ticket: string; ttl_seconds: numb
  * mode returns the injected session token.
  */
 export async function buildWsAuthParam(): Promise<[string, string]> {
-  if (window.__lucifexex_AUTH_REQUIRED__) {
+  if (window.__lucifex_AUTH_REQUIRED__) {
     const { ticket } = await getWsTicket();
     return ["ticket", ticket];
   }
-  const token = window.__lucifexex_SESSION_TOKEN__ ?? "";
+  const token = window.__lucifex_SESSION_TOKEN__ ?? "";
   return ["token", token];
 }
 
@@ -240,9 +240,9 @@ export async function buildWsAuthParam(): Promise<[string, string]> {
  * the caller can read ``.blob()`` / ``.formData()`` / stream it.
  *
  * Auth, in both modes, exactly as ``fetchJSON`` does it:
- *  - loopback / ``--insecure``: attach the ``X-lucifexex-Session-Token`` header.
+ *  - loopback / ``--insecure``: attach the ``X-lucifex-Session-Token`` header.
  *  - gated OAuth: no token header (it's absent by design); the
- *    ``lucifexex_session_at`` cookie rides along via ``credentials: 'include'``.
+ *    ``lucifex_session_at`` cookie rides along via ``credentials: 'include'``.
  *
  * Unlike ``fetchJSON`` this does NOT parse the body, does NOT throw on
  * non-2xx (the caller decides — a 404 on a download is meaningful), and
@@ -255,7 +255,7 @@ export async function authedFetch(
   init?: RequestInit,
 ): Promise<Response> {
   const headers = new Headers(init?.headers);
-  const token = window.__lucifexex_SESSION_TOKEN__;
+  const token = window.__lucifex_SESSION_TOKEN__;
   if (token) {
     setSessionHeader(headers, token);
   }
@@ -271,7 +271,7 @@ export async function authedFetch(
  * with the correct auth query param appended for the active mode (fresh
  * single-use ``ticket`` in gated mode, ``token`` in loopback). Plugins and
  * the SPA should use this instead of hand-assembling a WS URL + reading
- * ``window.__lucifexex_SESSION_TOKEN__`` directly, so the gated-mode ticket
+ * ``window.__lucifex_SESSION_TOKEN__`` directly, so the gated-mode ticket
  * path can never be forgotten.
  *
  * ``path`` is the dashboard-relative path (e.g.
@@ -283,7 +283,7 @@ export async function buildWsUrl(
   path: string,
   params?: Record<string, string>,
 ): Promise<string> {
-  return buildlucifexexWebSocketUrl({
+  return buildlucifexWebSocketUrl({
     authParam: await buildWsAuthParam(),
     basePath: BASE,
     params,
@@ -902,11 +902,11 @@ export const api = {
   // Gateway / update actions
   restartGateway: () =>
     fetchJSON<ActionResponse>("/api/gateway/restart", { method: "POST" }),
-  updatelucifexex: () =>
-    fetchJSON<ActionResponse>("/api/lucifexex/update", { method: "POST" }),
-  checklucifexexUpdate: (force = false) =>
+  updatelucifex: () =>
+    fetchJSON<ActionResponse>("/api/lucifex/update", { method: "POST" }),
+  checklucifexUpdate: (force = false) =>
     fetchJSON<UpdateCheckResponse>(
-      `/api/lucifexex/update/check${force ? "?force=true" : ""}`,
+      `/api/lucifex/update/check${force ? "?force=true" : ""}`,
     ),
   getActionStatus: (name: string, lines = 200) =>
     fetchJSON<ActionStatusResponse>(
@@ -1358,7 +1358,7 @@ export interface SkillHubSource {
   label: string;
   /** GitHub only: whether the API is currently rate-limited. */
   rate_limited?: boolean;
-  /** lucifexex-index only: whether the centralized index loaded. */
+  /** lucifex-index only: whether the centralized index loaded. */
   available?: boolean;
 }
 
@@ -1723,7 +1723,7 @@ export interface SystemStats {
   hostname: string;
   python_version: string;
   python_impl: string;
-  lucifexex_version: string;
+  lucifex_version: string;
   cpu_count: number | null;
   psutil: boolean;
   cpu_percent?: number;
@@ -1804,8 +1804,8 @@ export interface StatusResponse {
    * fail-closed state (the dashboard will refuse to bind). */
   auth_providers?: string[];
   /** False when the dashboard is running in a hosted/managed layout where
-   * updates are handled by the outer launcher instead of ``lucifexex update``. */
-  can_update_lucifexex?: boolean;
+   * updates are handled by the outer launcher instead of ``lucifex update``. */
+  can_update_lucifex?: boolean;
   config_path: string;
   config_version: number;
   env_path: string;
@@ -1879,11 +1879,11 @@ export interface TelegramOnboardingStartResponse {
 export type TelegramOnboardingStatusResponse =
   | { status: "waiting"; expires_at: string }
   | {
-      status: "ready";
-      bot_username: string;
-      owner_user_id?: string;
-      expires_at: string;
-    };
+    status: "ready";
+    bot_username: string;
+    owner_user_id?: string;
+    expires_at: string;
+  };
 
 export interface TelegramOnboardingApplyResponse {
   ok: boolean;
@@ -1899,13 +1899,13 @@ export interface TelegramOnboardingApplyResponse {
 export interface WhatsAppOnboardingStartResponse {
   pairing_id: string;
   status:
-    | "starting"
-    | "installing"
-    | "waiting"
-    | "connected"
-    | "error"
-    | "expired"
-    | "cancelled";
+  | "starting"
+  | "installing"
+  | "waiting"
+  | "connected"
+  | "error"
+  | "expired"
+  | "cancelled";
   qr_payload?: string | null;
   expires_at: string;
   mode: "bot" | "self-chat";
@@ -2416,19 +2416,19 @@ export interface OAuthProvidersResponse {
 /** Discriminated union — the shape of /start depends on the flow. */
 export type OAuthStartResponse =
   | {
-      session_id: string;
-      flow: "pkce";
-      auth_url: string;
-      expires_in: number;
-    }
+    session_id: string;
+    flow: "pkce";
+    auth_url: string;
+    expires_in: number;
+  }
   | {
-      session_id: string;
-      flow: "device_code";
-      user_code: string;
-      verification_url: string;
-      expires_in: number;
-      poll_interval: number;
-    };
+    session_id: string;
+    flow: "device_code";
+    user_code: string;
+    verification_url: string;
+    expires_in: number;
+    poll_interval: number;
+  };
 
 export interface OAuthSubmitResponse {
   ok: boolean;

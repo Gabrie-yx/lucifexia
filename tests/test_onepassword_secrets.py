@@ -2,7 +2,7 @@
 
 We never invoke the real ``op`` binary: ``subprocess.run`` is mocked so the
 suite stays fast and offline-safe.  A live resolve is exercised manually via
-``lucifexex secrets onepassword sync`` outside of pytest.
+``lucifex secrets onepassword sync`` outside of pytest.
 """
 
 from __future__ import annotations

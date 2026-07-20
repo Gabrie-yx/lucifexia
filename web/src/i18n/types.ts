@@ -148,11 +148,11 @@ export interface Translations {
     starting: string;
     startedInBackground: string;
     stopped: string;
-    updatelucifexex: string;
-    updatelucifexexConfirmMessage?: string;
-    updatelucifexexConfirmNow?: string;
-    updatelucifexexConfirmTitle?: string;
-    updatinglucifexex: string;
+    updatelucifex: string;
+    updatelucifexConfirmMessage?: string;
+    updatelucifexConfirmNow?: string;
+    updatelucifexConfirmTitle?: string;
+    updatinglucifex: string;
     waitingForOutput: string;
   };
 
@@ -576,7 +576,7 @@ export interface Translations {
     fontMono?: string;
   };
 
-  // ── Achievements plugin (plugins/lucifexex-achievements) ──
+  // ── Achievements plugin (plugins/lucifex-achievements) ──
   achievements: {
     hero: {
       kicker: string;

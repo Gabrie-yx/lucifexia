@@ -14,7 +14,7 @@ Linux is the most recent runtime (X11 today, Wayland via XWayland; pure-
 Wayland progress tracked upstream). It is enabled in
 `check_computer_use_requirements` alongside macOS and Windows. The plumbing
 in this file is OS-agnostic; per-host gaps (no DISPLAY, missing AT-SPI,
-etc.) surface as specific blocked checks via `lucifexex computer-use doctor`
+etc.) surface as specific blocked checks via `lucifex computer-use doctor`
 rather than failing silently.
 
 Install:
@@ -133,11 +133,11 @@ def _action_result_from(
 # hardcoded version floor, which would rot and can't know what "latest" is.
 #
 # There is intentionally no version *pin* knob: the upstream installer always
-# fetches the latest release, so a `lucifexex_CUA_DRIVER_VERSION` env var would
+# fetches the latest release, so a `lucifex_CUA_DRIVER_VERSION` env var would
 # only have *looked* like it pinned. For a reproducible version, point
-# `lucifexex_CUA_DRIVER_CMD` at a specific binary instead.
+# `lucifex_CUA_DRIVER_CMD` at a specific binary instead.
 
-_CUA_DRIVER_CMD = os.environ.get("lucifexex_CUA_DRIVER_CMD", "cua-driver")
+_CUA_DRIVER_CMD = os.environ.get("lucifex_CUA_DRIVER_CMD", "cua-driver")
 _CUA_DRIVER_ARGS = ["mcp"]  # stdio MCP transport (fallback when the
                             # driver doesn't expose `manifest` — see
                             # `_resolve_mcp_invocation` below)
@@ -172,7 +172,7 @@ _CUA_TELEMETRY_ENV_VAR = "CUA_DRIVER_RS_TELEMETRY_ENABLED"
 
 
 def _cua_telemetry_disabled() -> bool:
-    """True when lucifexex should disable cua-driver telemetry for this user.
+    """True when lucifex should disable cua-driver telemetry for this user.
 
     Reads ``computer_use.cua_telemetry`` from config.yaml. Default is False
     (telemetry off). Any failure to read config fails SAFE — toward the
@@ -217,7 +217,7 @@ def _resolve_mcp_invocation(
     (trycua/cua#1961). The manifest carries a stable ``mcp_invocation``
     pointer with both ``command`` and ``args``, so a future cua-driver
     that renames or relocates the subcommand keeps working without a
-    lucifexex patch.
+    lucifex patch.
 
     Falls back to ``(driver_cmd, ["mcp"])`` for older drivers that don't
     expose ``manifest``, or any indeterminate failure — the wrapper must
@@ -298,7 +298,7 @@ def _is_macos() -> bool:
 
 
 def cua_driver_binary_available() -> bool:
-    """True if `cua-driver` is on $PATH or lucifexex_CUA_DRIVER_CMD resolves."""
+    """True if `cua-driver` is on $PATH or lucifex_CUA_DRIVER_CMD resolves."""
     return bool(shutil.which(_CUA_DRIVER_CMD))
 
 
@@ -353,7 +353,7 @@ def cua_driver_update_nudge() -> Optional[str]:
     current = state.get("current_version") or "?"
     return (
         f"cua-driver {latest} is available (you have {current}); "
-        f"update with `lucifexex computer-use install --upgrade`."
+        f"update with `lucifex computer-use install --upgrade`."
     )
 
 
@@ -395,10 +395,10 @@ def cua_driver_install_hint() -> str:
         )
     return (
         "cua-driver is not installed. Install with one of:\n"
-        "  lucifexex computer-use install\n"
+        "  lucifex computer-use install\n"
         "Or run the upstream installer directly:\n"
         f"{installer}\n"
-        "Or run `lucifexex tools` and enable the Computer Use toolset to install it automatically."
+        "Or run `lucifex tools` and enable the Computer Use toolset to install it automatically."
     )
 
 
@@ -684,7 +684,7 @@ class _CuaDriverSession:
                 command=command,
                 args=args,
                 # Apply the telemetry policy first (default: disabled), then
-                # sanitize lucifexex-managed secrets out of the child env.
+                # sanitize lucifex-managed secrets out of the child env.
                 env=_sanitize_subprocess_env(cua_driver_child_env()),
             )
 
@@ -806,7 +806,7 @@ class _CuaDriverSession:
             raise RuntimeError(
                 "cua-driver session never reached ready (timeout 30s; "
                 f"stuck in phase: {phase}). "
-                "Run `lucifexex computer-use doctor` and check "
+                "Run `lucifex computer-use doctor` and check "
                 f"{display_lucifex_home()}/logs/agent.log for the phase timings."
             )
         # If setup failed, the lifecycle coroutine set _setup_error
@@ -1292,26 +1292,26 @@ class CuaDriverBackend(ComputerUseBackend):
         # instructions ask every consumer to declare a stable session
         # at the start of a run (start_session) and tear it down at
         # the end (end_session). Doing so:
-        #   - Gets a distinct agent-cursor color per lucifexex run, with
+        #   - Gets a distinct agent-cursor color per lucifex run, with
         #     overlay rendering visualising where actions land
         #     (without moving the real OS cursor).
         #   - Isolates per-session config + recording ownership so
-        #     concurrent lucifexex runs / subagents don't step on each
+        #     concurrent lucifex runs / subagents don't step on each
         #     other.
         # We mint a UUID4-based id once per CuaDriverBackend instance —
-        # one lucifexex run = one backend = one session — and pass it as
+        # one lucifex run = one backend = one session — and pass it as
         # `session` on every cua-driver tool call. Sessions are an
         # additive feature on the cua-driver side: when our id is
         # unknown to the driver (older builds), the tool calls
         # degrade to the anonymous / unsynced path documented in the
         # MCP server instructions.
-        self._session_id: str = f"lucifexex-{uuid.uuid4().hex[:12]}"
+        self._session_id: str = f"lucifex-{uuid.uuid4().hex[:12]}"
 
     # ── Lifecycle ──────────────────────────────────────────────────
     def start(self) -> None:
         _maybe_nudge_update()
         # The MCP client SDK (`mcp`) is an optional dependency (the
-        # `computer-use` / `mcp` extras), not part of lucifexex' minimal core.
+        # `computer-use` / `mcp` extras), not part of lucifex' minimal core.
         # Lazy-install it on first use — the same pattern every other optional
         # backend uses — so users never hit an opaque `No module named 'mcp'`
         # at invoke time. Auto-install is gated by `security.allow_lazy_installs`
@@ -1534,7 +1534,7 @@ class CuaDriverBackend(ComputerUseBackend):
     ) -> CaptureResult:
         """Capture the frontmost on-screen window or an exact known target.
 
-        Maps lucifexex `capture(mode, app)` → cua-driver `list_windows` +
+        Maps lucifex `capture(mode, app)` → cua-driver `list_windows` +
         `get_window_state` (ax/som) or `screenshot` (vision).
         """
         # Step 1: enumerate on-screen windows to find target pid/window_id.

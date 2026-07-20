@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * lucifexex Agent WhatsApp Bridge
+ * lucifex Agent WhatsApp Bridge
  *
  * Standalone Node.js process that connects to WhatsApp via Baileys
  * and exposes HTTP endpoints for the Python gateway adapter.
@@ -76,21 +76,21 @@ const FORWARD_OWNER_MESSAGES =
   ['1', 'true', 'yes', 'on'].includes(process.env.WHATSAPP_FORWARD_OWNER_MESSAGES.toLowerCase());
 
 const PORT = parseInt(getArg('port', '3000'), 10);
-const SESSION_DIR = getArg('session', path.join(process.env.HOME || '~', '.lucifexex', 'whatsapp', 'session'));
+const SESSION_DIR = getArg('session', path.join(process.env.HOME || '~', '.lucifex', 'whatsapp', 'session'));
 // Cache directories: the Python gateway passes the profile-aware paths via
 // env (LUCIFEX_HOME-aware, new cache/ layout).  Fall back to the legacy
 // hardcoded locations for bridges launched outside the gateway.
-const IMAGE_CACHE_DIR = process.env.lucifexex_IMAGE_CACHE_DIR
-  || path.join(process.env.HOME || '~', '.lucifexex', 'image_cache');
-const DOCUMENT_CACHE_DIR = process.env.lucifexex_DOCUMENT_CACHE_DIR
-  || path.join(process.env.HOME || '~', '.lucifexex', 'document_cache');
-const AUDIO_CACHE_DIR = process.env.lucifexex_AUDIO_CACHE_DIR
-  || path.join(process.env.HOME || '~', '.lucifexex', 'audio_cache');
+const IMAGE_CACHE_DIR = process.env.lucifex_IMAGE_CACHE_DIR
+  || path.join(process.env.HOME || '~', '.lucifex', 'image_cache');
+const DOCUMENT_CACHE_DIR = process.env.lucifex_DOCUMENT_CACHE_DIR
+  || path.join(process.env.HOME || '~', '.lucifex', 'document_cache');
+const AUDIO_CACHE_DIR = process.env.lucifex_AUDIO_CACHE_DIR
+  || path.join(process.env.HOME || '~', '.lucifex', 'audio_cache');
 
 // Self-hash of this script file.  Reported in /health so the Python gateway
 // can detect a running bridge that predates the current bridge.js and
 // restart it instead of silently reusing stale code (stale-bridge trap:
-// `lucifexex update` updates bridge.js on disk but a long-lived bridge process
+// `lucifex update` updates bridge.js on disk but a long-lived bridge process
 // keeps serving the old behavior forever).
 let SCRIPT_HASH = '';
 try {
@@ -98,13 +98,13 @@ try {
     .update(readFileSync(fileURLToPath(import.meta.url)))
     .digest('hex')
     .slice(0, 16);
-} catch {}
+} catch { }
 const PAIR_ONLY = args.includes('--pair-only');
 const PAIR_JSON = args.includes('--pair-json');
 const WHATSAPP_MODE = getArg('mode', process.env.WHATSAPP_MODE || 'self-chat'); // "bot" or "self-chat"
 const WHATSAPP_DM_POLICY = String(process.env.WHATSAPP_DM_POLICY || 'open').trim().toLowerCase();
 const ALLOWED_USERS = parseAllowedUsers(process.env.WHATSAPP_ALLOWED_USERS || '');
-const DEFAULT_REPLY_PREFIX = '⚕ *lucifexex Agent*\n────────────\n';
+const DEFAULT_REPLY_PREFIX = '⚕ *lucifex Agent*\n────────────\n';
 const REPLY_PREFIX = process.env.WHATSAPP_REPLY_PREFIX === undefined
   ? DEFAULT_REPLY_PREFIX
   : process.env.WHATSAPP_REPLY_PREFIX.replace(/\\n/g, '\n');
@@ -125,7 +125,7 @@ let _sendQueue = Promise.resolve();
 
 function enqueueSend(fn) {
   const task = _sendQueue.then(() => fn(), () => fn());
-  _sendQueue = task.catch(() => {});
+  _sendQueue = task.catch(() => { });
   return task;
 }
 
@@ -213,7 +213,7 @@ function emitDebugEvent(payload) {
   if (!WHATSAPP_DEBUG) return;
   try {
     console.log(JSON.stringify({ event: 'debug', ...payload }));
-  } catch {}
+  } catch { }
 }
 
 function getMessageContent(msg) {
@@ -251,7 +251,7 @@ function buildLidMap() {
       const lid = JSON.parse(readFileSync(path.join(SESSION_DIR, f), 'utf8'));
       if (lid) map[String(lid)] = phone;
     }
-  } catch {}
+  } catch { }
   return map;
 }
 let lidToPhone = buildLidMap();
@@ -309,7 +309,7 @@ function logPollUpdateDiagnostic({ sourcePath, pollId, pollCreation, pollUpdates
       selectedOptionsLength: selectedOptions?.length || 0,
       aggregation: pollAggregationSummary(aggregation),
     }));
-  } catch {}
+  } catch { }
 }
 
 function enqueuePollUpdateEvent({ key, update, selectedOptions, aggregation }) {
@@ -323,12 +323,12 @@ function enqueuePollUpdateEvent({ key, update, selectedOptions, aggregation }) {
     || update?.pollUpdates?.[0]?.pollCreationMessageKey?.id
     || update?.pollUpdates?.[0]?.pollUpdateMessageKey?.id
     || '';
-  // Only surface votes on polls lucifexex itself created (tracked when
+  // Only surface votes on polls lucifex itself created (tracked when
   // /send-poll returns). Arbitrary human polls in a group chat must not
   // inject agent-visible messages on every vote.
   if (!pollId || !recentlySentIds.has(pollId)) {
     if (WHATSAPP_DEBUG) {
-      try { console.log(JSON.stringify({ event: 'ignored', reason: 'foreign_poll_update', pollId })); } catch {}
+      try { console.log(JSON.stringify({ event: 'ignored', reason: 'foreign_poll_update', pollId })); } catch { }
     }
     return;
   }
@@ -383,7 +383,7 @@ function emitPairEvent(event) {
   if (!PAIR_JSON) return;
   try {
     console.log(JSON.stringify({ ts: Date.now(), ...event }));
-  } catch {}
+  } catch { }
 }
 
 async function startSocket() {
@@ -395,7 +395,7 @@ async function startSocket() {
     auth: state,
     logger,
     printQRInTerminal: false,
-    browser: ['lucifexex Agent', 'Chrome', '120.0'],
+    browser: ['lucifex Agent', 'Chrome', '120.0'],
     syncFullHistory: false,
     markOnlineOnConnect: false,
     // Required for Baileys 7.x: without this, incoming messages that need
@@ -448,9 +448,9 @@ async function startSocket() {
       connectionState = 'connected';
       const connectedUser = sock?.user
         ? {
-            id: sock.user.id || null,
-            name: sock.user.name || sock.user.verifiedName || null,
-          }
+          id: sock.user.id || null,
+          name: sock.user.name || sock.user.verifiedName || null,
+        }
         : null;
       emitPairEvent({ event: 'connected', user: connectedUser });
       if (!PAIR_JSON) {
@@ -565,7 +565,7 @@ async function startSocket() {
           // via WHATSAPP_FORWARD_OWNER_MESSAGES so existing deployments see
           // no behavior change. When opted in, we still gate on the
           // customer chatId allowlist — without that gate, any contact
-          // the owner replied to would leak into lucifexex and trigger
+          // the owner replied to would leak into lucifex and trigger
           // implicit handover. See `owner_message_gate.js`.
           const decision = classifyOwnerMessageGate({
             fromMe: true,
@@ -585,7 +585,7 @@ async function startSocket() {
                 chatId,
                 senderId,
               }));
-            } catch {}
+            } catch { }
             continue;
           }
           fromOwner = true;
@@ -631,7 +631,7 @@ async function startSocket() {
               chatId,
               senderId,
             }));
-          } catch {}
+          } catch { }
           continue;
         }
         if (WHATSAPP_DM_POLICY !== 'pairing' && !matchesAllowedUser(senderId, ALLOWED_USERS, SESSION_DIR)) {
@@ -642,7 +642,7 @@ async function startSocket() {
               chatId,
               senderId,
             }));
-          } catch {}
+          } catch { }
           continue;
         }
       }
@@ -723,7 +723,7 @@ async function startSocket() {
       });
       event.fromOwner = fromOwner;
 
-      // Ignore lucifexex' own reply messages in self-chat mode to avoid loops.
+      // Ignore lucifex' own reply messages in self-chat mode to avoid loops.
       if (msg.key.fromMe && ((REPLY_PREFIX && event.body.startsWith(REPLY_PREFIX)) || recentlySentIds.has(msg.key.id))) {
         if (WHATSAPP_DEBUG) {
           emitDebugEvent({
@@ -910,7 +910,7 @@ app.post('/send-media', async (req, res) => {
           // as video/mp4.
           let tmpGifMp4 = null;
           try {
-            tmpGifMp4 = path.join(tmpdir(), `lucifexex_gif_${randomBytes(6).toString('hex')}.mp4`);
+            tmpGifMp4 = path.join(tmpdir(), `lucifex_gif_${randomBytes(6).toString('hex')}.mp4`);
             execFileSync(
               'ffmpeg',
               ['-y', '-i', filePath, '-movflags', 'faststart', '-pix_fmt', 'yuv420p', '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2', tmpGifMp4],
@@ -926,7 +926,7 @@ app.post('/send-media', async (req, res) => {
             console.warn('[bridge] gif conversion failed, sending as image/gif:', gifErr.message);
             msgPayload = mediaPayloadForFile({ buffer, filePath, mediaType: type, caption, fileName });
           } finally {
-            try { if (tmpGifMp4 && existsSync(tmpGifMp4)) unlinkSync(tmpGifMp4); } catch (_) {}
+            try { if (tmpGifMp4 && existsSync(tmpGifMp4)) unlinkSync(tmpGifMp4); } catch (_) { }
           }
         } else {
           msgPayload = mediaPayloadForFile({ buffer, filePath, mediaType: type, caption, fileName });
@@ -944,7 +944,7 @@ app.post('/send-media', async (req, res) => {
         const needsConversion = !['ogg', 'opus'].includes(ext);
         let tmpPath = null;
         if (needsConversion) {
-          tmpPath = path.join(tmpdir(), `lucifexex_voice_${randomBytes(6).toString('hex')}.ogg`);
+          tmpPath = path.join(tmpdir(), `lucifex_voice_${randomBytes(6).toString('hex')}.ogg`);
           try {
             execFileSync(
               'ffmpeg',
@@ -957,7 +957,7 @@ app.post('/send-media', async (req, res) => {
             // ffmpeg not available or conversion failed — fall back to original format
             console.warn('[bridge] ffmpeg conversion failed, sending as file attachment:', convErr.message);
           } finally {
-            try { if (tmpPath && existsSync(tmpPath)) unlinkSync(tmpPath); } catch (_) {}
+            try { if (tmpPath && existsSync(tmpPath)) unlinkSync(tmpPath); } catch (_) { }
           }
         }
         const audioMime = (audioExt === 'ogg' || audioExt === 'opus') ? 'audio/ogg; codecs=opus' : 'audio/mpeg';

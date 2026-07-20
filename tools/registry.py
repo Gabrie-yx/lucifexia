@@ -123,7 +123,7 @@ class ToolEntry:
 # probe external state (Docker daemon, Modal SDK install, playwright binary
 # availability). For a long-lived CLI or gateway process, calling them on
 # every get_definitions() is pure waste — external state changes on human
-# timescales. Cache results for ~30 s so env-var flips via ``lucifexex tools``
+# timescales. Cache results for ~30 s so env-var flips via ``lucifex tools``
 # or live credential file changes propagate within a turn or two without
 # requiring any explicit invalidation.
 #
@@ -208,7 +208,7 @@ def _check_fn_cached(fn: Callable) -> bool:
 
 def invalidate_check_fn_cache() -> None:
     """Drop all cached ``check_fn`` results. Call after config changes that
-    affect tool availability (e.g. ``lucifexex tools enable``)."""
+    affect tool availability (e.g. ``lucifex tools enable``)."""
     with _check_fn_cache_lock:
         _check_fn_cache.clear()
         _check_fn_last_good.clear()
@@ -342,7 +342,7 @@ class ToolRegistry:
             return mod
         # Also gate plugin modules currently loading but not yet policy-recorded
         # (defensive: a handler defined in the plugin namespace is plugin code).
-        if isinstance(mod, str) and mod.startswith("lucifexex_plugins."):
+        if isinstance(mod, str) and mod.startswith("lucifex_plugins."):
             return mod
         return None
 
@@ -480,9 +480,9 @@ class ToolRegistry:
                 caller_mod = self._caller_module()
                 owner = self._plugin_owner_of(entry.handler)
                 # Ownership check: bind to the plugin package root
-                # (``lucifexex_plugins.{name}``), not the exact module string.
-                # A handler defined in ``lucifexex_plugins.pkg.handlers`` is
-                # still owned by the ``lucifexex_plugins.pkg`` package — exact
+                # (``lucifex_plugins.{name}``), not the exact module string.
+                # A handler defined in ``lucifex_plugins.pkg.handlers`` is
+                # still owned by the ``lucifex_plugins.pkg`` package — exact
                 # string equality would wrongly block root-module cleanup code
                 # from removing tools registered by a submodule of the same
                 # plugin (egilewski review on #55840).
@@ -490,7 +490,7 @@ class ToolRegistry:
                 owner_root = ".".join(owner.split(".")[:2]) if owner else ""
                 same_plugin = bool(owner and caller_root == owner_root)
                 if (
-                    caller_mod.startswith("lucifexex_plugins.")
+                    caller_mod.startswith("lucifex_plugins.")
                     and not same_plugin
                     and not self._plugin_override_policy.get(caller_root, False)
                 ):
@@ -534,7 +534,7 @@ class ToolRegistry:
         are included. ``check_fn()`` results are cached for ~30 s via
         :func:`_check_fn_cached` to amortize repeat probes (check_terminal_
         requirements probes modal/docker, browser checks probe playwright,
-        etc.); TTL chosen so env-var changes (``lucifexex tools enable foo``)
+        etc.); TTL chosen so env-var changes (``lucifex tools enable foo``)
         still take effect in near-real-time without forcing a full cache
         flush on every call.
         """

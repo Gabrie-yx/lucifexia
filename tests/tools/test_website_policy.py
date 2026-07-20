@@ -242,7 +242,7 @@ def test_load_website_blocklist_wraps_shared_file_read_errors(tmp_path, monkeypa
 
 
 def test_check_website_access_uses_dynamic_LUCIFEX_HOME(monkeypatch, tmp_path):
-    LUCIFEX_HOME = tmp_path / "lucifexex-home"
+    LUCIFEX_HOME = tmp_path / "lucifex-home"
     LUCIFEX_HOME.mkdir()
     (LUCIFEX_HOME / "config.yaml").write_text(
         yaml.safe_dump(

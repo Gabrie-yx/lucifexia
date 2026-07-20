@@ -495,12 +495,12 @@ def test_xai_image_field_expands_user_home(tmp_path, monkeypatch):
 
 
 class TestXAIImageFieldReadGuard:
-    """#57698: local image inputs must not read lucifexex credential stores."""
+    """#57698: local image inputs must not read lucifex credential stores."""
 
     def test_xai_image_field_blocks_credential_store(self, tmp_path, monkeypatch):
         from plugins.image_gen.xai import _xai_image_field
 
-        LUCIFEX_HOME = tmp_path / ".lucifexex"
+        LUCIFEX_HOME = tmp_path / ".lucifex"
         LUCIFEX_HOME.mkdir()
         auth_json = LUCIFEX_HOME / "auth.json"
         auth_json.write_text('{"api_key":"sk-secret"}', encoding="utf-8")
@@ -515,7 +515,7 @@ class TestXAIImageFieldReadGuard:
 
         from plugins.image_gen.xai import _xai_image_field
 
-        LUCIFEX_HOME = tmp_path / ".lucifexex"
+        LUCIFEX_HOME = tmp_path / ".lucifex"
         LUCIFEX_HOME.mkdir()
         auth_json = LUCIFEX_HOME / "auth.json"
         auth_json.write_text('{"api_key":"sk-secret"}', encoding="utf-8")

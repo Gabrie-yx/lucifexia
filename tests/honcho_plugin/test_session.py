@@ -23,7 +23,7 @@ class TestHonchoSession:
         return HonchoSession(
             key="telegram:12345",
             user_peer_id="user-telegram-12345",
-            assistant_peer_id="lucifexex-assistant",
+            assistant_peer_id="lucifex-assistant",
             honcho_session_id="telegram-12345",
         )
 
@@ -199,7 +199,7 @@ class TestPeerLookupHelpers:
         session = HonchoSession(
             key="telegram:123",
             user_peer_id="robert",
-            assistant_peer_id="lucifexex",
+            assistant_peer_id="lucifex",
             honcho_session_id="telegram-123",
         )
         mgr._cache[session.key] = session
@@ -252,7 +252,7 @@ class TestPeerLookupHelpers:
         mgr, session = self._make_cached_manager()
         honcho_client = MagicMock()
         honcho_client.search.return_value = [
-            SimpleNamespace(content="Robert runs neuralancer", peer_id="lucifexex", session_id="s-old", id="m1"),
+            SimpleNamespace(content="Robert runs neuralancer", peer_id="lucifex", session_id="s-old", id="m1"),
             SimpleNamespace(content="I founded neuralancer in 2019", peer_id="robert", session_id="s-old", id="m2"),
         ]
         with patch.object(HonchoSessionManager, "honcho", new_callable=lambda: property(lambda s: honcho_client)):
@@ -273,7 +273,7 @@ class TestPeerLookupHelpers:
         mgr, session = self._make_cached_manager()
         honcho_client = MagicMock()
         honcho_client.search.return_value = [
-            SimpleNamespace(content="Assistant note", peer_id="lucifexex", session_id="s1", id="m1"),
+            SimpleNamespace(content="Assistant note", peer_id="lucifex", session_id="s1", id="m1"),
         ]
         with patch.object(HonchoSessionManager, "honcho", new_callable=lambda: property(lambda s: honcho_client)):
             result = mgr.search_context(session.key, "assistant", peer=session.assistant_peer_id)
@@ -578,11 +578,11 @@ class TestConcludeToolDispatch:
 
         result = provider.handle_tool_call(
             "honcho_profile",
-            {"peer": "lucifexex"},
+            {"peer": "lucifex"},
         )
 
         assert "Role: Assistant" in result
-        provider._manager.get_peer_card.assert_called_once_with("telegram:123", peer="lucifexex")
+        provider._manager.get_peer_card.assert_called_once_with("telegram:123", peer="lucifex")
 
     def test_honcho_search_can_target_explicit_peer_id(self):
         provider = HonchoMemoryProvider()
@@ -593,7 +593,7 @@ class TestConcludeToolDispatch:
 
         result = provider.handle_tool_call(
             "honcho_search",
-            {"query": "assistant", "peer": "lucifexex"},
+            {"query": "assistant", "peer": "lucifex"},
         )
 
         assert "Assistant self context" in result
@@ -601,7 +601,7 @@ class TestConcludeToolDispatch:
             "telegram:123",
             "assistant",
             max_tokens=800,
-            peer="lucifexex",
+            peer="lucifex",
         )
 
     def test_honcho_search_rejects_whitespace_only_query(self):
@@ -626,7 +626,7 @@ class TestConcludeToolDispatch:
 
         result = provider.handle_tool_call(
             "honcho_reasoning",
-            {"query": "who are you", "peer": "lucifexex"},
+            {"query": "who are you", "peer": "lucifex"},
         )
 
         assert "Assistant answer" in result
@@ -634,7 +634,7 @@ class TestConcludeToolDispatch:
             "telegram:123",
             "who are you",
             reasoning_level=None,
-            peer="lucifexex",
+            peer="lucifex",
             apply_injection_cap=False,
         )
 
@@ -926,7 +926,7 @@ class TestToolsModeInitBehavior:
 class TestPerSessionMigrateGuard:
     """Verify migrate_memory_files is skipped under per-session strategy.
 
-    per-session creates a fresh Honcho session every lucifexex run. Uploading
+    per-session creates a fresh Honcho session every lucifex run. Uploading
     MEMORY.md/USER.md/SOUL.md to each short-lived session floods the backend
     with duplicate content. The guard was added to prevent orphan sessions
     containing only <prior_memory_file> wrappers.
@@ -1975,7 +1975,7 @@ class TestDialecticLifecycleSmoke:
         # Program the dialectic responses in the exact order they'll be requested.
         # An extra or missing call fails the test — strong smoke signal.
         responses = iter([
-            "prewarm: user is eri, works on lucifexex",      # session-start prewarm
+            "prewarm: user is eri, works on lucifex",      # session-start prewarm
             "cadence fire: long query synthesis",         # turn 4 queue_prefetch
             "",                                           # turn 7 fire: silent failure
             "retry success: fresh synthesis",             # turn 8 queue_prefetch retry

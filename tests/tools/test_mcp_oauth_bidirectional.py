@@ -1,4 +1,4 @@
-"""Regression test for the ``lucifexexMCPOAuthProvider.async_auth_flow`` bidirectional
+"""Regression test for the ``lucifexMCPOAuthProvider.async_auth_flow`` bidirectional
 generator bridge.
 
 PR #11383 introduced a subclass method that wrapped the SDK's ``auth_flow`` with::
@@ -35,7 +35,7 @@ pytest.importorskip("mcp.client.auth.oauth2", reason="MCP SDK 1.26.0+ required")
 
 
 @pytest.mark.asyncio
-async def test_lucifexex_provider_forwards_asend_values(tmp_path, monkeypatch):
+async def test_lucifex_provider_forwards_asend_values(tmp_path, monkeypatch):
     """The wrapper MUST forward ``.asend(response)`` into the inner generator.
 
     This is the primary regression test. With the broken wrapper, the inner
@@ -48,9 +48,9 @@ async def test_lucifexex_provider_forwards_asend_values(tmp_path, monkeypatch):
     from pydantic import AnyUrl
 
     from tools.mcp_oauth import LucifexTokenStorage
-    from tools.mcp_oauth_manager import _lucifexex_PROVIDER_CLS, reset_manager_for_tests
+    from tools.mcp_oauth_manager import _lucifex_PROVIDER_CLS, reset_manager_for_tests
 
-    assert _lucifexex_PROVIDER_CLS is not None, "SDK OAuth types must be available"
+    assert _lucifex_PROVIDER_CLS is not None, "SDK OAuth types must be available"
 
     monkeypatch.setenv("LUCIFEX_HOME", str(tmp_path))
     reset_manager_for_tests()
@@ -82,9 +82,9 @@ async def test_lucifexex_provider_forwards_asend_values(tmp_path, monkeypatch):
 
     metadata = OAuthClientMetadata(
         redirect_uris=[AnyUrl("http://127.0.0.1:12345/callback")],
-        client_name="lucifexex Agent",
+        client_name="lucifex Agent",
     )
-    provider = _lucifexex_PROVIDER_CLS(
+    provider = _lucifex_PROVIDER_CLS(
         server_name="srv",
         server_url="https://example.com/mcp",
         client_metadata=metadata,
@@ -116,7 +116,7 @@ async def test_lucifexex_provider_forwards_asend_values(tmp_path, monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_lucifexex_provider_forwards_401_triggers_refresh(tmp_path, monkeypatch):
+async def test_lucifex_provider_forwards_401_triggers_refresh(tmp_path, monkeypatch):
     """A 401 response MUST flow into the inner generator and trigger the
     SDK's 401 recovery branch.
 
@@ -130,9 +130,9 @@ async def test_lucifexex_provider_forwards_401_triggers_refresh(tmp_path, monkey
     from pydantic import AnyUrl
 
     from tools.mcp_oauth import LucifexTokenStorage
-    from tools.mcp_oauth_manager import _lucifexex_PROVIDER_CLS, reset_manager_for_tests
+    from tools.mcp_oauth_manager import _lucifex_PROVIDER_CLS, reset_manager_for_tests
 
-    assert _lucifexex_PROVIDER_CLS is not None
+    assert _lucifex_PROVIDER_CLS is not None
 
     monkeypatch.setenv("LUCIFEX_HOME", str(tmp_path))
     reset_manager_for_tests()
@@ -158,9 +158,9 @@ async def test_lucifexex_provider_forwards_401_triggers_refresh(tmp_path, monkey
 
     metadata = OAuthClientMetadata(
         redirect_uris=[AnyUrl("http://127.0.0.1:12345/callback")],
-        client_name="lucifexex Agent",
+        client_name="lucifex Agent",
     )
-    provider = _lucifexex_PROVIDER_CLS(
+    provider = _lucifex_PROVIDER_CLS(
         server_name="srv",
         server_url="https://example.com/mcp",
         client_metadata=metadata,

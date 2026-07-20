@@ -50,7 +50,7 @@ const PROVIDER_GROUPS: { prefix: string; name: string; priority: number }[] = [
   // Then alphabetical by display name
   { prefix: "ANTHROPIC_", name: "Anthropic", priority: 1 },
   { prefix: "DASHSCOPE_", name: "DashScope (Qwen)", priority: 2 },
-  { prefix: "lucifexex_QWEN_", name: "DashScope (Qwen)", priority: 2 },
+  { prefix: "lucifex_QWEN_", name: "DashScope (Qwen)", priority: 2 },
   { prefix: "DEEPSEEK_", name: "DeepSeek", priority: 3 },
   { prefix: "GOOGLE_", name: "Gemini", priority: 4 },
   { prefix: "GEMINI_", name: "Gemini", priority: 4 },
@@ -245,11 +245,10 @@ function EnvVarRow({
       {!isEditing && (
         <div className="flex items-center gap-2">
           <div
-            className={`flex-1 border border-border px-3 py-2 font-mono-ui text-xs ${
-              isRevealed
+            className={`flex-1 border border-border px-3 py-2 font-mono-ui text-xs ${isRevealed
                 ? "bg-background text-foreground select-all"
                 : "bg-muted/30 text-muted-foreground"
-            }`}
+              }`}
           >
             {info.is_set ? displayValue : "---"}
           </div>
@@ -302,9 +301,9 @@ function EnvVarRow({
             placeholder={
               info.is_set
                 ? t.env.replaceCurrentValue.replace(
-                    "{preview}",
-                    info.redacted_value ?? "---",
-                  )
+                  "{preview}",
+                  info.redacted_value ?? "---",
+                )
                 : t.env.enterValue
             }
             className="flex-1 font-mono-ui text-xs"
@@ -620,7 +619,7 @@ export default function EnvPage() {
     api
       .getEnvVars()
       .then(setVars)
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   // Scroll-to sub-nav in the page header
@@ -689,13 +688,13 @@ export default function EnvPage() {
       setVars((prev) =>
         prev
           ? {
-              ...prev,
-              [key]: {
-                ...prev[key],
-                is_set: true,
-                redacted_value: value.slice(0, 4) + "..." + value.slice(-4),
-              },
-            }
+            ...prev,
+            [key]: {
+              ...prev[key],
+              is_set: true,
+              redacted_value: value.slice(0, 4) + "..." + value.slice(-4),
+            },
+          }
           : prev,
       );
       setEdits((prev) => {
@@ -725,9 +724,9 @@ export default function EnvPage() {
           setVars((prev) =>
             prev
               ? {
-                  ...prev,
-                  [key]: { ...prev[key], is_set: false, redacted_value: null },
-                }
+                ...prev,
+                [key]: { ...prev[key], is_set: false, redacted_value: null },
+              }
               : prev,
           );
           setEdits((prev) => {
@@ -786,19 +785,19 @@ export default function EnvPage() {
       prev && prev[key]
         ? prev
         : {
-            ...(prev ?? {}),
-            [key]: {
-              is_set: false,
-              redacted_value: null,
-              description: "",
-              url: null,
-              category: "custom",
-              is_password: true,
-              tools: [],
-              advanced: false,
-              custom: true,
-            },
+          ...(prev ?? {}),
+          [key]: {
+            is_set: false,
+            redacted_value: null,
+            description: "",
+            url: null,
+            category: "custom",
+            is_password: true,
+            tools: [],
+            advanced: false,
+            custom: true,
           },
+        },
     );
     setEdits((prev) => ({ ...prev, [key]: "" }));
   };

@@ -1,10 +1,10 @@
-"""Live Fireworks smoke test — exercises the lucifexex runtime, not a raw SDK client.
+"""Live Fireworks smoke test — exercises the lucifex runtime, not a raw SDK client.
 
 Opt-in only:
-    lucifexex_LIVE_TESTS=1 FIREWORKS_API_KEY=fw_... \\
+    lucifex_LIVE_TESTS=1 FIREWORKS_API_KEY=fw_... \\
         pytest tests/run_agent/test_fireworks_live.py -q
 
-Unlike a bare OpenAI() client pointed at the endpoint, this drives lucifexex'
+Unlike a bare OpenAI() client pointed at the endpoint, this drives lucifex'
 own provider resolution — ``resolve_provider_client('fireworks')`` — so it
 verifies the auth/config/base-URL/aux-model wiring that the
 bundled provider actually ships, then makes a real call through that client.
@@ -16,26 +16,26 @@ import os
 
 import pytest
 
-LIVE = os.environ.get("lucifexex_LIVE_TESTS") == "1"
+LIVE = os.environ.get("lucifex_LIVE_TESTS") == "1"
 FIREWORKS_KEY = os.environ.get("FIREWORKS_API_KEY", "")
 
 pytestmark = [
-    pytest.mark.skipif(not LIVE, reason="live-only: set lucifexex_LIVE_TESTS=1"),
+    pytest.mark.skipif(not LIVE, reason="live-only: set lucifex_LIVE_TESTS=1"),
     pytest.mark.skipif(not FIREWORKS_KEY, reason="FIREWORKS_API_KEY not configured"),
     pytest.mark.integration,
 ]
 
 
 def _resolve_runtime_client(provider="fireworks"):
-    """Build the Fireworks client the way the lucifexex runtime does."""
+    """Build the Fireworks client the way the lucifex runtime does."""
     from agent.auxiliary_client import resolve_provider_client
 
     client, model = resolve_provider_client(provider)
-    assert client is not None, "lucifexex failed to build a Fireworks client"
+    assert client is not None, "lucifex failed to build a Fireworks client"
     return client, model
 
 
-def test_lucifexex_wires_fireworks_client():
+def test_lucifex_wires_fireworks_client():
     """The runtime resolves a Fireworks client pointed at the right endpoint
     with the partner-attribution headers applied — no network required."""
     client, model = _resolve_runtime_client()
@@ -45,7 +45,7 @@ def test_lucifexex_wires_fireworks_client():
 
 
 def test_fireworks_basic_chat_through_runtime():
-    """A single-turn completion via the lucifexex-resolved client returns text."""
+    """A single-turn completion via the lucifex-resolved client returns text."""
     client, model = _resolve_runtime_client()
 
     response = client.chat.completions.create(

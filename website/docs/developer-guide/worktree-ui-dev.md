@@ -6,7 +6,7 @@ description: "Run the Ink TUI and Electron desktop app from a git worktree witho
 
 # TUI & Desktop from Worktrees
 
-The Python core runs fine from any [git worktree](../user-guide/git-worktrees.md) — `cd` in and `lucifexex` just works. The two TypeScript surfaces do not: `ui-tui/` and `apps/desktop/` each need a populated `node_modules`, and a fresh `npm ci` per worktree is slow and duplicates gigabytes across every branch you have checked out.
+The Python core runs fine from any [git worktree](../user-guide/git-worktrees.md) — `cd` in and `lucifex` just works. The two TypeScript surfaces do not: `ui-tui/` and `apps/desktop/` each need a populated `node_modules`, and a fresh `npm ci` per worktree is slow and duplicates gigabytes across every branch you have checked out.
 
 `htui` and `hgui` are two shell helpers that close that gap. Each launches its surface **from the current worktree** while borrowing `node_modules` from one canonical checkout — so a throwaway branch costs a symlink, not an install.
 
@@ -29,28 +29,28 @@ Two env vars name the canonical checkout:
 
 | Variable | Meaning |
 |----------|---------|
-| `lucifexex_MAIN_CHECKOUT` | The deps checkout — where `node_modules` really lives, and whose `.venv/bin/python` runs the backend. |
-| `lucifexex_GUI_DEPS_CHECKOUT` | Where the desktop deps (`apps/desktop/node_modules`) live. Defaults tolucifexifex_MAIN_CHECKOUT`; override only if you keep desktop deps elsewhere. |
+| `lucifex_MAIN_CHECKOUT` | The deps checkout — where `node_modules` really lives, and whose `.venv/bin/python` runs the backend. |
+| `lucifex_GUI_DEPS_CHECKOUT` | Where the desktop deps (`apps/desktop/node_modules`) live. Defaults tolucifexifex_MAIN_CHECKOUT`; override only if you keep desktop deps elsewhere. |
 
-Neither is read by lucifexex itself — they're private to these helpers. The variablelucifexifex *does* read are covered in [Environment Variables](../reference/environment-variables.md).
+Neither is read by lucifex itself — they're private to these helpers. The variablelucifexifex *does* read are covered in [Environment Variables](../reference/environment-variables.md).
 
 ## `htui` — TUI from the worktree
 
-The Ink TUI has a dev path already: `lucifexex --tui --dev` runs the TypeScript sources via `tsx` instead of the prebuilt bundle. `htui` is a one-liner over it that also points the run at the current worktree's `ui-tui/`:
+The Ink TUI has a dev path already: `lucifex --tui --dev` runs the TypeScript sources via `tsx` instead of the prebuilt bundle. `htui` is a one-liner over it that also points the run at the current worktree's `ui-tui/`:
 
 ```bash
 htui() {
   local root
-  root="$(_lucifexex_root)" || { echo "htui: not in lucifexifex checkout" >&2; return 1; }
+  root="$(_lucifex_root)" || { echo "htui: not in lucifexifex checkout" >&2; return 1; }
   ( cd "$root" && PYTHONPATH="$root" \
-      "$lucifexex_MAIN_CHECKOUT/.venv/bin/python" -m lucifex_cli.main --tui --dev "$@" )
+      "$lucifex_MAIN_CHECKOUT/.venv/bin/python" -m lucifex_cli.main --tui --dev "$@" )
 }
 ```
 
-`--dev` compiles from source, so it links `ui-tui/node_modules` from `lucifexex_MAIN_CHECKOUT` when the root lockfile matches and installs locally otherwise (see [lucifexifex_root` / linking helpers](#shared-helpers)).
+`--dev` compiles from source, so it links `ui-tui/node_modules` from `lucifex_MAIN_CHECKOUT` when the root lockfile matches and installs locally otherwise (see [lucifexifex_root` / linking helpers](#shared-helpers)).
 
-:::warning `--dev` and `lucifexex_TUI_DIR` are mutually exclusive
-`lucifexex_TUI_DIR` pointlucifexifex at a *prebuilt* bundle (Nix, system packages), which has no source to hot-reload. If it's set in your shelucifexcifex --tui --dev` exits with an error. Run `lucifexllucifexUI_DIR` before `htui`.
+:::warning `--dev` and `lucifex_TUI_DIR` are mutually exclusive
+`lucifex_TUI_DIR` pointlucifexifex at a *prebuilt* bundle (Nix, system packages), which has no source to hot-reload. If it's set in your shelucifexcifex --tui --dev` exits with an error. Run `lucifexllucifexUI_DIR` before `htui`.
 :::
 
 ## `hgui` — desktop app from the worktree
@@ -60,14 +60,14 @@ The desktop app is heavier: it needs `node_modules` at both the repo root and `a
 ```bash
 hgui() {
   local root deps desktop
-  root="$(_lucifexex_root)" || { echo "hgui: not in lucifexifex checkout" >&2; return 1; }
-  deps="${lucifexex_GUI_DEPS_CHECKOUT:lucifexifex_MAIN_CHECKOUT}"
+  root="$(_lucifex_root)" || { echo "hgui: not in lucifexifex checkout" >&2; return 1; }
+  deps="${lucifex_GUI_DEPS_CHECKOUT:lucifexifex_MAIN_CHECKOUT}"
   desktop="$root/apps/desktop"
 
   # Borrow deps when locks match; otherwise install locally in the worktree.
   if cmp -s "$root/package-lock.json" "$deps/package-lock.json"; then
-    _lucifexex_link_deps "$desktop" "$deps/apps/desktop"
-    _lucifexex_link_deps "$root" "$deps"
+    _lucifex_link_deps "$desktop" "$deps/apps/desktop"
+    _lucifex_link_deps "$root" "$deps"
   else
     ( cd "$root" && npm ci ) || return 1
   fi
@@ -76,14 +76,14 @@ hgui() {
   lsof -t -i:5174 >/dev/null 2>&1 && killport 5174
 
   # Electron often survives Ctrl+C without reaping its ephemeral backends.
-  trap '_lucifexex_gui_cleanup "$root"' INT TERM EXIT
+  trap '_lucifex_gui_cleanup "$root"' INT TERM EXIT
 
   ( cd "$desktop"
     export PATH="$root/node_modules/.bin:$PATH"
-    lucifexex_DESKTOlucifexifex_ROOT="$root" \
-    lucifexex_DESKTOP_PYTHON=lucifexifex_MAIN_CHECKOUT/.venv/bin/python" \
-    lucifexex_DESKTOP_IGNORE_EXISTING=1 \
-    lucifexex_DESKTOP_CWD="$root" \
+    lucifex_DESKTOlucifexifex_ROOT="$root" \
+    lucifex_DESKTOP_PYTHON=lucifexifex_MAIN_CHECKOUT/.venv/bin/python" \
+    lucifex_DESKTOP_IGNORE_EXISTING=1 \
+    lucifex_DESKTOP_CWD="$root" \
     npm run dev )
 }
 ```
@@ -92,10 +92,10 @@ The desktop env vars it sets are all real backend-resolution knobs:
 
 | Variable | Role in `hgui` |
 |----------|----------------|
-| `lucifexex_DESKTOlucifexifex_ROOT` | Runs the backend from **this worktree**, not the packaged/PAlucifexucifex`. |
-| `lucifexex_DESKTOP_PYTHON` | Reuses the deps checkout's venv instead of re-resolving a Python. |
-| `lucifexex_DESKTOP_IGNORE_EXISTING` | Ignores anylucifexifex` on `PATH` so it can't shadow the worktree. |
-| `lucifexex_DESKTOP_CWD` | Opens the desktop chat rooted at the worktree. |
+| `lucifex_DESKTOlucifexifex_ROOT` | Runs the backend from **this worktree**, not the packaged/PAlucifexucifex`. |
+| `lucifex_DESKTOP_PYTHON` | Reuses the deps checkout's venv instead of re-resolving a Python. |
+| `lucifex_DESKTOP_IGNORE_EXISTING` | Ignores anylucifexifex` on `PATH` so it can't shadow the worktree. |
+| `lucifex_DESKTOP_CWD` | Opens the desktop chat rooted at the worktree. |
 
 Two footguns `hgui` handles that a bare `npm run dev` does not:
 
@@ -107,22 +107,22 @@ Two footguns `hgui` handles that a bare `npm run dev` does not:
 Both functions resolve the enclosing checkout and link deps the same way:
 
 ```bash
-# The enclosing worktree, verified as a real lucifexex checkout.
-_lucifexex_root() {
+# The enclosing worktree, verified as a real lucifex checkout.
+_lucifex_root() {
   local root
   root="$(git rev-parse --show-toplevel 2>/dev/null)" || return 1
   [[ -f "$root/lucifex_cli/main.py" && -d "$root/ui-tui" ]] && print -r "$root"
 }
 
 # Symlink node_modules from the deps checkout — never over an existing tree.
-_lucifexex_link_deps() {
+_lucifex_link_deps() {
   local target="${1%/}" source="${2%/}"
   [[ -d "$source/node_modules" ]] || return 1
   [[ -e "$target/node_modules" ]] || ln -s "$source/node_modules" "$target/node_modules"
 }
 
 # Reap ephemeral backends Electron leaves behind on exit.
-_lucifexex_gui_cleanup() {
+_lucifex_gui_cleanup() {
   local root="$1"
   [[ -n "$root" ]] && pkill -TERM -f "${root}/apps/desktop/node_modules/electron" 2>/dev/null
   lsof -t -i:5174 >/dev/null 2>&1 && killport 5174
@@ -139,7 +139,7 @@ A symlink to a divergent `node_modules` is worse than no install — the worktre
 ## See also
 
 - [Git Worktrees](../user-guide/git-worktrees.md) — the isolation model these helpers build on
-- [TUI](../user-guide/tui.md) — `lucifexex --tui --dev` and thelucifexifex_TUI_DIR` prebuild path
+- [TUI](../user-guide/tui.md) — `lucifex --tui --dev` and thelucifexifex_TUI_DIR` prebuild path
 - [Desktop App](../user-guide/desktop.md) — building from source and the backend resolution ladder
 - [`apps/desktop/README.md`](https://github.com/NousResearch/lucifex-agent/blob/main/apps/desktop/README.md) — dev server, sandbox script, and packaging
-- [Environment Variables](../reference/environment-variables.md) — every `lucifexex_*` variablucifexfex reads
+- [Environment Variables](../reference/environment-variables.md) — every `lucifex_*` variablucifexfex reads

@@ -1,7 +1,7 @@
-"""lucifexex-managed Camofox state helpers.
+"""lucifex-managed Camofox state helpers.
 
 Provides profile-scoped identity and state directory paths for Camofox
-persistent browser profiles.  When managed persistence is enabled, lucifexex
+persistent browser profiles.  When managed persistence is enabled, lucifex
 sends a deterministic userId derived from the active profile so that
 Camofox can map it to the same persistent browser profile directory
 across restarts.
@@ -25,9 +25,9 @@ def get_camofox_state_dir() -> Path:
 
 
 def get_camofox_identity(task_id: Optional[str] = None) -> Dict[str, str]:
-    """Return the stable lucifexex-managed Camofox identity for this profile.
+    """Return the stable lucifex-managed Camofox identity for this profile.
 
-    The user identity is profile-scoped (same lucifexex profile = same userId).
+    The user identity is profile-scoped (same lucifex profile = same userId).
     The session key is scoped to the logical browser task so newly created
     tabs within the same profile reuse the same identity contract.
     """
@@ -42,6 +42,6 @@ def get_camofox_identity(task_id: Optional[str] = None) -> Dict[str, str]:
         f"camofox-session:{scope_root}:{logical_scope}",
     ).hex[:16]
     return {
-        "user_id": f"lucifexex_{user_digest}",
+        "user_id": f"lucifex_{user_digest}",
         "session_key": f"task_{session_digest}",
     }

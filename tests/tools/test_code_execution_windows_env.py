@@ -257,7 +257,7 @@ def _legacy_posix_scrubber(source_env, is_passthrough):
     _scrub_child_env's POSIX behavior, used to prove the production helper does
     what we think it does.
 
-    Deliberately updated for #27303 (the broad ``lucifexex_`` prefix was dropped
+    Deliberately updated for #27303 (the broad ``lucifex_`` prefix was dropped
     in favor of an explicit operational allowlist, and DSN/WEBHOOK were added
     to the secret substrings).  The original docstring said: if POSIX behavior
     legitimately needs to evolve, adjust this oracle on purpose so the churn is
@@ -268,8 +268,8 @@ def _legacy_posix_scrubber(source_env, is_passthrough):
                           "XDG_", "PYTHONPATH", "VIRTUAL_ENV", "CONDA")
     _SECRET_SUBSTRINGS = ("KEY", "TOKEN", "SECRET", "PASSWORD", "CREDENTIAL",
                           "PASSWD", "AUTH", "DSN", "WEBHOOK")
-    _lucifexex_CHILD_ALLOWED = frozenset({
-        "LUCIFEX_HOME", "lucifexex_PROFILE",lucifexifex_CONFIGlucifexucifex_ENV",
+    _lucifex_CHILD_ALLOWED = frozenset({
+        "LUCIFEX_HOME", "lucifex_PROFILE",lucifexifex_CONFIGlucifexucifex_ENV",
     })
     out = {}
     for k, v in source_env.items():
@@ -281,7 +281,7 @@ def _legacy_posix_scrubber(source_env, is_passthrough):
         if any(k.startswith(p) for p in _SAFE_ENV_PREFIXES):
             out[k] = v
             continue
-        if k in _lucifexex_CHILD_ALLOWED:
+        if k in _lucifex_CHILD_ALLOWED:
             out[k] = v
     return out
 
@@ -315,13 +315,13 @@ class TestPosixEquivalence:
         "PYTHONPATH": "/opt/lib",
         "VIRTUAL_ENV": "/home/alice/.venv",
         "CONDA_PREFIX": "/opt/conda",
-        # lucifexex_* handling (#27303): only the operational allowlist passes;
-        # every other lucifexex_* is dropped (the broad prefix was removed).
-        "LUCIFEX_HOME": "/home/alice/.lucifexex",        # allowlisted → kept
-        "lucifexex_PROFILE": "default",                 # allowlisted → kept
-        "lucifexex_INTERACTIVE": "1",                   # not allowlisted → dropped
-        "lucifexex_BASE_URL": "https://api.internal",   # not allowlisted → dropped
-        "lucifexex_KANBAN_DB": "postgres://u:p@h/db",   # not allowlisted → dropped
+        # lucifex_* handling (#27303): only the operational allowlist passes;
+        # every other lucifex_* is dropped (the broad prefix was removed).
+        "LUCIFEX_HOME": "/home/alice/.lucifex",        # allowlisted → kept
+        "lucifex_PROFILE": "default",                 # allowlisted → kept
+        "lucifex_INTERACTIVE": "1",                   # not allowlisted → dropped
+        "lucifex_BASE_URL": "https://api.internal",   # not allowlisted → dropped
+        "lucifex_KANBAN_DB": "postgres://u:p@h/db",   # not allowlisted → dropped
         # Secret-substring blocks
         "OPENAI_API_KEY": "sk-xxx",
         "GITHUB_TOKEN": "ghp_xxx",

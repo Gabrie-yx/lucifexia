@@ -1,7 +1,7 @@
 ﻿---
 sidebar_position: 11
 title: "Cron Internals"
-description: "How lucifexex stores, schedules, edits, pauses, skill-loads, and delivers cron jobs"
+description: "How lucifex stores, schedules, edits, pauses, skill-loads, and delivers cron jobs"
 ---
 
 # Cron Internals
@@ -16,7 +16,7 @@ The cron subsystem provides scheduled task execution — from simple one-shot de
 | `cron/scheduler.py` | Scheduler loop — due-job detection, execution, repeat tracking |
 | `tools/cronjob_tools.py` | Model-facing `cronjob` tool registration and handler |
 | `gateway/run.py` | Gateway integration — cron ticking in the long-running loop |
-| `lucifex_cli/cron.py` | CLI `lucifexex cron` subcommands |
+| `lucifex_cli/cron.py` | CLI `lucifex cron` subcommands |
 
 ## Scheduling Model
 
@@ -127,7 +127,7 @@ What "firing" *means* (job execution + delivery) is unchanged and shared by all
 providers — it stays in `scheduler.run_job()` / `scheduler._deliver_result()`.
 A provider only controls the trigger, never execution.
 
-In CLI mode, cron jobs only fire when `lucifexex cron` commands are run or during active CLI sessions.
+In CLI mode, cron jobs only fire when `lucifex cron` commands are run or during active CLI sessions.
 
 ### Managed cron (Chronos) for scale-to-zero
 
@@ -209,11 +209,11 @@ import requests, json
 The script timeout defaults to 3600 seconds (1 hour). `_get_script_timeout()` resolves the limit through a three-layer chain:
 
 1. **Module-level override** — `_SCRIPT_TIMEOUT` (for tests/monkeypatching). Only used when it differs from the default.
-2. **Environment variable** — `lucifexex_CRON_SCRIPT_TIMEOUT`
+2. **Environment variable** — `lucifex_CRON_SCRIPT_TIMEOUT`
 3. **Config** — `cron.script_timeout_seconds` in `config.yaml` (read via `load_config()`)
 4. **Default** — 3600 seconds (1 hour)
 
-This timeout bounds the **pre-run script only**, not the agent. Skill-based / LLM-driven jobs run on a separate *inactivity*-based budget (`lucifexex_CRON_TIMEOUT`, default 600s of idle time, `0` = unlimited) — they can run for hours as long as they keep calling tools or streaming tokens, and are only killed after the configured idle period with no activity. Scripts are dispatched to a persistent thread pool (not held under the tick lock), so a long-running script does not block other due jobs from firing.
+This timeout bounds the **pre-run script only**, not the agent. Skill-based / LLM-driven jobs run on a separate *inactivity*-based budget (`lucifex_CRON_TIMEOUT`, default 600s of idle time, `0` = unlimited) — they can run for hours as long as they keep calling tools or streaming tokens, and are only killed after the configured idle period with no activity. Scripts are dispatched to a persistent thread pool (not held under the tick lock), so a long-running script does not block other due jobs from firing.
 
 ### Provider Recovery
 
@@ -280,20 +280,20 @@ Cron-run sessions have the `cronjob` toolset disabled. This prevents:
 
 ## Locking
 
-The scheduler uses cross-process file-based locking (`fcntl.flock` on Unix, `msvcrt.locking` on Windows) to prevent overlapping ticks from executing the same due-job batch twice — even between the gateway's in-process ticker and a standalone `lucifexex cron` / manual `tick()` call. If the lock cannot be acquired, `tick()` returns 0 immediately.
+The scheduler uses cross-process file-based locking (`fcntl.flock` on Unix, `msvcrt.locking` on Windows) to prevent overlapping ticks from executing the same due-job batch twice — even between the gateway's in-process ticker and a standalone `lucifex cron` / manual `tick()` call. If the lock cannot be acquired, `tick()` returns 0 immediately.
 
 ## CLI Interface
 
-The `lucifexex cron` CLI provides direct job management:
+The `lucifex cron` CLI provides direct job management:
 
 ```bash
-lucifexex cron list                    # Show all jobs
-lucifexex cron create                  # Interactive job creation (alias: add)
-lucifexex cron edit <job_id>           # Edit job configuration
-lucifexex cron pause <job_id>          # Pause a running job
-lucifexex cron resume <job_id>         # Resume a paused job
-lucifexex cron run <job_id>            # Trigger immediate execution
-lucifexex cron remove <job_id>         # Delete a job
+lucifex cron list                    # Show all jobs
+lucifex cron create                  # Interactive job creation (alias: add)
+lucifex cron edit <job_id>           # Edit job configuration
+lucifex cron pause <job_id>          # Pause a running job
+lucifex cron resume <job_id>         # Resume a paused job
+lucifex cron run <job_id>            # Trigger immediate execution
+lucifex cron remove <job_id>         # Delete a job
 ```
 
 ## Related Docs

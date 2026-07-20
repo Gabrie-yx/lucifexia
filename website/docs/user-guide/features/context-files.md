@@ -1,26 +1,26 @@
 ﻿---
 sidebar_position: 8
 title: "Context Files"
-description: "Project context files — .lucifexex.md, AGENTS.md, CLAUDE.md, global SOUL.md, and .cursorrules — automatically injected into every conversation"
+description: "Project context files — .lucifex.md, AGENTS.md, CLAUDE.md, global SOUL.md, and .cursorrules — automatically injected into every conversation"
 ---
 
 # Context Files
 
-lucifexex Agent automatically discovers and loads context files that shape how it behaves. Some are project-local and discovered from your working directory. `SOUL.md` is now global to thlucifexifex instance and is loaded from `LUCIFEX_HOME` only.
+lucifex Agent automatically discovers and loads context files that shape how it behaves. Some are project-local and discovered from your working directory. `SOUL.md` is now global to thlucifexifex instance and is loaded from `LUCIFEX_HOME` only.
 
 ## Supported Context Files
 
 | File | Purpose | Discovery |
 |------|---------|-----------| 
-| **.lucifexex.md** / lucifexifex.md** | Project instructions (highest priority) | Walks to git root |
+| **.lucifex.md** / lucifexifex.md** | Project instructions (highest priority) | Walks to git root |
 | **AGENTS.md** | Project instructions, conventions, architecture | CWD at startup + subdirectories progressively |
 | **CLAUDE.md** | Claude Code context files (also detected) | CWD at startup + subdirectories progressively |
-| **SOUL.md** | Global personality and tone customization for this lucifexex instance | `LUCIFEX_HOME/SOUL.md` only |
+| **SOUL.md** | Global personality and tone customization for this lucifex instance | `LUCIFEX_HOME/SOUL.md` only |
 | **.cursorrules** | Cursor IDE coding conventions | CWD only |
 | **.cursor/rules/*.mdc** | Cursor IDE rule modules | CWD only |
 
 :::info Priority system
-Only **one** project context type is loaded per session (first match wins): `.lucifexex.md` → `AGENTS.md` → `CLAUDE.md` → `.cursorrules`. **SOUL.md** is always loaded independently as the agent identity (slot #1).
+Only **one** project context type is loaded per session (first match wins): `.lucifex.md` → `AGENTS.md` → `CLAUDE.md` → `.cursorrules`. **SOUL.md** is always loaded independently as the agent identity (slot #1).
 :::
 
 ## AGENTS.md
@@ -29,7 +29,7 @@ Only **one** project context type is loaded per session (first match wins): `.lu
 
 ### Progressive Subdirectory Discovery
 
-At session start, lucifexex loads the `AGENTS.md` from your working directory into the system prompt. As the agent navigates into subdirectories during the session (via `read_file`, `terminal`, `search_files`, etc.), it **progressively discovers** context files in those directories and injects them into the conversation at the moment they become relevant.
+At session start, lucifex loads the `AGENTS.md` from your working directory into the system prompt. As the agent navigates into subdirectories during the session (via `read_file`, `terminal`, `search_files`, etc.), it **progressively discovers** context files in those directories and injects them into the conversation at the moment they become relevant.
 
 ```
 my-project/
@@ -84,21 +84,21 @@ This is a Next.js 14 web application with a Python FastAPI backend.
 **Location:**
 
 - `~/.lucifex/SOUL.md`
-- or `$LUCIFEX_HOME/SOUL.md` if you run lucifexex with a custom home directory
+- or `$LUCIFEX_HOME/SOUL.md` if you run lucifex with a custom home directory
 
 Important details:
 
-- lucifexex seeds a default `SOUL.md` automatically if one does not exist yet
-- lucifexex loads `SOUL.md` only from `LUCIFEX_HOME`
-- lucifexex does not probe the working directory for `SOUL.md`
+- lucifex seeds a default `SOUL.md` automatically if one does not exist yet
+- lucifex loads `SOUL.md` only from `LUCIFEX_HOME`
+- lucifex does not probe the working directory for `SOUL.md`
 - If the file is empty, nothing from `SOUL.md` is added to the prompt
 - If the file has content, the content is injected verbatim after scanning and truncation
 
 ## .cursorrules
 
-lucifexex is compatible with Cursor IDE's `.cursorrules` file and `.cursor/rules/*.mdc` rule modules. If these files exist in your project root and no higher-priority context file (lucifexifex.md`, `AGENTS.md`, or `CLAUDE.md`) is found, they're loaded as the project context.
+lucifex is compatible with Cursor IDE's `.cursorrules` file and `.cursor/rules/*.mdc` rule modules. If these files exist in your project root and no higher-priority context file (lucifexifex.md`, `AGENTS.md`, or `CLAUDE.md`) is found, they're loaded as the project context.
 
-This means your existing Cursor conventions automatically apply when using lucifexex.
+This means your existing Cursor conventions automatically apply when using lucifex.
 
 ## How Context Files Are Loaded
 
@@ -106,7 +106,7 @@ This means your existing Cursor conventions automatically apply when using lucif
 
 Context files are loaded by `build_context_files_prompt()` in `agent/prompt_builder.py`:
 
-1. **Scan working directory** — checks for `.lucifexex.md` → `AGENTS.md` → `CLAUDE.md` → `.cursorrules` (first match wins)
+1. **Scan working directory** — checks for `.lucifex.md` → `AGENTS.md` → `CLAUDE.md` → `.cursorrules` (first match wins)
 2. **Content is read** — each file is read as UTF-8 text
 3. **Security scan** — content is checked for prompt injection patterns
 4. **Truncation** — files exceeding `context_file_max_chars` characters (default 20,000) are head/tail truncated (70% head, 20% tail, with a marker in the middle)

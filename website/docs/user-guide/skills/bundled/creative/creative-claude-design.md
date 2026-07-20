@@ -26,7 +26,7 @@ Design one-off HTML artifacts (landing, deck, prototype).
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that lucifexex loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that lucifex loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # Claude Design for CLI/API Agents
@@ -39,7 +39,7 @@ The goal is to preserve Claude Design's useful design behavior and taste while r
 
 ## When To Use This Skill vs `popular-web-designs` vs `design-md`
 
-lucifexex has three design-related skills under `skills/creative/`. They do different jobs — load the right one (or combine them):
+lucifex has three design-related skills under `skills/creative/`. They do different jobs — load the right one (or combine them):
 
 | Skill | What it gives you | Use when the user wants... |
 |---|---|---|

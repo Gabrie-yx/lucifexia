@@ -1,6 +1,6 @@
 ﻿# Session Storage
 
-lucifexex Agent uses a SQLite database (`~/.lucifex/state.db`) to persist session
+lucifex Agent uses a SQLite database (`~/.lucifex/state.db`) to persist session
 metadata, full message history, and model configuration across CLI and gateway
 sessions. This replaces the earlier per-session JSONL file approach.
 
@@ -161,7 +161,7 @@ Declarative column adds use `ALTER TABLE ADD COLUMN` wrapped in try/except to ha
 
 ## Write Contention Handling
 
-Multiple lucifexex processes (gateway + CLI sessions + worktree agents) share one
+Multiple lucifex processes (gateway + CLI sessions + worktree agents) share one
 `state.db`. The `SessionDB` class handles write contention with:
 
 - **Short SQLite timeout** (1 second) instead of the default 30s

@@ -2,24 +2,24 @@
 
 [ntfy](https://ntfy.sh/) is a simple HTTP-based pub-sub notification service. It works with the free public server at `ntfy.sh` or any self-hosted instance, and supports any client that can make HTTP requests — phones, browsers, scripts, watches.
 
-ntfy makes a great lightweight push channel for lucifexex: subscribe to a topic from the [ntfy mobile app](https://ntfy.sh/docs/subscribe/phone/), send messages to the topic to talk to the agent, get the response back on your phone.
+ntfy makes a great lightweight push channel for lucifex: subscribe to a topic from the [ntfy mobile app](https://ntfy.sh/docs/subscribe/phone/), send messages to the topic to talk to the agent, get the response back on your phone.
 
-> Run `lucifexex gateway setup` and pick **ntfy** for a guided walk-through.
+> Run `lucifex gateway setup` and pick **ntfy** for a guided walk-through.
 
 ## Prerequisites
 
-- A topic name (any unique string — `lucifexex-myname-2026` works fine)
+- A topic name (any unique string — `lucifex-myname-2026` works fine)
 - The [ntfy mobile app](https://ntfy.sh/docs/subscribe/phone/) installed and subscribed to that topic
 - Optional: a self-hosted ntfy server, or an `ntfy.sh` account token for private/reserved topics
 
-That's it. No SDK, no daemon, no Node.js. The adapter uses `httpx` which is already a lucifexex dependency.
+That's it. No SDK, no daemon, no Node.js. The adapter uses `httpx` which is already a lucifex dependency.
 
-## Configure lucifexex
+## Configure lucifex
 
 ### Via setup wizard
 
 ```bash
-lucifexex gateway setup
+lucifex gateway setup
 ```
 
 Select **ntfy** and follow the prompts.
@@ -29,9 +29,9 @@ Select **ntfy** and follow the prompts.
 Add these to `~/.lucifex/.env`:
 
 ```
-NTFY_TOPIC=lucifexex-myname-2026
-NTFY_ALLOWED_USERS=lucifexex-myname-2026
-NTFY_HOME_CHANNEL=lucifexex-myname-2026
+NTFY_TOPIC=lucifex-myname-2026
+NTFY_ALLOWED_USERS=lucifex-myname-2026
+NTFY_HOME_CHANNEL=lucifex-myname-2026
 ```
 
 | Variable | Required | Description |
@@ -48,7 +48,7 @@ NTFY_HOME_CHANNEL=lucifexex-myname-2026
 
 ## Identity model — read this before deploying
 
-ntfy has no native authenticated user identity. The `title` field on a published message is **publisher-controlled** and can be anything the sender wants. The lucifexex adapter does NOT use `title` for authorization — it would let any publisher who knows the topic spoof an allowed user.
+ntfy has no native authenticated user identity. The `title` field on a published message is **publisher-controlled** and can be anything the sender wants. The lucifex adapter does NOT use `title` for authorization — it would let any publisher who knows the topic spoof an allowed user.
 
 Instead, **the topic name itself is the identity**. Every message published to the topic is treated as coming from the same logical user (the topic). `NTFY_ALLOWED_USERS` is therefore typically just the topic name itself — a single-entry allowlist that gates the whole channel.
 
@@ -56,19 +56,19 @@ This means **anyone who knows the topic can talk to the agent**. To make that a 
 
 - **Self-host ntfy** and lock the topic down with [Access Control](https://docs.ntfy.sh/config/#access-control). Only authorized clients with the read/write token can publish.
 - Or **use a private topic on ntfy.sh** ([reserved topics](https://docs.ntfy.sh/publish/#reserved-topics) require an account) and protect it with a `NTFY_TOKEN`.
-- Or **pick a long, unguessable topic name** (`lucifexex-7d4f9c8b-2026`) and treat it as the shared secret. This is the lightest setup but the topic name leaks via any logs or screenshots.
+- Or **pick a long, unguessable topic name** (`lucifex-7d4f9c8b-2026`) and treat it as the shared secret. This is the lightest setup but the topic name leaks via any logs or screenshots.
 
 In all cases, do not put sensitive data through ntfy unless the underlying topic is access-controlled.
 
 ## Quick start — talk to your agent from your phone
 
-1. Pick a topic name: `lucifexex-myname-2026`
-2. On your phone: install the [ntfy app](https://ntfy.sh/docs/subscribe/phone/), tap **+**, enter `lucifexex-myname-2026`
+1. Pick a topic name: `lucifex-myname-2026`
+2. On your phone: install the [ntfy app](https://ntfy.sh/docs/subscribe/phone/), tap **+**, enter `lucifex-myname-2026`
 3. On the host:
    ```bash
-   echo 'NTFY_TOPIC=lucifexex-myname-2026' >> ~/.lucifex/.env
-   echo 'NTFY_ALLOWED_USERS=lucifexex-myname-2026' >> ~/.lucifex/.env
-   lucifexex gateway restart
+   echo 'NTFY_TOPIC=lucifex-myname-2026' >> ~/.lucifex/.env
+   echo 'NTFY_ALLOWED_USERS=lucifex-myname-2026' >> ~/.lucifex/.env
+   lucifex gateway restart
    ```
 4. From the ntfy app, send a message to the topic. The agent's reply lands as a push notification.
 
@@ -85,10 +85,10 @@ cronjob(
 )
 ```
 
-Or target a specific topic explicitly via the cron job's `deliver:` field, or from a shell script with the [`lucifexex send` CLI](/guides/pipe-script-output):
+Or target a specific topic explicitly via the cron job's `deliver:` field, or from a shell script with the [`lucifex send` CLI](/guides/pipe-script-output):
 
 ```bash
-lucifexex send ntfy:alerts-channel "Done!"
+lucifex send ntfy:alerts-channel "Done!"
 ```
 
 This works even when the cron runs out-of-process from the gateway — the plugin registers a `standalone_sender_fn` that opens its own HTTP connection.
@@ -106,11 +106,11 @@ go install heckel.io/ntfy/v2@latest
 ntfy serve
 ```
 
-Then point lucifexex at it:
+Then point lucifex at it:
 
 ```
 NTFY_SERVER_URL=https://ntfy.mydomain.com
-NTFY_TOPIC=lucifexex
+NTFY_TOPIC=lucifex
 NTFY_TOKEN=tk_abc123  # if you've set up access control
 ```
 
@@ -118,7 +118,7 @@ Self-hosting gives you topic access control, message persistence policies, attac
 
 ## Markdown formatting
 
-ntfy clients render markdown when the publisher sets the `X-Markdown: true` header. To enable for outgoing lucifexex replies:
+ntfy clients render markdown when the publisher sets the `X-Markdown: true` header. To enable for outgoing lucifex replies:
 
 ```
 NTFY_MARKDOWN=true
@@ -137,11 +137,11 @@ The mobile app supports a subset of CommonMark — bold, italic, lists, links, f
 
 ## Outgoing-only setup (notifications without inbound)
 
-If you only want lucifexex to *push* notifications to ntfy (cron summaries, alerts) and never accept messages back, set both `NTFY_TOPIC` and `NTFY_PUBLISH_TOPIC` to the same value and skip `NTFY_ALLOWED_USERS` entirely. With no allowlist, the agent never responds to inbound messages — your phone gets the pushes, but the conversation is one-way.
+If you only want lucifex to *push* notifications to ntfy (cron summaries, alerts) and never accept messages back, set both `NTFY_TOPIC` and `NTFY_PUBLISH_TOPIC` to the same value and skip `NTFY_ALLOWED_USERS` entirely. With no allowlist, the agent never responds to inbound messages — your phone gets the pushes, but the conversation is one-way.
 
 ## Limits
 
-- **Message size**: ntfy caps message bodies at 4096 chars. lucifexex truncates with a warning when this is exceeded.
+- **Message size**: ntfy caps message bodies at 4096 chars. lucifex truncates with a warning when this is exceeded.
 - **No typing indicators**: the protocol doesn't expose one; `send_typing` is a no-op.
 - **No threads or attachments**: ntfy is plain push notifications. Long replies stay in the message body, no thread fanout.
 - **No native user identity**: see the identity-model section above.

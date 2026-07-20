@@ -27,6 +27,7 @@
   font-display: swap;
   src: url('/fonts-terminal/JetBrainsMono-Regular.woff2') format('woff2');
 }
+
 @font-face {
   font-family: 'JetBrains Mono';
   font-style: normal;
@@ -34,6 +35,7 @@
   font-display: swap;
   src: url('/fonts-terminal/JetBrainsMono-Bold.woff2') format('woff2');
 }
+
 @font-face {
   font-family: 'JetBrains Mono';
   font-style: italic;
@@ -43,13 +45,13 @@
 }
 
 /* ------------------------------------------------------------------ */
-/* lucifexex Agent — Nous DS with the LENS_0lucifexifex teal) palette applied
+/* lucifex Agent — Nous DS with the LENS_0lucifexifex teal) palette applied
    statically as the default dashboard theme. */
 /* ------------------------------------------------------------------ */
 
 :root {
   /* LENS_0 — from design-language/src/ui/components/overlays/index.tsx.
-     These are the defaults for the `default` (lucifexex Teal) dashboard theme;
+     These are the defaults for the `default` (lucifex Teal) dashboard theme;
      ThemeProvider rewrites them as inline styles when a user switches themes. */
   --foreground: color-mix(in srgb, #ffffff 0%, transparent);
   --foreground-base: #ffffff;
@@ -80,7 +82,7 @@
 
   /* Data-series accents — consumed by Analytics + Models pages for the
      input-vs-output token visualisations (chart bars, table values,
-     legend swatches). Defaults are tuned for the lucifexex-teal LENS_0
+     legend swatches). Defaults are tuned for the lucifex-teal LENS_0
      look: cream input + emerald-400 output read as warm/cool against
      the dark canvas. Themes override via ThemeProvider, which emits
      these as `--series-input-token` / `--series-output-token`. */
@@ -108,7 +110,12 @@ body {
   overflow: hidden;
 }
 
-code, kbd, pre, samp, .font-mono, .font-mono-ui {
+code,
+kbd,
+pre,
+samp,
+.font-mono,
+.font-mono-ui {
   font-family: var(--theme-font-mono);
 }
 
@@ -130,6 +137,7 @@ code, kbd, pre, samp, .font-mono, .font-mono-ui {
 }
 
 @media (max-width: 768px) {
+
   html,
   body,
   #root {
@@ -141,10 +149,15 @@ code, kbd, pre, samp, .font-mono, .font-mono-ui {
   }
 }
 
-/* Nousnet's lucifexex-agent layout bumps `small` and `code` to readable
+/* Nousnet's lucifex-agent layout bumps `small` and `code` to readable
    dashboard sizes. Keep in sync. */
-small { font-size: 1.0625rem; }
-code { font-size: 0.875rem; }
+small {
+  font-size: 1.0625rem;
+}
+
+code {
+  font-size: 0.875rem;
+}
 
 /* Shadcn-compat tokens.
    The dashboard's page code predates the Nous DS and uses shadcn-style
@@ -189,28 +202,63 @@ code { font-size: 0.875rem; }
 
 /* Collapsed sidebar tooltip entrance — skipped when moving between items. */
 @keyframes sidebar-tooltip-in {
-  from { opacity: 0; transform: translateY(-50%) translateX(-4px); }
-  to   { opacity: 1; transform: translateY(-50%) translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-50%) translateX(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+  }
 }
 
 /* Toast animations used by `components/Toast.tsx`. */
 @keyframes toast-in {
-  from { opacity: 0; transform: translateX(16px); }
-  to   { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
+
 @keyframes toast-out {
-  from { opacity: 1; transform: translateX(0); }
-  to   { opacity: 0; transform: translateX(16px); }
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateX(16px);
+  }
 }
 
 /* Generic fade + dialog entrance used by popovers and confirm dialogs. */
 @keyframes fade-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
+
 @keyframes dialog-in {
-  from { opacity: 0; transform: translateY(4px) scale(0.98); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 /* Hide scrollbar utility — used by the header's overflow-x nav row. */
@@ -218,6 +266,7 @@ code { font-size: 0.875rem; }
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
 .scrollbar-none::-webkit-scrollbar {
   display: none;
 }
@@ -235,13 +284,12 @@ code { font-size: 0.875rem; }
 .grain {
   position: relative;
 }
+
 .grain::after {
   content: '';
   position: absolute;
   inset: 0;
   opacity: 0.12;
   pointer-events: none;
-  background: repeating-conic-gradient(currentColor 0% 25%, #0000 0% 50%) 0 0 /
-    2px 2px;
+  background: repeating-conic-gradient(currentColor 0% 25%, #0000 0% 50%) 0 0 / 2px 2px;
 }
-

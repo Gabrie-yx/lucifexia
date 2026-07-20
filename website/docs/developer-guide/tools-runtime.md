@@ -6,7 +6,7 @@ description: "Runtime behavior of the tool registry, toolsets, dispatch, and ter
 
 # Tools Runtime
 
-lucifexex tools are self-registering functions grouped into toolsets and executed through a central registry/dispatch system.
+lucifex tools are self-registering functions grouped into toolsets and executed through a central registry/dispatch system.
 
 Primary files:
 
@@ -94,12 +94,12 @@ Key behaviors:
 
 ## Toolset resolution
 
-Toolsets are named bundles of tools. lucifexex resolves them through:
+Toolsets are named bundles of tools. lucifex resolves them through:
 
 - explicit enabled/disabled toolset lists
-- platform presets (`lucifexex-cli`,lucifexifex-telegram`, etc.)
+- platform presets (`lucifex-cli`,lucifexifex-telegram`, etc.)
 - dynamic MCP toolsets
-- curated special-purpose sets like `lucifexex-acp`
+- curated special-purpose sets like `lucifex-acp`
 
 ### How `get_tool_definitions()` filters tools
 

@@ -22,7 +22,7 @@ from gateway.session import SessionEntry, SessionSource, build_session_key
 
 @pytest.fixture()
 def LUCIFEX_HOME(tmp_path, monkeypatch):
-    home = tmp_path / ".lucifexex"
+    home = tmp_path / ".lucifex"
     home.mkdir()
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     monkeypatch.setenv("LUCIFEX_HOME", str(home))

@@ -54,7 +54,7 @@ def seed_tasks(conn, kb, n, assignee="bench-worker", with_parents=False):
 
 
 def main():
-    home = tempfile.mkdtemp(prefix="lucifexex_bench_")
+    home = tempfile.mkdtemp(prefix="lucifex_bench_")
     os.environ["LUCIFEX_HOME"] = home
     os.environ["HOME"] = home
     sys.path.insert(0, WT)

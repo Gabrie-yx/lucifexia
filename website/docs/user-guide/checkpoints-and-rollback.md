@@ -7,12 +7,12 @@ description: "Filesystem safety nets for destructive operations using shadow git
 
 # Checkpoints and `/rollback`
 
-lucifexex Agent can automatically snapshot your project before **destructive operations** and restore it with a single command. Checkpoints are **opt-in** as of v2 — most users never use `/rollback`, and the shadow-store storage is non-trivial over time, so the default is off.
+lucifex Agent can automatically snapshot your project before **destructive operations** and restore it with a single command. Checkpoints are **opt-in** as of v2 — most users never use `/rollback`, and the shadow-store storage is non-trivial over time, so the default is off.
 
 Enable checkpoints per-session with `--checkpoints`:
 
 ```bash
-lucifexex chat --checkpoints
+lucifex chat --checkpoints
 ```
 
 Or enable globally in `~/.lucifex/config.yaml`:
@@ -48,27 +48,27 @@ CLI for inspecting and managing the store outside a session:
 
 | Command | Description |
 |---------|-------------|
-| `lucifexex checkpoints` | Show total size, project count, per-project breakdown |
-| `lucifexex checkpoints status` | Same as bare `checkpoints` |
-| `lucifexex checkpoints list` | Alias for `status` |
-| `lucifexex checkpoints prune` | Force a sweep: delete orphans/stale, GC, enforce size cap |
-| `lucifexex checkpoints clear` | Nuke the entire checkpoint base (asks first) |
-| `lucifexex checkpoints clear-legacy` | Delete only the `legacy-*` archives from v1 migration |
+| `lucifex checkpoints` | Show total size, project count, per-project breakdown |
+| `lucifex checkpoints status` | Same as bare `checkpoints` |
+| `lucifex checkpoints list` | Alias for `status` |
+| `lucifex checkpoints prune` | Force a sweep: delete orphans/stale, GC, enforce size cap |
+| `lucifex checkpoints clear` | Nuke the entire checkpoint base (asks first) |
+| `lucifex checkpoints clear-legacy` | Delete only the `legacy-*` archives from v1 migration |
 
 ## How Checkpoints Work
 
 At a high level:
 
-- lucifexex detects when tools are about to **modify files** in your working tree.
+- lucifex detects when tools are about to **modify files** in your working tree.
 - Once per conversation turn (per directory), it:
   - Resolves a reasonable project root for the file.
   - Initialises or reuses the **single shared shadow store** at `~/.lucifex/checkpoints/store/`.
-  - Stages into a per-project index, builds a tree, and commits to a per-project ref (`refs/lucifexex/<project-hash>`).
+  - Stages into a per-project index, builds a tree, and commits to a per-project ref (`refs/lucifex/<project-hash>`).
 - These per-project refs form a checkpoint history that you can inspect and restore via `/rollback`.
 
 ```mermaid
 flowchart LR
-  user["User command\n(lucifexex, gateway)"]
+  user["User command\n(lucifex, gateway)"]
   agent["AIAgent\n(run_agent.py)"]
   tools["File & terminal tools"]
   cpMgr["CheckpointManager"]
@@ -111,7 +111,7 @@ checkpoints:
   auto_prune: false
 ```
 
-When `enabled: false`, the Checkpoint Manager is a no-op and never attempts git operations. When `auto_prune: false`, the store grows until you run `lucifexex checkpoints prune` manually.
+When `enabled: false`, the Checkpoint Manager is a no-op and never attempts git operations. When `auto_prune: false`, the store grows until you run `lucifex checkpoints prune` manually.
 
 ## Listing Checkpoints
 
@@ -121,7 +121,7 @@ From a CLI session:
 /rollback
 ```
 
-lucifexex responds with a formatted list showing change statistics:
+lucifex responds with a formatted list showing change statistics:
 
 ```text
 📸 Checkpoints for /path/to/project:
@@ -138,13 +138,13 @@ lucifexex responds with a formatted list showing change statistics:
 ## Inspecting the Store from the Shell
 
 ```bash
-lucifexex checkpoints
+lucifex checkpoints
 ```
 
 Sample output:
 
 ```text
-Checkpoint base: /home/you/.lucifexex/checkpoints
+Checkpoint base: /home/you/.lucifex/checkpoints
 Total size:      142.3 MB
   store/         138.1 MB
   legacy-*       4.2 MB
@@ -159,13 +159,13 @@ Projects:        12
 Legacy archives (1):
   legacy-20260506-050616                           4.2 MB
 
-Clear with: lucifexex checkpoints clear-legacy
+Clear with: lucifex checkpoints clear-legacy
 ```
 
 Force a full sweep (ignores the 24h idempotency marker):
 
 ```bash
-lucifexex checkpoints prune --retention-days 3 --max-size-mb 200
+lucifex checkpoints prune --retention-days 3 --max-size-mb 200
 ```
 
 ## Previewing Changes with `/rollback diff`
@@ -184,7 +184,7 @@ This shows a git diff stat summary followed by the actual diff.
 /rollback 1
 ```
 
-Behind the scenes, lucifexex:
+Behind the scenes, lucifex:
 
 1. Verifies the target commit exists in the shadow store.
 2. Takes a **pre-rollback snapshot** of the current state so you can "undo the undo" later.
@@ -202,7 +202,7 @@ Restore just one file from a checkpoint without affecting the rest of the direct
 ## Safety and Performance Guards
 
 - **Git availability** — if `git` is not found on `PATH`, checkpoints are transparently disabled.
-- **Directory scope** — lucifexex skips overly broad directories (root `/`, home `$HOME`).
+- **Directory scope** — lucifex skips overly broad directories (root `/`, home `$HOME`).
 - **Repository size** — directories with more than 50,000 files are skipped.
 - **Per-file size cap** — files larger than `max_file_size_mb` (default 10 MB) are excluded from the snapshot. Prevents accidentally swallowing datasets, model weights, or generated media.
 - **Total store size cap** — when the store exceeds `max_total_size_mb` (default 500 MB), the oldest commit per project is dropped round-robin until under the cap.
@@ -216,7 +216,7 @@ Restore just one file from a checkpoint without affecting the rest of the direct
 ~/.lucifex/checkpoints/
   ├── store/                 # single shared bare git repo
   │   ├── HEAD, objects/     # git internals (shared across projects)
-  │   ├── refs/lucifexex/<hash> # per-project branch tip
+  │   ├── refs/lucifex/<hash> # per-project branch tip
   │   ├── indexes/<hash>     # per-project git index
   │   ├── projects/<hash>.json  # workdir + created_at + last_touch
   │   └── info/exclude
@@ -224,7 +224,7 @@ Restore just one file from a checkpoint without affecting the rest of the direct
   └── legacy-<ts>/           # archived pre-v2 per-project shadow repos
 ```
 
-Each `<hash>` is derived from the absolute path of the working directory. You normally never need to touch these manually — use `lucifexex checkpoints status` / `prune` / `clear` instead.
+Each `<hash>` is derived from the absolute path of the working directory. You normally never need to touch these manually — use `lucifex checkpoints status` / `prune` / `clear` instead.
 
 ### Migration from v1
 
@@ -233,17 +233,17 @@ Before the v2 rewrite, each working directory got its own complete shadow git re
 On first v2 run, any pre-v2 shadow repos are moved into `~/.lucifex/checkpoints/legacy-<timestamp>/` so the new single-store layout starts clean. Old `/rollback` history is still reachable by manually inspecting the legacy archive with `git`; once you're confident you don't need it, run:
 
 ```bash
-lucifexex checkpoints clear-legacy
+lucifex checkpoints clear-legacy
 ```
 
 to reclaim the space. Legacy archives are also swept by `auto_prune` after `retention_days`.
 
 ## Best Practices
 
-- **Enable checkpoints only when you need them** — `lucifexex chat --checkpoints` or per-profile `enabled: true`.
+- **Enable checkpoints only when you need them** — `lucifex chat --checkpoints` or per-profile `enabled: true`.
 - **Use `/rollback diff` before restoring** — preview what will change to pick the right checkpoint.
 - **Use `/rollback` instead of `git reset`** when you want to undo agent-driven changes only.
-- **Check `lucifexex checkpoints status` occasionally** if you use checkpoints regularly — shows which projects are active and what the store costs you.
-- **Combine with Git worktrees** for maximum safety — keep each lucifexex session in its own worktree/branch, with checkpoints as an extra layer.
+- **Check `lucifex checkpoints status` occasionally** if you use checkpoints regularly — shows which projects are active and what the store costs you.
+- **Combine with Git worktrees** for maximum safety — keep each lucifex session in its own worktree/branch, with checkpoints as an extra layer.
 
 For running multiple agents in parallel on the same repo, see the guide on [Git worktrees](./git-worktrees.md).

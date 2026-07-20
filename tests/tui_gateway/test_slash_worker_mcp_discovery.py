@@ -30,7 +30,7 @@ def test_profile_local_mcp_tool_is_visible_in_slash_worker(tmp_path):
             mcp = FastMCP("profileprobe")
 
             @mcp.tool()
-            def lucifexex_61922_profile_probe() -> str:
+            def lucifex_61922_profile_probe() -> str:
                 return {marker!r}
 
             if __name__ == "__main__":
@@ -60,8 +60,8 @@ def test_profile_local_mcp_tool_is_visible_in_slash_worker(tmp_path):
             env.pop(key)
     env["LUCIFEX_HOME"] = str(profile_home)
     env["PYTHONPATH"] = str(Path(__file__).resolve().parents[2])
-    env["lucifexex_SLASH_WATCHDOG_GRACE_S"] = "0"
-    env["lucifexex_SLASH_WATCHDOG_POLL_S"] = "0.05"
+    env["lucifex_SLASH_WATCHDOG_GRACE_S"] = "0"
+    env["lucifex_SLASH_WATCHDOG_POLL_S"] = "0.05"
     proc = subprocess.Popen(
         [
             sys.executable,
@@ -95,7 +95,7 @@ def test_profile_local_mcp_tool_is_visible_in_slash_worker(tmp_path):
             pytest.fail("slash worker produced no /tools response within 10 seconds")
         response = json.loads(line)
         assert response["ok"] is True
-        assert "mcp__profileprobe__lucifexex_61922_profile_probe" in response["output"]
+        assert "mcp__profileprobe__lucifex_61922_profile_probe" in response["output"]
     finally:
         proc.terminate()
         try:

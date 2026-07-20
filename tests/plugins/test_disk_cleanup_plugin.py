@@ -28,7 +28,7 @@ def _isolate_env(tmp_path, monkeypatch):
     but we want the plugin to work with a predictable subpath. We reset
     LUCIFEX_HOME here for clarity.
     """
-    LUCIFEX_HOME = tmp_path / ".lucifexex"
+    LUCIFEX_HOME = tmp_path / ".lucifex"
     LUCIFEX_HOME.mkdir()
     monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
     yield LUCIFEX_HOME
@@ -52,20 +52,20 @@ def _load_plugin_init():
     plugin_dir = repo_root / "plugins" / "disk-cleanup"
     # Use the PluginManager's module naming convention so relative imports work.
     spec = importlib.util.spec_from_file_location(
-        "lucifexex_plugins.disk_cleanup",
+        "lucifex_plugins.disk_cleanup",
         plugin_dir / "__init__.py",
         submodule_search_locations=[str(plugin_dir)],
     )
     # Ensure parent namespace package exists for the relative `. import disk_cleanup`
     import types
-    if "lucifexex_plugins" not in sys.modules:
-        ns = types.ModuleType("lucifexex_plugins")
+    if "lucifex_plugins" not in sys.modules:
+        ns = types.ModuleType("lucifex_plugins")
         ns.__path__ = []
-        sys.modules["lucifexex_plugins"] = ns
+        sys.modules["lucifex_plugins"] = ns
     mod = importlib.util.module_from_spec(spec)
-    mod.__package__ = "lucifexex_plugins.disk_cleanup"
+    mod.__package__ = "lucifex_plugins.disk_cleanup"
     mod.__path__ = [str(plugin_dir)]
-    sys.modules["lucifexex_plugins.disk_cleanup"] = mod
+    sys.modules["lucifex_plugins.disk_cleanup"] = mod
     spec.loader.exec_module(mod)
     return mod
 
@@ -86,9 +86,9 @@ class TestIsSafePath:
         dg = _load_lib()
         assert dg.is_safe_path(Path("/etc/passwd")) is False
 
-    def test_accepts_tmp_lucifexex_prefix(self, _isolate_env, tmp_path):
+    def test_accepts_tmp_lucifex_prefix(self, _isolate_env, tmp_path):
         dg = _load_lib()
-        assert dg.is_safe_path(Path("/tmp/lucifexex-abc/x.log")) is True
+        assert dg.is_safe_path(Path("/tmp/lucifex-abc/x.log")) is True
 
     def test_rejects_plain_tmp(self, _isolate_env):
         dg = _load_lib()

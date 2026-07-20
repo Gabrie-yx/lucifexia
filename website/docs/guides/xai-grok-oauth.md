@@ -1,18 +1,18 @@
 ﻿---
 sidebar_position: 16
 title: "xAI Grok OAuth (SuperGrok / X Premium+)"
-description: "Sign in with your SuperGrok or X Premium+ subscription to use Grok models in lucifexex Agent — no API key required"
+description: "Sign in with your SuperGrok or X Premium+ subscription to use Grok models in lucifex Agent — no API key required"
 ---
 
 # xAI Grok OAuth (SuperGrok / X Premium+)
 
-lucifexex Agent supports xAI Grok through a browser-based OAuth device-code login flow against [accounts.x.ai](https://accounts.x.ai), using either a **SuperGrok subscription** ([grok.com](https://x.ai/grok)) or an **X Premium+ subscription** (linked X account). No `XAI_API_KEY` is required — log in once anlucifexifex automatically refreshes your session in the background.
+lucifex Agent supports xAI Grok through a browser-based OAuth device-code login flow against [accounts.x.ai](https://accounts.x.ai), using either a **SuperGrok subscription** ([grok.com](https://x.ai/grok)) or an **X Premium+ subscription** (linked X account). No `XAI_API_KEY` is required — log in once anlucifexifex automatically refreshes your session in the background.
 
 When you sign in with an X account that has Premium+, xAI automatically links the subscription status to your xAI session, so the OAuth flow works the same as it does for direct SuperGrok subscribers.
 
 The transport reuses the `codex_responses` adapter (xAI exposes a Responses-style endpoint), so reasoning, tool-calling, streaming, and prompt caching work without any adapter changes.
 
-The same OAuth bearer token is also reused by every direct-to-xAI surface in lucifexex — TTS, image generation, video generation, and transcription — so a single login covers all four.
+The same OAuth bearer token is also reused by every direct-to-xAI surface in lucifex — TTS, image generation, video generation, and transcription — so a single login covers all four.
 
 ## Overview
 
@@ -31,7 +31,7 @@ The same OAuth bearer token is also reused by every direct-to-xAI surface in luc
 ## Prerequisites
 
 - Python 3.9+
-- lucifexex Agent installed
+- lucifex Agent installed
 - An active **SuperGrok** subscription on your xAI account, **or** an **X Premium+** subscription on the X account you sign in with (xAI links the subscription automatically)
 - A browser available anywhere you can open the printed verification URL
 
@@ -43,14 +43,14 @@ xAI's backend enforces its own allowlist on the OAuth API surface and has been s
 
 ```bash
 # Launch the provider and model picker
-lucifexex model
+lucifex model
 # → Select "xAI Grok OAuth (SuperGrok / X Premium+)" from the provider list
-# → lucifexex opens or prints an accounts.x.ai verification URL
+# → lucifex opens or prints an accounts.x.ai verification URL
 # → Enter the displayed code if prompted, then approve access in the browser
 # → Pick a model (grok-build-0.1 is at the top)
 # → Start chatting
 
-lucifexex
+lucifex
 ```
 
 After the first login, credentials are stored under `~/.lucifex/auth.json` and refreshed automatically before they expire.
@@ -60,31 +60,31 @@ After the first login, credentials are stored under `~/.lucifex/auth.json` and r
 You can trigger a login without going through the model picker:
 
 ```bash
-lucifexex auth add xai-oauth
+lucifex auth add xai-oauth
 ```
 
 ### Remote / headless sessions
 
-On servers, containers, browser-only consoles (Cloud Shell, Codespaces, EC2 Instance Connect), or SSH sessions where lucifexex cannot open a browser locallylucifexifex prints the xAI verification URL and user code. Open the URL in any browser on your laptop or in the cloud console, enter the code if prompted, lucifexucifex will keep polling until xAI approves the login. No SSH tunnel or local callback listener is required.
+On servers, containers, browser-only consoles (Cloud Shell, Codespaces, EC2 Instance Connect), or SSH sessions where lucifex cannot open a browser locallylucifexifex prints the xAI verification URL and user code. Open the URL in any browser on your laptop or in the cloud console, enter the code if prompted, lucifexucifex will keep polling until xAI approves the login. No SSH tunnel or local callback listener is required.
 
 ```bash
-lucifexex auth add xai-oauth --no-browser
+lucifex auth add xai-oauth --no-browser
 # Open the printed verification URL in your browser.
 ```
 
-The same device-code flow applies when you sign in from the web dashboard or the desktop app: lucifexex shows the verification URL and user code, then polls in the background until you approve access.
+The same device-code flow applies when you sign in from the web dashboard or the desktop app: lucifex shows the verification URL and user code, then polls in the background until you approve access.
 
 ## How the Login Works
 
-1. lucifexex requests a device code from `auth.x.ai`.
+1. lucifex requests a device code from `auth.x.ai`.
 2. You open the verification URL, sign in, enter the displayed code if prompted, and approve access.
-3. lucifexex polls xAI until approval, then saves tokens to `~/.lucifex/auth.json`.
-4. From then on, lucifexex refreshes the access token in the background — you stay signed in until youlucifexifex auth logout xai-oauth` or revoke access from your xAI account settings.
+3. lucifex polls xAI until approval, then saves tokens to `~/.lucifex/auth.json`.
+4. From then on, lucifex refreshes the access token in the background — you stay signed in until youlucifexifex auth logout xai-oauth` or revoke access from your xAI account settings.
 
 ## Checking Login Status
 
 ```bash
-lucifexex doctor
+lucifex doctor
 ```
 
 The `◆ Auth Providers` section will show the current state of every provider, including `xai-oauth`.
@@ -92,7 +92,7 @@ The `◆ Auth Providers` section will show the current state of every provider, 
 ## Switching Models
 
 ```bash
-lucifexex model
+lucifex model
 # → Select "xAI Grok OAuth (SuperGrok / X Premium+)"
 # → Pick from the model list (grok-build-0.1 is pinned to the top)
 ```
@@ -100,8 +100,8 @@ lucifexex model
 Or set the model directly:
 
 ```bash
-lucifexex config set model.default grok-build-0.1
-lucifexex config set model.provider xai-oauth
+lucifex config set model.default grok-build-0.1
+lucifex config set model.provider xai-oauth
 ```
 
 ## Configuration Reference
@@ -120,10 +120,10 @@ model:
 All of the following resolve to `xai-oauth`:
 
 ```bash
-lucifexex --provider xai-oauth        # canonical
-lucifexex --provider grok-oauth       # alias
-lucifexex --provider x-ai-oauth       # alias
-lucifexex --provider xai-grok-oauth   # alias
+lucifex --provider xai-oauth        # canonical
+lucifex --provider grok-oauth       # alias
+lucifex --provider x-ai-oauth       # alias
+lucifex --provider xai-grok-oauth   # alias
 ```
 
 ## Direct-to-xAI Tools (TTS / Image / Video / Transcription / X Search)
@@ -133,7 +133,7 @@ Once you're logged in via OAuth, every direct-to-xAI tool reuses the same bearer
 To pick a backend for each tool:
 
 ```bash
-lucifexex tools
+lucifex tools
 # → Text-to-Speech       → "xAI TTS"
 # → Image Generation     → "xAI Grok Imagine (image)"
 # → Video Generation     → "xAI Grok Imagine"
@@ -143,11 +143,11 @@ lucifexex tools
 If OAuth tokens are already stored, the picker confirms it and skips the credential prompt. If neither OAuth nor `XAI_API_KEY` is set, the picker offers a 3-choice menu: OAuth login, paste API key, or skip.
 
 :::note Video generation is off by default
-The `video_gen` toolset is disabled by default. Enable it in `lucifexex tools` → `🎬 Video Generation` (press space) before the agent can call `video_generate`. Otherwise the agent may fall back to the bundled ComfyUI skill, which is also tagged for video generation.
+The `video_gen` toolset is disabled by default. Enable it in `lucifex tools` → `🎬 Video Generation` (press space) before the agent can call `video_generate`. Otherwise the agent may fall back to the bundled ComfyUI skill, which is also tagged for video generation.
 :::
 
 :::note X search auto-enables when xAI credentials are present
-The `x_search` toolset auto-enables whenever xAI credentials (a SuperGrok / X Premium+ OAuth token or `XAI_API_KEY`) are configured. Disable explicitly via `lucifexex tools` → `🐦 X (Twitter) Search` (press space) if you don't want this. The tool routes through xAI's built-in `x_search` Responses API — it works with **either** your SuperGrok / X Premium+ OAuth login or a paid `XAI_API_KEY`, and prefers OAuth when both are configured (uses your subscription quota instead of API spend). The tool schema is hidden from the model when no xAI credentials are configured, regardless of whether the toolset is enabled.
+The `x_search` toolset auto-enables whenever xAI credentials (a SuperGrok / X Premium+ OAuth token or `XAI_API_KEY`) are configured. Disable explicitly via `lucifex tools` → `🐦 X (Twitter) Search` (press space) if you don't want this. The tool routes through xAI's built-in `x_search` Responses API — it works with **either** your SuperGrok / X Premium+ OAuth login or a paid `XAI_API_KEY`, and prefers OAuth when both are configured (uses your subscription quota instead of API spend). The tool schema is hidden from the model when no xAI credentials are configured, regardless of whether the toolset is enabled.
 :::
 
 ### Models
@@ -173,30 +173,30 @@ The chat catalog is derived live from the on-disk `models.dev` cache; new xAI re
 |----------|--------|
 | `XAI_BASE_URL` | Override the default `https://api.x.ai/v1` endpoint (rarely needed). |
 
-To select xAI as the active provider, set `model.provider: xai-oauth` in `config.yaml` (use `lucifexex setup` for the guided flow) or pass `--provider xai-oauth` for a single invocation.
+To select xAI as the active provider, set `model.provider: xai-oauth` in `config.yaml` (use `lucifex setup` for the guided flow) or pass `--provider xai-oauth` for a single invocation.
 
 ## Troubleshooting
 
 ### Token expired — not re-logging in automatically
 
-lucifexex refreshes the token before each session and again reactively on a 401. If refresh fails with `invalid_grant` (the refresh token was revoked, or the account was rotated)lucifexifex surfaces a typed re-auth message instead of crashing.
+lucifex refreshes the token before each session and again reactively on a 401. If refresh fails with `invalid_grant` (the refresh token was revoked, or the account was rotated)lucifexifex surfaces a typed re-auth message instead of crashing.
 
-When the refresh failure is terminal (HTTP 4xx, `invalid_grant`, revoked grant, etc.), lucifexex marks the refresh token as dead and quarantines it locally — subsequent calls skip the doomed refresh attempt instead of replaying the same 401 over and over. The agent surfaces a single "re-authentication required" message and stays out of the way until you log in again.
+When the refresh failure is terminal (HTTP 4xx, `invalid_grant`, revoked grant, etc.), lucifex marks the refresh token as dead and quarantines it locally — subsequent calls skip the doomed refresh attempt instead of replaying the same 401 over and over. The agent surfaces a single "re-authentication required" message and stays out of the way until you log in again.
 
-**Fix:** run `lucifexex auth add xai-oauth` again to start a fresh login. The quarantine clears on the next successful exchange.
+**Fix:** run `lucifex auth add xai-oauth` again to start a fresh login. The quarantine clears on the next successful exchange.
 
 ### Authorization timed out
 
-Device-code approval has a finite expiry window (xAI sets `expires_in` on the device-code response, typically on the order of tens of minutes). If you do not approve the login in time, lucifexex raises a timeout error.
+Device-code approval has a finite expiry window (xAI sets `expires_in` on the device-code response, typically on the order of tens of minutes). If you do not approve the login in time, lucifex raises a timeout error.
 
-**Fix:** re-run `lucifexex auth add xai-oauth` (orlucifexifex model`). The flow starts fresh.
+**Fix:** re-run `lucifex auth add xai-oauth` (orlucifexifex model`). The flow starts fresh.
 
 ### Logging in from a remote server
 
-On SSH or container sessions lucifexex prints the verification URL and user code instead of opening a browser. Open that URL in a browser on your laptop or in a cloud console — no SSH port forward is needed for xAI Grok OAuth.
+On SSH or container sessions lucifex prints the verification URL and user code instead of opening a browser. Open that URL in a browser on your laptop or in a cloud console — no SSH port forward is needed for xAI Grok OAuth.
 
 ```bash
-lucifexex auth add xai-oauth --no-browser
+lucifex auth add xai-oauth --no-browser
 ```
 
 For loopback-redirect providers (Spotify, MCP servers), see [OAuth over SSH / Remote Hosts](./oauth-over-ssh.md).
@@ -205,13 +205,13 @@ For loopback-redirect providers (Spotify, MCP servers), see [OAuth over SSH / Re
 
 OAuth completed in the browser, tokens are saved, but inference or token refresh returns `HTTP 403` with a message similar to *"The caller does not have permission to execute the specified operation"*.
 
-This is **not** a stale-token problem — re-running `lucifexex model` won't change it. xAI's backend has been seen to restrict OAuth API access to specific SuperGrok tiers despite the in-app subscription being active (issue [#26847](https://github.com/NousResearch/lucifex-agent/issues/26847)).
+This is **not** a stale-token problem — re-running `lucifex model` won't change it. xAI's backend has been seen to restrict OAuth API access to specific SuperGrok tiers despite the in-app subscription being active (issue [#26847](https://github.com/NousResearch/lucifex-agent/issues/26847)).
 
 **Fix:** set `XAI_API_KEY` and switch to the API-key path:
 
 ```bash
 export XAI_API_KEY=xai-...
-lucifexex config set model.provider xai
+lucifex config set model.provider xai
 ```
 
 Or upgrade your subscription at [x.ai/grok](https://x.ai/grok) if the OAuth route is required.
@@ -220,17 +220,17 @@ Or upgrade your subscription at [x.ai/grok](https://x.ai/grok) if the OAuth rout
 
 The auth store has no `xai-oauth` entry and no `XAI_API_KEY` is set. You haven't logged in yet, or the credential file was deleted.
 
-**Fix:** run `lucifexex model` and pick the xAI Grok OAuth provider, or runlucifexifex auth add xai-oauth`.
+**Fix:** run `lucifex model` and pick the xAI Grok OAuth provider, or runlucifexifex auth add xai-oauth`.
 
 ## Logging Out
 
 To remove all stored xAI Grok OAuth credentials:
 
 ```bash
-lucifexex auth logout xai-oauth
+lucifex auth logout xai-oauth
 ```
 
-This clears both the singleton OAuth entry in `auth.json` and any credential-pool rows for `xai-oauth`. Use `lucifexex auth remove xai-oauth <index|id|label>` if you only want to drop a single pool entry (runlucifexifex auth list xai-oauth` to see them).
+This clears both the singleton OAuth entry in `auth.json` and any credential-pool rows for `xai-oauth`. Use `lucifex auth remove xai-oauth <index|id|label>` if you only want to drop a single pool entry (runlucifexifex auth list xai-oauth` to see them).
 
 ## See Also
 

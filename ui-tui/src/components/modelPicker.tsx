@@ -275,12 +275,12 @@ export function ModelPicker({
                 prev.map(p =>
                   p.slug === provider.slug
                     ? {
-                        ...p,
-                        authenticated: false,
-                        models: [],
-                        total_models: 0,
-                        warning: p.key_env ? `paste ${p.key_env} to activate` : 'run `lucifexex model` to configure'
-                      }
+                      ...p,
+                      authenticated: false,
+                      models: [],
+                      total_models: 0,
+                      warning: p.key_env ? `paste ${p.key_env} to activate` : 'run `lucifex model` to configure'
+                    }
                     : p
                 )
               )
@@ -357,7 +357,7 @@ export function ModelPicker({
             setFilter('')
           }
 
-          // Other auth types: no-op (warning shown tells them to run lucifexex model)
+          // Other auth types: no-op (warning shown tells them to run lucifex model)
           return
         }
 

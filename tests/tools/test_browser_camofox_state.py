@@ -1,4 +1,4 @@
-"""Tests for lucifexex-managed Camofox state helpers."""
+"""Tests for lucifex-managed Camofox state helpers."""
 
 from unittest.mock import patch
 
@@ -47,7 +47,7 @@ class TestCamofoxIdentity:
             identity = state.get_camofox_identity()
             assert "user_id" in identity
             assert "session_key" in identity
-            assert identity["user_id"].startswith("lucifexex_")
+            assert identity["user_id"].startswith("lucifex_")
             assert identity["session_key"].startswith("task_")
 
 

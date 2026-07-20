@@ -44,13 +44,13 @@ lucifex将**当前工作目录**视为项目根目录：
 cd /path/to/your/repo
 
 # 在 ../repo-feature 中创建新分支和 worktree
-git worktree add ../repo-feature feature/lucifexexperiment
+git worktree add ../repo-feature feature/lucifexperiment
 ```
 
 这将创建：
 
 - 新目录：`../repo-feature`
-- 新分支：`feature/lucifexexperiment`，已在该目录中检出
+- 新分支：`feature/lucifexperiment`，已在该目录中检出
 
 现在可以 `cd` 进入新 worktree 并在其中运行 lucifex
 

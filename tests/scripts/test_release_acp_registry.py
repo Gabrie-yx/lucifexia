@@ -39,13 +39,13 @@ def _write_manifest(root: Path, version: str) -> None:
         json.dumps(
             {
                 "id": "lucifex-agent",
-                "name": "lucifexex Agent",
+                "name": "lucifex Agent",
                 "version": version,
                 "description": "test",
                 "distribution": {
                     "uvx": {
                         "package": f"lucifex-agent[acp]=={version}",
-                        "args": ["lucifexex-acp"],
+                        "args": ["lucifex-acp"],
                     }
                 },
             },
@@ -68,7 +68,7 @@ def test_update_acp_registry_versions_bumps_manifest_and_pin(monkeypatch, tmp_pa
     assert manifest["version"] == "0.14.0"
     assert manifest["distribution"]["uvx"]["package"] == "lucifex-agent[acp]==0.14.0"
     # args stay untouched so we don't accidentally rewrite them.
-    assert manifest["distribution"]["uvx"]["args"] == ["lucifexex-acp"]
+    assert manifest["distribution"]["uvx"]["args"] == ["lucifex-acp"]
 
 
 def test_update_acp_registry_versions_is_silent_when_manifest_missing(

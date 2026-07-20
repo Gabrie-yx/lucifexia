@@ -3,8 +3,8 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 
 const MAX = 1000
-const dir = process.env.LUCIFEX_HOME ?? join(homedir(), '.lucifexex')
-const file = join(dir, '.lucifexex_history')
+const dir = process.env.LUCIFEX_HOME ?? join(homedir(), '.lucifex')
+const file = join(dir, '.lucifex_history')
 
 let cache: string[] | null = null
 

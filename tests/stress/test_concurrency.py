@@ -117,7 +117,7 @@ def worker_loop(worker_id: int, LUCIFEX_HOME: str, result_file: str) -> None:
 
 
 def main():
-    home = tempfile.mkdtemp(prefix="lucifexex_concurrency_")
+    home = tempfile.mkdtemp(prefix="lucifex_concurrency_")
     print(f"LUCIFEX_HOME = {home}")
 
     # Seed.

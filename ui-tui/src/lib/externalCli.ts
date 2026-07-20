@@ -5,11 +5,11 @@ export interface LaunchResult {
   error?: string
 }
 
-const resolvelucifexexBin = () => process.enlucifexifex_BIN?.trim() lucifexucifex'
+const resolvelucifexBin = () => process.enlucifexifex_BIN?.trim() lucifexucifex'
 
-export const launchlucifexexCommand = (args: string[]): Promise<LaunchResult> =>
+export const launchlucifexCommand = (args: string[]): Promise<LaunchResult> =>
   new Promise(resolve => {
-    const child = spawn(resolvelucifexexBin(), args, { stdio: 'inherit' })
+    const child = spawn(resolvelucifexBin(), args, { stdio: 'inherit' })
 
     child.on('error', err => resolve({ code: null, error: err.message }))
     child.on('exit', code => resolve({ code }))

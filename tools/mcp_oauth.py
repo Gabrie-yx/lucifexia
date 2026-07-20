@@ -31,7 +31,7 @@ Configuration in config.yaml::
           redirect_port: 0                      # 0 = auto-pick free port
           redirect_uri: "https://proxy/callback"  # default: loopback callback
           redirect_host: "localhost"            # loopback hostname (WAF-safe)
-          client_name: "My Custom Client"       # default: "lucifexex Agent"
+          client_name: "My Custom Client"       # default: "lucifex Agent"
 """
 
 import asyncio
@@ -123,7 +123,7 @@ _SKIP_TOKENS = frozenset({"skip", "cancel", "s", "n", "no", "q", "quit"})
 # _wait_for_callback maps this to OAuthNonInteractiveError ("user_skipped")
 # so the MCP setup path treats it as a non-fatal "continue without this
 # server" rather than a hard failure.
-_USER_SKIPPED_SENTINEL = "__lucifexex_user_skipped__"
+_USER_SKIPPED_SENTINEL = "__lucifex_user_skipped__"
 
 
 # ---------------------------------------------------------------------------
@@ -141,7 +141,7 @@ def _get_token_dir(LUCIFEX_HOME: str | Path | None = None) -> Path:
         from lucifex_constants import get_lucifex_home
         base = Path(LUCIFEX_HOME) if LUCIFEX_HOME is not None else Path(get_lucifex_home())
     except ImportError:
-        base = Path(os.environ.get("LUCIFEX_HOME", str(Path.home() / ".lucifexex")))
+        base = Path(os.environ.get("LUCIFEX_HOME", str(Path.home() / ".lucifex")))
     return base / "mcp-tokens"
 
 
@@ -198,7 +198,7 @@ def _cached_redirect_port(storage: "LucifexTokenStorage | None") -> int | None:
     """Return the loopback callback port from cached client registration.
 
     OAuth providers bind a dynamically-registered ``client_id`` to the exact
-    redirect URI that was registered with it. If lucifexex restarts and chooses a
+    redirect URI that was registered with it. If lucifex restarts and chooses a
     new random callback port while reusing the stored ``client_id``, providers
     such as Summ reject the authorization request with ``redirect_uri does not
     match any registered URIs``. Reusing the cached redirect port keeps the
@@ -263,13 +263,13 @@ def _raise_if_non_interactive(lead: str) -> None:
     """Raise ``OAuthNonInteractiveError`` unless an interactive session exists.
 
     ``lead`` is the boundary-specific first sentence; this helper appends the
-    shared, actionable ``lucifexex mcp login`` next-step so the guidance wording
+    shared, actionable ``lucifex mcp login`` next-step so the guidance wording
     lives in one place across every non-interactive OAuth boundary (#57836).
     """
     if not _is_interactive():
         raise OAuthNonInteractiveError(
             f"{lead} "
-            "Run `lucifexex mcp login <server>` interactively to (re)authorize, "
+            "Run `lucifex mcp login <server>` interactively to (re)authorize, "
             "then restart or reload the gateway."
         )
 
@@ -407,7 +407,7 @@ class LucifexTokenStorage:
         data = _read_json(self._tokens_path())
         if data is None:
             return None
-        # lucifexex records an absolute wall-clock ``expires_at`` alongside the
+        # lucifex records an absolute wall-clock ``expires_at`` alongside the
         # SDK's serialized token (see ``set_tokens``). On read we rewrite
         # ``expires_in`` to the remaining seconds so the SDK's downstream
         # ``update_token_expiry`` computes the correct absolute time and
@@ -619,7 +619,7 @@ def _make_callback_handler() -> tuple[type, dict]:
 
             body = (
                 "<html><body><h2>Authorization Successful</h2>"
-                "<p>You can close this tab and return to lucifexex.</p></body></html>"
+                "<p>You can close this tab and return to lucifex.</p></body></html>"
             ) if code else (
                 "<html><body><h2>Authorization Failed</h2>"
                 f"<p>Error: {error or 'unknown'}</p></body></html>"
@@ -924,7 +924,7 @@ def _paste_callback_reader(result: dict) -> None:
             return
         result["error"] = _USER_SKIPPED_SENTINEL
         print(
-            "  OAuth skipped. Run `lucifexex mcp login <server>` later to "
+            "  OAuth skipped. Run `lucifex mcp login <server>` later to "
             "authenticate, or set ``enabled: false`` on that server in "
             "config.yaml to disable persistently.",
             file=sys.stderr,
@@ -1079,7 +1079,7 @@ def _build_client_metadata(cfg: dict) -> "OAuthClientMetadata":
         raise ValueError(
             "_configure_callback_port() must be called before _build_client_metadata()"
         )
-    client_name = cfg.get("client_name", "lucifexex Agent")
+    client_name = cfg.get("client_name", "lucifex Agent")
     scope = cfg.get("scope")
     redirect_uri = _resolve_redirect_uri(cfg, port)
 
@@ -1165,7 +1165,7 @@ def build_oauth_auth(
             "MCP OAuth for "
             f"'{server_name}': non-interactive environment and no cached tokens "
             "found. The OAuth flow requires browser authorization. Run "
-            f"`lucifexex mcp login {server_name}` interactively first to complete "
+            f"`lucifex mcp login {server_name}` interactively first to complete "
             "initial authorization, then cached tokens will be reused."
         )
 

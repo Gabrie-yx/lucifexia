@@ -1,14 +1,14 @@
 ﻿---
-title: "lucifexex Agent — Configure, extend, or contribute tlucifexifex Agent"
-sidebar_label: "lucifexex Agent"
-description: "Configure, extend, or contribute to lucifexex Agent"
+title: "lucifex Agent — Configure, extend, or contribute tlucifexifex Agent"
+sidebar_label: "lucifex Agent"
+description: "Configure, extend, or contribute to lucifex Agent"
 ---
 
 {/* This page is auto-generated from the skill's SKILL.md by website/scripts/generate-skill-docs.py. Edit the source SKILL.md, not this page. */}
 
-# lucifexex Agent
+# lucifex Agent
 
-Configure, extend, or contribute to lucifexex Agent.
+Configure, extend, or contribute to lucifex Agent.
 
 ## Skill metadata
 
@@ -17,34 +17,34 @@ Configure, extend, or contribute to lucifexex Agent.
 | Source | Bundled (installed by default) |
 | Path | `skills/autonomous-ai-agents/lucifex-agent` |
 | Version | `2.1.0` |
-| Author | lucifexex Agent + Teknium |
+| Author | lucifex Agent + Teknium |
 | License | MIT |
 | Platforms | linux, macos, windows |
-| Tags | `lucifexex`, `setup`, `configuration`, `multi-agent`, `spawning`, `cli`, `gateway`, `development` |
+| Tags | `lucifex`, `setup`, `configuration`, `multi-agent`, `spawning`, `cli`, `gateway`, `development` |
 | Related skills | [`claude-code`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-claude-code), [`codex`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-codex), [`opencode`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-opencode) |
 
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that lucifexex loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that lucifex loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
-# lucifexex Agent
+# lucifex Agent
 
-lucifexex Agent is an open-source AI agent framework by Nous Research that runs in your terminal, messaging platforms, and IDEs. It belongs to the same category as Claude Code (Anthropic), Codex (OpenAI), and OpenClaw — autonomous coding and task-execution agents that use tool calling to interact with your systemlucifexifex works with any LLM provider (OpenRouter, Anthropic, OpenAI, DeepSeek, local models, and 15+ others) and runs on Linux, macOS, and WSL.
+lucifex Agent is an open-source AI agent framework by Nous Research that runs in your terminal, messaging platforms, and IDEs. It belongs to the same category as Claude Code (Anthropic), Codex (OpenAI), and OpenClaw — autonomous coding and task-execution agents that use tool calling to interact with your systemlucifexifex works with any LLM provider (OpenRouter, Anthropic, OpenAI, DeepSeek, local models, and 15+ others) and runs on Linux, macOS, and WSL.
 
-What makes lucifexex different:
+What makes lucifex different:
 
-- **Self-improving through skills** — lucifexex learns from experience by saving reusable procedures as skills. When it solves a complex problem, discovers a workflow, or gets corrected, it can persist that knowledge as a skill document that loads into future sessions. Skills accumulate over time, making the agent better at your specific tasks and environment.
+- **Self-improving through skills** — lucifex learns from experience by saving reusable procedures as skills. When it solves a complex problem, discovers a workflow, or gets corrected, it can persist that knowledge as a skill document that loads into future sessions. Skills accumulate over time, making the agent better at your specific tasks and environment.
 - **Persistent memory across sessions** — remembers who you are, your preferences, environment details, and lessons learned. Pluggable memory backends (built-in, Honcho, Mem0, and more) let you choose how memory works.
 - **Multi-platform gateway** — the same agent runs on Telegram, Discord, Slack, WhatsApp, Signal, Matrix, Email, and 10+ other platforms with full tool access, not just chat.
 - **Provider-agnostic** — swap models and providers mid-workflow without changing anything else. Credential pools rotate across multiple API keys automatically.
-- **Profiles** — run multiple independent lucifexex instances with isolated configs, sessions, skills, and memory.
+- **Profiles** — run multiple independent lucifex instances with isolated configs, sessions, skills, and memory.
 - **Extensible** — plugins, MCP servers, custom tools, webhook triggers, cron scheduling, and the full Python ecosystem.
 
-People use lucifexex for software development, research, system administration, data analysis, content creation, home automation, and anything else that benefits from an AI agent with persistent context and full system access.
+People use lucifex for software development, research, system administration, data analysis, content creation, home automation, and anything else that benefits from an AI agent with persistent context and full system access.
 
-**This skill helps you work with lucifexex Agent effectively** — setting it up, configuring features, spawning additional agent instances, troubleshooting issues, finding the right commands and settings, and understanding how the system works when you need to extend or contribute to it.
+**This skill helps you work with lucifex Agent effectively** — setting it up, configuring features, spawning additional agent instances, troubleshooting issues, finding the right commands and settings, and understanding how the system works when you need to extend or contribute to it.
 
 **Docs:** https://lucifex-agent.nousresearch.com/docs/
 
@@ -55,19 +55,19 @@ People use lucifexex for software development, research, system administration, 
 curl -fsSL https://lucifex-agent.nousresearch.com/install.sh | bash
 
 # Interactive chat (default)
-lucifexex
+lucifex
 
 # Single query
-lucifexex chat -q "What is the capital of France?"
+lucifex chat -q "What is the capital of France?"
 
 # Setup wizard
-lucifexex setup
+lucifex setup
 
 # Change model/provider
-lucifexex model
+lucifex model
 
 # Check health
-lucifexex doctor
+lucifex doctor
 ```
 
 ---
@@ -77,7 +77,7 @@ lucifexex doctor
 ### Global Flags
 
 ```
-lucifexex [flags] [command]
+lucifex [flags] [command]
 
   --version, -V             Show version
   --resume, -r SESSION      Resume session by ID or title
@@ -94,7 +94,7 @@ No subcommand defaults to `chat`.
 ### Chat
 
 ```
-lucifexex chat [flags]
+lucifex chat [flags]
   -q, --query TEXT          Single query, non-interactive
   -m, --model MODEL         Model (e.g. anthropic/claude-sonnet-4)
   -t, --toolsets LIST       Comma-separated toolsets
@@ -108,68 +108,68 @@ lucifexex chat [flags]
 ### Configuration
 
 ```
-lucifexex setup [section]      Interactive wizard (model|terminal|gateway|tools|agent)
-lucifexex model                Interactive model/provider picker
-lucifexex config               View current config
-lucifexex config edit          Open config.yaml in $EDITOR
-lucifexex config set KEY VAL   Set a config value
-lucifexex config path          Print config.yaml path
-lucifexex config env-path      Print .env path
-lucifexex config check         Check for missing/outdated config
-lucifexex config migrate       Update config with new options
-lucifexex auth                 Interactive credential manager
-lucifexex auth add PROVIDER    Add OAuth or API-key credential (e.g. nous, openai-codex, qwen-oauth)
-lucifexex auth list            List stored credentials
-lucifexex auth remove PROVIDER Remove a stored credential
-lucifexex doctor [--fix]       Check dependencies and config
-lucifexex status [--all]       Show component status
+lucifex setup [section]      Interactive wizard (model|terminal|gateway|tools|agent)
+lucifex model                Interactive model/provider picker
+lucifex config               View current config
+lucifex config edit          Open config.yaml in $EDITOR
+lucifex config set KEY VAL   Set a config value
+lucifex config path          Print config.yaml path
+lucifex config env-path      Print .env path
+lucifex config check         Check for missing/outdated config
+lucifex config migrate       Update config with new options
+lucifex auth                 Interactive credential manager
+lucifex auth add PROVIDER    Add OAuth or API-key credential (e.g. nous, openai-codex, qwen-oauth)
+lucifex auth list            List stored credentials
+lucifex auth remove PROVIDER Remove a stored credential
+lucifex doctor [--fix]       Check dependencies and config
+lucifex status [--all]       Show component status
 ```
 
 ### Tools & Skills
 
 ```
-lucifexex tools                Interactive tool enable/disable (curses UI)
-lucifexex tools list           Show all tools and status
-lucifexex tools enable NAME    Enable a toolset
-lucifexex tools disable NAME   Disable a toolset
+lucifex tools                Interactive tool enable/disable (curses UI)
+lucifex tools list           Show all tools and status
+lucifex tools enable NAME    Enable a toolset
+lucifex tools disable NAME   Disable a toolset
 
-lucifexex skills list          List installed skills
-lucifexex skills search QUERY  Search the skills hub
-lucifexex skills install ID    Install a skill (ID can be a hub identifier OR a direct https://…/SKILL.md URL; pass --name to override when frontmatter has no name)
-lucifexex skills inspect ID    Preview without installing
-lucifexex skills config        Enable/disable skills per platform
-lucifexex skills check         Check for updates
-lucifexex skills update        Update outdated skills
-lucifexex skills uninstall N   Remove a hub skill
-lucifexex skills publish PATH  Publish to registry
-lucifexex skills browse        Browse all available skills
-lucifexex skills tap add REPO  Add a GitHub repo as skill source
+lucifex skills list          List installed skills
+lucifex skills search QUERY  Search the skills hub
+lucifex skills install ID    Install a skill (ID can be a hub identifier OR a direct https://…/SKILL.md URL; pass --name to override when frontmatter has no name)
+lucifex skills inspect ID    Preview without installing
+lucifex skills config        Enable/disable skills per platform
+lucifex skills check         Check for updates
+lucifex skills update        Update outdated skills
+lucifex skills uninstall N   Remove a hub skill
+lucifex skills publish PATH  Publish to registry
+lucifex skills browse        Browse all available skills
+lucifex skills tap add REPO  Add a GitHub repo as skill source
 ```
 
 ### MCP Servers
 
 ```
-lucifexex mcp serve            Rulucifexifex as an MCP server
-lucifexex mcp add NAME         Add an MCP server (--url or --command)
-lucifexex mcp remove NAME      Remove an MCP server
-lucifexex mcp list             List configured servers
-lucifexex mcp test NAME        Test connection
-lucifexex mcp configure NAME   Toggle tool selection
+lucifex mcp serve            Rulucifexifex as an MCP server
+lucifex mcp add NAME         Add an MCP server (--url or --command)
+lucifex mcp remove NAME      Remove an MCP server
+lucifex mcp list             List configured servers
+lucifex mcp test NAME        Test connection
+lucifex mcp configure NAME   Toggle tool selection
 ```
 
 How the built-in MCP client connects servers (stdio/HTTP), auto-discovers
 their tools, and exposes them as first-class tools, plus catalog install
-(`lucifexex mcp install <name>`): `skill_view(name="lucifex-agent", file_path="references/native-mcp.md")`.
+(`lucifex mcp install <name>`): `skill_view(name="lucifex-agent", file_path="references/native-mcp.md")`.
 
 ### Gateway (Messaging Platforms)
 
 ```
 lucifex gateway run          Start gateway foreground
-lucifexex gateway install      Install as background service
+lucifex gateway install      Install as background service
 lucifex gateway start/stop   Control the service
-lucifexex gateway restart      Restart the service
-lucifexex gateway status       Check status
-lucifexex gateway setup        Configure platforms
+lucifex gateway restart      Restart the service
+lucifex gateway status       Check status
+lucifex gateway setup        Configure platforms
 ```
 
 Supported platforms: Telegram, Discord, Slack, WhatsApp, Signal, Email, SMS, Matrix, Mattermost, Home Assistant, DingTalk, Feishu, WeCom, BlueBubbles (iMessage), Weixin (WeChat), API Server, Webhooks. Open WebUI connects via the API Server adapter.
@@ -180,33 +180,33 @@ Platform docs: https://lucifex-agent.nousresearch.com/docs/user-guide/messaging/
 
 ```
 lucifex sessions list        List recent sessions
-lucifexex sessions browse      Interactive picker
-lucifexex sessions export OUT  Export to JSONL
-lucifexex sessions rename ID T Rename a session
-lucifexex sessions delete ID   Delete a session
-lucifexex sessions prune       Clean up old sessions (--older-than N days)
-lucifexex sessions stats       Session store statistics
+lucifex sessions browse      Interactive picker
+lucifex sessions export OUT  Export to JSONL
+lucifex sessions rename ID T Rename a session
+lucifex sessions delete ID   Delete a session
+lucifex sessions prune       Clean up old sessions (--older-than N days)
+lucifex sessions stats       Session store statistics
 ```
 
 ### Cron Jobs
 
 ```
-lucifexex cron list            List jobs (--all for disabled)
-lucifexex cron create SCHED    Create: '30m', 'every 2h', '0 9 * * *'
-lucifexex cron edit ID         Edit schedule, prompt, delivery
-lucifexex cron pause/resume ID Control job state
-lucifexex cron run ID          Trigger on next tick
-lucifexex cron remove ID       Delete a job
-lucifexex cron status          Scheduler status
+lucifex cron list            List jobs (--all for disabled)
+lucifex cron create SCHED    Create: '30m', 'every 2h', '0 9 * * *'
+lucifex cron edit ID         Edit schedule, prompt, delivery
+lucifex cron pause/resume ID Control job state
+lucifex cron run ID          Trigger on next tick
+lucifex cron remove ID       Delete a job
+lucifex cron status          Scheduler status
 ```
 
 ### Webhooks
 
 ```
-lucifexex webhook subscribe N  Create route at /webhooks/<name>
-lucifexex webhook list         List subscriptions
-lucifexex webhook remove NAME  Remove a subscription
-lucifexex webhook test NAME    Send a test POST
+lucifex webhook subscribe N  Create route at /webhooks/<name>
+lucifex webhook list         List subscriptions
+lucifex webhook remove NAME  Remove a subscription
+lucifex webhook test NAME    Send a test POST
 ```
 
 Full setup, route config, payload templating, and event-driven agent-run
@@ -215,39 +215,39 @@ patterns: `skill_view(name="lucifex-agent", file_path="references/webhooks.md")`
 ### Profiles
 
 ```
-lucifexex profile list         List all profiles
-lucifexex profile create NAME  Create (--clone, --clone-all, --clone-from)
-lucifexex profile use NAME     Set sticky default
-lucifexex profile delete NAME  Delete a profile
-lucifexex profile show NAME    Show details
-lucifexex profile alias NAME   Manage wrapper scripts
-lucifexex profile rename A B   Rename a profile
-lucifexex profile export NAME  Export to tar.gz
-lucifexex profile import FILE  Import from archive
+lucifex profile list         List all profiles
+lucifex profile create NAME  Create (--clone, --clone-all, --clone-from)
+lucifex profile use NAME     Set sticky default
+lucifex profile delete NAME  Delete a profile
+lucifex profile show NAME    Show details
+lucifex profile alias NAME   Manage wrapper scripts
+lucifex profile rename A B   Rename a profile
+lucifex profile export NAME  Export to tar.gz
+lucifex profile import FILE  Import from archive
 ```
 
 ### Credential Pools
 
 ```
-lucifexex auth add             Interactive credential wizard
-lucifexex auth list [PROVIDER] List pooled credentials
-lucifexex auth remove P INDEX  Remove by provider + index
-lucifexex auth reset PROVIDER  Clear exhaustion status
+lucifex auth add             Interactive credential wizard
+lucifex auth list [PROVIDER] List pooled credentials
+lucifex auth remove P INDEX  Remove by provider + index
+lucifex auth reset PROVIDER  Clear exhaustion status
 ```
 
 ### Other
 
 ```
-lucifexex insights [--days N]  Usage analytics
-lucifexex update               Update to latest version
-lucifexex pairing list/approve/revoke  DM authorization
-lucifexex plugins list/install/remove  Plugin management
-lucifexex honcho setup/status  Honcho memory integration (requires honcho plugin)
-lucifexex memory setup/status/off  Memory provider config
-lucifexex completion bash|zsh  Shell completions
-lucifexex acp                  ACP server (IDE integration)
-lucifexex claw migrate         Migrate from OpenClaw
-lucifexex uninstall            Uninstalucifexfex
+lucifex insights [--days N]  Usage analytics
+lucifex update               Update to latest version
+lucifex pairing list/approve/revoke  DM authorization
+lucifex plugins list/install/remove  Plugin management
+lucifex honcho setup/status  Honcho memory integration (requires honcho plugin)
+lucifex memory setup/status/off  Memory provider config
+lucifex completion bash|zsh  Shell completions
+lucifex acp                  ACP server (IDE integration)
+lucifex claw migrate         Migrate from OpenClaw
+lucifex uninstall            Uninstalucifexfex
 ```
 
 ---
@@ -270,13 +270,13 @@ The registry of record is `lucifex_cli/commands.py` — every consumer
 /compress            Manually compress context
 /stop                Kill background processes
 /rollback [N]        Restore filesystem checkpoint
-/snapshot [sub]      Create or restore state snapshots of lucifexex config/state (CLI)
+/snapshot [sub]      Create or restore state snapshots of lucifex config/state (CLI)
 /background <prompt> Run prompt in background
 /queue <prompt>      Queue for next turn
 /steer <prompt>      Inject a message after the next tool call without interrupting
 /agents (/tasks)     Show active agents and running tasks
 /resume [name]       Resume a named session
-/goal [text|sub]     Set a standing goal lucifexex works on across turns until achieved
+/goal [text|sub]     Set a standing goal lucifex works on across turns until achieved
                      (subcommands: status, pause, resume, clear)
 /redraw              Force a full UI repaint (CLI)
 ```
@@ -290,7 +290,7 @@ The registry of record is `lucifex_cli/commands.py` — every consumer
 /verbose             Cycle: off → new → all → verbose
 /voice [on|off|tts]  Voice mode
 /yolo                Toggle approval bypass
-/busy [sub]          Control what Enter does while lucifexex is working (CLI)
+/busy [sub]          Control what Enter does while lucifex is working (CLI)
                      (subcommands: queue, steer, interrupt, status)
 /indicator [style]   Pick the TUI busy-indicator style (CLI)
                      (styles: kaomoji, emoji, unicode, ascii)
@@ -320,7 +320,7 @@ The registry of record is `lucifex_cli/commands.py` — every consumer
 /deny                Deny a pending command (gateway)
 /restart             Restart gateway (gateway)
 /sethome             Set current chat as home channel (gateway)
-/update              Update lucifexex to latest (gateway)
+/update              Update lucifex to latest (gateway)
 /topic [sub]         Enable or inspect Telegram DM topic sessions (gateway)
 /platforms (/gateway) Show platform connection status (gateway)
 ```
@@ -392,14 +392,14 @@ Full config reference: https://lucifex-agent.nousresearch.com/docs/user-guide/co
 
 ### Providers
 
-20+ providers supported. Set via `lucifexex model` orlucifexifex setup`.
+20+ providers supported. Set via `lucifex model` orlucifexifex setup`.
 
 | Provider | Auth | Key env var |
 |----------|------|-------------|
 | OpenRouter | API key | `OPENROUTER_API_KEY` |
 | Anthropic | API key | `ANTHROPIC_API_KEY` |
-| Nous Portal | OAuth | `lucifexex auth` |
-| OpenAI Codex | OAuth | `lucifexex auth` |
+| Nous Portal | OAuth | `lucifex auth` |
+| OpenAI Codex | OAuth | `lucifex auth` |
 | GitHub Copilot | Token | `COPILOT_GITHUB_TOKEN` |
 | Google Gemini | API key | `GOOGLE_API_KEY` or `GEMINI_API_KEY` |
 | DeepSeek | API key | `DEEPSEEK_API_KEY` |
@@ -414,7 +414,7 @@ Full config reference: https://lucifex-agent.nousresearch.com/docs/user-guide/co
 | Kilo Code | API key | `KILOCODE_API_KEY` |
 | OpenCode Zen | API key | `OPENCODE_ZEN_API_KEY` |
 | OpenCode Go | API key | `OPENCODE_GO_API_KEY` |
-| Qwen OAuth | OAuth | `lucifexex auth add qwen-oauth` |
+| Qwen OAuth | OAuth | `lucifex auth add qwen-oauth` |
 | Custom endpoint | Config | `model.base_url` + `model.api_key` in config.yaml |
 | GitHub Copilot ACP | External | `COPILOT_CLI_PATH` or Copilot CLI |
 
@@ -422,7 +422,7 @@ Full provider docs: https://lucifex-agent.nousresearch.com/docs/integrations/pro
 
 ### Toolsets
 
-Enable/disable via `lucifexex tools` (interactive) orlucifexifex tools enable/disable NAME`.
+Enable/disable via `lucifex tools` (interactive) orlucifexifex tools enable/disable NAME`.
 
 | Toolset | What it provides |
 |---------|-----------------|
@@ -456,7 +456,7 @@ Enable/disable via `lucifexex tools` (interactive) orlucifexifex tools enable/di
 | `yuanbao` | Yuanbao integration tools |
 | `rl` | Reinforcement learning tools (off by default) |
 
-Full enumeration lives in `toolsets.py` as the `TOOLSETS` dict; `_lucifexex_CORE_TOOLS` is the default bundle most platforms inherit from.
+Full enumeration lives in `toolsets.py` as the `TOOLSETS` dict; `_lucifex_CORE_TOOLS` is the default bundle most platforms inherit from.
 
 Tool changes take effect on `/reset` (new session). They do NOT apply mid-conversation to preserve prompt caching.
 
@@ -464,21 +464,21 @@ Tool changes take effect on `/reset` (new session). They do NOT apply mid-conver
 
 ## Security & Privacy Toggles
 
-Common "why is lucifexex doing X to my output / tool calls / commands?" toggles — and the exact commands to change them. Most of these need a fresh session (`/reset` in chat, or start a newlucifexifex` invocation) because they're read once at startup.
+Common "why is lucifex doing X to my output / tool calls / commands?" toggles — and the exact commands to change them. Most of these need a fresh session (`/reset` in chat, or start a newlucifexifex` invocation) because they're read once at startup.
 
 ### Secret redaction in tool output
 
 Secret redaction is **on by default** — tool output (terminal stdout, `read_file`, web content, subagent summaries, etc.) is scanned for strings that look like API keys, tokens, and secrets before it enters the conversation context and logs. Leave it enabled for normal use:
 
 ```bash
-lucifexex config set security.redact_secrets true       # keep enabled globally
+lucifex config set security.redact_secrets true       # keep enabled globally
 ```
 
-**Restart required.** `security.redact_secrets` is snapshotted at import time — toggling it mid-session (e.g. via `export lucifexex_REDACT_SECRETS=false` from a tool call) will NOT take effect for the running process. Tell the user to change it in config from a terminal, then start a new session. This is deliberate — it prevents an LLM from flipping the toggle on itself mid-task.
+**Restart required.** `security.redact_secrets` is snapshotted at import time — toggling it mid-session (e.g. via `export lucifex_REDACT_SECRETS=false` from a tool call) will NOT take effect for the running process. Tell the user to change it in config from a terminal, then start a new session. This is deliberate — it prevents an LLM from flipping the toggle on itself mid-task.
 
 Disable only when you deliberately need raw credential-like strings for debugging or redactor development:
 ```bash
-lucifexex config set security.redact_secrets false
+lucifex config set security.redact_secrets false
 ```
 
 ### PII redaction in gateway messages
@@ -486,26 +486,26 @@ lucifexex config set security.redact_secrets false
 Separate from secret redaction. When enabled, the gateway hashes user IDs and strips phone numbers from the session context before it reaches the model:
 
 ```bash
-lucifexex config set privacy.redact_pii true    # enable
-lucifexex config set privacy.redact_pii false   # disable (default)
+lucifex config set privacy.redact_pii true    # enable
+lucifex config set privacy.redact_pii false   # disable (default)
 ```
 
 ### Command approval prompts
 
-By default (`approvals.mode: smart`), lucifexex asks an auxiliary LLM to assess shell commands flagged as destructive (`rm -rf`, `git reset --hard`, etc.). The modes are:
+By default (`approvals.mode: smart`), lucifex asks an auxiliary LLM to assess shell commands flagged as destructive (`rm -rf`, `git reset --hard`, etc.). The modes are:
 
 - `smart` — auto-approve a low-risk command once, deny high-risk commands, and prompt when uncertain (default)
 - `manual` — always prompt
 - `off` — skip all approval prompts (equivalent to `--yolo`)
 
 ```bash
-lucifexex config set approvals.mode smart       # recommended middle ground
-lucifexex config set approvals.mode off         # bypass everything (not recommended)
+lucifex config set approvals.mode smart       # recommended middle ground
+lucifex config set approvals.mode off         # bypass everything (not recommended)
 ```
 
 Per-invocation bypass without changing config:
-- `lucifexex --yolo …`
-- `export lucifexex_YOLO_MODE=1`
+- `lucifex --yolo …`
+- `export lucifex_YOLO_MODE=1`
 
 Note: YOLO / `approvals.mode: off` does NOT turn off secret redaction. They are independent.
 
@@ -515,7 +515,7 @@ Some shell-hook integrations require explicit allowlisting before they fire. Man
 
 ### Disabling the web/browser/image-gen tools
 
-To keep the model away from network or media tools entirely, open `lucifexex tools` and toggle per-platform. Takes effect on next session (`/reset`). See the Tools & Skills section above.
+To keep the model away from network or media tools entirely, open `lucifex tools` and toggle per-platform. Takes effect on next session (`/reset`). See the Tools & Skills section above.
 
 ---
 
@@ -555,13 +555,13 @@ Voice commands: `/voice on` (voice-to-voice), `/voice tts` (always voice), `/voi
 
 ---
 
-## Spawning Additional lucifexex Instances
+## Spawning Additional lucifex Instances
 
-Run additional lucifexex processes as fully independent subprocesses — separate sessions, tools, and environments.
+Run additional lucifex processes as fully independent subprocesses — separate sessions, tools, and environments.
 
 ### When to Use This vs delegate_task
 
-| | `delegate_task` | Spawning `lucifexex` process |
+| | `delegate_task` | Spawning `lucifex` process |
 |-|-----------------|--------------------------|
 | Isolation | Separate conversation, shared process | Fully independent process |
 | Duration | Minutes (bounded by parent loop) | Hours/days |
@@ -572,19 +572,19 @@ Run additional lucifexex processes as fully independent subprocesses — separat
 ### One-Shot Mode
 
 ```
-terminal(command="lucifexex chat -q 'Research GRPO papers and write summary to ~/research/grpo.md'", timeout=300)
+terminal(command="lucifex chat -q 'Research GRPO papers and write summary to ~/research/grpo.md'", timeout=300)
 
 # Background for long tasks:
-terminal(command="lucifexex chat -q 'Set up CI/CD for ~/myapp'", background=true)
+terminal(command="lucifex chat -q 'Set up CI/CD for ~/myapp'", background=true)
 ```
 
 ### Interactive PTY Mode (via tmux)
 
-lucifexex uses prompt_toolkit, which requires a real terminal. Use tmux for interactive spawning:
+lucifex uses prompt_toolkit, which requires a real terminal. Use tmux for interactive spawning:
 
 ```
 # Start
-terminal(command="tmux new-session -d -s agent1 -x 120 -y 40 'lucifexex'", timeout=10)
+terminal(command="tmux new-session -d -s agent1 -x 120 -y 40 'lucifex'", timeout=10)
 
 # Wait for startup, then send a message
 terminal(command="sleep 8 && tmux send-keys -t agent1 'Build a FastAPI auth service' Enter", timeout=15)
@@ -603,11 +603,11 @@ terminal(command="tmux send-keys -t agent1 '/exit' Enter && sleep 2 && tmux kill
 
 ```
 # Agent A: backend
-terminal(command="tmux new-session -d -s backend -x 120 -y 40 'lucifexex -w'", timeout=10)
+terminal(command="tmux new-session -d -s backend -x 120 -y 40 'lucifex -w'", timeout=10)
 terminal(command="sleep 8 && tmux send-keys -t backend 'Build REST API for user management' Enter", timeout=15)
 
 # Agent B: frontend
-terminal(command="tmux new-session -d -s frontend -x 120 -y 40 'lucifexex -w'", timeout=10)
+terminal(command="tmux new-session -d -s frontend -x 120 -y 40 'lucifex -w'", timeout=10)
 terminal(command="sleep 8 && tmux send-keys -t frontend 'Build React dashboard for user management' Enter", timeout=15)
 
 # Check progress, relay context between them
@@ -619,10 +619,10 @@ terminal(command="tmux send-keys -t frontend 'Here is the API schema from the ba
 
 ```
 # Resume most recent session
-terminal(command="tmux new-session -d -s resumed 'lucifexex --continue'", timeout=10)
+terminal(command="tmux new-session -d -s resumed 'lucifex --continue'", timeout=10)
 
 # Resume specific session
-terminal(command="tmux new-session -d -s resumed 'lucifexex --resume 20260225_143052_a1b2c3'", timeout=10)
+terminal(command="tmux new-session -d -s resumed 'lucifex --resume 20260225_143052_a1b2c3'", timeout=10)
 ```
 
 ### Tips
@@ -630,7 +630,7 @@ terminal(command="tmux new-session -d -s resumed 'lucifexex --resume 20260225_14
 - **Prefer `delegate_task` for quick subtasks** — less overhead than spawning a full process
 - **Use `-w` (worktree mode)** when spawning agents that edit code — prevents git conflicts
 - **Set timeouts** for one-shot mode — complex tasks can take 5-10 minutes
-- **Use `lucifexex chat -q` for fire-and-forget** — no PTY needed
+- **Use `lucifex chat -q` for fire-and-forget** — no PTY needed
 - **Use tmux for interactive sessions** — raw PTY mode has `\r` vs `\n` issues with prompt_toolkit
 - **For scheduled tasks**, use the `cronjob` tool instead of spawning — handles delivery and retry
 
@@ -661,7 +661,7 @@ Config: `delegation.*` in `config.yaml`.
 ### Cron (scheduled jobs)
 
 Durable scheduler — `cron/jobs.py` + `cron/scheduler.py`. Drive it via
-the `cronjob` tool, the `lucifexex cron` CLI (`list`, `add`, `edit`,
+the `cronjob` tool, the `lucifex cron` CLI (`list`, `add`, `edit`,
 `pause`, `resume`, `run`, `remove`), or the `/cron` slash command.
 
 - **Schedules:** duration (`"30m"`, `"2h"`), "every" phrase
@@ -685,7 +685,7 @@ Background maintenance for agent-created skills. Tracks usage, marks
 idle skills stale, archives stale ones, keeps a pre-run tar.gz backup
 so nothing is lost.
 
-- **CLI:** `lucifexex curator <verb>` — `status`, `run`, `pause`, `resume`,
+- **CLI:** `lucifex curator <verb>` — `status`, `run`, `pause`, `resume`,
   `pin`, `unpin`, `archive`, `restore`, `prune`, `backup`, `rollback`.
 - **Slash:** `/curator <subcommand>` mirrors the CLI.
 - **Scope:** only touches skills with `created_by: "agent"` provenance.
@@ -703,8 +703,8 @@ User docs: https://lucifex-agent.nousresearch.com/docs/user-guide/features/curat
 ### Kanban (multi-agent work queue)
 
 Durable SQLite board for multi-profile / multi-worker collaboration.
-Users drive it via `lucifexex kanban <verb>`; dispatcher-spawned workers
-see a focused `kanban_*` toolset gated by `lucifexex_KANBAN_TASK`, and
+Users drive it via `lucifex kanban <verb>`; dispatcher-spawned workers
+see a focused `kanban_*` toolset gated by `lucifex_KANBAN_TASK`, and
 orchestrator profiles can opt into the broader `kanban` toolset. Normal
 sessions still have zero `kanban_*` schema footprint unless configured.
 
@@ -724,7 +724,7 @@ sessions still have zero `kanban_*` schema footprint unless configured.
   (default 2; configurable via `kanban.failure_limit` or per-task
   `max_retries`).
 - **Isolation:** board is the hard boundary (workers get
-  `lucifexex_KANBAN_BOARD` pinned in env); tenant is a soft namespace
+  `lucifex_KANBAN_BOARD` pinned in env); tenant is a soft namespace
   within a board for workspace-path + memory-key isolation.
 
 User docs: https://lucifex-agent.nousresearch.com/docs/user-guide/features/kanban
@@ -733,7 +733,7 @@ User docs: https://lucifex-agent.nousresearch.com/docs/user-guide/features/kanba
 
 ## Windows-Specific Quirks
 
-lucifexex runs natively on Windows (PowerShell, cmd, Windows Terminal, git-bash
+lucifex runs natively on Windows (PowerShell, cmd, Windows Terminal, git-bash
 mintty, VS Code integrated terminal). Most of it just works, but a handful
 of differences between Win32 and POSIX have bitten us — document new ones
 here as you hit them so the next person (or the next session) doesn't
@@ -775,7 +775,7 @@ Notepad are the usual culprit.
 or initialized") from the sandbox child process — it can't create an
 `AF_INET` socket, so the loopback-TCP RPC fallback fails before
 `connect()`. Root cause is usually **not** a broken Winsock LSP; it's
-lucifexex's own env scrubber dropping `SYSTEMROOT` / `WINDIR` / `COMSPEC`
+lucifex's own env scrubber dropping `SYSTEMROOT` / `WINDIR` / `COMSPEC`
 from the child env. Python's `socket` module needs `SYSTEMROOT` to locate
 `mswsock.dll`. Fixed via the `_WINDOWS_ESSENTIAL_ENV_VARS` allowlist in
 `tools/code_execution_tool.py`. If you still hit it, echo `os.environ`
@@ -785,7 +785,7 @@ diagnostic recipe in `references/execute-code-sandbox-env-windows.md`.
 ### Testing / Contributing
 
 **`scripts/run_tests.sh` doesn't work as-is on Windows** — it looks for
-POSIX venv layouts (`.venv/bin/activate`). The lucifexex-installed venv at
+POSIX venv layouts (`.venv/bin/activate`). The lucifex-installed venv at
 `venv/Scripts/` has no pip or pytest either (stripped for install size).
 Workaround: install `pytest + pytest-xdist + pyyaml` into a system Python
 3.11 user site, then invoke pytest directly with `PYTHONPATH` set:
@@ -816,7 +816,7 @@ Git touches it`. Cosmetic — the repo's `.gitattributes` normalizes. Don't
 let editors auto-convert committed POSIX-newline files to CRLF.
 
 **Forward slashes work almost everywhere.** `C:/Users/...` is accepted by
-every lucifexex tool and most Windows APIs. Prefer forward slashes in code
+every lucifex tool and most Windows APIs. Prefer forward slashes in code
 and logs — avoids shell-escaping backslashes in bash.
 
 ---
@@ -829,15 +829,15 @@ and logs — avoids shell-escaping backslashes in bash.
 3. In gateway: `/restart`. In CLI: exit and relaunch.
 
 ### Tool not available
-1. `lucifexex tools` — check if toolset is enabled for your platform
+1. `lucifex tools` — check if toolset is enabled for your platform
 2. Some tools need env vars (check `.env`)
 3. `/reset` after enabling tools
 
 ### Model/provider issues
-1. `lucifexex doctor` — check config and dependencies
-2. `lucifexex auth` — re-authenticate OAuth providers (orlucifexifex auth add <provider>`)
+1. `lucifex doctor` — check config and dependencies
+2. `lucifex auth` — re-authenticate OAuth providers (orlucifexifex auth add <provider>`)
 3. Check `.env` has the right API key
-4. **Copilot 403**: `gh auth login` tokens do NOT work for Copilot API. You must use the Copilot-specific OAuth device code flow via `lucifexex model` → GitHub Copilot.
+4. **Copilot 403**: `gh auth login` tokens do NOT work for Copilot API. You must use the Copilot-specific OAuth device code flow via `lucifex model` → GitHub Copilot.
 
 ### Changes not taking effect
 - **Tools/skills:** `/reset` starts a new session with updated toolset
@@ -845,9 +845,9 @@ and logs — avoids shell-escaping backslashes in bash.
 - **Code changes:** Restart the CLI or gateway process
 
 ### Skills not showing
-1. `lucifexex skills list` — verify installed
-2. `lucifexex skills config` — check platform enablement
-3. Load explicitly: `/skill name` or `lucifexex -s name`
+1. `lucifex skills list` — verify installed
+2. `lucifex skills config` — check platform enablement
+3. Load explicitly: `/skill name` or `lucifex -s name`
 
 ### Gateway issues
 Check logs first:
@@ -868,17 +868,17 @@ Common gateway problems:
 ### Auxiliary models not working
 If `auxiliary` tasks (vision, compression, session_search) fail silently, the `auto` provider can't find a backend. Either set `OPENROUTER_API_KEY` or `GOOGLE_API_KEY`, or explicitly configure each auxiliary task's provider:
 ```bash
-lucifexex config set auxiliary.vision.provider <your_provider>
-lucifexex config set auxiliary.vision.model <model_name>
+lucifex config set auxiliary.vision.provider <your_provider>
+lucifex config set auxiliary.vision.model <model_name>
 ```
 
 ---
 ### Context window shows wrong size
 
-If lucifexex reports a smaller context window than your local model supports
+If lucifex reports a smaller context window than your local model supports
 (e.g., 128k when llama-server has `-c 262144`):
 
-**Check if `model.context_length` is explicitly set.** lucifexex uses a
+**Check if `model.context_length` is explicitly set.** lucifex uses a
 multi-source resolution chain (highest priority first):
 
 1. `model.context_length` in config.yaml — **blocks auto-detection if set**
@@ -895,19 +895,19 @@ multi-source resolution chain (highest priority first):
 | Looking for... | Location |
 |----------------|----------|
 | Config options | `lucifex config edit` or [Configuration docs](https://lucifex-agent.nousresearch.com/docs/user-guide/configuration) |
-| Available tools | `lucifexex tools list` or [Tools reference](https://lucifex-agent.nousresearch.com/docs/reference/tools-reference) |
+| Available tools | `lucifex tools list` or [Tools reference](https://lucifex-agent.nousresearch.com/docs/reference/tools-reference) |
 | Slash commands | `/help` in session or [Slash commands reference](https://lucifex-agent.nousresearch.com/docs/reference/slash-commands) |
-| Skills catalog | `lucifexex skills browse` or [Skills catalog](https://lucifex-agent.nousresearch.com/docs/reference/skills-catalog) |
-| Provider setup | `lucifexex model` or [Providers guide](https://lucifex-agent.nousresearch.com/docs/integrations/providers) |
-| Platform setup | `lucifexex gateway setup` or [Messaging docs](https://lucifex-agent.nousresearch.com/docs/user-guide/messaging/) |
-| MCP servers | `lucifexex mcp list` or [MCP guide](https://lucifex-agent.nousresearch.com/docs/user-guide/features/mcp) |
-| Profiles | `lucifexex profile list` or [Profiles docs](https://lucifex-agent.nousresearch.com/docs/user-guide/profiles) |
-| Cron jobs | `lucifexex cron list` or [Cron docs](https://lucifex-agent.nousresearch.com/docs/user-guide/features/cron) |
-| Memory | `lucifexex memory status` or [Memory docs](https://lucifex-agent.nousresearch.com/docs/user-guide/features/memory) |
+| Skills catalog | `lucifex skills browse` or [Skills catalog](https://lucifex-agent.nousresearch.com/docs/reference/skills-catalog) |
+| Provider setup | `lucifex model` or [Providers guide](https://lucifex-agent.nousresearch.com/docs/integrations/providers) |
+| Platform setup | `lucifex gateway setup` or [Messaging docs](https://lucifex-agent.nousresearch.com/docs/user-guide/messaging/) |
+| MCP servers | `lucifex mcp list` or [MCP guide](https://lucifex-agent.nousresearch.com/docs/user-guide/features/mcp) |
+| Profiles | `lucifex profile list` or [Profiles docs](https://lucifex-agent.nousresearch.com/docs/user-guide/profiles) |
+| Cron jobs | `lucifex cron list` or [Cron docs](https://lucifex-agent.nousresearch.com/docs/user-guide/features/cron) |
+| Memory | `lucifex memory status` or [Memory docs](https://lucifex-agent.nousresearch.com/docs/user-guide/features/memory) |
 | Env variables | `lucifex config env-path` or [Env vars reference](https://lucifex-agent.nousresearch.com/docs/reference/environment-variables) |
-| CLI commands | `lucifexex --help` or [CLI reference](https://lucifex-agent.nousresearch.com/docs/reference/cli-commands) |
+| CLI commands | `lucifex --help` or [CLI reference](https://lucifex-agent.nousresearch.com/docs/reference/cli-commands) |
 | Gateway logs | `~/.lucifex/logs/gateway.log` |
-| Session files | `lucifexex sessions browse` (reads state.db) |
+| Session files | `lucifex sessions browse` (reads state.db) |
 | Source code | `~/.lucifex/lucifex-agent/` |
 
 ---
@@ -967,11 +967,11 @@ registry.register(
 )
 ```
 
-**2. Add to `toolsets.py`** → `_lucifexex_CORE_TOOLS` list.
+**2. Add to `toolsets.py`** → `_lucifex_CORE_TOOLS` list.
 
 Auto-discovery: any `tools/*.py` file with a top-level `registry.register()` call is imported automatically — no manual list needed.
 
-All handlers must return JSON strings. Use `get_lucifex_home()` for paths, never hardcode `~/.lucifexex`.
+All handlers must return JSON strings. Use `get_lucifex_home()` for paths, never hardcode `~/.lucifex`.
 
 ### Adding a Slash Command
 
@@ -1004,7 +1004,7 @@ python -m pytest tests/tools/ -q            # Specific area
 - Run full suite before pushing any change
 - Use `-o 'addopts='` to clear any baked-in pytest flags
 
-**Windows contributors:** `scripts/run_tests.sh` currently looks for POSIX venvs (`.venv/bin/activate` / `venv/bin/activate`) and will error out on Windows where the layout is `venv/Scripts/activate` + `python.exe`. The lucifexex-installed venv at `venv/Scripts/` also has no `pip` or `pytest` — it's stripped for end-user install size. Workaround: install pytest + pytest-xdist + pyyaml into a system Python 3.11 user site (`/c/Program Files/Python311/python -m pip install --user pytest pytest-xdist pyyaml`), then run tests directly:
+**Windows contributors:** `scripts/run_tests.sh` currently looks for POSIX venvs (`.venv/bin/activate` / `venv/bin/activate`) and will error out on Windows where the layout is `venv/Scripts/activate` + `python.exe`. The lucifex-installed venv at `venv/Scripts/` also has no `pip` or `pytest` — it's stripped for end-user install size. Workaround: install pytest + pytest-xdist + pyyaml into a system Python 3.11 user site (`/c/Program Files/Python311/python -m pip install --user pytest pytest-xdist pyyaml`), then run tests directly:
 
 ```bash
 export PYTHONPATH="$(pwd)"

@@ -174,7 +174,7 @@ approvals:
 - 回复 **yes**、**y**、**approve**、**ok** 或 **go** 以批准
 - 回复 **no**、**n**、**deny** 或 **cancel** 以拒绝
 
-运行 gateway 时，`lucifexEXEC_ASK=1` 环境变量会自动设置。
+运行 gateway 时，`lucifexEC_ASK=1` 环境变量会自动设置。
 
 ### 永久允许列表
 

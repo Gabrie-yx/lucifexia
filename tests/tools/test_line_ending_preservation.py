@@ -23,7 +23,7 @@ def LUCIFEX_HOME(monkeypatch, tmp_path):
     (real file_ops and terminal environments get created under
     task_id='default' via _resolve_container_task_id).
     """
-    home = tmp_path / "lucifexex"
+    home = tmp_path / "lucifex"
     home.mkdir()
     monkeypatch.setenv("LUCIFEX_HOME", str(home))
     yield home

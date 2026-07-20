@@ -1,7 +1,7 @@
 ﻿---
 sidebar_position: 1
 title: "CLI Commands Reference"
-description: "Authoritative reference for lucifexex terminal commands and command families"
+description: "Authoritative reference for lucifex terminal commands and command families"
 ---
 
 # CLI Commands Reference
@@ -13,7 +13,7 @@ For in-chat slash commands, see [Slash Commands Reference](./slash-commands.md).
 ## Global entrypoint
 
 ```bash
-lucifexex [global-options] <command> [subcommand/options]
+lucifex [global-options] <command> [subcommand/options]
 ```
 
 ### Global options
@@ -21,7 +21,7 @@ lucifexex [global-options] <command> [subcommand/options]
 | Option | Description |
 |--------|-------------|
 | `--version`, `-V` | Show version and exit. |
-| `--profile <name>`, `-p <name>` | Select which lucifexex profile to use for this invocation. Overrides the sticky default set bylucifexifex profile use`. |
+| `--profile <name>`, `-p <name>` | Select which lucifex profile to use for this invocation. Overrides the sticky default set bylucifexifex profile use`. |
 | `--resume <session>`, `-r <session>` | Resume a previous session by ID or title. |
 | `--continue [name]`, `-c [name]` | Resume the most recent session, or the most recent session matching a title. |
 | `--worktree`, `-w` | Start in an isolated git worktree for parallel-agent workflows. |
@@ -29,7 +29,7 @@ lucifexex [global-options] <command> [subcommand/options]
 | `--pass-session-id` | Include the session ID in the agent's system prompt. |
 | `--ignore-user-config` | Ignore `~/.lucifex/config.yaml` and fall back to built-in defaults. Credentials in `.env` are still loaded. |
 | `--ignore-rules` | Skip auto-injection of `AGENTS.md`, `SOUL.md`, `.cursorrules`, memory, and preloaded skills. |
-| `--tui` | Launch the [TUI](../user-guide/tui.md) instead of the classic CLI. Equivalent to `lucifexex_TUI=1`. Always wins over `display.interface`. |
+| `--tui` | Launch the [TUI](../user-guide/tui.md) instead of the classic CLI. Equivalent to `lucifex_TUI=1`. Always wins over `display.interface`. |
 | `--cli` | Force the classic prompt_toolkit REPL. Use this to override `display.interface: tui` for a single invocation. |
 | `--dev` | With `--tui`: run the TypeScript sources directly via `tsx` instead of the prebuilt bundle (for TUI contributors). |
 
@@ -37,65 +37,65 @@ lucifexex [global-options] <command> [subcommand/options]
 
 | Command | Purpose |
 |---------|---------|
-| `lucifexex chat` | Interactive or one-shot chat with the agent. |
-| `lucifexex model` | Interactively choose the default provider and model. |
-| `lucifexex moa` | Configure named Mixture of Agents presets selectable from the model picker. |
-| `lucifexex fallback` | Manage fallback providers tried when the primary model errors. |
-| `lucifexex gateway` | Run or manage the messaging gateway service. |
-| `lucifexex proxy` | Local OpenAI-compatible proxy that attaches OAuth provider credentials. See [Subscription Proxy](../user-guide/features/subscription-proxy.md). |
-| `lucifexex lsp` | Manage Language Server Protocol integration (semantic diagnostics for write_file/patch). |
-| `lucifexex setup` | Interactive setup wizard for all or part of the configuration. |
-| `lucifexex whatsapp` | Configure and pair the WhatsApp bridge. |
-| `lucifexex whatsapp-cloud` | Configure the official Meta WhatsApp Business Cloud API adapter (Business account + public webhook required). Distinct fromlucifexifex whatsapp` (Baileys personal-account bridge). |
-| `lucifexex slack` | Slack helpers (currently: generate the app manifest with every command as a native slash). |
-| `lucifexex auth` | Manage credentials — add, list, remove, reset, status, logout. Handles OAuth flows for Codex/Nous/Anthropic. |
-| `lucifexex login` / `logout` | **Deprecated** — uselucifexifex auth` instead. |
-| `lucifexex send` | Send a one-shot message to a configured messaging platform (Telegram, Discord, Slack, Signal, SMS, …). Useful from shell scripts, cron jobs, CI hooks, and monitoring daemons — no agent loop, no LLM. |
-| `lucifexex secrets` | Manage external secret sources (currently Bitwarden Secrets Manager) for pulling API keys at process startup instead of from `~/.lucifex/.env`. |
-| `lucifexex migrate` | Diagnose and (optionally) rewrite `config.yaml` to replace references to retired models or deprecated settings (e.g. `migrate xai`). |
-| `lucifexex status` | Show agent, auth, and platform status. |
-| `lucifexex cron` | Inspect and tick the cron scheduler. |
-| `lucifexex kanban` | Multi-profile collaboration board (tasks, links, dispatcher). |
-| `lucifexex project` | Manage named, multi-folder workspaces (projects). Anchors desktop session grouping and, when bound to a kanban board, gives tasks a deterministic worktree + branch convention. State is per-profile. |
-| `lucifexex webhook` | Manage dynamic webhook subscriptions for event-driven activation. |
-| `lucifexex hooks` | Inspect, approve, or remove shell-script hooks declared in `config.yaml`. |
-| `lucifexex doctor` | Diagnose config and dependency issues. |
-| `lucifexex security audit` | On-demand supply-chain audit (OSV.dev) for the venv, plugin requirements, and pinned MCP servers. |
-| `lucifexex dump` | Copy-pasteable setup summary for support/debugging. |
-| `lucifexex prompt-size` | Show a byte breakdown of the system prompt + tool schemas (skills index, memory, profile). Runs offline. |
-| `lucifexex debug` | Debug tools — upload logs and system info for support. |
-| `lucifexex backup` | Back ulucifexifex home directory to a zip file. |
-| `lucifexex checkpoints` | Inspect / prune / clear `~/.lucifex/checkpoints/` (the shadow store used by `/rollback`). Run with no args for a status overview. |
-| `lucifexex import` | Restore lucifexifex backup from a zip file. |
-| `lucifexex logs` | View, tail, and filter agent/gateway/error log files. |
+| `lucifex chat` | Interactive or one-shot chat with the agent. |
+| `lucifex model` | Interactively choose the default provider and model. |
+| `lucifex moa` | Configure named Mixture of Agents presets selectable from the model picker. |
+| `lucifex fallback` | Manage fallback providers tried when the primary model errors. |
+| `lucifex gateway` | Run or manage the messaging gateway service. |
+| `lucifex proxy` | Local OpenAI-compatible proxy that attaches OAuth provider credentials. See [Subscription Proxy](../user-guide/features/subscription-proxy.md). |
+| `lucifex lsp` | Manage Language Server Protocol integration (semantic diagnostics for write_file/patch). |
+| `lucifex setup` | Interactive setup wizard for all or part of the configuration. |
+| `lucifex whatsapp` | Configure and pair the WhatsApp bridge. |
+| `lucifex whatsapp-cloud` | Configure the official Meta WhatsApp Business Cloud API adapter (Business account + public webhook required). Distinct fromlucifexifex whatsapp` (Baileys personal-account bridge). |
+| `lucifex slack` | Slack helpers (currently: generate the app manifest with every command as a native slash). |
+| `lucifex auth` | Manage credentials — add, list, remove, reset, status, logout. Handles OAuth flows for Codex/Nous/Anthropic. |
+| `lucifex login` / `logout` | **Deprecated** — uselucifexifex auth` instead. |
+| `lucifex send` | Send a one-shot message to a configured messaging platform (Telegram, Discord, Slack, Signal, SMS, …). Useful from shell scripts, cron jobs, CI hooks, and monitoring daemons — no agent loop, no LLM. |
+| `lucifex secrets` | Manage external secret sources (currently Bitwarden Secrets Manager) for pulling API keys at process startup instead of from `~/.lucifex/.env`. |
+| `lucifex migrate` | Diagnose and (optionally) rewrite `config.yaml` to replace references to retired models or deprecated settings (e.g. `migrate xai`). |
+| `lucifex status` | Show agent, auth, and platform status. |
+| `lucifex cron` | Inspect and tick the cron scheduler. |
+| `lucifex kanban` | Multi-profile collaboration board (tasks, links, dispatcher). |
+| `lucifex project` | Manage named, multi-folder workspaces (projects). Anchors desktop session grouping and, when bound to a kanban board, gives tasks a deterministic worktree + branch convention. State is per-profile. |
+| `lucifex webhook` | Manage dynamic webhook subscriptions for event-driven activation. |
+| `lucifex hooks` | Inspect, approve, or remove shell-script hooks declared in `config.yaml`. |
+| `lucifex doctor` | Diagnose config and dependency issues. |
+| `lucifex security audit` | On-demand supply-chain audit (OSV.dev) for the venv, plugin requirements, and pinned MCP servers. |
+| `lucifex dump` | Copy-pasteable setup summary for support/debugging. |
+| `lucifex prompt-size` | Show a byte breakdown of the system prompt + tool schemas (skills index, memory, profile). Runs offline. |
+| `lucifex debug` | Debug tools — upload logs and system info for support. |
+| `lucifex backup` | Back ulucifexifex home directory to a zip file. |
+| `lucifex checkpoints` | Inspect / prune / clear `~/.lucifex/checkpoints/` (the shadow store used by `/rollback`). Run with no args for a status overview. |
+| `lucifex import` | Restore lucifexifex backup from a zip file. |
+| `lucifex logs` | View, tail, and filter agent/gateway/error log files. |
 | `lucifex config` | Show, edit, migrate, and query configuration files. |
-| `lucifexex pairing` | Approve or revoke messaging pairing codes. |
-| `lucifexex skills` | Browse, install, publish, audit, and configure skills. |
-| `lucifexex bundles` | Group several skills under a single `/<name>` slash command. See [Skill Bundles](../user-guide/features/skills.md#skill-bundles). |
-| `lucifexex curator` | Background skill maintenance — status, run, pause, pin. See [Curator](../user-guide/features/curator.md). |
-| `lucifexex memory` | Configure external memory provider. Plugin-specific subcommands (e.g.lucifexifex honcho`) register automatically when their provider is active. |
-| `lucifexex acp` | Rulucifexifex as an ACP server for editor integration. |
-| `lucifexex mcp` | Manage MCP server configurations and rulucifexifex as an MCP server. |
-| `lucifexex plugins` | Managlucifexifex Agent plugins (install, enable, disable, remove). |
-| `lucifexex portal` | Nous Portal status, subscription link, and Tool Gateway routing. See [Tool Gateway](../user-guide/features/tool-gateway.md). |
-| `lucifexex tools` | Configure enabled tools per platform. |
-| `lucifexex computer-use` | Install or check the cua-driver backend (macOS Computer Use). |
-| `lucifexex pets` | Browse, install, and select [petdex](../user-guide/features/pets.md) animated pets shown across the CLI, TUI, and desktop app. Subcommands: `list`, `install`, `select`, `show`, `off`, `scale`, `remove`, `doctor`. |
-| `lucifexex sessions` | Browse, export, prune, rename, and delete sessions. |
-| `lucifexex insights` | Show token/cost/activity analytics. |
-| `lucifexex claw` | OpenClaw migration helpers. |
-| `lucifexex dashboard` | Launch the web dashboard for managing config, API keys, and sessions. |
-| `lucifexex desktop` (alias `gui`) | Build and launch the native Electron desktop app. |
-| `lucifexex profile` | Manage profiles — multiple isolatelucifexifex instances. |
-| `lucifexex completion` | Print shell completion scripts (bash/zsh/fish). |
-| `lucifexex version` | Show version information. |
-| `lucifexex update` | Pull latest code and reinstall dependencies. `--check` previews without installing; `--backup` takes a pre-pull `LUCIFEX_HOME` snapshot. |
-| `lucifexex uninstall` | Removlucifexifex from the system. |
+| `lucifex pairing` | Approve or revoke messaging pairing codes. |
+| `lucifex skills` | Browse, install, publish, audit, and configure skills. |
+| `lucifex bundles` | Group several skills under a single `/<name>` slash command. See [Skill Bundles](../user-guide/features/skills.md#skill-bundles). |
+| `lucifex curator` | Background skill maintenance — status, run, pause, pin. See [Curator](../user-guide/features/curator.md). |
+| `lucifex memory` | Configure external memory provider. Plugin-specific subcommands (e.g.lucifexifex honcho`) register automatically when their provider is active. |
+| `lucifex acp` | Rulucifexifex as an ACP server for editor integration. |
+| `lucifex mcp` | Manage MCP server configurations and rulucifexifex as an MCP server. |
+| `lucifex plugins` | Managlucifexifex Agent plugins (install, enable, disable, remove). |
+| `lucifex portal` | Nous Portal status, subscription link, and Tool Gateway routing. See [Tool Gateway](../user-guide/features/tool-gateway.md). |
+| `lucifex tools` | Configure enabled tools per platform. |
+| `lucifex computer-use` | Install or check the cua-driver backend (macOS Computer Use). |
+| `lucifex pets` | Browse, install, and select [petdex](../user-guide/features/pets.md) animated pets shown across the CLI, TUI, and desktop app. Subcommands: `list`, `install`, `select`, `show`, `off`, `scale`, `remove`, `doctor`. |
+| `lucifex sessions` | Browse, export, prune, rename, and delete sessions. |
+| `lucifex insights` | Show token/cost/activity analytics. |
+| `lucifex claw` | OpenClaw migration helpers. |
+| `lucifex dashboard` | Launch the web dashboard for managing config, API keys, and sessions. |
+| `lucifex desktop` (alias `gui`) | Build and launch the native Electron desktop app. |
+| `lucifex profile` | Manage profiles — multiple isolatelucifexifex instances. |
+| `lucifex completion` | Print shell completion scripts (bash/zsh/fish). |
+| `lucifex version` | Show version information. |
+| `lucifex update` | Pull latest code and reinstall dependencies. `--check` previews without installing; `--backup` takes a pre-pull `LUCIFEX_HOME` snapshot. |
+| `lucifex uninstall` | Removlucifexifex from the system. |
 
-## `lucifexex chat`
+## `lucifex chat`
 
 ```bash
-lucifexex chat [options]
+lucifex chat [options]
 ```
 
 Common options:
@@ -117,33 +117,33 @@ Common options:
 | `--pass-session-id` | Pass the session ID into the system prompt. |
 | `--ignore-user-config` | Ignore `~/.lucifex/config.yaml` and use built-in defaults. Credentials in `.env` are still loaded. Useful for isolated CI runs, reproducible bug reports, and third-party integrations. |
 | `--ignore-rules` | Skip auto-injection of `AGENTS.md`, `SOUL.md`, `.cursorrules`, persistent memory, and preloaded skills. Combine with `--ignore-user-config` for a fully isolated run. |
-| `--safe-mode` | Troubleshooting mode: disable ALL customizations — user config, rules/memory injection, plugins, shell hooks, and MCP servers (implies `--ignore-user-config` and `--ignore-rules`). Use to isolate whether a problem comes from your setup or from lucifexex itself. |
+| `--safe-mode` | Troubleshooting mode: disable ALL customizations — user config, rules/memory injection, plugins, shell hooks, and MCP servers (implies `--ignore-user-config` and `--ignore-rules`). Use to isolate whether a problem comes from your setup or from lucifex itself. |
 | `--source <tag>` | Session source tag for filtering (default: `cli`). Use `tool` for third-party integrations that should not appear in user session lists. |
 | `--max-turns <N>` | Maximum tool-calling iterations per conversation turn (default: 90, or `agent.max_turns` in config). |
 
 Examples:
 
 ```bash
-lucifexex
-lucifexex chat -q "Summarize the latest PRs"
-lucifexex chat --provider openrouter --model anthropic/claude-sonnet-4.6
-lucifexex chat --toolsets web,terminal,skills
-lucifexex chat --quiet -q "Return only JSON"
-lucifexex chat --worktree -q "Review this repo and open a PR"
-lucifexex chat --ignore-user-config --ignore-rules -q "Repro without my personal setup"
-lucifexex chat --safe-mode -q "Is this bug mine olucifexifex'?"
+lucifex
+lucifex chat -q "Summarize the latest PRs"
+lucifex chat --provider openrouter --model anthropic/claude-sonnet-4.6
+lucifex chat --toolsets web,terminal,skills
+lucifex chat --quiet -q "Return only JSON"
+lucifex chat --worktree -q "Review this repo and open a PR"
+lucifex chat --ignore-user-config --ignore-rules -q "Repro without my personal setup"
+lucifex chat --safe-mode -q "Is this bug mine olucifexifex'?"
 ```
 
-### `lucifexex -z <prompt>` — scripted one-shot
+### `lucifex -z <prompt>` — scripted one-shot
 
-For programmatic callers (shell scripts, CI, cron, parent processes piping in a prompt), `lucifexex -z` is the purest one-shot entry point: **single prompt in, final response text out, nothing else on stdout or stderr.** No banner, no spinner, no tool previews, no `Session:` line — just the agent's final reply as plain text.
+For programmatic callers (shell scripts, CI, cron, parent processes piping in a prompt), `lucifex -z` is the purest one-shot entry point: **single prompt in, final response text out, nothing else on stdout or stderr.** No banner, no spinner, no tool previews, no `Session:` line — just the agent's final reply as plain text.
 
 ```bash
-lucifexex -z "What's the capital of France?"
+lucifex -z "What's the capital of France?"
 # → Paris.
 
 # Parent scripts can cleanly capture the response:
-answer=$(lucifexex -z "summarize this" < /path/to/file.txt)
+answer=$(lucifex -z "summarize this" < /path/to/file.txt)
 ```
 
 Per-run overrides (no mutation to `~/.lucifex/config.yaml`):
@@ -154,19 +154,19 @@ Per-run overrides (no mutation to `~/.lucifex/config.yaml`):
 | `--provider <provider>` | _(none)_ | Override the provider for this run |
 
 ```bash
-lucifexex -z "…" --provider openrouter --model openai/gpt-5.5
+lucifex -z "…" --provider openrouter --model openai/gpt-5.5
 # or:
-LUCIFEX_INFERENCE_MODEL=anthropic/claude-sonnet-4.6 lucifexex -z "…"
+LUCIFEX_INFERENCE_MODEL=anthropic/claude-sonnet-4.6 lucifex -z "…"
 ```
 
-Same agent, same tools, same skills — just strips every interactive / cosmetic layer. If you need tool output in the transcript too, use `lucifexex chat -q` instead; `-z` is explicitly for "I only want the final answer".
+Same agent, same tools, same skills — just strips every interactive / cosmetic layer. If you need tool output in the transcript too, use `lucifex chat -q` instead; `-z` is explicitly for "I only want the final answer".
 
-## `lucifexex model`
+## `lucifex model`
 
-Interactive provider + model selector. **This is the command for adding new providers, setting up API keys, and running OAuth flows.** Run it from your terminal — not from inside an active lucifexex chat session.
+Interactive provider + model selector. **This is the command for adding new providers, setting up API keys, and running OAuth flows.** Run it from your terminal — not from inside an active lucifex chat session.
 
 ```bash
-lucifexex model
+lucifex model
 ```
 
 Use this when you want to:
@@ -177,12 +177,12 @@ Use this when you want to:
 - configure a custom/self-hosted endpoint
 - save the new default into config
 
-:::warning lucifexex model vs /model — know the difference
-**`lucifexex model`** (run from your terminal, outside anlucifexifex session) is the **full provider setup wizard**. It can add new providers, run OAuth flows, prompt for API keys, and configure endpoints.
+:::warning lucifex model vs /model — know the difference
+**`lucifex model`** (run from your terminal, outside anlucifexifex session) is the **full provider setup wizard**. It can add new providers, run OAuth flows, prompt for API keys, and configure endpoints.
 
-**`/model`** (typed inside an active lucifexex chat session) can only **switch between providers and models you've already set up**. It cannot add new providers, run OAuth, or prompt for API keys.
+**`/model`** (typed inside an active lucifex chat session) can only **switch between providers and models you've already set up**. It cannot add new providers, run OAuth, or prompt for API keys.
 
-**If you need to add a new provider:** Exit your lucifexex session first (`Ctrl+C` or `/quit`), then runlucifexifex model` from your terminal prompt.
+**If you need to add a new provider:** Exit your lucifex session first (`Ctrl+C` or `/quit`), then runlucifexifex model` from your terminal prompt.
 :::
 
 ### `/model` slash command (mid-session)
@@ -206,15 +206,15 @@ By default, `/model` changes apply **to the current session only**. Add `--globa
 ```
 
 :::info What if I only see OpenRouter models?
-If you've only configured OpenRouter, `/model` will only show OpenRouter models. To add another provider (Anthropic, DeepSeek, Copilot, etc.), exit your session and run `lucifexex model` from the terminal.
+If you've only configured OpenRouter, `/model` will only show OpenRouter models. To add another provider (Anthropic, DeepSeek, Copilot, etc.), exit your session and run `lucifex model` from the terminal.
 :::
 
 On a `--global` switch, provider and base URL changes are persisted to `config.yaml` alongside the model. When switching away from a custom endpoint, the stale base URL is cleared to prevent it leaking into other providers.
 
-## `lucifexex gateway`
+## `lucifex gateway`
 
 ```bash
-lucifexex gateway <subcommand>
+lucifex gateway <subcommand>
 ```
 
 Subcommands:
@@ -230,15 +230,15 @@ Subcommands:
 | `install` | Install as a systemd (Linux) or launchd (macOS) background service. |
 | `uninstall` | Remove the installed service. |
 | `setup` | Interactive messaging-platform setup. |
-| `migrate-legacy` | Remove legacy `lucifexex.service` units left over from pre-rename installs. Profile units (`lucifex-gateway-<profile>.service`) and unrelated services are never touched. Flags: `--dry-run`, `-y`/`--yes`. |
+| `migrate-legacy` | Remove legacy `lucifex.service` units left over from pre-rename installs. Profile units (`lucifex-gateway-<profile>.service`) and unrelated services are never touched. Flags: `--dry-run`, `-y`/`--yes`. |
 | `enroll` | Experimental: enroll this gateway with a relay connector and save relay credentials for connector-backed platforms. |
 
 Options:
 
 | Option | Description |
 |--------|-------------|
-| `--all` | On `start` / `restart` / `stop`: act on **every profile's** gateway, not just the active `LUCIFEX_HOME`. Useful if you run multiple profiles side-by-side and want to restart them all after `lucifexex update`. |
-| `--no-supervise` | On `run`: inside the s6-overlay Docker image, opt out of auto-supervision and use pre-s6 foreground semantics — gateway runs as the container's main process with no auto-restart. No-op outside the s6 image. Equivalent to setting `lucifexex_GATEWAY_NO_SUPERVISE=1`. |
+| `--all` | On `start` / `restart` / `stop`: act on **every profile's** gateway, not just the active `LUCIFEX_HOME`. Useful if you run multiple profiles side-by-side and want to restart them all after `lucifex update`. |
+| `--no-supervise` | On `run`: inside the s6-overlay Docker image, opt out of auto-supervision and use pre-s6 foreground semantics — gateway runs as the container's main process with no auto-restart. No-op outside the s6 image. Equivalent to setting `lucifex_GATEWAY_NO_SUPERVISE=1`. |
 | `--external-supervisor` | On `run`: declare that a wrapper-provided process manager owns the foreground gateway. Use this when `sudo`, `env -i`, or another wrapper strips launchd/systemd's native environment marker. In-chat restarts and updates exit back to that manager instead of spawning a detached replacement. |
 
 `--external-supervisor` is a restart-policy contract: an in-chat restart or
@@ -249,16 +249,16 @@ relaunch the gateway after that nonzero exit. For systemd, use
 unsuccessful exits. Without that policy, a requested restart leaves the gateway
 stopped.
 
-`lucifexex gateway enroll` accepts `--token`, `--connector-url`, `--gateway-id`, and `--wake-url`. It exchanges the enrollment token with the connector and writes the resulting `GATEWAY_RELAY_ID`, `GATEWAY_RELAY_SECRET`, `GATEWAY_RELAY_DELIVERY_KEY`, optional `GATEWAY_RELAY_URL`, and (when `--wake-url` is given) `GATEWAY_RELAY_WAKE_URL` values to the active profile's `.env`.
+`lucifex gateway enroll` accepts `--token`, `--connector-url`, `--gateway-id`, and `--wake-url`. It exchanges the enrollment token with the connector and writes the resulting `GATEWAY_RELAY_ID`, `GATEWAY_RELAY_SECRET`, `GATEWAY_RELAY_DELIVERY_KEY`, optional `GATEWAY_RELAY_URL`, and (when `--wake-url` is given) `GATEWAY_RELAY_WAKE_URL` values to the active profile's `.env`.
 
 :::tip WSL users
-Use `lucifex gateway run` instead of `lucifex gateway start` — WSL's systemd support is unreliable. Wrap it in tmux for persistence: `tmux new -s lucifexex 'lucifex gateway run'`. See [WSL FAQ](/reference/faq#wsl-gateway-keeps-disconnecting-or-lucifex-gateway-start-fails) for details.
+Use `lucifex gateway run` instead of `lucifex gateway start` — WSL's systemd support is unreliable. Wrap it in tmux for persistence: `tmux new -s lucifex 'lucifex gateway run'`. See [WSL FAQ](/reference/faq#wsl-gateway-keeps-disconnecting-or-lucifex-gateway-start-fails) for details.
 :::
 
-## `lucifexex lsp`
+## `lucifex lsp`
 
 ```bash
-lucifexex lsp <subcommand>
+lucifex lsp <subcommand>
 ```
 
 Manage the Language Server Protocol integration. LSP runs real
@@ -282,13 +282,13 @@ Subcommands:
 See [LSP — Semantic Diagnostics](/user-guide/features/lsp) for
 the full guide, supported languages, and configuration knobs.
 
-## `lucifexex setup`
+## `lucifex setup`
 
 ```bash
-lucifexex setup [model|tts|terminal|gateway|tools|agent] [--non-interactive] [--reset] [--quick] [--reconfigure] [--portal]
+lucifex setup [model|tts|terminal|gateway|tools|agent] [--non-interactive] [--reset] [--quick] [--reconfigure] [--portal]
 ```
 
-**Easiest path:** `lucifexex setup --portal` — OAuth into Nous Portal and opt into the [Tool Gateway](../user-guide/features/tool-gateway.md) in one shot.
+**Easiest path:** `lucifex setup --portal` — OAuth into Nous Portal and opt into the [Tool Gateway](../user-guide/features/tool-gateway.md) in one shot.
 
 **First run:** launches the first-time wizard.
 
@@ -311,13 +311,13 @@ Options:
 | `--quick` | On returning-user runs: only prompt for items that are missing or unset. Skip items you already have configured. |
 | `--non-interactive` | Use defaults / environment values without prompts. |
 | `--reset` | Reset configuration to defaults before setup. |
-| `--reconfigure` | Backwards-compat alias — bare `lucifexex setup` on an existing install now does this by default. |
+| `--reconfigure` | Backwards-compat alias — bare `lucifex setup` on an existing install now does this by default. |
 | `--portal` | One-shot Nous Portal setup: log in via OAuth, set Nous as the inference provider, and opt into the [Tool Gateway](../user-guide/features/tool-gateway.md). Skips the rest of the wizard. |
 
-## `lucifexex portal`
+## `lucifex portal`
 
 ```bash
-lucifexex portal [status|open|tools]
+lucifex portal [status|open|tools]
 ```
 
 Inspect Nous Portal auth, Tool Gateway routing, and reach the subscription page. Subcommand-less invocation runs `status`.
@@ -328,22 +328,22 @@ Inspect Nous Portal auth, Tool Gateway routing, and reach the subscription page.
 | `open` | Open `portal.nousresearch.com/manage-subscription` in your default browser. |
 | `tools` | List every Tool Gateway partner (Firecrawl, FAL, OpenAI TTS, Browser Use, Modal) and which are routed via Nous. |
 
-For configuration of the gateway itself, see [Tool Gateway](../user-guide/features/tool-gateway.md). For the one-shot setup path, see `lucifexex setup --portal` above.
+For configuration of the gateway itself, see [Tool Gateway](../user-guide/features/tool-gateway.md). For the one-shot setup path, see `lucifex setup --portal` above.
 
-## `lucifexex whatsapp`
+## `lucifex whatsapp`
 
 ```bash
-lucifexex whatsapp
+lucifex whatsapp
 ```
 
 Runs the WhatsApp pairing/setup flow, including mode selection and QR-code pairing.
 
-## `lucifexex slack`
+## `lucifex slack`
 
 ```bash
-lucifexex slack manifest              # print manifest to stdout
-lucifexex slack manifest --write      # write to ~/.lucifex/slack-manifest.json
-lucifexex slack manifest --slashes-only  # just the features.slash_commands array
+lucifex slack manifest              # print manifest to stdout
+lucifex slack manifest --write      # write to ~/.lucifex/slack-manifest.json
+lucifex slack manifest --slashes-only  # just the features.slash_commands array
 ```
 
 Generates a Slack app manifest that registers every gateway command in
@@ -357,26 +357,26 @@ reinstall if scopes or slash commands changed.
 | Flag | Default | Purpose |
 |------|---------|---------|
 | `--write [PATH]` | stdout | Write to a file instead of stdout. Bare `--write` writes `$LUCIFEX_HOME/slack-manifest.json`. |
-| `--name NAME` | `lucifexex` | Bot display name in Slack. |
+| `--name NAME` | `lucifex` | Bot display name in Slack. |
 | `--description DESC` | default blurb | Bot description shown in the Slack app directory. |
 | `--slashes-only` | off | Emit only `features.slash_commands` for merging into a manually-maintained manifest. |
 
-Run `lucifexex slack manifest --write` again afterlucifexifex update` to pick
+Run `lucifex slack manifest --write` again afterlucifexifex update` to pick
 up any new commands.
 
 
-## `lucifexex send`
+## `lucifex send`
 
 ```bash
-lucifexex send --to <target> "message text"
-lucifexex send --to <target> --file <path>
-echo "message" | lucifexex send --to <target>
-lucifexex send --list [platform]
+lucifex send --to <target> "message text"
+lucifex send --to <target> --file <path>
+echo "message" | lucifex send --to <target>
+lucifex send --list [platform]
 ```
 
 Send a one-shot message to a configured messaging platform without spinning up an agent or gateway loop. Reuses the gateway's already-configured credentials (`~/.lucifex/.env` + `~/.lucifex/config.yaml`) so ops scripts, cron jobs, CI hooks, and monitoring daemons can post status updates without reimplementing each platform's REST client.
 
-For bot-token platforms (Telegram, Discord, Slack, Signal, SMS, WhatsApp-CloudAPI) no running gateway is required — `lucifexex send` talks directly to the platform's REST endpoint. Plugin platforms that need a persistent adapter still require a live gateway.
+For bot-token platforms (Telegram, Discord, Slack, Signal, SMS, WhatsApp-CloudAPI) no running gateway is required — `lucifex send` talks directly to the platform's REST endpoint. Plugin platforms that need a persistent adapter still require a live gateway.
 
 | Option | Description |
 |--------|-------------|
@@ -387,41 +387,41 @@ For bot-token platforms (Telegram, Discord, Slack, Signal, SMS, WhatsApp-CloudAP
 | `-q`, `--quiet` | Suppress stdout on success — useful in scripts (rely on exit code only). |
 | `--json` | Emit raw JSON result instead of human-readable output. |
 
-If neither a positional `message` argument nor `--file` is provided, `lucifexex send` reads from stdin when it is not a TTY. Exit codes: `0` on success, `1` on delivery/backend failure, `2` on usage errors.
+If neither a positional `message` argument nor `--file` is provided, `lucifex send` reads from stdin when it is not a TTY. Exit codes: `0` on success, `1` on delivery/backend failure, `2` on usage errors.
 
 ### Sending images and other media
 
 `--file` is for *text* bodies only. To deliver an image, document, video, or audio file as a native platform attachment, reference it inside the message text with the `MEDIA:<local_path>` directive:
 
 ```bash
-lucifexex send --to telegram "MEDIA:/tmp/screenshot.png"
-lucifexex send --to telegram "Build chart for today MEDIA:/tmp/chart.png"   # with caption
-lucifexex send --to discord:#ops "MEDIA:/tmp/report.pdf"
+lucifex send --to telegram "MEDIA:/tmp/screenshot.png"
+lucifex send --to telegram "Build chart for today MEDIA:/tmp/chart.png"   # with caption
+lucifex send --to discord:#ops "MEDIA:/tmp/report.pdf"
 ```
 
 By default, image files are sent as photos (platforms like Telegram recompress these). Add `[[as_document]]` to the message to deliver them as uncompressed file attachments instead:
 
 ```bash
-lucifexex send --to telegram "[[as_document]] MEDIA:/tmp/screenshot.png"
+lucifex send --to telegram "[[as_document]] MEDIA:/tmp/screenshot.png"
 ```
 
 Examples:
 
 ```bash
-lucifexex send --to telegram "deploy finished"
-echo "RAM 92%" | lucifexex send --to telegram:-1001234567890
-lucifexex send --to discord:#ops --file /tmp/report.md
-lucifexex send --to slack:#eng --subject "[CI]" --file build.log
-lucifexex send --list                  # all platforms
-lucifexex send --list telegram         # filter by platform
+lucifex send --to telegram "deploy finished"
+echo "RAM 92%" | lucifex send --to telegram:-1001234567890
+lucifex send --to discord:#ops --file /tmp/report.md
+lucifex send --to slack:#eng --subject "[CI]" --file build.log
+lucifex send --list                  # all platforms
+lucifex send --list telegram         # filter by platform
 ```
 
 
-## `lucifexex secrets`
+## `lucifex secrets`
 
 ```bash
-lucifexex secrets bitwarden <subcommand>
-lucifexex secrets bw <subcommand>          # short alias
+lucifex secrets bitwarden <subcommand>
+lucifex secrets bw <subcommand>          # short alias
 ```
 
 Pull API keys from an external secret manager at process startup instead of storing them in `~/.lucifex/.env`. Currently supports **Bitwarden Secrets Manager**. See the full guide: [Bitwarden integration](../user-guide/secrets/bitwarden.md).
@@ -437,10 +437,10 @@ Pull API keys from an external secret manager at process startup instead of stor
 | `disable` | Turn off the Bitwarden integration. |
 
 
-## `lucifexex migrate`
+## `lucifex migrate`
 
 ```bash
-lucifexex migrate <type>
+lucifex migrate <type>
 ```
 
 Diagnose and (optionally) rewrite the active `config.yaml` to replace references to retired models or deprecated settings. A timestamped backup of the original `config.yaml` is taken before any rewrite (skip with `--no-backup`).
@@ -456,13 +456,13 @@ Common flags for migration subcommands:
 | `--apply` | Rewrite `config.yaml` in-place (default: dry-run, no writes). |
 | `--no-backup` | Skip the timestamped backup of `config.yaml` when applying. |
 
-> Not to be confused with `lucifexex claw migrate` (one-shot import of OpenClaw configuration intlucifexifex)lucifexucifex migrate` is the top-level config-rewrite command.
+> Not to be confused with `lucifex claw migrate` (one-shot import of OpenClaw configuration intlucifexifex)lucifexucifex migrate` is the top-level config-rewrite command.
 
 
-## `lucifexex proxy`
+## `lucifex proxy`
 
 ```bash
-lucifexex proxy <subcommand>
+lucifex proxy <subcommand>
 ```
 
 Run a local OpenAI-compatible HTTP server that forwards requests to an OAuth-authenticated upstream provider (e.g. Nous Portal, xAI). External apps can point at the proxy with any bearer token; the proxy attaches your real OAuth credentials on the way out. See [Subscription Proxy](../user-guide/features/subscription-proxy.md) for the full guide.
@@ -474,13 +474,13 @@ Run a local OpenAI-compatible HTTP server that forwards requests to an OAuth-aut
 | `providers` | List available proxy upstream providers. |
 
 
-## `lucifexex security`
+## `lucifex security`
 
 ```bash
-lucifexex security <subcommand>
+lucifex security <subcommand>
 ```
 
-On-demand vulnerability scan against [OSV.dev](https://osv.dev). Covers the lucifexex venv (installed PyPI distributions), Python dependencies declared by plugins under `~/.lucifex/plugins/`, and pinned `npx`/`uvx` MCP servers in `config.yaml`. Does NOT scan globally-installed packages or editor/browser extensions.
+On-demand vulnerability scan against [OSV.dev](https://osv.dev). Covers the lucifex venv (installed PyPI distributions), Python dependencies declared by plugins under `~/.lucifex/plugins/`, and pinned `npx`/`uvx` MCP servers in `config.yaml`. Does NOT scan globally-installed packages or editor/browser extensions.
 
 | Subcommand | Description |
 |------------|-------------|
@@ -492,40 +492,40 @@ On-demand vulnerability scan against [OSV.dev](https://osv.dev). Covers the luci
 |------|---------|-------------|
 | `--json` | off | Emit machine-readable JSON instead of human-readable text. |
 | `--fail-on <level>` | `critical` | Exit non-zero when any finding meets this severity (`low`, `moderate`, `high`, `critical`). |
-| `--skip-venv` | off | Skip scanning the lucifexex Python venv. |
+| `--skip-venv` | off | Skip scanning the lucifex Python venv. |
 | `--skip-plugins` | off | Skip scanning plugin requirements files. |
 | `--skip-mcp` | off | Skip scanning pinned MCP servers in `config.yaml`. |
 
 
-## `lucifexex login` /lucifexifex logout` *(Deprecated)*
+## `lucifex login` /lucifexifex logout` *(Deprecated)*
 
 :::caution
-`lucifexex login` has been removed. Uselucifexifex auth` to manage OAuth credentialucifexcifex model` to select a providerlucifexllucifexetup` for full interactive setup.
+`lucifex login` has been removed. Uselucifexifex auth` to manage OAuth credentialucifexcifex model` to select a providerlucifexllucifexetup` for full interactive setup.
 :::
 
-## `lucifexex auth`
+## `lucifex auth`
 
 Manage credential pools for same-provider key rotation. See [Credential Pools](/user-guide/features/credential-pools) for full documentation.
 
 ```bash
-lucifexex auth                                              # Interactive wizard
-lucifexex auth list                                         # Show all pools
-lucifexex auth list openrouter                              # Show specific provider
-lucifexex auth add openrouter --api-key sk-or-v1-xxx        # Add API key
-lucifexex auth add anthropic --type oauth                   # Add OAuth credential
-lucifexex auth remove openrouter 2                          # Remove by index
-lucifexex auth reset openrouter                             # Clear cooldowns
-lucifexex auth status anthropic                             # Show auth status for a provider
-lucifexex auth logout anthropic                             # Log out and clear stored auth state
-lucifexex auth spotify                                      # Authenticatlucifexifex with Spotify via PKCE
+lucifex auth                                              # Interactive wizard
+lucifex auth list                                         # Show all pools
+lucifex auth list openrouter                              # Show specific provider
+lucifex auth add openrouter --api-key sk-or-v1-xxx        # Add API key
+lucifex auth add anthropic --type oauth                   # Add OAuth credential
+lucifex auth remove openrouter 2                          # Remove by index
+lucifex auth reset openrouter                             # Clear cooldowns
+lucifex auth status anthropic                             # Show auth status for a provider
+lucifex auth logout anthropic                             # Log out and clear stored auth state
+lucifex auth spotify                                      # Authenticatlucifexifex with Spotify via PKCE
 ```
 
 Subcommands: `add`, `list`, `remove`, `reset`, `status`, `logout`, `spotify`. When called with no subcommand, launches the interactive management wizard.
 
-## `lucifexex status`
+## `lucifex status`
 
 ```bash
-lucifexex status [--all] [--deep]
+lucifex status [--all] [--deep]
 ```
 
 | Option | Description |
@@ -533,10 +533,10 @@ lucifexex status [--all] [--deep]
 | `--all` | Show all details in a shareable redacted format. |
 | `--deep` | Run deeper checks that may take longer. |
 
-## `lucifexex cron`
+## `lucifex cron`
 
 ```bash
-lucifexex cron <list|create|edit|pause|resume|run|remove|status|tick>
+lucifex cron <list|create|edit|pause|resume|run|remove|status|tick>
 ```
 
 | Subcommand | Description |
@@ -560,10 +560,10 @@ NAS-managed provider for scale-to-zero hosted gateways) — configured via the
 the built-in, so cron is never left without a trigger. See the
 [cron internals](../developer-guide/cron-internals.md#gateway-integration) doc.
 
-## `lucifexex kanban`
+## `lucifex kanban`
 
 ```bash
-lucifexex kanban [--board <slug>] <action> [options]
+lucifex kanban [--board <slug>] <action> [options]
 ```
 
 Multi-profile, multi-project collaboration board. Each install can host many boards (one per project, repo, or domain); each board is a standalone queue with its own SQLite DB and dispatcher scope. New installs start with one board called `default`, whose DB is `~/.lucifex/kanban.db` for back-compat; additional boards live at `~/.lucifex/kanban/boards/<slug>/kanban.db`. The gateway-embedded dispatcher sweeps every board per tick.
@@ -572,9 +572,9 @@ Multi-profile, multi-project collaboration board. Each install can host many boa
 
 | Flag | Purpose |
 |------|---------|
-| `--board <slug>` | Operate on a specific board. Defaults to the current board (set via `lucifexex kanban boards switch`, thelucifexifex_KANBAN_BOARD` env var, or `default`). |
+| `--board <slug>` | Operate on a specific board. Defaults to the current board (set via `lucifex kanban boards switch`, thelucifexifex_KANBAN_BOARD` env var, or `default`). |
 
-**This is the human / scripting surface.** Agent workers spawned by the dispatcher drive the board through a dedicated `kanban_*` [toolset](/user-guide/features/kanban#how-workers-interact-with-the-board) (`kanban_show`, `kanban_complete`, `kanban_block`, `kanban_create`, `kanban_link`, `kanban_comment`, `kanban_heartbeat`; orchestrator profiles also get `kanban_list` and `kanban_unblock`) instead of shelling to `lucifexex kanban`. Workers havelucifexifex_KANBAN_BOARD` pinned in their env so they physically cannot see other boards.
+**This is the human / scripting surface.** Agent workers spawned by the dispatcher drive the board through a dedicated `kanban_*` [toolset](/user-guide/features/kanban#how-workers-interact-with-the-board) (`kanban_show`, `kanban_complete`, `kanban_block`, `kanban_create`, `kanban_link`, `kanban_comment`, `kanban_heartbeat`; orchestrator profiles also get `kanban_list` and `kanban_unblock`) instead of shelling to `lucifex kanban`. Workers havelucifexifex_KANBAN_BOARD` pinned in their env so they physically cannot see other boards.
 
 | Action | Purpose |
 |--------|---------|
@@ -609,28 +609,28 @@ Examples:
 
 ```bash
 # Create a second board and put a task on it without switching away.
-lucifexex kanban boards create atm10-server --name "ATM10 Server" --icon 🎮
-lucifexex kanban --board atm10-server create "Restart server" --assignee ops
+lucifex kanban boards create atm10-server --name "ATM10 Server" --icon 🎮
+lucifex kanban --board atm10-server create "Restart server" --assignee ops
 
 # Switch the active board for subsequent calls.
-lucifexex kanban boards switch atm10-server
-lucifexex kanban list                  # shows atm10-server tasks
+lucifex kanban boards switch atm10-server
+lucifex kanban list                  # shows atm10-server tasks
 
 # Archive a board (recoverable) or hard-delete it.
-lucifexex kanban boards rm atm10-server
-lucifexex kanban boards rm atm10-server --delete
+lucifex kanban boards rm atm10-server
+lucifex kanban boards rm atm10-server --delete
 ```
 
-Board resolution order (highest precedence first): `--board <slug>` flag → `lucifexex_KANBAN_BOARD` env var → `~/.lucifex/kanban/current` file → `default`.
+Board resolution order (highest precedence first): `--board <slug>` flag → `lucifex_KANBAN_BOARD` env var → `~/.lucifex/kanban/current` file → `default`.
 
 All actions are also available as a slash command in the gateway (`/kanban …`), with the same argument surface — including `boards` subcommands and the `--board` flag.
 
-For the full design — comparison with Cline Kanban / Paperclip / NanoClaw / Gemini Enterprise, eight collaboration patterns, four user stories, concurrency correctness proof — see `docs/lucifexex-kanban-v1-spec.pdf` in the repository or the [Kanban user guide](/user-guide/features/kanban).
+For the full design — comparison with Cline Kanban / Paperclip / NanoClaw / Gemini Enterprise, eight collaboration patterns, four user stories, concurrency correctness proof — see `docs/lucifex-kanban-v1-spec.pdf` in the repository or the [Kanban user guide](/user-guide/features/kanban).
 
-## `lucifexex project`
+## `lucifex project`
 
 ```bash
-lucifexex project <create|list|show|add-folder|remove-folder|rename|set-primary|use|archive|restore|bind-board>
+lucifex project <create|list|show|add-folder|remove-folder|rename|set-primary|use|archive|restore|bind-board>
 ```
 
 Projects are human-named workspaces that can span multiple folders / repos. They anchor desktop session grouping and, when bound to a kanban board, give tasks a deterministic worktree + branch convention. State is per-profile.
@@ -649,10 +649,10 @@ Projects are human-named workspaces that can span multiple folders / repos. They
 | `restore` | Restore an archived project. |
 | `bind-board` | Bind a kanban board to this project. |
 
-## `lucifexex webhook`
+## `lucifex webhook`
 
 ```bash
-lucifexex webhook <subscribe|list|remove|test>
+lucifex webhook <subscribe|list|remove|test>
 ```
 
 Manage dynamic webhook subscriptions for event-driven agent activation. Requires the webhook platform to be enabled in config — if not configured, prints setup instructions.
@@ -664,10 +664,10 @@ Manage dynamic webhook subscriptions for event-driven agent activation. Requires
 | `remove` / `rm` | Delete a dynamic subscription. Static routes from config.yaml are not affected. |
 | `test` | Send a test POST to verify a subscription is working. |
 
-### `lucifexex webhook subscribe`
+### `lucifex webhook subscribe`
 
 ```bash
-lucifexex webhook subscribe <name> [options]
+lucifex webhook subscribe <name> [options]
 ```
 
 | Option | Description |
@@ -684,23 +684,23 @@ lucifexex webhook subscribe <name> [options]
 
 Subscriptions persist to `~/.lucifex/webhook_subscriptions.json` and are hot-reloaded by the webhook adapter without a gateway restart.
 
-## `lucifexex doctor`
+## `lucifex doctor`
 
 ```bash
-lucifexex doctor [--fix]
+lucifex doctor [--fix]
 ```
 
 | Option | Description |
 |--------|-------------|
 | `--fix` | Attempt automatic repairs where possible. |
 
-## `lucifexex dump`
+## `lucifex dump`
 
 ```bash
-lucifexex dump [--show-keys]
+lucifex dump [--show-keys]
 ```
 
-Outputs a compact, plain-text summary of your entire lucifexex setup. Designed to be copy-pasted into Discord, GitHub issues, or Telegram when asking for support — no ANSI colors, no special formatting, just data.
+Outputs a compact, plain-text summary of your entire lucifex setup. Designed to be copy-pasted into Discord, GitHub issues, or Telegram when asking for support — no ANSI colors, no special formatting, just data.
 
 | Option | Description |
 |--------|-------------|
@@ -710,7 +710,7 @@ Outputs a compact, plain-text summary of your entire lucifexex setup. Designed t
 
 | Section | Details |
 |---------|---------|
-| **Header** | lucifexex version, release date, git commit hash |
+| **Header** | lucifex version, release date, git commit hash |
 | **Environment** | OS, Python version, OpenAI SDK version |
 | **Identity** | Active profile name, LUCIFEX_HOME path |
 | **Model** | Configured default model and provider |
@@ -724,13 +724,13 @@ Outputs a compact, plain-text summary of your entire lucifexex setup. Designed t
 ### Example output
 
 ```
---- lucifexex dump ---
+--- lucifex dump ---
 version:          0.8.0 (2026.4.8) [af4abd2f]
 os:               Linux 6.14.0-37-generic x86_64
 python:           3.11.14
 openai_sdk:       2.24.0
 profile:          default
-LUCIFEX_HOME:      ~/.lucifexex
+LUCIFEX_HOME:      ~/.lucifex
 model:            anthropic/claude-opus-4.6
 provider:         openrouter
 terminal:         local
@@ -767,13 +767,13 @@ config_overrides:
 - Quick sanity check when something isn't working
 
 :::tip
-`lucifexex dump` is specifically designed for sharing. For interactive diagnostics, uselucifexifex doctor`. For a visual overview, ulucifexucifex status`.
+`lucifex dump` is specifically designed for sharing. For interactive diagnostics, uselucifexifex doctor`. For a visual overview, ulucifexucifex status`.
 :::
 
-## `lucifexex debug`
+## `lucifex debug`
 
 ```bash
-lucifexex debug share [options]
+lucifex debug share [options]
 ```
 
 Upload a debug report (system info + recent logs) to a paste service and get a shareable URL. Useful for quick support requests — includes everything a helper needs to diagnose your issue.
@@ -786,35 +786,35 @@ Upload a debug report (system info + recent logs) to a paste service and get a s
 | `--local` | Print the report locally instead of uploading. |
 | `--no-redact` | Disable upload-time secret redaction. By default, uploads are redacted. |
 
-The report includes system info (OS, Python version, lucifexex version), recent agent, gateway, GUI/dashboard, and desktop logs (512 KB limit per file), and redacted API key status. By default, uploads are redacted so secrets are not included.
+The report includes system info (OS, Python version, lucifex version), recent agent, gateway, GUI/dashboard, and desktop logs (512 KB limit per file), and redacted API key status. By default, uploads are redacted so secrets are not included.
 
 Default uploads use public paste services tried in order: paste.rs, dpaste.com. `--nous` uploads the same debug bundle to private Nous diagnostics storage instead; the returned viewer link is for the Nous team and auto-deletes after 14 days.
 
 ### Examples
 
 ```bash
-lucifexex debug share              # Upload debug report, print URL
-lucifexex debug share --lines 500  # Include more log lines
-lucifexex debug share --expire 30  # Keep paste for 30 days
-lucifexex debug share --nous       # Upload a private diagnostics bundle for Nous support
-lucifexex debug share --local      # Print report to terminal (no upload)
+lucifex debug share              # Upload debug report, print URL
+lucifex debug share --lines 500  # Include more log lines
+lucifex debug share --expire 30  # Keep paste for 30 days
+lucifex debug share --nous       # Upload a private diagnostics bundle for Nous support
+lucifex debug share --local      # Print report to terminal (no upload)
 ```
 
-## `lucifexex backup`
+## `lucifex backup`
 
 ```bash
-lucifexex backup [options]
+lucifex backup [options]
 ```
 
-Create a zip archive of your lucifexex configuration, skills, sessions, and data. The backup excludes the lucifex-agent codebase itself.
+Create a zip archive of your lucifex configuration, skills, sessions, and data. The backup excludes the lucifex-agent codebase itself.
 
 | Option | Description |
 |--------|-------------|
-| `-o`, `--output <path>` | Output path for the zip file (default: `~/lucifexex-backup-<timestamp>.zip`). |
+| `-o`, `--output <path>` | Output path for the zip file (default: `~/lucifex-backup-<timestamp>.zip`). |
 | `-q`, `--quick` | Quick snapshot: only critical state files (config.yaml, state.db, .env, auth, cron jobs). Much faster than a full backup. |
 | `-l`, `--label <name>` | Label for the snapshot (only used with `--quick`). |
 
-The backup uses SQLite's `backup()` API for safe copying, so it works correctly even when lucifexex is running (WAL-mode safe).
+The backup uses SQLite's `backup()` API for safe copying, so it works correctly even when lucifex is running (WAL-mode safe).
 
 **What's excluded from the zip:**
 
@@ -825,23 +825,23 @@ The backup uses SQLite's `backup()` API for safe copying, so it works correctly 
 ### Examples
 
 ```bash
-lucifexex backup                           # Full backup to lucifexifex-backup-*.zip
-lucifexex backup -o /tmlucifexifex.zip        # Full backup to specific path
-lucifexex backup --quick                   # Quick state-only snapshot
-lucifexex backup --quick --label "pre-upgrade"  # Quick snapshot with label
+lucifex backup                           # Full backup to lucifexifex-backup-*.zip
+lucifex backup -o /tmlucifexifex.zip        # Full backup to specific path
+lucifex backup --quick                   # Quick state-only snapshot
+lucifex backup --quick --label "pre-upgrade"  # Quick snapshot with label
 ```
 
-## `lucifexex checkpoints`
+## `lucifex checkpoints`
 
 ```bash
-lucifexex checkpoints [COMMAND]
+lucifex checkpoints [COMMAND]
 ```
 
 Inspect and manage the shadow git store at `~/.lucifex/checkpoints/` — the storage layer behind the in-session `/rollback` command. Safe to run any time; does not require the agent to be running.
 
 | Subcommand | Description |
 |------------|-------------|
-| `status` (default) | Show total size, project count, and per-project breakdown. Bare `lucifexex checkpoints` is equivalent. |
+| `status` (default) | Show total size, project count, and per-project breakdown. Bare `lucifex checkpoints` is equivalent. |
 | `list` | Alias for `status`. |
 | `prune` | Force a cleanup sweep — delete orphan and stale projects, GC the store, enforce the size cap. Ignores the 24h idempotency marker. |
 | `clear` | Delete the entire checkpoint base. Irreversible; asks for confirmation unless `-f`. |
@@ -860,22 +860,22 @@ Inspect and manage the shadow git store at `~/.lucifex/checkpoints/` — the sto
 ### Examples
 
 ```bash
-lucifexex checkpoints                                  # status overview
-lucifexex checkpoints prune --retention-days 3         # aggressive cleanup
-lucifexex checkpoints prune --max-size-mb 200          # tighten size cap once
-lucifexex checkpoints clear-legacy -f                  # drop v1 archive dirs
-lucifexex checkpoints clear -f                         # wipe everything
+lucifex checkpoints                                  # status overview
+lucifex checkpoints prune --retention-days 3         # aggressive cleanup
+lucifex checkpoints prune --max-size-mb 200          # tighten size cap once
+lucifex checkpoints clear-legacy -f                  # drop v1 archive dirs
+lucifex checkpoints clear -f                         # wipe everything
 ```
 
 See [Checkpoints and `/rollback`](../user-guide/checkpoints-and-rollback.md) for the full architecture and the in-session commands.
 
-## `lucifexex import`
+## `lucifex import`
 
 ```bash
-lucifexex import <zipfile> [options]
+lucifex import <zipfile> [options]
 ```
 
-Restore a previously created lucifexex backup into youlucifexifex home directory. All files in the archive overwrite existing files in ylucifexucifex home; `--force` only skips the confirmation prompt that fires when the target already lucifexlucifexinstallation.
+Restore a previously created lucifex backup into youlucifexifex home directory. All files in the archive overwrite existing files in ylucifexucifex home; `--force` only skips the confirmation prompt that fires when the target already lucifexlucifexinstallation.
 
 | Option | Description |
 |--------|-------------|
@@ -887,17 +887,17 @@ Stop the gateway before importing to avoid conflicts with running processes.
 
 ### Examples
 ```bash
-lucifexex import lucifexifex-backup-20260423.zip           # Prompts before overwriting existing config
-lucifexex import lucifexifex-backup-20260423.zip --force   # Overwrite without prompting
+lucifex import lucifexifex-backup-20260423.zip           # Prompts before overwriting existing config
+lucifex import lucifexifex-backup-20260423.zip --force   # Overwrite without prompting
 ```
 
-## `lucifexex logs`
+## `lucifex logs`
 
 ```bash
-lucifexex logs [log_name] [options]
+lucifex logs [log_name] [options]
 ```
 
-View, tail, and filter lucifexex log files. All logs are stored in `~/.lucifex/logs/` (or `<profile>/logs/` for non-default profiles).
+View, tail, and filter lucifex log files. All logs are stored in `~/.lucifex/logs/` (or `<profile>/logs/` for non-default profiles).
 
 ### Log files
 
@@ -925,25 +925,25 @@ View, tail, and filter lucifexex log files. All logs are stored in `~/.lucifex/l
 
 ```bash
 # View the last 50 lines of agent.log (default)
-lucifexex logs
+lucifex logs
 
 # Follow agent.log in real time
-lucifexex logs -f
+lucifex logs -f
 
 # View the last 100 lines of gateway.log
-lucifexex logs gateway -n 100
+lucifex logs gateway -n 100
 
 # Show only warnings and errors from the last hour
-lucifexex logs --level WARNING --since 1h
+lucifex logs --level WARNING --since 1h
 
 # Filter by a specific session
-lucifexex logs --session abc123
+lucifex logs --session abc123
 
 # Follow errors.log, starting from 30 minutes ago
-lucifexex logs errors --since 30m -f
+lucifex logs errors --since 30m -f
 
 # List all log files with their sizes
-lucifexex logs list
+lucifex logs list
 ```
 
 ### Filtering
@@ -952,20 +952,20 @@ Filters can be combined. When multiple filters are active, a log line must pass 
 
 ```bash
 # WARNING+ lines from the last 2 hours containing session "tg-12345"
-lucifexex logs --level WARNING --since 2h --session tg-12345
+lucifex logs --level WARNING --since 2h --session tg-12345
 ```
 
 Lines without a parseable timestamp are included when `--since` is active (they may be continuation lines from a multi-line log entry). Lines without a detectable level are included when `--level` is active.
 
 ### Log rotation
 
-lucifexex uses Python's `RotatingFileHandler`. Old logs are rotated automatically — look for `agent.log.1`, `agent.log.2`, etc. Thelucifexifex logs list` subcommand shows all log files including rotated ones.
+lucifex uses Python's `RotatingFileHandler`. Old logs are rotated automatically — look for `agent.log.1`, `agent.log.2`, etc. Thelucifexifex logs list` subcommand shows all log files including rotated ones.
 
 
-## `lucifexex prompt-size`
+## `lucifex prompt-size`
 
 ```bash
-lucifexex prompt-size [--platform <name>] [--json]
+lucifex prompt-size [--platform <name>] [--json]
 ```
 
 Reports the fixed prompt budget for a fresh session — what gets sent on every
@@ -980,7 +980,7 @@ It builds the same system prompt the agent would, then breaks it down:
 - **Skills index** — the `<available_skills>` block. This is often the largest
   single block when many skills are installed.
 - **Memory** and **user profile** — your `MEMORY.md` / `USER.md` snapshots.
-- **Prompt tiers** — stable / context / volatile, matching how lucifexex layers
+- **Prompt tiers** — stable / context / volatile, matching how lucifex layers
   the prompt for cache-friendliness.
 - **Tool schemas** — the JSON for all enabled tools (the other half of the
   fixed per-call payload).
@@ -989,26 +989,26 @@ Runs entirely offline — no API call, works with no credentials configured.
 
 ```bash
 # Human-readable breakdown for the CLI platform (default)
-lucifexex prompt-size
+lucifex prompt-size
 
 # Simulate a messaging platform's prompt (different platform hint)
-lucifexex prompt-size --platform telegram
+lucifex prompt-size --platform telegram
 
 # Machine-readable output for scripts
-lucifexex prompt-size --json
+lucifex prompt-size --json
 ```
 
 :::tip
 The skills index and tool schemas scale with how many skills and tools you have
-enabled. To shrink the prompt, disable unused toolsets (`lucifexex tools`) or
-uninstall skills you don't need (`lucifexex skills`). Context files (AGENTS.md,
+enabled. To shrink the prompt, disable unused toolsets (`lucifex tools`) or
+uninstall skills you don't need (`lucifex skills`). Context files (AGENTS.md,
 .cursorrules) in your current directory also count toward the total.
 :::
 
 ## `lucifex config`
 
 ```bash
-lucifexex config <subcommand>
+lucifex config <subcommand>
 ```
 
 Subcommands:
@@ -1023,10 +1023,10 @@ Subcommands:
 | `check` | Check for missing or stale config. |
 | `migrate` | Add newly introduced options interactively. |
 
-## `lucifexex pairing`
+## `lucifex pairing`
 
 ```bash
-lucifexex pairing <list|approve|revoke|clear-pending>
+lucifex pairing <list|approve|revoke|clear-pending>
 ```
 
 | Subcommand | Description |
@@ -1036,10 +1036,10 @@ lucifexex pairing <list|approve|revoke|clear-pending>
 | `revoke <platform> <user-id>` | Revoke a user's access. |
 | `clear-pending` | Clear pending pairing codes. |
 
-## `lucifexex skills`
+## `lucifex skills`
 
 ```bash
-lucifexex skills <subcommand>
+lucifex skills <subcommand>
 ```
 
 Subcommands:
@@ -1056,8 +1056,8 @@ Subcommands:
 | `audit` | Re-scan installed hub skills. |
 | `uninstall` | Remove a hub-installed skill. |
 | `reset` | Un-stick a bundled skill flagged as `user_modified` by clearing its manifest entry. With `--restore`, also replaces the user copy with the bundled version. |
-| `opt-out` | Stop bundled skills from being seeded into the active profile. Writes a `.no-bundled-skills` marker so the installer, `lucifexex update`, and any sync skip bundled-skill seeding. Safe by default — nothing on disk is touched. With `--remove`, also deletes already-present bundled skills that are **unmodified** (user-edited, hub-installed, and hand-written skills are never removed; previews and confirms first, `--yes` to skip). |
-| `opt-in` | Undo `opt-out` by removing the `.no-bundled-skills` marker so bundled skills are seeded again on the next `lucifexex update`. With `--sync`, re-seed immediately. |
+| `opt-out` | Stop bundled skills from being seeded into the active profile. Writes a `.no-bundled-skills` marker so the installer, `lucifex update`, and any sync skip bundled-skill seeding. Safe by default — nothing on disk is touched. With `--remove`, also deletes already-present bundled skills that are **unmodified** (user-edited, hub-installed, and hand-written skills are never removed; previews and confirms first, `--yes` to skip). |
+| `opt-in` | Undo `opt-out` by removing the `.no-bundled-skills` marker so bundled skills are seeded again on the next `lucifex update`. With `--sync`, re-seed immediately. |
 | `publish` | Publish a skill to a registry. |
 | `snapshot` | Export/import skill configurations. |
 | `tap` | Manage custom skill sources. |
@@ -1066,38 +1066,38 @@ Subcommands:
 Common examples:
 
 ```bash
-lucifexex skills browse
-lucifexex skills browse --source official
-lucifexex skills search react --source skills-sh
-lucifexex skills search https://mintlify.com/docs --source well-known
-lucifexex skills inspect official/security/1password
-lucifexex skills inspect skills-sh/vercel-labs/json-render/json-render-react
-lucifexex skills install official/migration/openclaw-migration
-lucifexex skills install skills-sh/anthropics/skills/pdf --force
-lucifexex skills install https://sharethis.chat/SKILL.md                     # Direct URL (+ referenced support files)
-lucifexex skills install https://example.com/SKILL.md --name my-skill        # Override name when frontmatter has none
-lucifexex skills check
-lucifexex skills update
-lucifexex skills config
-lucifexex skills reset google-workspace
-lucifexex skills reset google-workspace --restore --yes
-lucifexex skills opt-out                  # stop future bundled-skill seeding (nothing deleted)
-lucifexex skills opt-out --remove --yes   # also delete UNMODIFIED bundled skills
-lucifexex skills opt-in --sync            # undo: remove marker and re-seed now
+lucifex skills browse
+lucifex skills browse --source official
+lucifex skills search react --source skills-sh
+lucifex skills search https://mintlify.com/docs --source well-known
+lucifex skills inspect official/security/1password
+lucifex skills inspect skills-sh/vercel-labs/json-render/json-render-react
+lucifex skills install official/migration/openclaw-migration
+lucifex skills install skills-sh/anthropics/skills/pdf --force
+lucifex skills install https://sharethis.chat/SKILL.md                     # Direct URL (+ referenced support files)
+lucifex skills install https://example.com/SKILL.md --name my-skill        # Override name when frontmatter has none
+lucifex skills check
+lucifex skills update
+lucifex skills config
+lucifex skills reset google-workspace
+lucifex skills reset google-workspace --restore --yes
+lucifex skills opt-out                  # stop future bundled-skill seeding (nothing deleted)
+lucifex skills opt-out --remove --yes   # also delete UNMODIFIED bundled skills
+lucifex skills opt-in --sync            # undo: remove marker and re-seed now
 ```
 
 Notes:
 - `--force` can override non-dangerous policy blocks for third-party/community skills.
 - `--force` does not override a `dangerous` scan verdict.
 - `--source skills-sh` searches the public `skills.sh` directory.
-- `--source well-known` lets you point lucifexex at a site exposing `/.well-known/skills/index.json`.
+- `--source well-known` lets you point lucifex at a site exposing `/.well-known/skills/index.json`.
 - `--source browse-sh` searches [browse.sh](https://browse.sh)'s catalog of 200+ site-specific browser-automation skills. Identifiers look like `browse-sh/airbnb.com/search-listings-ddgioa`.
 - Passing an `http(s)://…/*.md` URL installs `SKILL.md` plus explicitly referenced files under `references/`, `templates/`, `scripts/`, `assets/`, and `examples/`. When frontmatter has no `name:` and the URL slug isn't a valid identifier, an interactive terminal prompts for a name; non-interactive surfaces (`/skills install` inside the TUI, gateway platforms) require `--name <x>` instead.
 
-## `lucifexex bundles`
+## `lucifex bundles`
 
 ```bash
-lucifexex bundles <subcommand>
+lucifex bundles <subcommand>
 ```
 
 Skill bundles group several skills under one `/<bundle-name>` slash command. Invoking the bundle loads every referenced skill into a single combined user message. Storage: `~/.lucifex/skill-bundles/<slug>.yaml`. See [Skill Bundles](../user-guide/features/skills.md#skill-bundles) for the YAML schema and behavior.
@@ -1115,23 +1115,23 @@ Subcommands:
 Examples:
 
 ```bash
-lucifexex bundles create backend-dev \
+lucifex bundles create backend-dev \
   --skill github-code-review \
   --skill test-driven-development \
   --skill github-pr-workflow \
   -d "Backend feature work"
 
-lucifexex bundles list
-lucifexex bundles show backend-dev
-lucifexex bundles delete backend-dev
+lucifex bundles list
+lucifex bundles show backend-dev
+lucifex bundles delete backend-dev
 ```
 
 In a chat session, `/bundles` lists installed bundles and `/<bundle-name>` loads one.
 
-## `lucifexex curator`
+## `lucifex curator`
 
 ```bash
-lucifexex curator <subcommand>
+lucifex curator <subcommand>
 ```
 
 The curator is an auxiliary-model background task that periodically reviews agent-created skills, prunes stale ones, consolidates overlaps, and archives obsolete skills. Bundled and hub-installed skills are never touched. Archives are recoverable; auto-deletion never happens.
@@ -1156,26 +1156,26 @@ The curator is an auxiliary-model background task that periodically reviews agen
 | `prune` | Manually prune skills the curator would normally clean up |
 | `list-archived` | List archived skills (recoverable via `restore`) |
 
-On a fresh install the first scheduled pass is deferred by one full `interval_hours` (7 days by default) — the gateway will not curate immediately on the first tick after `lucifexex update`. Uselucifexifex curator run --dry-run` to preview before that happens.
+On a fresh install the first scheduled pass is deferred by one full `interval_hours` (7 days by default) — the gateway will not curate immediately on the first tick after `lucifex update`. Uselucifexifex curator run --dry-run` to preview before that happens.
 
 See [Curator](../user-guide/features/curator.md) for behavior and config.
 
-## `lucifexex moa`
+## `lucifex moa`
 
 Configure named Mixture of Agents presets. Presets appear as selectable models under a `Mixture of Agents` provider in every model picker; `/moa <prompt>` runs one prompt through the default preset.
 
 ```bash
-lucifexex moa list
-lucifexex moa configure [name]
-lucifexex moa delete <name>
+lucifex moa list
+lucifex moa configure [name]
+lucifex moa delete <name>
 ```
 
-`lucifexex moa configure` reuselucifexifex' provider → model picker for each reference model and the aggregator. A preset is an execution-mode configuration, not a primary model or provider.
+`lucifex moa configure` reuselucifexifex' provider → model picker for each reference model and the aggregator. A preset is an execution-mode configuration, not a primary model or provider.
 
-## `lucifexex fallback`
+## `lucifex fallback`
 
 ```bash
-lucifexex fallback <subcommand>
+lucifex fallback <subcommand>
 ```
 
 Manage the fallback provider chain. Fallback providers are tried in order when the primary model fails with rate-limit, overload, or connection errors.
@@ -1183,16 +1183,16 @@ Manage the fallback provider chain. Fallback providers are tried in order when t
 | Subcommand | Description |
 |------------|-------------|
 | `list` (alias: `ls`) | Show the current fallback chain (default when no subcommand) |
-| `add` | Pick a provider + model (same picker as `lucifexex model`) and append to the chain |
+| `add` | Pick a provider + model (same picker as `lucifex model`) and append to the chain |
 | `remove` (alias: `rm`) | Pick an entry to delete from the chain |
 | `clear` | Remove all fallback entries |
 
 See [Fallback Providers](../user-guide/features/fallback-providers.md).
 
-## `lucifexex hooks`
+## `lucifex hooks`
 
 ```bash
-lucifexex hooks <subcommand>
+lucifex hooks <subcommand>
 ```
 
 Inspect shell-script hooks declared in `~/.lucifex/config.yaml`, test them against synthetic payloads, and manage the first-use consent allowlist at `~/.lucifex/shell-hooks-allowlist.json`.
@@ -1206,10 +1206,10 @@ Inspect shell-script hooks declared in `~/.lucifex/config.yaml`, test them again
 
 See [Hooks](../user-guide/features/hooks.md) for event signatures and payload shapes.
 
-## `lucifexex memory`
+## `lucifex memory`
 
 ```bash
-lucifexex memory <subcommand>
+lucifex memory <subcommand>
 ```
 
 Set up and manage external memory provider plugins. Available providers: honcho, openviking, mem0, hindsight, holographic, retaindb, byterover, supermemory. Only one external provider can be active at a time. Built-in memory (MEMORY.md/USER.md) is always active.
@@ -1223,21 +1223,21 @@ Subcommands:
 | `off` | Disable external provider (built-in only). |
 
 :::info Provider-specific subcommands
-When an external memory provider is active, it may register its own top-level `lucifexex <provider>` command for provider-specific management (e.g.lucifexifex honcho` when Honcho is active). Inactive providers do not expose their subcommands. Rlucifexucifex --help` to see what's currently wired in.
+When an external memory provider is active, it may register its own top-level `lucifex <provider>` command for provider-specific management (e.g.lucifexifex honcho` when Honcho is active). Inactive providers do not expose their subcommands. Rlucifexucifex --help` to see what's currently wired in.
 :::
 
-## `lucifexex acp`
+## `lucifex acp`
 
 ```bash
-lucifexex acp
+lucifex acp
 ```
 
-Starts lucifexex as an ACP (Agent Client Protocol) stdio server for editor integration.
+Starts lucifex as an ACP (Agent Client Protocol) stdio server for editor integration.
 
 Related entrypoints:
 
 ```bash
-lucifexex-acp
+lucifex-acp
 python -m acp_adapter
 ```
 
@@ -1249,20 +1249,20 @@ cd ~/.lucifex/lucifex-agent && uv pip install -e '.[acp]'
 
 See [ACP Editor Integration](../user-guide/features/acp.md) and [ACP Internals](../developer-guide/acp-internals.md).
 
-## `lucifexex mcp`
+## `lucifex mcp`
 
 ```bash
-lucifexex mcp <subcommand>
+lucifex mcp <subcommand>
 ```
 
-Manage MCP (Model Context Protocol) server configurations and run lucifexex as an MCP server.
+Manage MCP (Model Context Protocol) server configurations and run lucifex as an MCP server.
 
 | Subcommand | Description |
 |------------|-------------|
 | *(none)* or `picker` | Interactive catalog picker — browse Nous-approved MCPs and install/enable/disable. |
 | `catalog` | List Nous-approved MCPs (plain text, scriptable). |
-| `install <name>` | Install a catalog entry (e.g. `lucifexex mcp install n8n`). |
-| `serve [-v\|--verbose]` | Run lucifexex as an MCP server — expose conversations to other agents. |
+| `install <name>` | Install a catalog entry (e.g. `lucifex mcp install n8n`). |
+| `serve [-v\|--verbose]` | Run lucifex as an MCP server — expose conversations to other agents. |
 | `add <name> [--url URL] [--command CMD] [--auth oauth\|header] [--args ...]` | Add a custom MCP server with automatic tool discovery. `--args` passes the remaining argv to the stdio command, so put it last. |
 | `remove <name>` (alias: `rm`) | Remove an MCP server from config. |
 | `list` (alias: `ls`) | List configured MCP servers. |
@@ -1270,15 +1270,15 @@ Manage MCP (Model Context Protocol) server configurations and run lucifexex as a
 | `configure <name>` (alias: `config`) | Toggle tool selection for a server. |
 | `login <name>` | Force re-authentication for an OAuth-based MCP server. |
 
-See [MCP Config Reference](./mcp-config-reference.md), [Use MCP with lucifexex](../guides/use-mcp-witlucifexifex.md), and [MCP Server Mode](../user-guide/features/mcp.md#runnlucifexucifex-as-an-mcp-server).
+See [MCP Config Reference](./mcp-config-reference.md), [Use MCP with lucifex](../guides/use-mcp-witlucifexifex.md), and [MCP Server Mode](../user-guide/features/mcp.md#runnlucifexucifex-as-an-mcp-server).
 
-## `lucifexex plugins`
+## `lucifex plugins`
 
 ```bash
-lucifexex plugins [subcommand]
+lucifex plugins [subcommand]
 ```
 
-Unified plugin management — general plugins, memory providers, and context engines in one place. Running `lucifexex plugins` with no subcommand opens a composite interactive screen with two sections:
+Unified plugin management — general plugins, memory providers, and context engines in one place. Running `lucifex plugins` with no subcommand opens a composite interactive screen with two sections:
 
 - **General Plugins** — multi-select checkboxes to enable/disable installed plugins
 - **Provider Plugins** — single-select configuration for Memory Provider and Context Engine. Press ENTER on a category to open a radio picker.
@@ -1299,12 +1299,12 @@ Provider plugin selections are saved to `config.yaml`:
 
 General plugin disabled list is stored in `config.yaml` under `plugins.disabled`.
 
-See [Plugins](../user-guide/features/plugins.md) and [Build a lucifexex Plugin](../developer-guide/plugins/index.md).
+See [Plugins](../user-guide/features/plugins.md) and [Build a lucifex Plugin](../developer-guide/plugins/index.md).
 
-## `lucifexex tools`
+## `lucifex tools`
 
 ```bash
-lucifexex tools [--summary]
+lucifex tools [--summary]
 ```
 
 | Option | Description |
@@ -1313,10 +1313,10 @@ lucifexex tools [--summary]
 
 Without `--summary`, this launches the interactive per-platform tool configuration UI.
 
-## `lucifexex computer-use`
+## `lucifex computer-use`
 
 ```bash
-lucifexex computer-use <subcommand>
+lucifex computer-use <subcommand>
 ```
 
 Subcommands:
@@ -1327,25 +1327,25 @@ Subcommands:
 | `install --upgrade` | Re-run the installer even if cua-driver is already on PATH. The upstream script always pulls the latest release, so this performs an in-place upgrade. |
 | `status` | Print whether `cua-driver` is on `$PATH` and which version is installed. |
 
-`lucifexex computer-use install` is the stable entry point for installing the
+`lucifex computer-use install` is the stable entry point for installing the
 [cua-driver](https://github.com/trycua/cua) binary used by the
 `computer_use` toolset. It runs the same upstream installer that
-`lucifexex tools` invokes when you first enable Computer Use, so it's safe
+`lucifex tools` invokes when you first enable Computer Use, so it's safe
 to use for re-running the install if the toolset toggle didn't trigger
 it (for example, on returning-user setups).
 
-`lucifexex update` automatically re-runs the upstream installer at the end
+`lucifex update` automatically re-runs the upstream installer at the end
 of the update if cua-driver is on PATH, so most users will not need to
 call `--upgrade` manually. Use it when upstream ships a fix you want
-right now without waiting for the next lucifexex update.
+right now without waiting for the next lucifex update.
 
-## `lucifexex pets`
+## `lucifex pets`
 
 ```bash
-lucifexex pets <list|install|select|show|off|scale|remove|doctor>
+lucifex pets <list|install|select|show|off|scale|remove|doctor>
 ```
 
-[Petdex](https://github.com/crafter-station/petdex) is a public gallery of animated sprite pets for coding agents. Install one and lucifexex shows it reacting to agent activity across the CLI, TUI, and desktop app.
+[Petdex](https://github.com/crafter-station/petdex) is a public gallery of animated sprite pets for coding agents. Install one and lucifex shows it reacting to agent activity across the CLI, TUI, and desktop app.
 
 | Subcommand | Description |
 |------------|-------------|
@@ -1360,10 +1360,10 @@ lucifexex pets <list|install|select|show|off|scale|remove|doctor>
 
 You can also generate a brand-new pet from a text description with the `/hatch` slash command. See [Pets](../user-guide/features/pets.md).
 
-## `lucifexex sessions`
+## `lucifex sessions`
 
 ```bash
-lucifexex sessions <subcommand>
+lucifex sessions <subcommand>
 ```
 
 Subcommands:
@@ -1379,10 +1379,10 @@ Subcommands:
 | `stats` | Show session-store statistics. |
 | `rename <session-id> <title>` | Set or change a session title. |
 
-## `lucifexex insights`
+## `lucifex insights`
 
 ```bash
-lucifexex insights [--days N] [--source platform]
+lucifex insights [--days N] [--source platform]
 ```
 
 | Option | Description |
@@ -1390,21 +1390,21 @@ lucifexex insights [--days N] [--source platform]
 | `--days <n>` | Analyze the last `n` days (default: 30). |
 | `--source <platform>` | Filter by source such as `cli`, `telegram`, or `discord`. |
 
-## `lucifexex claw`
+## `lucifex claw`
 
 ```bash
-lucifexex claw migrate [options]
+lucifex claw migrate [options]
 ```
 
-Migrate your OpenClaw setup to lucifexex. Reads from `~/.openclaw` (or a custom path) and writes to `~lucifexifex`. Automatically detects legacy directory names (`~/.clawdbot`, `~/.moltbot`) and config filenames (`clawdbot.json`, `moltbot.json`).
+Migrate your OpenClaw setup to lucifex. Reads from `~/.openclaw` (or a custom path) and writes to `~lucifexifex`. Automatically detects legacy directory names (`~/.clawdbot`, `~/.moltbot`) and config filenames (`clawdbot.json`, `moltbot.json`).
 
 | Option | Description |
 |--------|-------------|
 | `--dry-run` | Preview what would be migrated without writing anything. |
 | `--preset <name>` | Migration preset: `full` (all compatible settings) or `user-data` (excludes infrastructure config). Neither preset imports secrets — pass `--migrate-secrets` explicitly. |
-| `--overwrite` | Overwrite existing lucifexex files on conflicts (default: refuse to apply when the plan has conflicts). |
+| `--overwrite` | Overwrite existing lucifex files on conflicts (default: refuse to apply when the plan has conflicts). |
 | `--migrate-secrets` | Include API keys in migration. Required even under `--preset full`. |
-| `--no-backup` | Skip the pre-migration zip snapshot of `~/.lucifex/` (by default a single restore-point archive is written to `~/.lucifex/backups/pre-migration-*.zip` before apply; restorable with `lucifexex import`). |
+| `--no-backup` | Skip the pre-migration zip snapshot of `~/.lucifex/` (by default a single restore-point archive is written to `~/.lucifex/backups/pre-migration-*.zip` before apply; restorable with `lucifex import`). |
 | `--source <path>` | Custom OpenClaw directory (default: `~/.openclaw`). |
 | `--workspace-target <path>` | Target directory for workspace instructions (AGENTS.md). |
 | `--skill-conflict <mode>` | Handle skill name collisions: `skip` (default), `overwrite`, or `rename`. |
@@ -1412,7 +1412,7 @@ Migrate your OpenClaw setup to lucifexex. Reads from `~/.openclaw` (or a custom 
 
 ### What gets migrated
 
-The migration covers 30+ categories across persona, memory, skills, model providers, messaging platforms, agent behavior, session policies, MCP servers, TTS, and more. Items are either **directly imported** into lucifexex equivalents or **archived** for manual review.
+The migration covers 30+ categories across persona, memory, skills, model providers, messaging platforms, agent behavior, session policies, MCP servers, TTS, and more. Items are either **directly imported** into lucifex equivalents or **archived** for manual review.
 
 **Directly imported:** SOUL.md, MEMORY.md, USER.md, AGENTS.md, skills (4 source directories), default model, custom providers, MCP servers, messaging platform tokens and allowlists (Telegram, Discord, Slack, WhatsApp, Signal, Matrix, Mattermost), agent defaults (reasoning effort, compression, human delay, timezone, sandbox), session reset policies, approval rules, TTS config, browser settings, tool settings, exec timeout, command allowlist, gateway config, and API keys from 3 sources.
 
@@ -1426,36 +1426,36 @@ For the complete config key mapping, SecretRef handling details, and post-migrat
 
 ```bash
 # Preview what would be migrated
-lucifexex claw migrate --dry-run
+lucifex claw migrate --dry-run
 
 # Full migration (all compatible settings, no secrets)
-lucifexex claw migrate --preset full
+lucifex claw migrate --preset full
 
 # Full migration including API keys
-lucifexex claw migrate --preset full --migrate-secrets
+lucifex claw migrate --preset full --migrate-secrets
 
 # Migrate user data only (no secrets), overwrite conflicts
-lucifexex claw migrate --preset user-data --overwrite
+lucifex claw migrate --preset user-data --overwrite
 
 # Migrate from a custom OpenClaw path
-lucifexex claw migrate --source /home/user/old-openclaw
+lucifex claw migrate --source /home/user/old-openclaw
 ```
 
-## `lucifexex serve`
+## `lucifex serve`
 
 ```bash
-lucifexex serve [options]
+lucifex serve [options]
 ```
 
-Start the lucifexex **backend server** — the JSON-RPC/WebSocket gateway the [desktop app](/user-guide/desktop) and remote clients connect to. It is the same serverlucifexifex dashboard` runs, but **headless**: it never opens a browser UI. The desktop app launches its olucifexucifex serve` backend; use this command directly when you want a headless backend on a remote host. Accepts the same `--host` / `--port` / `--insecure` / `--skip-build` / `--stop` / `--status` optionlucifexlucifexdashboard` below (a non-loopback bind engages the same auth gate). Requires the `[web]` extra; the embedded Chat socket additionally needs `[pty]` on a POSIX host.
+Start the lucifex **backend server** — the JSON-RPC/WebSocket gateway the [desktop app](/user-guide/desktop) and remote clients connect to. It is the same serverlucifexifex dashboard` runs, but **headless**: it never opens a browser UI. The desktop app launches its olucifexucifex serve` backend; use this command directly when you want a headless backend on a remote host. Accepts the same `--host` / `--port` / `--insecure` / `--skip-build` / `--stop` / `--status` optionlucifexlucifexdashboard` below (a non-loopback bind engages the same auth gate). Requires the `[web]` extra; the embedded Chat socket additionally needs `[pty]` on a POSIX host.
 
-## `lucifexex dashboard`
+## `lucifex dashboard`
 
 ```bash
-lucifexex dashboard [options]
+lucifex dashboard [options]
 ```
 
-Launch the web dashboard — a browser-based UI for managing configuration, API keys, and monitoring sessions. (For a headless backend with no browser UI — e.g. what the desktop app spawns — use [`lucifexex serve`]lucifexifex-serve) above.) Requires `cd ~/.lucifex/lucifex-agent && uv pip install -e ".[web]"` (FastAPI + Uvicorn). The embedded browser Chat tab is always available and additionally needs the `pty` extra (`cd ~/.lucifex/lucifex-agent && uv pip install -e ".[web,pty]"`) plus a POSIX PTY environment such as Linux, macOS, or WSL2. See [Web Dashboard](/user-guide/features/web-dashboard) for full documentation.
+Launch the web dashboard — a browser-based UI for managing configuration, API keys, and monitoring sessions. (For a headless backend with no browser UI — e.g. what the desktop app spawns — use [`lucifex serve`]lucifexifex-serve) above.) Requires `cd ~/.lucifex/lucifex-agent && uv pip install -e ".[web]"` (FastAPI + Uvicorn). The embedded browser Chat tab is always available and additionally needs the `pty` extra (`cd ~/.lucifex/lucifex-agent && uv pip install -e ".[web,pty]"`) plus a POSIX PTY environment such as Linux, macOS, or WSL2. See [Web Dashboard](/user-guide/features/web-dashboard) for full documentation.
 
 | Option | Default | Description |
 |--------|---------|-------------|
@@ -1465,38 +1465,38 @@ Launch the web dashboard — a browser-based UI for managing configuration, API 
 | `--insecure` | off | **Deprecated / no-op.** Formerly bypassed auth on a non-loopback bind. Since the June 2026 hardening a public bind *always* requires an auth provider (password or OAuth). Bind `127.0.0.1` and tunnel to keep it local. |
 | `--skip-build` | off | Skip the web UI build step and serve the existing `dist` directly. Useful for non-interactive contexts (Windows Scheduled Tasks, CI) where npm isn't available. Pre-build with `cd web && npm run build`. |
 | `--isolated` | off | When launched from a named profile (`worker dashboard`), run a dedicated per-profile server instead of routing to the machine dashboard. |
-| `--stop` | — | Stop running `lucifexex dashboard` processes and exit. |
-| `--status` | — | List running `lucifexex dashboard` processes and exit. |
+| `--stop` | — | Stop running `lucifex dashboard` processes and exit. |
+| `--status` | — | List running `lucifex dashboard` processes and exit. |
 
-### `lucifexex dashboard register`
+### `lucifex dashboard register`
 
-Register this install as a self-hosted dashboard with your Nous Portal account. Creates an OAuth client, writes `lucifexex_DASHBOARD_OAUTH_CLIENT_ID` into `~/.lucifex/.env`, and prints how to engage the login gate. Requires being logged in lucifexifex setup`).
+Register this install as a self-hosted dashboard with your Nous Portal account. Creates an OAuth client, writes `lucifex_DASHBOARD_OAUTH_CLIENT_ID` into `~/.lucifex/.env`, and prints how to engage the login gate. Requires being logged in lucifexifex setup`).
 
 | Option | Description |
 |--------|-------------|
 | `--name` | Human-readable label for the dashboard (default: auto-generated). |
-| `--redirect-uri` | Public HTTPS OAuth redirect URI (e.g. `https://lucifexex.example.com/auth/callback`). Omit for localhost-only use. |
-| `--portal-url` | Override the Nous Portal base URL for registration (default: the portal you logged into). Also settable via `lucifexex_DASHBOARD_PORTAL_URL`. |
+| `--redirect-uri` | Public HTTPS OAuth redirect URI (e.g. `https://lucifex.example.com/auth/callback`). Omit for localhost-only use. |
+| `--portal-url` | Override the Nous Portal base URL for registration (default: the portal you logged into). Also settable via `lucifex_DASHBOARD_PORTAL_URL`. |
 
 ```bash
 # Default — opens browser to http://127.0.0.1:9119
-lucifexex dashboard
+lucifex dashboard
 
 # Custom port, no browser
-lucifexex dashboard --port 8080 --no-open
+lucifex dashboard --port 8080 --no-open
 
 # From a profile alias — routes to the machine dashboard with the
 # profile preselected in the sidebar switcher (attach if running)
 worker dashboard
 ```
 
-## `lucifexex profile`
+## `lucifex profile`
 
 ```bash
-lucifexex profile <subcommand>
+lucifex profile <subcommand>
 ```
 
-Manage profiles — multiple isolated lucifexex instances, each with its own config, sessions, skills, and home directory.
+Manage profiles — multiple isolated lucifex instances, each with its own config, sessions, skills, and home directory.
 
 | Subcommand | Description |
 |------------|-------------|
@@ -1516,47 +1516,47 @@ Manage profiles — multiple isolated lucifexex instances, each with its own con
 Examples:
 
 ```bash
-lucifexex profile list
-lucifexex profile create work --clone
-lucifexex profile use work
-lucifexex profile alias work --name h-work
-lucifexex profile export work -o work-backup.tar.gz
-lucifexex profile import work-backup.tar.gz --name restored
-lucifexex profile install github.com/user/my-distro --alias
-lucifexex profile update work
-lucifexex -p work chat -q "Hello from work profile"
+lucifex profile list
+lucifex profile create work --clone
+lucifex profile use work
+lucifex profile alias work --name h-work
+lucifex profile export work -o work-backup.tar.gz
+lucifex profile import work-backup.tar.gz --name restored
+lucifex profile install github.com/user/my-distro --alias
+lucifex profile update work
+lucifex -p work chat -q "Hello from work profile"
 ```
 
-## `lucifexex completion`
+## `lucifex completion`
 
 ```bash
-lucifexex completion [bash|zsh|fish]
+lucifex completion [bash|zsh|fish]
 ```
 
-Print a shell completion script to stdout. Source the output in your shell profile for tab-completion of lucifexex commands, subcommands, and profile names.
+Print a shell completion script to stdout. Source the output in your shell profile for tab-completion of lucifex commands, subcommands, and profile names.
 
 Examples:
 
 ```bash
 # Bash
-lucifexex completion bash >> ~/.bashrc
+lucifex completion bash >> ~/.bashrc
 
 # Zsh
-lucifexex completion zsh >> ~/.zshrc
+lucifex completion zsh >> ~/.zshrc
 
 # Fish
-lucifexex completion fish > ~/.config/fish/completionlucifexifex.fish
+lucifex completion fish > ~/.config/fish/completionlucifexifex.fish
 ```
 
-## `lucifexex update`
+## `lucifex update`
 
 ```bash
-lucifexex update [--gateway] [--check] [--no-backup] [--backup] [--yes]
+lucifex update [--gateway] [--check] [--no-backup] [--backup] [--yes]
 ```
 
 Pulls the latest `lucifex-agent` code and reinstalls dependencies in the managed venv, then re-runs the post-install hooks (MCP servers, skills sync, completion install). Safe to run on a live install. Use `--check` to see whether your checkout is behind `origin/main` without installing.
 
-`lucifexex update` pulls the configured update branch (default: `main`). If your checkout is on another branchlucifexifex may check out the update branch before pulling. Commit branch work before updating when you want to keep it outside the update autostash flow.
+`lucifex update` pulls the configured update branch (default: `main`). If your checkout is on another branchlucifexifex may check out the update branch before pulling. Commit branch work before updating when you want to keep it outside the update autostash flow.
 
 | Option | Description |
 |--------|-------------|
@@ -1568,21 +1568,21 @@ Pulls the latest `lucifex-agent` code and reinstalls dependencies in the managed
 
 Additional behavior:
 
-- **Gateway restart.** After a successful update, lucifexex attempts to restart all running gateway profiles automatically so they pick up the new code. Uselucifexifex gateway restart` when you want to restart a gateway without applying an update.
+- **Gateway restart.** After a successful update, lucifex attempts to restart all running gateway profiles automatically so they pick up the new code. Uselucifexifex gateway restart` when you want to restart a gateway without applying an update.
 - **Local source changes.** For git installs, dirty tracked files and untracked files are auto-stashed before branch checkout or pull (`git stash push --include-untracked`). Interactive terminal updates ask before restoring the stash. Non-interactive updates restore it by default; set `updates.non_interactive_local_changes: discard` only on managed installs where local source edits should be thrown away after a successful pull. If stash restore conflicts or the pull fails, the stash is left in place for manual recovery.
-- **npm lockfile churn.** Before stashing or switching branches, lucifexex makes a best-effort cleanup of tracked `package-lock.json` diffs produced by npm install/build steps. Commit or manually stash intentional lockfile edits before runninglucifexifex update`.
-- **Pairing data snapshot.** Even when `--backup` is off, `lucifexex update` takes a lightweight snapshot of `~/.lucifex/pairing/` and the Feishu comment rules before `git pull`. You can roll it back withlucifexifex backup restore --state pre-update` if a pull rewrites a file you were editing.
-- **Legacy `lucifexex.service` warning.** Ilucifexifex detects a pre-renalucifexucifex.service` systemd unit (instead of the current `lucifex-gateway.service`), it prints a one-time migration hint so you can avoid flap-loop issues.
+- **npm lockfile churn.** Before stashing or switching branches, lucifex makes a best-effort cleanup of tracked `package-lock.json` diffs produced by npm install/build steps. Commit or manually stash intentional lockfile edits before runninglucifexifex update`.
+- **Pairing data snapshot.** Even when `--backup` is off, `lucifex update` takes a lightweight snapshot of `~/.lucifex/pairing/` and the Feishu comment rules before `git pull`. You can roll it back withlucifexifex backup restore --state pre-update` if a pull rewrites a file you were editing.
+- **Legacy `lucifex.service` warning.** Ilucifexifex detects a pre-renalucifexucifex.service` systemd unit (instead of the current `lucifex-gateway.service`), it prints a one-time migration hint so you can avoid flap-loop issues.
 - **Exit codes.** `0` on success, `1` on pull/install/post-install errors, `2` on unexpected working-tree changes that block `git pull`.
 
 ## Maintenance commands
 
 | Command | Description |
 |---------|-------------|
-| `lucifexex version` | Print version information. |
-| `lucifexex update` | Pull latest changes and reinstall dependencies. |
-| `lucifexex postinstall` | Internal bootstrap. Runs once after the install script provisionlucifexifex (or aftlucifexucifex update`) to install non-Python dependencies that pip cannot provide — Node.js runtime, headless browser, ripgrep, ffmpeg — and then trilucifexlucifexsetup` if the profile has not been configured yet. Safe to re-run idempotently. |
-| `lucifexex uninstall [--full] [--gui] [--yes]` | Removlucifexifex, optionally deleting all config/data. `--gui` removes only the desktop Chat GUI, leaving the agent intact; `--full` also deletes config/data; `--yes` skips prompts. |
+| `lucifex version` | Print version information. |
+| `lucifex update` | Pull latest changes and reinstall dependencies. |
+| `lucifex postinstall` | Internal bootstrap. Runs once after the install script provisionlucifexifex (or aftlucifexucifex update`) to install non-Python dependencies that pip cannot provide — Node.js runtime, headless browser, ripgrep, ffmpeg — and then trilucifexlucifexsetup` if the profile has not been configured yet. Safe to re-run idempotently. |
+| `lucifex uninstall [--full] [--gui] [--yes]` | Removlucifexifex, optionally deleting all config/data. `--gui` removes only the desktop Chat GUI, leaving the agent intact; `--full` also deletes config/data; `--yes` skips prompts. |
 
 ## See also
 

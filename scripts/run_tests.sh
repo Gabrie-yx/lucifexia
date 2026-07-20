@@ -39,10 +39,10 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # ── Locate python ───────────────────────────────────────────────────────────
 # Probe local venvs first; fall back to the Nix devShell's editable venv
-# (lucifexex_PYTHON is exported by the devShell hook and ships [dev] extras:
+# (lucifex_PYTHON is exported by the devShell hook and ships [dev] extras:
 # pytest, pytest-asyncio, pytest-timeout, ruff, ty).
 VENV=""
-for candidate in "$REPO_ROOT/.venv" "$REPO_ROOT/venv" "$HOME/.lucifexex/lucifex-agent/venv"; do
+for candidate in "$REPO_ROOT/.venv" "$REPO_ROOT/venv" "$HOME/.lucifex/lucifex-agent/venv"; do
   if [ -f "$candidate/bin/activate" ]; then
     VENV="$candidate"
     break
@@ -51,16 +51,16 @@ done
 
 if [ -n "$VENV" ]; then
   PYTHON="$VENV/bin/python"
-elif [ -n "${lucifexex_PYTHON:-}" ] && [ -x lucifexifex_PYTHON" ] \
-    && "$lucifexex_PYTHON" -c 'import pytest' 2>/dev/null; then
-  # Guard with an import check: lucifexex_PYTHON may point at the RELEASE
-  # venv (no pytest) when inherited from a wrapped `lucifexex` binary rather
+elif [ -n "${lucifex_PYTHON:-}" ] && [ -x lucifexifex_PYTHON" ] \
+    && "$lucifex_PYTHON" -c 'import pytest' 2>/dev/null; then
+  # Guard with an import check: lucifex_PYTHON may point at the RELEASE
+  # venv (no pytest) when inherited from a wrapped `lucifex` binary rather
   # than the devShell hook.
-  PYTHON="$lucifexex_PYTHON"
-  echo "▶ no local venv — using Nix dev venv via lucifexex_PYTHON: $PYTHON"
+  PYTHON="$lucifex_PYTHON"
+  echo "▶ no local venv — using Nix dev venv via lucifex_PYTHON: $PYTHON"
 else
   echo "error: no virtualenv found in $REPO_ROOT/.venv or $REPO_ROOT/venv," >&2
-  echo "       and lucifexex_PYTHON is not a python with pytest (enter the Nix devShell or create a venv)" >&2
+  echo "       and lucifex_PYTHON is not a python with pytest (enter the Nix devShell or create a venv)" >&2
   exit 1
 fi
 
@@ -68,8 +68,8 @@ fi
 # ── Live-gateway plugin (computed before we drop env) ───────────────────────
 EXTRA_PYTHONPATH=""
 EXTRA_PYTEST_PLUGINS=""
-if [ -f "$HOME/.lucifexex/pytest_live_guard.py" ]; then
-  EXTRA_PYTHONPATH="$HOME/.lucifexex"
+if [ -f "$HOME/.lucifex/pytest_live_guard.py" ]; then
+  EXTRA_PYTHONPATH="$HOME/.lucifex"
   EXTRA_PYTEST_PLUGINS="pytest_live_guard"
 fi
 
@@ -98,7 +98,7 @@ exec env -i \
   LANG=C.UTF-8 \
   LC_ALL=C.UTF-8 \
   PYTHONHASHSEED=0 \
-  ${lucifexex_RUN_SLOW_PET_TESTSlucifexifex_RUN_SLOW_PET_TESTlucifexucifex_RUN_SLOW_PET_TESTS"} \
+  ${lucifex_RUN_SLOW_PET_TESTSlucifexifex_RUN_SLOW_PET_TESTlucifexucifex_RUN_SLOW_PET_TESTS"} \
   ${EXTRA_PYTHONPATH:+PYTHONPATH="$EXTRA_PYTHONPATH"} \
   ${EXTRA_PYTEST_PLUGINS:+PYTEST_PLUGINS="$EXTRA_PYTEST_PLUGINS"} \
   "$PYTHON" "$SCRIPT_DIR/run_tests_parallel.py" "$@"

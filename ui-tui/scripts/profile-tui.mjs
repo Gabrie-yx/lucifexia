@@ -4,7 +4,7 @@ import inspector from 'node:inspector'
 import { performance } from 'node:perf_hooks'
 
 import React from 'react'
-import { render } from '@lucifexex/ink'
+import { render } from '@lucifex/ink'
 import { AppLayout } from '../src/components/appLayout.tsx'
 import { resetOverlayState } from '../src/app/overlayStore.ts'
 import { resetTurnState } from '../src/app/turnStore.ts'
@@ -47,7 +47,7 @@ const theme = {
   }
 }
 
-const noop = () => {}
+const noop = () => { }
 const historyItems = [
   { kind: 'intro', role: 'system', text: '', info: { model: 'test', tools: {}, skills: {}, version: 'test' } },
   ...Array.from({ length: historySize }, (_, i) => ({
@@ -55,20 +55,22 @@ const historyItems = [
     text: `message ${i}\n${'lorem ipsum '.repeat(80)}`
   }))
 ]
-const scrollRef = { current: {
-  getScrollTop: () => 0,
-  getPendingDelta: () => 0,
-  getScrollHeight: () => historySize * 4,
-  getViewportHeight: () => 30,
-  getViewportTop: () => 0,
-  isSticky: () => true,
-  subscribe: () => () => {},
-  scrollBy: noop,
-  scrollTo: noop,
-  scrollToBottom: noop,
-  setClampBounds: noop,
-  getLastManualScrollAt: () => 0
-} }
+const scrollRef = {
+  current: {
+    getScrollTop: () => 0,
+    getPendingDelta: () => 0,
+    getScrollHeight: () => historySize * 4,
+    getViewportHeight: () => 30,
+    getViewportTop: () => 0,
+    isSticky: () => true,
+    subscribe: () => () => { },
+    scrollBy: noop,
+    scrollTo: noop,
+    scrollToBottom: noop,
+    setClampBounds: noop,
+    getLastManualScrollAt: () => 0
+  }
+}
 
 const baseProps = streamingText => ({
   actions: { answerApproval: noop, answerClarify: noop, answerSecret: noop, answerSudo: noop, onModelSelect: noop, resumeById: noop, setStickyPrompt: noop },

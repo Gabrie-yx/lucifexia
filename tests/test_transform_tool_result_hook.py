@@ -53,7 +53,7 @@ def _run_handle_function_call(
 
 def test_result_unchanged_when_no_hook_registered(monkeypatch):
     # Real invoke_hook with no plugins loaded returns [].
-    monkeypatch.setenv("LUCIFEX_HOME", "/tmp/lucifexex_no_plugins")
+    monkeypatch.setenv("LUCIFEX_HOME", "/tmp/lucifex_no_plugins")
     # Force a fresh plugin manager so no stale plugins pollute state.
     plugins_mod._plugin_manager = plugins_mod.PluginManager()
 

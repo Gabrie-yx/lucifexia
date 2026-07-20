@@ -21,7 +21,7 @@ YouTube transcripts to summaries, threads, blogs.
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that lucifexex loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that lucifex loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # YouTube Content Tool
@@ -34,7 +34,7 @@ Extract transcripts from YouTube videos and convert them into useful formats.
 
 ## Setup
 
-Use `uv` so the dependency is installed into the same lucifexex-managed environment
+Use `uv` so the dependency is installed into the same lucifex-managed environment
 that runs the helper script:
 
 ```bash

@@ -16,7 +16,7 @@ Built-in TTS providers:
 
 Custom command providers:
 - Users can declare any number of named providers with ``type: command``
-  under ``tts.providers.<name>`` in ``~/.lucifex/config.yaml``. lucifexex
+  under ``tts.providers.<name>`` in ``~/.lucifex/config.yaml``. lucifex
   writes the input text to a temp file and runs the configured shell
   command, which must produce the audio file at the expected path.
   See the Local Command section of ``website/docs/user-guide/features/tts.md``.
@@ -213,8 +213,8 @@ GEMINI_TTS_CHANNELS = 1
 GEMINI_TTS_SAMPLE_WIDTH = 2  # 16-bit PCM (L16)
 
 def _get_default_output_dir() -> str:
-    from lucifex_constants import get_lucifexex_dir
-    return str(get_lucifexex_dir("cache/audio", "audio_cache"))
+    from lucifex_constants import get_lucifex_dir
+    return str(get_lucifex_dir("cache/audio", "audio_cache"))
 
 DEFAULT_OUTPUT_DIR = _get_default_output_dir()
 
@@ -357,7 +357,7 @@ def _get_provider(tts_config: Dict[str, Any]) -> str:
 
     Inference credentials do not imply consent to paid speech generation.
     Users opt into cloud TTS by setting ``tts.provider`` (normally through
-    ``lucifexex tools``); otherwise the historical Edge backend remains active.
+    ``lucifex tools``); otherwise the historical Edge backend remains active.
     """
     return (tts_config.get("provider") or DEFAULT_PROVIDER).lower().strip()
 
@@ -368,7 +368,7 @@ def _get_provider(tts_config: Dict[str, Any]) -> str:
 #
 # Users can declare any number of command-type providers alongside the
 # built-ins so they can plug any local CLI (Piper, VoxCPM, Kokoro CLIs,
-# custom voice-cloning scripts, etc.) into lucifexex without any Python code
+# custom voice-cloning scripts, etc.) into lucifex without any Python code
 # changes. The config shape is::
 #
 #     tts:
@@ -379,7 +379,7 @@ def _get_provider(tts_config: Dict[str, Any]) -> str:
 #           command: "piper -m ~/model.onnx -f {output_path} < {input_path}"
 #           output_format: wav
 #
-# lucifexex writes the input text to a temp UTF-8 file, runs the command with
+# lucifex writes the input text to a temp UTF-8 file, runs the command with
 # placeholder substitution, and reads the audio file the command wrote to
 # ``{output_path}``. Supported placeholders: ``{input_path}``,
 # ``{text_path}`` (alias for input_path), ``{output_path}``, ``{format}``,
@@ -704,7 +704,7 @@ def _render_command_tts_template(
 
     def replace_match(match: re.Match[str]) -> str:
         name = match.group("double") or match.group("single")
-        token = f"__lucifexex_TTS_PLACEHOLDER_{len(replacements)}__"
+        token = f"__lucifex_TTS_PLACEHOLDER_{len(replacements)}__"
         replacements.append((
             token,
             _quote_command_tts_placeholder(
@@ -1158,7 +1158,7 @@ def _generate_deepinfra_tts(text: str, output_path: str, tts_config: Dict[str, A
     api_key = (get_env_value("DEEPINFRA_API_KEY") or "").strip()
     if not api_key:
         raise ValueError(
-            "DEEPINFRA_API_KEY not set. Run `lucifexex setup` to configure, "
+            "DEEPINFRA_API_KEY not set. Run `lucifex setup` to configure, "
             "or set the env var directly."
         )
 
@@ -1320,7 +1320,7 @@ def _generate_xai_tts(text: str, output_path: str, tts_config: Dict[str, Any]) -
     creds = resolve_xai_http_credentials()
     api_key = str(creds.get("api_key") or "").strip()
     if not api_key:
-        raise ValueError("No xAI credentials found. Configure xAI OAuth in `lucifexex model` or set XAI_API_KEY.")
+        raise ValueError("No xAI credentials found. Configure xAI OAuth in `lucifex model` or set XAI_API_KEY.")
 
     xai_config = tts_config.get("xai") or {}
     voice_id = str(xai_config.get("voice_id", DEFAULT_XAI_VOICE_ID)).strip() or DEFAULT_XAI_VOICE_ID
@@ -1366,7 +1366,7 @@ def _generate_xai_tts(text: str, output_path: str, tts_config: Dict[str, Any]) -
     ).strip().rstrip("/")
 
     # Match the documented minimal POST /v1/tts shape by default. Only send
-    # output_format when lucifexex actually needs a non-default format/override.
+    # output_format when lucifex actually needs a non-default format/override.
     codec = "wav" if output_path.endswith(".wav") else "mp3"
     payload: Dict[str, Any] = {
         "text": text,
@@ -1855,13 +1855,13 @@ def _generate_gemini_tts(text: str, output_path: str, tts_config: Dict[str, Any]
         try:
             import lucifex_cli as _lucifex_cli
 
-            _lucifexex_version = str(_lucifex_cli.__version__)
+            _lucifex_version = str(_lucifex_cli.__version__)
         except Exception:
-            _lucifexex_version = "0.0.0"
-        # Include lucifexex client context following Gemini's partner
+            _lucifex_version = "0.0.0"
+        # Include lucifex client context following Gemini's partner
         # integration guidance:
         # https://ai.google.dev/gemini-api/docs/partner-integration
-        headers["X-Goog-Api-Client"] = f"lucifex-agent/{_lucifexex_version}"
+        headers["X-Goog-Api-Client"] = f"lucifex-agent/{_lucifex_version}"
 
     endpoint = f"{base_url}/models/{model}:generateContent"
     response = requests.post(
@@ -2053,13 +2053,13 @@ def _check_piper_available() -> bool:
 
 
 def _get_piper_voices_dir() -> Path:
-    """Return the directory where lucifexex caches Piper voice models.
+    """Return the directory where lucifex caches Piper voice models.
 
     Resolves to ``~/.lucifex/cache/piper-voices/`` under the active
     LUCIFEX_HOME so voice downloads follow profile boundaries.
     """
-    from lucifex_constants import get_lucifexex_dir
-    root = Path(get_lucifexex_dir("cache/piper-voices", "piper_voices_cache"))
+    from lucifex_constants import get_lucifex_dir
+    root = Path(get_lucifex_dir("cache/piper-voices", "piper_voices_cache"))
     root.mkdir(parents=True, exist_ok=True)
     return root
 
@@ -2329,7 +2329,7 @@ def text_to_speech_tool(
     # produce Opus natively (no ffmpeg needed).  Edge TTS always outputs MP3
     # and needs ffmpeg for conversion.
     from gateway.session_context import get_session_env
-    platform = get_session_env("lucifexex_SESSION_PLATFORM", "").lower()
+    platform = get_session_env("lucifex_SESSION_PLATFORM", "").lower()
     want_opus = (platform == "telegram")
 
     # Determine output path
@@ -2465,7 +2465,7 @@ def text_to_speech_tool(
                 return json.dumps({
                     "success": False,
                     "error": "NeuTTS provider selected but neutts is not installed. "
-                             "Run lucifexex setup and choose NeuTTS, or install espeak-ng and run python -m pip install -U neutts[all]."
+                             "Run lucifex setup and choose NeuTTS, or install espeak-ng and run python -m pip install -U neutts[all]."
                 }, ensure_ascii=False)
             logger.info("Generating speech with NeuTTS (local)...")
             _generate_neutts(text, file_str, tts_config)
@@ -2477,7 +2477,7 @@ def text_to_speech_tool(
                 return json.dumps({
                     "success": False,
                     "error": "KittenTTS provider selected but 'kittentts' package not installed. "
-                             "Run 'lucifexex setup tts' and choose KittenTTS, or install manually: "
+                             "Run 'lucifex setup tts' and choose KittenTTS, or install manually: "
                              "pip install https://github.com/KittenML/KittenTTS/releases/download/0.8.1/kittentts-0.8.1-py3-none-any.whl"
                 }, ensure_ascii=False)
             logger.info("Generating speech with KittenTTS (local, ~25MB)...")
@@ -2490,7 +2490,7 @@ def text_to_speech_tool(
                 return json.dumps({
                     "success": False,
                     "error": "Piper provider selected but 'piper-tts' package not installed. "
-                             "Run 'lucifexex tools' and select Piper under TTS, or install manually: "
+                             "Run 'lucifex tools' and select Piper under TTS, or install manually: "
                              "pip install piper-tts",
                 }, ensure_ascii=False)
             logger.info("Generating speech with Piper (local)...")

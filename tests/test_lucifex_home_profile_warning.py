@@ -4,7 +4,7 @@ Regression test for https://github.com/NousResearch/lucifex-agent/issues/18594.
 
 When LUCIFEX_HOME is unset but an active_profile file indicates a non-default
 profile is active, get_lucifex_home() should:
-  1. STILL return ~/.lucifexex (raising would brick 30+ module-level callers)
+  1. STILL return ~/.lucifex (raising would brick 30+ module-level callers)
   2. Emit a loud one-shot warning to stderr so operators can diagnose
      cross-profile data contamination after the fact.
 
@@ -29,38 +29,38 @@ def fresh_constants(monkeypatch, tmp_path):
     return lucifex_constants
 
 
-class TestGetlucifexexHomeProfileWarning:
+class TestGetlucifexHomeProfileWarning:
     def test_classic_mode_no_active_profile_no_warning(
         self, fresh_constants, tmp_path, capsys
     ):
-        """Classic mode: no active_profile file → silent, returns ~/.lucifexex."""
+        """Classic mode: no active_profile file → silent, returns ~/.lucifex."""
         result = fresh_constants.get_lucifex_home()
-        assert result == tmp_path / ".lucifexex"
+        assert result == tmp_path / ".lucifex"
         assert "LUCIFEX_HOME fallback" not in capsys.readouterr().err
 
     def test_default_active_profile_no_warning(
         self, fresh_constants, tmp_path, capsys
     ):
-        """active_profile=default → still no warning, returns ~/.lucifexex."""
-        lucifexex_dir = tmp_path / lucifexifex"
-        lucifexex_dir.mkdir()
-        (lucifexex_dir / "active_profile").write_text("default\n")
+        """active_profile=default → still no warning, returns ~/.lucifex."""
+        lucifex_dir = tmp_path / lucifexifex"
+        lucifex_dir.mkdir()
+        (lucifex_dir / "active_profile").write_text("default\n")
         result = fresh_constants.get_lucifex_home()
-        assert result == tmp_path / ".lucifexex"
+        assert result == tmp_path / ".lucifex"
         assert "LUCIFEX_HOME fallback" not in capsys.readouterr().err
 
     def test_named_profile_unset_home_warns_once(
         self, fresh_constants, tmp_path, capsys
     ):
         """active_profile=coder + LUCIFEX_HOME unset → warn loudly, still return fallback."""
-        lucifexex_dir = tmp_path / lucifexifex"
-        lucifexex_dir.mkdir()
-        (lucifexex_dir / "active_profile").write_text("coder\n")
+        lucifex_dir = tmp_path / lucifexifex"
+        lucifex_dir.mkdir()
+        (lucifex_dir / "active_profile").write_text("coder\n")
 
         result = fresh_constants.get_lucifex_home()
 
         # 1. Still returns the fallback — no import-time crash
-        assert result == tmp_path / ".lucifexex"
+        assert result == tmp_path / ".lucifex"
         # 2. Stderr got the warning exactly once
         err = capsys.readouterr().err
         assert err.count("LUCIFEX_HOME fallback") == 1
@@ -77,9 +77,9 @@ class TestGetlucifexexHomeProfileWarning:
         self, fresh_constants, tmp_path, capsys, monkeypatch
     ):
         """Even if active_profile is 'coder', setting LUCIFEX_HOME suppresses warning."""
-        profile_dir = tmp_path / ".lucifexex" / "profiles" / "coder"
+        profile_dir = tmp_path / ".lucifex" / "profiles" / "coder"
         profile_dir.mkdir(parents=True)
-        (tmp_path / ".lucifexex" / "active_profile").write_text("coder\n")
+        (tmp_path / ".lucifex" / "active_profile").write_text("coder\n")
         monkeypatch.setenv("LUCIFEX_HOME", str(profile_dir))
 
         result = fresh_constants.get_lucifex_home()
@@ -91,14 +91,14 @@ class TestGetlucifexexHomeProfileWarning:
         self, fresh_constants, tmp_path, capsys
     ):
         """active_profile that can't be decoded → fall through silently."""
-        lucifexex_dir = tmp_path / lucifexifex"
-        lucifexex_dir.mkdir()
+        lucifex_dir = tmp_path / lucifexifex"
+        lucifex_dir.mkdir()
         # Write bytes that aren't valid utf-8
-        (lucifexex_dir / "active_profile").write_bytes(b"\xff\xfe\x00\x00")
+        (lucifex_dir / "active_profile").write_bytes(b"\xff\xfe\x00\x00")
 
         result = fresh_constants.get_lucifex_home()
 
-        assert result == tmp_path / ".lucifexex"
+        assert result == tmp_path / ".lucifex"
         # Shouldn't crash; shouldn't warn either (can't tell what profile was intended)
         assert "LUCIFEX_HOME fallback" not in capsys.readouterr().err
 
@@ -106,11 +106,11 @@ class TestGetlucifexexHomeProfileWarning:
         self, fresh_constants, tmp_path, capsys
     ):
         """Empty active_profile file → treated as default, no warning."""
-        lucifexex_dir = tmp_path / lucifexifex"
-        lucifexex_dir.mkdir()
-        (lucifexex_dir / "active_profile").write_text("")
+        lucifex_dir = tmp_path / lucifexifex"
+        lucifex_dir.mkdir()
+        (lucifex_dir / "active_profile").write_text("")
 
         result = fresh_constants.get_lucifex_home()
 
-        assert result == tmp_path / ".lucifexex"
+        assert result == tmp_path / ".lucifex"
         assert "LUCIFEX_HOME fallback" not in capsys.readouterr().err

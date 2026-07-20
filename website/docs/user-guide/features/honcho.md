@@ -6,7 +6,7 @@ description: "AI-native persistent memory via Honcho — dialectic reasoning, mu
 
 # Honcho Memory
 
-[Honcho](https://github.com/plastic-labs/honcho) is an AI-native memory backend that adds dialectic reasoning and deep user modeling on top of lucifexex's built-in memory system. Instead of simple key-value storage, Honcho maintains a running model of who the user is — their preferences, communication style, goals, and patterns — by reasoning about conversations after they happen.
+[Honcho](https://github.com/plastic-labs/honcho) is an AI-native memory backend that adds dialectic reasoning and deep user modeling on top of lucifex's built-in memory system. Instead of simple key-value storage, Honcho maintains a running model of who the user is — their preferences, communication style, goals, and patterns — by reasoning about conversations after they happen.
 
 :::info Honcho is a Memory Provider Plugin
 Honcho is integrated into the [Memory Providers](./memory-providers.md) system. All features below are available through the unified memory provider interface.
@@ -28,12 +28,12 @@ Honcho is integrated into the [Memory Providers](./memory-providers.md) system. 
 
 **Session-scoped context**: Base context now includes the session summary alongside the user representation and peer card. This gives the agent awareness of what has already been discussed in the current session, reducing repetition and enabling continuity.
 
-**Multi-agent profiles**: When multiple lucifexex instances talk to the same user (e.g., a coding assistant and a personal assistant), Honcho maintains separate "peer" profiles. Each peer sees only its own observations and conclusions, preventing cross-contamination of context.
+**Multi-agent profiles**: When multiple lucifex instances talk to the same user (e.g., a coding assistant and a personal assistant), Honcho maintains separate "peer" profiles. Each peer sees only its own observations and conclusions, preventing cross-contamination of context.
 
 ## Setup
 
 ```bash
-lucifexex memory setup    # select "honcho" from the provider list
+lucifex memory setup    # select "honcho" from the provider list
 ```
 
 Or configure manually:
@@ -108,7 +108,7 @@ Honcho is configured in `~/.honcho/config.json` (global) or `$LUCIFEX_HOME/honch
 
 ### Self-Hosted Honcho with Authentication
 
-When pointing lucifexex at a self-hosted Honcho server,lucifexifex honcho setup` (alucifexucifex memory setup`) ask for a **local JWT / bearer token** after the base URL. Paste a JWT signed with the server's `AUTH_JWT_SECRET` (the Honcho compose env var) to enable authenticated access; leave it blank for servers running with `AUTH_USE_AUTH=false`. The local token is stored under the host block (`hosts.<host>.apiKey` in `honcho.json`), separate from any cloud `apiKey`, so you can flip the `Cloud or local?` prompt back to `cloud` later without losing either credential.
+When pointing lucifex at a self-hosted Honcho server,lucifexifex honcho setup` (alucifexucifex memory setup`) ask for a **local JWT / bearer token** after the base URL. Paste a JWT signed with the server's `AUTH_JWT_SECRET` (the Honcho compose env var) to enable authenticated access; leave it blank for servers running with `AUTH_USE_AUTH=false`. The local token is stored under the host block (`hosts.<host>.apiKey` in `honcho.json`), separate from any cloud `apiKey`, so you can flip the `Cloud or local?` prompt back to `cloud` later without losing either credential.
 
 ### Full Config Reference
 
@@ -134,7 +134,7 @@ When pointing lucifexex at a self-hosted Honcho server,lucifexifex honcho setup`
 | `runtimePeerPrefix` | `""` | Gateway only. Namespaces unknown runtime IDs (`telegram_7654321`) when no alias matches |
 
 **Session strategy** controls how Honcho sessions map to your work:
-- `per-session` — each `lucifexex` run gets a fresh session. Clean starts, memory via tools. Recommended for new users.
+- `per-session` — each `lucifex` run gets a fresh session. Clean starts, memory via tools. Recommended for new users.
 - `per-directory` — one Honcho session per working directory. Context accumulates across runs.
 - `per-repo` — one session per git repository.
 - `global` — single session across all directories.
@@ -159,7 +159,7 @@ In `tools` mode, the model is fully in control — it calls `honcho_reasoning` w
 
 ## Gateway Identity Mapping
 
-These settings only matter when you run the [lucifexex gateway](../../developer-guide/gateway-internals.md) — the one entrypoint where users arrive with platform-native runtime IDs (Telegram UID, Discord snowflake, Slack user). CLI, TUI, and desktop sessions have no runtime ID and always resolve to `peerName`, so off-gateway these keys do nothing.
+These settings only matter when you run the [lucifex gateway](../../developer-guide/gateway-internals.md) — the one entrypoint where users arrive with platform-native runtime IDs (Telegram UID, Discord snowflake, Slack user). CLI, TUI, and desktop sessions have no runtime ID and always resolve to `peerName`, so off-gateway these keys do nothing.
 
 The setup wizard detects whether a gateway platform is connected and skips this step entirely if not. When it runs, it asks one question — *who talks to this gateway?* — and derives the keys:
 
@@ -214,7 +214,7 @@ Common patterns:
 | AI shouldn't re-model the user from its own replies | `"ai": {"observeMe": true, "observeOthers": false}` |
 | Strong persona the AI peer shouldn't update from self-observation | `"ai": {"observeMe": false, "observeOthers": true}` |
 
-Server-side toggles set via the [Honcho dashboard](https://app.honcho.dev) win over local defaults — lucifexex syncs them back at session init.
+Server-side toggles set via the [Honcho dashboard](https://app.honcho.dev) win over local defaults — lucifex syncs them back at session init.
 
 ## Tools
 
@@ -230,35 +230,35 @@ When Honcho is active as the memory provider, five tools become available:
 
 ## CLI Commands
 
-The `lucifexex honcho` subcommand is **only registered when Honcho is the active memory provider** (`memory.provider: honcho` in `config.yaml`). On a fresh install, configure Honcho directly withlucifexifex memory setup honcho` (or rlucifexucifex memory setup` and pick it from the list);lucifexlucifexhoncho` subcommand then appears on the next invocation.
+The `lucifex honcho` subcommand is **only registered when Honcho is the active memory provider** (`memory.provider: honcho` in `config.yaml`). On a fresh install, configure Honcho directly withlucifexifex memory setup honcho` (or rlucifexucifex memory setup` and pick it from the list);lucifexlucifexhoncho` subcommand then appears on the next invocation.
 
 ```bash
-lucifexex memory setup honcho    # Configure Honcho directly (works before activation)
-lucifexex honcho status          # Connection status, config, and key settings
-lucifexex honcho setup           # Redirects tolucifexifex memory setup` (post-activation alias)
-lucifexex honcho strategy        # Show or set session strategy (per-session/per-directory/per-repo/global)
-lucifexex honcho peer            # Show or update peer names + dialectic reasoning level
-lucifexex honcho mode            # Show or set recall mode (hybrid/context/tools)
-lucifexex honcho tokens          # Show or set token budget for context and dialectic
-lucifexex honcho identity        # Seed or show the AI peer's Honcho identity
-lucifexex honcho sync            # Sync Honcho config to all existing profiles
-lucifexex honcho peers           # Show peer identities across all profiles
-lucifexex honcho sessions        # List known Honcho session mappings
-lucifexex honcho map             # Map current directory to a Honcho session name
-lucifexex honcho enable          # Enable Honcho for the active profile
-lucifexex honcho disable         # Disable Honcho for the active profile
-lucifexex honcho migrate         # Step-by-step migration guide from openclaw-honcho
+lucifex memory setup honcho    # Configure Honcho directly (works before activation)
+lucifex honcho status          # Connection status, config, and key settings
+lucifex honcho setup           # Redirects tolucifexifex memory setup` (post-activation alias)
+lucifex honcho strategy        # Show or set session strategy (per-session/per-directory/per-repo/global)
+lucifex honcho peer            # Show or update peer names + dialectic reasoning level
+lucifex honcho mode            # Show or set recall mode (hybrid/context/tools)
+lucifex honcho tokens          # Show or set token budget for context and dialectic
+lucifex honcho identity        # Seed or show the AI peer's Honcho identity
+lucifex honcho sync            # Sync Honcho config to all existing profiles
+lucifex honcho peers           # Show peer identities across all profiles
+lucifex honcho sessions        # List known Honcho session mappings
+lucifex honcho map             # Map current directory to a Honcho session name
+lucifex honcho enable          # Enable Honcho for the active profile
+lucifex honcho disable         # Disable Honcho for the active profile
+lucifex honcho migrate         # Step-by-step migration guide from openclaw-honcho
 ```
 
-## Migrating from `lucifexex honcho`
+## Migrating from `lucifex honcho`
 
-If you previously used the standalone `lucifexex honcho setup`:
+If you previously used the standalone `lucifex honcho setup`:
 
 1. Your existing configuration (`honcho.json` or `~/.honcho/config.json`) is preserved
 2. Your server-side data (memories, conclusions, user profiles) is intact
 3. Set `memory.provider: honcho` in config.yaml to reactivate
 
-No re-login or re-setup needed. Run `lucifexex memory setup` and select "honcho" — the wizard detects your existing config.
+No re-login or re-setup needed. Run `lucifex memory setup` and select "honcho" — the wizard detects your existing config.
 
 ## Full Documentation
 

@@ -16,40 +16,40 @@ import { useTheme } from "@/themes";
 
 type ConsoleFrame =
   | {
-      type: "ready";
-      profile?: string;
-      prompt?: string;
-    }
+    type: "ready";
+    profile?: string;
+    prompt?: string;
+  }
   | {
-      type: "output";
-      data?: string;
-      stream?: string;
-    }
+    type: "output";
+    data?: string;
+    stream?: string;
+  }
   | {
-      type: "error";
-      message?: string;
-    }
+    type: "error";
+    message?: string;
+  }
   | {
-      type: "confirm_required";
-      command?: string;
-      message?: string;
-      prompt?: string;
-    }
+    type: "confirm_required";
+    command?: string;
+    message?: string;
+    prompt?: string;
+  }
   | {
-      type: "complete";
-      status?: string;
-      prompt?: string;
-    }
+    type: "complete";
+    status?: string;
+    prompt?: string;
+  }
   | {
-      type: "clear";
-    }
+    type: "clear";
+  }
   | {
-      type: "pong";
-    };
+    type: "pong";
+  };
 
 type ConnectionState = "connecting" | "ready" | "running" | "closed" | "error";
 
-interface lucifexexConsoleModalProps {
+interface lucifexConsoleModalProps {
   open: boolean;
   onClose: () => void;
 }
@@ -97,14 +97,14 @@ function isPrintable(data: string): boolean {
   return data >= " " || data === "\t";
 }
 
-export function lucifexexConsoleModal({ open, onClose }lucifexifexConsoleModalProps) {
+export function lucifexConsoleModal({ open, onClose }lucifexifexConsoleModalProps) {
   const modalRef = useModalBehavior({ open, onClose });
   const hostRef = useRef<HTMLDivElement | null>(null);
   const termRef = useRef<XtermTerminal | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const lineRef = useRef("");
-  const promptRef = useRef("lucifexex> ");
-  const inputPromptRef = useRef("lucifexex> ");
+  const promptRef = useRef("lucifex> ");
+  const inputPromptRef = useRef("lucifex> ");
   const historyRef = useRef<string[]>([]);
   const historyIndexRef = useRef<number | null>(null);
   const activeCommandRef = useRef(false);
@@ -272,7 +272,7 @@ export function lucifexexConsoleModal({ open, onClose }lucifexifexConsoleModalPr
       if (!term) return;
 
       if (frame.type === "ready") {
-        const nextPrompt = frame.prompt || "lucifexex> ";
+        const nextPrompt = frame.prompt || "lucifex> ";
         promptRef.current = nextPrompt;
         inputPromptRef.current = nextPrompt;
         hasReadyFrameRef.current = true;
@@ -394,7 +394,7 @@ export function lucifexexConsoleModal({ open, onClose }lucifexifexConsoleModalPr
     setConnectionState("connecting");
     setConsoleProfile(profile || "current");
     hasReadyFrameRef.current = false;
-    writeLine(term, "\x1b[2mConnecting to lucifexex Console...\x1b[0m");
+    writeLine(term, "\x1b[2mConnecting to lucifex Console...\x1b[0m");
 
     void (async () => {
       try {
@@ -486,7 +486,7 @@ export function lucifexexConsoleModal({ open, onClose }lucifexifexConsoleModalPr
       onClick={(event) => event.target === event.currentTarget && onClose()}
       role="dialog"
       aria-modal="true"
-      aria-labelledby="lucifexex-console-title"
+      aria-labelledby="lucifex-console-title"
     >
       <div
         className={cn(
@@ -500,10 +500,10 @@ export function lucifexexConsoleModal({ open, onClose }lucifexifexConsoleModalPr
           </div>
           <div className="min-w-0 flex-1">
             <h2
-              id="lucifexex-console-title"
+              id="lucifex-console-title"
               className="font-mondwest text-display text-base tracking-wider"
             >
-              lucifexex Console
+              lucifex Console
             </h2>
             <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               <Badge tone={statusTone}>{connectionState}</Badge>

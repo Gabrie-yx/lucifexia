@@ -1,12 +1,12 @@
 ﻿---
-title: "lucifexex Agent Skill 编写——在仓库中编写 SKILL"
-sidebar_label: "lucifexex Agent Skill 编写"
+title: "lucifex Agent Skill 编写——在仓库中编写 SKILL"
+sidebar_label: "lucifex Agent Skill 编写"
 description: "在仓库中编写 SKILL.md"
 ---
 
 {/* This page is auto-generated from the skill's SKILL.md by website/scripts/generate-skill-docs.py. Edit the source SKILL.md, not this page. */}
 
-# lucifexex Agent Skill 编写
+# lucifex Agent Skill 编写
 
 编写仓库内 SKILL.md：frontmatter（前置元数据）、验证器、结构。
 
@@ -17,7 +17,7 @@ description: "在仓库中编写 SKILL.md"
 | 来源 | 内置（默认安装） |
 | 路径 | `skills/software-development/lucifex-agent-skill-authoring` |
 | 版本 | `1.0.0` |
-| 作者 | lucifexex Agent |
+| 作者 | lucifex Agent |
 | 许可证 | MIT |
 | 平台 | linux, macos, windows |
 | 标签 | `skills`, `authoring`, `lucifex-agent`, `conventions`, `skill-md` |
@@ -26,7 +26,7 @@ description: "在仓库中编写 SKILL.md"
 ## 参考：完整 SKILL.md
 
 :::info
-以下是 lucifexex 在触发此 skill 时加载的完整 skill 定义。这是 agent 在 skill 激活时所看到的指令内容。
+以下是 lucifex 在触发此 skill 时加载的完整 skill 定义。这是 agent 在 skill 激活时所看到的指令内容。
 :::
 
 # 编写 lucifex-agent Skills（仓库内）
@@ -62,10 +62,10 @@ SKILL.md 可以存放在两个位置：
 name: my-skill-name               # 小写，连字符，≤64 个字符（MAX_NAME_LENGTH）
 description: Use when <trigger>. <one-line behavior>.
 version: 1.0.0
-author: lucifexex Agent
+author: lucifex Agent
 license: MIT
 metadata:
-  lucifexex:
+  lucifex:
     tags: [short, descriptive, tags]
     related_skills: [other-skill, another-skill]
 ---
@@ -96,7 +96,7 @@ One or two paragraphs: what and why.
 ## <Topic sections specific to the skill>
 - Quick-reference tables are common
 - Code blocks with exact commands
-- lucifexex-specific recipes (tests via scripts/run_tests.sh, ui-tui paths, etc.)
+- lucifex-specific recipes (tests via scripts/run_tests.sh, ui-tui paths, etc.)
 
 ## Common Pitfalls
 Numbered list of mistakes and their fixes.
@@ -145,7 +145,7 @@ skills/<category>/<skill-name>/SKILL.md
 
 ## 交叉引用其他 Skill
 
-`metadata.lucifexex.related_skills` 在加载时会合并两个目录树（仓库内 `skills/` 和 `~/.lucifex/skills/`）。你**可以**从仓库内 skill 引用用户本地 skill，但对于全新克隆仓库的其他用户，该引用无法解析。仓库内 skill 优先只引用仓库内 skill。如果某个频繁被引用的 skill 仅存在于 `~/.lucifex/skills/`，请考虑将其提升到仓库中。
+`metadata.lucifex.related_skills` 在加载时会合并两个目录树（仓库内 `skills/` 和 `~/.lucifex/skills/`）。你**可以**从仓库内 skill 引用用户本地 skill，但对于全新克隆仓库的其他用户，该引用无法解析。仓库内 skill 优先只引用仓库内 skill。如果某个频繁被引用的 skill 仅存在于 `~/.lucifex/skills/`，请考虑将其提升到仓库中。
 
 ## 编辑现有仓库内 Skill
 
@@ -174,7 +174,7 @@ skills/<category>/<skill-name>/SKILL.md
 
 - [ ] 文件位于 `skills/<category>/<name>/SKILL.md`（不在 `~/.lucifex/skills/` 中）
 - [ ] Frontmatter 从字节 0 以 `---` 开头，以 `\n---\n` 结束
-- [ ] `name`、`description`、`version`、`author`、`license`、`metadata.lucifexex.{tags, related_skills}` 均已填写
+- [ ] `name`、`description`、`version`、`author`、`license`、`metadata.lucifex.{tags, related_skills}` 均已填写
 - [ ] Name ≤ 64 个字符，小写加连字符
 - [ ] Description ≤ 1024 个字符，且以"Use when ..."开头
 - [ ] 文件总大小 ≤ 100,000 个字符（目标 8-15k）

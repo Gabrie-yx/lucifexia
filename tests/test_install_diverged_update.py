@@ -2,7 +2,7 @@
 
 When ``~/.lucifex/lucifex-agent`` has local-only commits (or diverged history),
 ``git pull --ff-only`` fails with exit 128 and bootstrap aborts at the
-repository stage. ``lucifexex update`` already resets to ``origin/$BRANCH`` in
+repository stage. ``lucifex update`` already resets to ``origin/$BRANCH`` in
 that case; both installer scripts must do the same.
 
 Fixes the bootstrap failure seen in #53257 and desktop update paths that run

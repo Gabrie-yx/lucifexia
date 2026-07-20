@@ -1,60 +1,60 @@
 ﻿---
 sidebar_position: 1
 title: "CLI Interface"
-description: "Master the lucifexex Agent terminal interface — commands, keybindings, personalities, and more"
+description: "Master the lucifex Agent terminal interface — commands, keybindings, personalities, and more"
 ---
 
 # CLI Interface
 
-lucifexex Agent's CLI is a full terminal user interface (TUI) — not a web UI. It features multiline editing, slash-command autocomplete, conversation history, interrupt-and-redirect, and streaming tool output. Built for people who live in the terminal.
+lucifex Agent's CLI is a full terminal user interface (TUI) — not a web UI. It features multiline editing, slash-command autocomplete, conversation history, interrupt-and-redirect, and streaming tool output. Built for people who live in the terminal.
 
 :::tip First-time setup
-One command — `lucifexex setup --portal` — and you're ready tolucifexifex chat`. See [Nous Portal](/integrations/nous-portal).
+One command — `lucifex setup --portal` — and you're ready tolucifexifex chat`. See [Nous Portal](/integrations/nous-portal).
 :::
 
 :::tip
-lucifexex also ships a modern TUI with modal overlays, mouse selection, and non-blocking input. Launch it withlucifexifex --tui` — see the [TUI](tui.md) guide.
+lucifex also ships a modern TUI with modal overlays, mouse selection, and non-blocking input. Launch it withlucifexifex --tui` — see the [TUI](tui.md) guide.
 :::
 
 ## Running the CLI
 
 ```bash
 # Start an interactive session (default)
-lucifexex
+lucifex
 
 # Single query mode (non-interactive)
-lucifexex chat -q "Hello"
+lucifex chat -q "Hello"
 
 # With a specific model
-lucifexex chat --model "anthropic/claude-sonnet-4"
+lucifex chat --model "anthropic/claude-sonnet-4"
 
 # With a specific provider
-lucifexex chat --provider nous        # Use Nous Portal
-lucifexex chat --provider openrouter  # Force OpenRouter
+lucifex chat --provider nous        # Use Nous Portal
+lucifex chat --provider openrouter  # Force OpenRouter
 
 # With specific toolsets
-lucifexex chat --toolsets "web,terminal,skills"
+lucifex chat --toolsets "web,terminal,skills"
 
 # Start with one or more skills preloaded
-lucifexex -s lucifex-agent-dev,github-auth
-lucifexex chat -s github-pr-workflow -q "open a draft PR"
+lucifex -s lucifex-agent-dev,github-auth
+lucifex chat -s github-pr-workflow -q "open a draft PR"
 
 # Resume previous sessions
-lucifexex --continue             # Resume the most recent CLI session (-c)
-lucifexex --resume <session_id>  # Resume a specific session by ID (-r)
+lucifex --continue             # Resume the most recent CLI session (-c)
+lucifex --resume <session_id>  # Resume a specific session by ID (-r)
 
 # Verbose mode (debug output)
-lucifexex chat --verbose
+lucifex chat --verbose
 
 # Isolated git worktree (for running multiple agents in parallel)
-lucifexex -w                         # Interactive mode in worktree
-lucifexex -w -z "Fix issue #123"     # Single query in worktree
+lucifex -w                         # Interactive mode in worktree
+lucifex -w -z "Fix issue #123"     # Single query in worktree
 ```
 
 ## Interface Layout
 
-<img className="docs-terminal-figure" src="/docs/img/docs/cli-layout.svg" alt="Stylized preview of the lucifexex CLI layout showing the banner, conversation area, and fixed input prompt." />
-<p className="docs-figure-caption">The lucifexex CLI banner, conversation stream, and fixed input prompt rendered as a stable docs figure instead of fragile text art.</p>
+<img className="docs-terminal-figure" src="/docs/img/docs/cli-layout.svg" alt="Stylized preview of the lucifex CLI layout showing the banner, conversation area, and fixed input prompt." />
+<p className="docs-figure-caption">The lucifex CLI banner, conversation stream, and fixed input prompt rendered as a stable docs figure instead of fragile text art.</p>
 
 The welcome banner shows your model, terminal backend, working directory, available tools, and installed skills at a glance.
 
@@ -75,7 +75,7 @@ A persistent status bar sits above the input area, updating in real time:
 | 🗜️ N | **Context compression count** — how many times the running session has been auto-compressed. Appears once the first compression fires. |
 | ▶ N | **Active background tasks** — how many `/background` prompts are still running in the current session. Appears whenever at least one task is in flight. |
 | Duration | Elapsed session time |
-| ⚠ YOLO | **YOLO mode warning** — shown whenever `lucifexex_YOLO_MODE` is on (eitherlucifexifex --yolo` at launch or `/yolo` toggled mid-session). Mirrors the banner-line warning so you can't forget you're in auto-approve mode. |
+| ⚠ YOLO | **YOLO mode warning** — shown whenever `lucifex_YOLO_MODE` is on (eitherlucifexifex --yolo` at launch or `/yolo` toggled mid-session). Mirrors the banner-line warning so you can't forget you're in auto-approve mode. |
 
 The bar adapts to terminal width — full layout at ≥ 76 columns, compact at 52–75, minimal (model + duration, plus the YOLO badge when active) below 52.
 
@@ -90,11 +90,11 @@ The bar adapts to terminal width — full layout at ≥ 76 columns, compact at 5
 
 Use `/usage` for a detailed breakdown including per-category costs (input vs output tokens).
 
-On the `openai-codex` provider, `/usage` also shows any banked usage-limit resets on your ChatGPT account ("You have N resets banked - use /usage reset to activate"). `/usage reset` redeems one banked reset, fully restoring your 5-hour and weekly limits. lucifexex refuses to redeem while your limits aren't exhausted (a banked reset restores the full allowance, so spending it early wastes it) — pass `/usage reset --force` to redeem anyway.
+On the `openai-codex` provider, `/usage` also shows any banked usage-limit resets on your ChatGPT account ("You have N resets banked - use /usage reset to activate"). `/usage reset` redeems one banked reset, fully restoring your 5-hour and weekly limits. lucifex refuses to redeem while your limits aren't exhausted (a banked reset restores the full allowance, so spending it early wastes it) — pass `/usage reset --force` to redeem anyway.
 
 ### Session Resume Display
 
-When resuming a previous session (`lucifexex -c` orlucifexifex --resume <id>`), a "Previous Conversation" panel appears between the banner and the input prompt, showing a compact recap of the conversation history. See [Sessions — Conversation Recap on Resume](sessions.md#conversation-recap-on-resume) for details and configuration.
+When resuming a previous session (`lucifex -c` orlucifexifex --resume <id>`), a "Previous Conversation" panel appears between the banner and the input prompt, showing a compact recap of the conversation history. See [Sessions — Conversation Recap on Resume](sessions.md#conversation-recap-on-resume) for details and configuration.
 
 ## Keybindings
 
@@ -109,7 +109,7 @@ When resuming a previous session (`lucifexex -c` orlucifexifex --resume <id>`), 
 | `Ctrl+X Ctrl+E` | Emacs-style alternate binding for the external editor (same behavior as `Ctrl+G`). |
 | `Ctrl+C` | Interrupt agent (double-press within 2s to force exit) |
 | `Ctrl+D` | Exit |
-| `Ctrl+Z` | Suspend lucifexex to background (Unix only). Run `fg` in the shell to resume. |
+| `Ctrl+Z` | Suspend lucifex to background (Unix only). Run `fg` in the shell to resume. |
 | `Tab` | Accept auto-suggestion (ghost text) or autocomplete slash commands |
 
 **Multiline paste preview.** When you paste a multi-line block, the CLI echoes a compact single-line preview (`[pasted: 47 lines, 1,842 chars — press Enter to send]`) instead of dumping the whole payload into the scrollback. The full content is still what gets sent; this is just display polish.
@@ -118,7 +118,7 @@ When resuming a previous session (`lucifexex -c` orlucifexifex --resume <id>`), 
 
 ## Slash Commands
 
-Type `/` to see the autocomplete dropdown. lucifexex supports a large set of CLI slash commands, dynamic skill commands, and user-defined quick commands.
+Type `/` to see the autocomplete dropdown. lucifex supports a large set of CLI slash commands, dynamic skill commands, and user-defined quick commands.
 
 Common examples:
 
@@ -131,7 +131,7 @@ Common examples:
 | `/background <prompt>` | Run a prompt in a separate background session |
 | `/skin` | Show or switch the active CLI skin |
 | `/voice on` | Enable CLI voice mode (press `Ctrl+B` to record) |
-| `/voice tts` | Toggle spoken playback for lucifexex replies |
+| `/voice tts` | Toggle spoken playback for lucifex replies |
 | `/reasoning high` | Increase reasoning effort |
 | `/title My Session` | Name the current session |
 | `/status` | Show session info — model/profile/tokens/duration — followed by a local **Session recap** block (recent turn counts, top tools used, files touched, latest user prompt + assistant reply). Pure local compute; no LLM call. |
@@ -170,11 +170,11 @@ Then type `/status`, `/gpu`, or `/restart` in any chat. See the [Configuration g
 If you already know which skills you want active for the session, pass them at launch time:
 
 ```bash
-lucifexex -s lucifex-agent-dev,github-auth
-lucifexex chat -s github-pr-workflow -s github-auth
+lucifex -s lucifex-agent-dev,github-auth
+lucifex chat -s github-pr-workflow -s github-auth
 ```
 
-lucifexex loads each named skill into the session prompt before the first turn. The same flag works in interactive mode and single-query mode.
+lucifex loads each named skill into the session prompt before the first turn. The same flag works in interactive mode and single-query mode.
 
 ## Skill Slash Commands
 
@@ -207,7 +207,7 @@ You can also define custom personalities in `~/.lucifex/config.yaml`:
 personalities:
   helpful: "You are a helpful, friendly AI assistant."
   kawaii: "You are a kawaii assistant! Use cute expressions..."
-  pirate: "Arrr! Ye be talkin' to Captain lucifexex..."
+  pirate: "Arrr! Ye be talkin' to Captain lucifex..."
   # Add your own!
 ```
 
@@ -230,7 +230,7 @@ Pasting multi-line text is supported — use any of the newline keys above, or s
 
 ### Shift+Enter compatibility
 
-Most terminals send the same byte sequence for `Enter` and `Shift+Enter` by default, so applications cannot distinguish them. lucifexex recognises `Shift+Enter` only when the terminal sends a distinct sequence via the [Kitty keyboard protocol](https://sw.kovidgoyal.net/kitty/keyboard-protocol/) or xterm's `modifyOtherKeys` mode.
+Most terminals send the same byte sequence for `Enter` and `Shift+Enter` by default, so applications cannot distinguish them. lucifex recognises `Shift+Enter` only when the terminal sends a distinct sequence via the [Kitty keyboard protocol](https://sw.kovidgoyal.net/kitty/keyboard-protocol/) or xterm's `modifyOtherKeys` mode.
 
 | Terminal | Status |
 |---|---|
@@ -239,7 +239,7 @@ Most terminals send the same byte sequence for `Enter` and `Shift+Enter` by defa
 | Windows Terminal Preview 1.25+ | Supported once the Kitty protocol is enabled in settings |
 | macOS Terminal.app, stock Windows Terminal (stable) | Not supported — `Shift+Enter` is indistinguishable from `Enter` |
 
-Where the terminal cannot distinguish them, `Alt+Enter` and `Ctrl+J` continue to work everywhere. **On Windows Terminal specifically, `Alt+Enter` is captured by the terminal (toggles fullscreen) and never reaches lucifexex — use `Ctrl+Enter` (delivered as `Ctrl+J`) or `Ctrl+J` directly for a newline.**
+Where the terminal cannot distinguish them, `Alt+Enter` and `Ctrl+J` continue to work everywhere. **On Windows Terminal specifically, `Alt+Enter` is captured by the terminal (toggles fullscreen) and never reaches lucifex — use `Ctrl+Enter` (delivered as `Ctrl+J`) or `Ctrl+J` directly for a newline.**
 
 ## Interrupting the Agent
 
@@ -280,15 +280,15 @@ You can also change it inside the CLI:
 ```
 
 :::tip First-touch hint
-The very first time you press Enter while lucifexex is workinglucifexifex prints a one-line reminder explaining the `/busy` knob (`"(tip) Your message interrupted the current run…"`). It only fires once per install — a flag in `config.yaml` under `onboarding.seen.busy_input_prompt` latches it. Delete that key to see the tip again.
+The very first time you press Enter while lucifex is workinglucifexifex prints a one-line reminder explaining the `/busy` knob (`"(tip) Your message interrupted the current run…"`). It only fires once per install — a flag in `config.yaml` under `onboarding.seen.busy_input_prompt` latches it. Delete that key to see the tip again.
 :::
 
 ### Suspending to Background
 
-On Unix systems, press **`Ctrl+Z`** to suspend lucifexex to the background — just like any terminal process. The shell prints a confirmation:
+On Unix systems, press **`Ctrl+Z`** to suspend lucifex to the background — just like any terminal process. The shell prints a confirmation:
 
 ```
-lucifexex Agent has been suspended. Run `fg` to brinlucifexifex Agent back.
+lucifex Agent has been suspended. Run `fg` to brinlucifexifex Agent back.
 ```
 
 Type `fg` in your shell to resume the session exactly where you left off. This is not supported on Windows.
@@ -333,7 +333,7 @@ When you exit a CLI session, a resume command is printed:
 
 ```
 Resume this session with:
-  lucifexex --resume 20260225_143052_a1b2c3
+  lucifex --resume 20260225_143052_a1b2c3
 
 Session:        20260225_143052_a1b2c3
 Duration:       12m 34s
@@ -343,21 +343,21 @@ Messages:       28 (5 user, 18 tool calls)
 Resume options:
 
 ```bash
-lucifexex --continue                          # Resume the most recent CLI session
-lucifexex -c                                  # Short form
-lucifexex -c "my project"                     # Resume a named session (latest in lineage)
-lucifexex --resume 20260225_143052_a1b2c3     # Resume a specific session by ID
-lucifexex --resume "refactoring auth"         # Resume by title
-lucifexex -r 20260225_143052_a1b2c3           # Short form
+lucifex --continue                          # Resume the most recent CLI session
+lucifex -c                                  # Short form
+lucifex -c "my project"                     # Resume a named session (latest in lineage)
+lucifex --resume 20260225_143052_a1b2c3     # Resume a specific session by ID
+lucifex --resume "refactoring auth"         # Resume by title
+lucifex -r 20260225_143052_a1b2c3           # Short form
 ```
 
 Resuming restores the full conversation history from SQLite. The agent sees all previous messages, tool calls, and responses — just as if you never left.
 
-Use `/title My Session Name` inside a chat to name the current session, or `lucifexex sessions rename <id> <title>` from the command line. Use `lucifex sessions list` to browse past sessions.
+Use `/title My Session Name` inside a chat to name the current session, or `lucifex sessions rename <id> <title>` from the command line. Use `lucifex sessions list` to browse past sessions.
 
 ### Session Storage
 
-CLI sessions are stored in lucifexex's SQLite state database under `~/.lucifex/state.db`. The database keeps:
+CLI sessions are stored in lucifex's SQLite state database under `~/.lucifex/state.db`. The database keeps:
 
 - session metadata (ID, title, timestamps, token counters)
 - message history
@@ -392,7 +392,7 @@ Run a prompt in a separate background session while continuing to use the CLI fo
 /background Analyze the logs in /var/log and summarize any errors from today
 ```
 
-lucifexex immediately confirms the task and gives you back the prompt:
+lucifex immediately confirms the task and gives you back the prompt:
 
 ```
 🔄 Background task #1 started: "Analyze the logs in /var/log and summarize..."
@@ -413,7 +413,7 @@ Each `/background` prompt spawns a **completely separate agent session** in a da
 When a background task finishes, the result appears as a panel in your terminal:
 
 ```
-╭─ ⚕ lucifexex (background #1) ──────────────────────────────────╮
+╭─ ⚕ lucifex (background #1) ──────────────────────────────────╮
 │ Found 3 errors in syslog from today:                         │
 │ 1. OOM killer invoked at 03:22 — killed process nginx        │
 │ 2. Disk I/O error on /dev/sda1 at 07:15                      │
@@ -442,5 +442,5 @@ By default, the CLI runs in quiet mode which:
 
 For debug output:
 ```bash
-lucifexex chat --verbose
+lucifex chat --verbose
 ```

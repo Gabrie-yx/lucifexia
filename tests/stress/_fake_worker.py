@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Fake worker process that exercises the real subprocess contract.
 
-Reads lucifexex_KANBAN_TASK from env, heartbeats periodically, does short
+Reads lucifex_KANBAN_TASK from env, heartbeats periodically, does short
 work, completes via the CLI. Designed to be spawned by the dispatcher
-exactly the way `lucifexex chat -q` would be, minus the LLM cost.
+exactly the way `lucifex chat -q` would be, minus the LLM cost.
 """
 
 import json
@@ -13,12 +13,12 @@ import time
 
 
 def main():
-    tid = os.environ["lucifexex_KANBAN_TASK"]
-    workspace = os.environ.get("lucifexex_KANBAN_WORKSPACE", "")
+    tid = os.environ["lucifex_KANBAN_TASK"]
+    workspace = os.environ.get("lucifex_KANBAN_WORKSPACE", "")
 
     # Announce via CLI (goes through real argparse + init_db + etc)
     subprocess.run(
-        ["lucifexex", "kanban", "heartbeat", tid, "--note", "started"],
+        ["lucifex", "kanban", "heartbeat", tid, "--note", "started"],
         check=True, capture_output=True,
     )
 
@@ -26,14 +26,14 @@ def main():
     for i in range(3):
         time.sleep(0.3)
         subprocess.run(
-            ["lucifexex", "kanban", "heartbeat", tid, "--note", f"progress {i+1}/3"],
+            ["lucifex", "kanban", "heartbeat", tid, "--note", f"progress {i+1}/3"],
             check=True, capture_output=True,
         )
 
     # Complete with structured handoff
     subprocess.run(
         [
-            "lucifexex", "kanban", "complete", tid,
+            "lucifex", "kanban", "complete", tid,
             "--summary", f"real-subprocess worker finished {tid}",
             "--metadata", json.dumps({
                 "workspace": workspace,

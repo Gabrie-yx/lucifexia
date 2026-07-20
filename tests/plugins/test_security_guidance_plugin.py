@@ -26,7 +26,7 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def _isolate_env(tmp_path, monkeypatch):
-    LUCIFEX_HOME = tmp_path / ".lucifexex"
+    LUCIFEX_HOME = tmp_path / ".lucifex"
     LUCIFEX_HOME.mkdir()
     monkeypatch.setenv("LUCIFEX_HOME", str(LUCIFEX_HOME))
     monkeypatch.delenv("SECURITY_GUIDANCE_BLOCK", raising=False)
@@ -56,19 +56,19 @@ def _load_patterns():
 def _load_plugin_init():
     """Import the plugin __init__.py with patterns.py as a sibling."""
     plugin_dir = _repo_root() / "plugins" / "security-guidance"
-    if "lucifexex_plugins" not in sys.modules:
-        ns = types.ModuleType("lucifexex_plugins")
+    if "lucifex_plugins" not in sys.modules:
+        ns = types.ModuleType("lucifex_plugins")
         ns.__path__ = []
-        sys.modules["lucifexex_plugins"] = ns
+        sys.modules["lucifex_plugins"] = ns
     spec = importlib.util.spec_from_file_location(
-        "lucifexex_plugins.security_guidance",
+        "lucifex_plugins.security_guidance",
         plugin_dir / "__init__.py",
         submodule_search_locations=[str(plugin_dir)],
     )
     mod = importlib.util.module_from_spec(spec)
-    mod.__package__ = "lucifexex_plugins.security_guidance"
+    mod.__package__ = "lucifex_plugins.security_guidance"
     mod.__path__ = [str(plugin_dir)]
-    sys.modules["lucifexex_plugins.security_guidance"] = mod
+    sys.modules["lucifex_plugins.security_guidance"] = mod
     spec.loader.exec_module(mod)
     return mod
 
@@ -320,7 +320,7 @@ class TestPluginDiscovery:
 
         # Wipe any cached plugin state from earlier tests in this worker.
         for k in list(sys.modules):
-            if k.startswith(("lucifexex_plugins", "lucifex_cli.plugins")):
+            if k.startswith(("lucifex_plugins", "lucifex_cli.plugins")):
                 del sys.modules[k]
 
         from lucifex_cli.plugins import _ensure_plugins_discovered

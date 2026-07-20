@@ -63,7 +63,7 @@ def nous_tool_gateway_unavailable_message(
     except Exception:
         pass
     return (
-        f"{capability} is unavailable. Run `lucifexex model` to refresh your "
+        f"{capability} is unavailable. Run `lucifex model` to refresh your "
         "Nous Portal login and billing status."
     )
 

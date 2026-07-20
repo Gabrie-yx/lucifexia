@@ -25,7 +25,7 @@ main-checkout install):
     cd <worktree>
     PYTHONPATH="$PWD" ../../.venv/bin/python tests/manual/cron_inchannel_e2e.py
 
-Uses a throwaway LUCIFEX_HOME so it never touches ~/.lucifexex. No real names.
+Uses a throwaway LUCIFEX_HOME so it never touches ~/.lucifex. No real names.
 """
 
 import os

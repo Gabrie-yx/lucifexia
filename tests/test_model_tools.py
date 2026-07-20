@@ -459,7 +459,7 @@ class TestCoerceNumberInfNan:
         assert _coerce_number("1e3") == 1000
 
 class TestDisabledToolsetsPlatformBundle:
-    """Regression test for #33924: disabling a platform bundle (lucifexex-*)
+    """Regression test for #33924: disabling a platform bundle (lucifex-*)
     must not remove core tools from other enabled toolsets."""
 
     def test_disabling_platform_bundle_preserves_core_tools(self):
@@ -497,7 +497,7 @@ class TestDisabledToolsetsPlatformBundle:
         assert "discord" not in names
 
     def test_disabling_non_platform_toolset_still_works(self):
-        """Disabling a regular (non-lucifexex-) toolset still subtracts all tools."""
+        """Disabling a regular (non-lucifex-) toolset still subtracts all tools."""
         from model_tools import get_tool_definitions
 
         tools_normal = get_tool_definitions(
@@ -524,24 +524,24 @@ class TestDisabledToolsetsPlatformBundle:
     def test_disabling_bundle_removes_platform_tools_but_keeps_core(self):
         """Disabling lucifex-discord (when enabled) removes discord/discord_admin
         from the resolved delta but keeps core tools — via bundle_non_core_tools."""
-        from toolsets import bundle_non_core_tools, _lucifexex_CORE_TOOLS
+        from toolsets import bundle_non_core_tools, _lucifex_CORE_TOOLS
 
         delta = bundle_non_core_tools("lucifex-yuanbao")
         # The delta is the bundle's platform-specific tools, NOT core.
         assert "yb_send_dm" in delta
-        assert not (delta & set(_lucifexex_CORE_TOOLS)), "core tools must not be in the removal delta"
+        assert not (delta & set(_lucifex_CORE_TOOLS)), "core tools must not be in the removal delta"
 
     def test_bundle_non_core_tools_unknown_falls_back(self):
         """An unknown/garbage bundle name falls back to full resolution (best effort)."""
         from toolsets import bundle_non_core_tools
         # A non-existent bundle resolves to an empty set (no tools), not a crash.
-        assert bundle_non_core_tools("lucifexex-does-not-exist") == set()
+        assert bundle_non_core_tools("lucifex-does-not-exist") == set()
 
 
 class TestDisabledToolsetsPostureToolset:
     """Regression test for #57315: disabling a posture toolset (`coding`,
     posture: True) must preserve the shared core tools it re-lists but does
-    not own -- same non-core-delta subtraction as lucifexex-* bundles (#33924) --
+    not own -- same non-core-delta subtraction as lucifex-* bundles (#33924) --
     while atomic toolsets stay fully removable."""
 
     def test_disabling_coding_preserves_core_but_atomic_disables_still_remove(self):

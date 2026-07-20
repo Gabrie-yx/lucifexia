@@ -485,7 +485,7 @@ def build_tree(
     ``is_junk_root`` flags git roots that must never become an AUTO project (the
     bare home dir, the LUCIFEX_HOME subtree). ``is_junk_cwd`` is the narrower
     policy for non-git session folders: selected descendants may be intentional
-    workspaces even when their parent tree contains lucifexex state. User-created
+    workspaces even when their parent tree contains lucifex state. User-created
     projects are honored regardless.
 
     Returns ``{"projects": [...], "scoped_session_ids": [...]}``. When

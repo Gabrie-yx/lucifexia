@@ -1,9 +1,9 @@
 import os
 
 replacements = [
-    ("lucifexex_INSTALL_DIR", "LUCIFEX_INSTALL_DIR"),
-    ("lucifexex_BIN", "LUCIFEX_BIN"),
-    ("lucifexex_CMD", "LUCIFEX_CMD"),
+    ("lucifex_INSTALL_DIR", "LUCIFEX_INSTALL_DIR"),
+    ("lucifex_BIN", "LUCIFEX_BIN"),
+    ("lucifex_CMD", "LUCIFEX_CMD"),
 ]
 
 filepath = r"c:\Users\gabri\.gemini\antigravity-ide\scratch\lucifex-agent\scripts\install.sh"

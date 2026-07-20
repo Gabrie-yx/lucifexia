@@ -307,7 +307,7 @@ def test_client_wraps_invalid_grant_as_spotify_auth_required_error(
 
     def _raise_invalid_grant(**kwargs):
         raise AuthError(
-            "Spotify refresh token has expired or was revoked. Run `lucifexex auth spotify` again.",
+            "Spotify refresh token has expired or was revoked. Run `lucifex auth spotify` again.",
             provider="spotify",
             code="spotify_refresh_invalid_grant",
             relogin_required=True,

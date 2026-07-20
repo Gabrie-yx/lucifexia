@@ -35,15 +35,15 @@ def _wait_for_frame(out: io.StringIO, predicate, timeout: float = 2.0) -> dict:
 
 
 def test_compute_host_workers_inherit_tui_pool_env_or_8(monkeypatch):
-    monkeypatch.delenv("lucifexex_TUI_RPC_POOL_WORKERS", raising=False)
-    monkeypatch.delenv("lucifexex_COMPUTE_HOST_WORKERS", raising=False)
+    monkeypatch.delenv("lucifex_TUI_RPC_POOL_WORKERS", raising=False)
+    monkeypatch.delenv("lucifex_COMPUTE_HOST_WORKERS", raising=False)
     assert _default_workers() == 8
 
-    monkeypatch.setenv("lucifexex_TUI_RPC_POOL_WORKERS", "11")
+    monkeypatch.setenv("lucifex_TUI_RPC_POOL_WORKERS", "11")
     assert _default_workers() == 11
 
     # Dead-RC tombstone: malformed env falls back to 8, not the old except-branch 4.
-    monkeypatch.setenv("lucifexex_TUI_RPC_POOL_WORKERS", "not-an-int")
+    monkeypatch.setenv("lucifex_TUI_RPC_POOL_WORKERS", "not-an-int")
     assert _default_workers() == 8
 
 
@@ -211,7 +211,7 @@ def test_compute_host_compress_control_runs_identity_guard_in_host(monkeypatch):
         sess["session_key"] = "after-key"
 
     server._sessions["sid"] = session
-    monkeypatch.setenv("lucifexex_COMPUTE_HOST_CHILD", "1")
+    monkeypatch.setenv("lucifex_COMPUTE_HOST_CHILD", "1")
     monkeypatch.setattr(server, "_compress_session_history", _compress)
     monkeypatch.setattr(server, "_sync_session_key_after_compress", _sync)
     monkeypatch.setattr(server, "_emit", lambda *_args, **_kwargs: None)

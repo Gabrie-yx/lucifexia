@@ -1,17 +1,17 @@
 ﻿---
 sidebar_position: 3
 title: "内置工具参考"
-description: "lucifexex 内置工具权威参考，按工具集分组"
+description: "lucifex 内置工具权威参考，按工具集分组"
 ---
 
 # 内置工具参考
 
-本页记录 lucifexex 的内置工具，按工具集分组。可用性因平台、凭据和已启用的工具集而异。
+本页记录 lucifex 的内置工具，按工具集分组。可用性因平台、凭据和已启用的工具集而异。
 
 **当前注册表快速统计：** 约 71 个工具 —— 10 个浏览器工具（核心）+ 2 个 CDP 门控浏览器工具、4 个文件工具、4 个 Home Assistant 工具、2 个终端工具、2 个 Web 工具、5 个 Feishu 工具、7 个 Spotify 工具（由内置 `spotify` 插件注册）、5 个 Yuanbao 工具、9 个 kanban 工具（在 kanban 调度器生成 agent 时注册）、2 个 Discord 工具，以及若干独立工具（`memory`、`clarify`、`delegate_task`、`execute_code`、`cronjob`、`session_search`、`skill_view`/`skill_manage`/`skills_list`、`text_to_speech`、`image_generate`、`video_generate`、`vision_analyze`、`video_analyze`、`send_message`、`todo`、`computer_use`、`process`）。
 
 :::tip MCP 工具
-除内置工具外，lucifexex 还可从 MCP 服务器动态加载工具。MCP 工具以 `mcp_<server>_` 为前缀（例如，`github` MCP 服务器的 `mcp_github_create_issue`）。配置方法见 [MCP 集成](/user-guide/features/mcp)。
+除内置工具外，lucifex 还可从 MCP 服务器动态加载工具。MCP 工具以 `mcp_<server>_` 为前缀（例如，`github` MCP 服务器的 `mcp_github_create_issue`）。配置方法见 [MCP 集成](/user-guide/features/mcp)。
 :::
 
 ## `browser` 工具集
@@ -48,7 +48,7 @@ description: "lucifexex 内置工具权威参考，按工具集分组"
 
 | 工具 | 描述 | 所需环境 |
 |------|------|----------|
-| `execute_code` | 运行可以编程方式调用 lucifexex 工具的 Python 脚本。当需要 3 次以上工具调用且调用之间有处理逻辑、需要在大型工具输出进入上下文前过滤/压缩、需要条件分支（…）时使用。 | — |
+| `execute_code` | 运行可以编程方式调用 lucifex 工具的 Python 脚本。当需要 3 次以上工具调用且调用之间有处理逻辑、需要在大型工具输出进入上下文前过滤/压缩、需要条件分支（…）时使用。 | — |
 
 ## `cronjob` 工具集
 
@@ -64,7 +64,7 @@ description: "lucifexex 内置工具权威参考，按工具集分组"
 
 ## `feishu_doc` 工具集
 
-仅限飞书文档评论智能回复处理器（`gateway/platforms/feishu_comment.py`）使用。不在 `lucifexex-cli` 或常规飞书聊天适配器中暴露。
+仅限飞书文档评论智能回复处理器（`gateway/platforms/feishu_comment.py`）使用。不在 `lucifex-cli` 或常规飞书聊天适配器中暴露。
 
 | 工具 | 描述 | 所需环境 |
 |------|------|----------|
@@ -103,7 +103,7 @@ description: "lucifexex 内置工具权威参考，按工具集分组"
 
 | 工具 | 描述 | 所需环境 |
 |------|------|----------|
-| `computer_use` | 通过 cua-driver 在后台控制 macOS 桌面——截图（SOM / vision / AX）、点击 / 拖拽 / 滚动 / 输入 / 按键 / 等待、`list_apps`、`focus_app`。**不会**抢占用户的光标或键盘焦点。适用于任何支持工具的模型。仅限 macOS。 | `cua-driver` 在 `$PATH` 中（通过 `lucifexex tools` 安装）。 |
+| `computer_use` | 通过 cua-driver 在后台控制 macOS 桌面——截图（SOM / vision / AX）、点击 / 拖拽 / 滚动 / 输入 / 按键 / 等待、`list_apps`、`focus_app`。**不会**抢占用户的光标或键盘焦点。适用于任何支持工具的模型。仅限 macOS。 | `cua-driver` 在 `$PATH` 中（通过 `lucifex tools` 安装）。 |
 
 :::note
 **Honcho 工具**（`honcho_profile`、`honcho_search`、`honcho_context`、`honcho_reasoning`、`honcho_conclude`）不再是内置工具。它们通过 `plugins/memory/honcho/` 的 Honcho 记忆提供者插件提供。安装和使用方法见 [Memory Providers](../user-guide/features/memory-providers.md)。
@@ -117,18 +117,18 @@ description: "lucifexex 内置工具权威参考，按工具集分组"
 
 ## `kanban` 工具集
 
-在以下情况下注册：(a) agent 由 kanban 调度器生成（设置了 `lucifexex_KANBAN_TASK` 环境变量），或 (b) 在显式启用 `kanban` 工具集的 profile 中运行。任务范围的 worker 使用生命周期工具处理其分配的任务；编排器 profile 还额外获得 `kanban_list` 和 `kanban_unblock` 等看板路由工具。完整工作流见 [Kanban 多 Agent](/user-guide/features/kanban)。
+在以下情况下注册：(a) agent 由 kanban 调度器生成（设置了 `lucifex_KANBAN_TASK` 环境变量），或 (b) 在显式启用 `kanban` 工具集的 profile 中运行。任务范围的 worker 使用生命周期工具处理其分配的任务；编排器 profile 还额外获得 `kanban_list` 和 `kanban_unblock` 等看板路由工具。完整工作流见 [Kanban 多 Agent](/user-guide/features/kanban)。
 
 | 工具 | 描述 | 所需环境 |
 |------|------|----------|
-| `kanban_show` | 显示分配给当前 worker 的活跃 kanban 任务（标题、描述、评论、依赖项）。 | `lucifexex_KANBAN_TASK` 或 `kanban` 工具集 |
+| `kanban_show` | 显示分配给当前 worker 的活跃 kanban 任务（标题、描述、评论、依赖项）。 | `lucifex_KANBAN_TASK` 或 `kanban` 工具集 |
 | `kanban_list` | 带过滤器列出看板任务。仅限编排器；对调度器生成的任务 worker 隐藏。 | 含 `kanban` 工具集的 profile |
-| `kanban_complete` | 用结构化交接载荷（结果、产物、后续事项）将当前任务标记为完成。 | `lucifexex_KANBAN_TASK` 或 `kanban` 工具集 |
-| `kanban_block` | 因需向用户提问而阻塞当前任务——调度器暂停、呈现问题，并在人工回复后恢复。 | `lucifexex_KANBAN_TASK` 或 `kanban` 工具集 |
-| `kanban_heartbeat` | 在长时间运行的操作期间发送进度心跳，让调度器知道 worker 仍在运行。 | `lucifexex_KANBAN_TASK` 或 `kanban` 工具集 |
-| `kanban_comment` | 在不改变任务状态的情况下向任务线程添加评论——适用于呈现中间发现。 | `lucifexex_KANBAN_TASK` 或 `kanban` 工具集 |
-| `kanban_create` | 从当前任务派生子任务。由编排器和生成后续任务的 worker 使用。 | `lucifexex_KANBAN_TASK` 或 `kanban` 工具集 |
-| `kanban_link` | 用父 → 子依赖边链接任务。 | `lucifexex_KANBAN_TASK` 或 `kanban` 工具集 |
+| `kanban_complete` | 用结构化交接载荷（结果、产物、后续事项）将当前任务标记为完成。 | `lucifex_KANBAN_TASK` 或 `kanban` 工具集 |
+| `kanban_block` | 因需向用户提问而阻塞当前任务——调度器暂停、呈现问题，并在人工回复后恢复。 | `lucifex_KANBAN_TASK` 或 `kanban` 工具集 |
+| `kanban_heartbeat` | 在长时间运行的操作期间发送进度心跳，让调度器知道 worker 仍在运行。 | `lucifex_KANBAN_TASK` 或 `kanban` 工具集 |
+| `kanban_comment` | 在不改变任务状态的情况下向任务线程添加评论——适用于呈现中间发现。 | `lucifex_KANBAN_TASK` 或 `kanban` 工具集 |
+| `kanban_create` | 从当前任务派生子任务。由编排器和生成后续任务的 worker 使用。 | `lucifex_KANBAN_TASK` 或 `kanban` 工具集 |
+| `kanban_link` | 用父 → 子依赖边链接任务。 | `lucifex_KANBAN_TASK` 或 `kanban` 工具集 |
 | `kanban_unblock` | 将被阻塞的任务恢复为 `ready` 状态。仅限编排器；对调度器生成的任务 worker 隐藏。 | 含 `kanban` 工具集的 profile |
 
 ## `memory` 工具集
@@ -178,7 +178,7 @@ description: "lucifexex 内置工具权威参考，按工具集分组"
 
 ## `video` 工具集
 
-可选工具集（默认 `lucifexex-cli` 集中不加载）。通过 `--toolsets video` 添加，或在 `toolsets:` 配置中包含 `video`。
+可选工具集（默认 `lucifex-cli` 集中不加载）。通过 `--toolsets video` 添加，或在 `toolsets:` 配置中包含 `video`。
 
 | 工具 | 描述 | 所需环境 |
 |------|------|----------|
@@ -186,7 +186,7 @@ description: "lucifexex 内置工具权威参考，按工具集分组"
 
 ## `video_gen` 工具集
 
-可选工具集（默认 `lucifexex-cli` 集中不加载）。通过 `--toolsets video_gen` 添加，或在lucifexifex tools` → Video Generation 中启用（同时引导你选择后端）。
+可选工具集（默认 `lucifex-cli` 集中不加载）。通过 `--toolsets video_gen` 添加，或在lucifexifex tools` → Video Generation 中启用（同时引导你选择后端）。
 
 后端以插件形式存放于 `plugins/video_gen/<name>/`：
 
@@ -210,7 +210,7 @@ description: "lucifexex 内置工具权威参考，按工具集分组"
 
 | 工具 | 描述 | 所需环境 |
 |------|------|----------|
-| `x_search` | 使用 xAI 内置的 `x_search` Responses 工具搜索 X（Twitter）帖子、主页和话题串。用于获取 X 上的当前讨论、反应或观点，而非通用网页。默认关闭——通过 `lucifexex tools` → 🐦 X (Twitter) Search 选择启用。仅在配置了 xAI 凭据时注册 schema（check_fn 门控）。 | XAI_API_KEY **或** xAI Grok OAuth（SuperGrok / Premium+）登录 |
+| `x_search` | 使用 xAI 内置的 `x_search` Responses 工具搜索 X（Twitter）帖子、主页和话题串。用于获取 X 上的当前讨论、反应或观点，而非通用网页。默认关闭——通过 `lucifex tools` → 🐦 X (Twitter) Search 选择启用。仅在配置了 xAI 凭据时注册 schema（check_fn 门控）。 | XAI_API_KEY **或** xAI Grok OAuth（SuperGrok / Premium+）登录 |
 
 ## `tts` 工具集
 
@@ -220,7 +220,7 @@ description: "lucifexex 内置工具权威参考，按工具集分组"
 
 ## `discord` 工具集
 
-在 `lucifexex-discord` 平台工具集（仅 gateway）上注册。使用与消息适配器相同的 bot token。
+在 `lucifex-discord` 平台工具集（仅 gateway）上注册。使用与消息适配器相同的 bot token。
 
 | 工具 | 描述 | 所需环境 |
 |------|------|----------|
@@ -228,7 +228,7 @@ description: "lucifexex 内置工具权威参考，按工具集分组"
 
 ## `discord_admin` 工具集
 
-在 `lucifexex-discord` 平台工具集上注册。审核操作需要 bot 持有相应的 Discord 权限。
+在 `lucifex-discord` 平台工具集上注册。审核操作需要 bot 持有相应的 Discord 权限。
 
 | 工具 | 描述 | 所需环境 |
 |------|------|----------|
@@ -236,7 +236,7 @@ description: "lucifexex 内置工具权威参考，按工具集分组"
 
 ## `spotify` 工具集
 
-由内置 `spotify` 插件注册。需要 OAuth token——运行一次 `lucifexex spotify setup` 进行授权。
+由内置 `spotify` 插件注册。需要 OAuth token——运行一次 `lucifex spotify setup` 进行授权。
 
 | 工具 | 描述 | 所需环境 |
 |------|------|----------|
@@ -248,9 +248,9 @@ description: "lucifexex 内置工具权威参考，按工具集分组"
 | `spotify_albums` | 获取 Spotify 专辑元数据或专辑曲目。 | Spotify OAuth |
 | `spotify_library` | 列出、保存或移除用户已保存的 Spotify 曲目或专辑。 | Spotify OAuth |
 
-## `lucifexex-yuanbao` 工具集
+## `lucifex-yuanbao` 工具集
 
-仅在 `lucifexex-yuanbao` 平台工具集上注册。元宝是腾讯的聊天应用；这些工具驱动其私信/群组/表情包 API。
+仅在 `lucifex-yuanbao` 平台工具集上注册。元宝是腾讯的聊天应用；这些工具驱动其私信/群组/表情包 API。
 
 | 工具 | 描述 | 所需环境 |
 |------|------|----------|

@@ -146,7 +146,7 @@ class ComputeHost:
         self._heartbeat_secs = (
             float(heartbeat_secs)
             if heartbeat_secs is not None
-            else float(os.environ.get("lucifexex_COMPUTE_HOST_HEARTBEAT_SECS") or "15")
+            else float(os.environ.get("lucifex_COMPUTE_HOST_HEARTBEAT_SECS") or "15")
         )
         if self._heartbeat_secs > 0:
             threading.Thread(target=self._heartbeat_loop, name="compute-host-heartbeat", daemon=True).start()
@@ -607,13 +607,13 @@ def _rss_mb(pid: int) -> float:
 
 def _default_workers() -> int:
     try:
-        return max(2, int(os.environ.get("lucifexex_TUI_RPC_POOL_WORKERS") or "8"))
+        return max(2, int(os.environ.get("lucifex_TUI_RPC_POOL_WORKERS") or "8"))
     except (TypeError, ValueError):
         return 8
 
 
 def run_host(stdin: Any = None, stdout: Any = None) -> None:
-    os.environ["lucifexex_COMPUTE_HOST_CHILD"] = "1"
+    os.environ["lucifex_COMPUTE_HOST_CHILD"] = "1"
     stdin = stdin or sys.stdin
     host = ComputeHost(stdout=stdout or sys.stdout)
     shutting_down = threading.Event()

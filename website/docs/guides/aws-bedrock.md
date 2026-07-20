@@ -1,12 +1,12 @@
 ﻿---
 sidebar_position: 14
 title: "AWS Bedrock"
-description: "Use lucifexex Agent with Amazon Bedrock — native Converse API, IAM authentication, Guardrails, and cross-region inference"
+description: "Use lucifex Agent with Amazon Bedrock — native Converse API, IAM authentication, Guardrails, and cross-region inference"
 ---
 
 # AWS Bedrock
 
-lucifexex Agent supports Amazon Bedrock as a native provider using the **Converse API** — not the OpenAI-compatible endpoint. This gives you full access to the Bedrock ecosystem: IAM authentication, Guardrails, cross-region inference profiles, and all foundation models.
+lucifex Agent supports Amazon Bedrock as a native provider using the **Converse API** — not the OpenAI-compatible endpoint. This gives you full access to the Bedrock ecosystem: IAM authentication, Guardrails, cross-region inference profiles, and all foundation models.
 
 ## Prerequisites
 
@@ -21,7 +21,7 @@ lucifexex Agent supports Amazon Bedrock as a native provider using the **Convers
   - `bedrock:ListFoundationModels` and `bedrock:ListInferenceProfiles` (for model discovery)
 
 :::tip EC2 / ECS / Lambda
-On AWS compute, attach an IAM role with `AmazonBedrockFullAccess` and you're done. No API keys, no `.env` configuration — lucifexex detects the instance role automatically.
+On AWS compute, attach an IAM role with `AmazonBedrockFullAccess` and you're done. No API keys, no `.env` configuration — lucifex detects the instance role automatically.
 :::
 
 ## Quick Start
@@ -31,17 +31,17 @@ On AWS compute, attach an IAM role with `AmazonBedrockFullAccess` and you're don
 cd ~/.lucifex/lucifex-agent && uv pip install -e ".[bedrock]"
 
 # Select Bedrock as your provider
-lucifexex model
+lucifex model
 # → Choose "More providers..." → "AWS Bedrock"
 # → Select your region and model
 
 # Start chatting
-lucifexex chat
+lucifex chat
 ```
 
 ## Configuration
 
-After running `lucifexex model`, your `~/.lucifex/config.yaml` will contain:
+After running `lucifex model`, your `~/.lucifex/config.yaml` will contain:
 
 ```yaml
 model:
@@ -78,7 +78,7 @@ bedrock:
 
 ### Model Discovery
 
-lucifexex auto-discovers available models via the Bedrock control plane. You can customize discovery:
+lucifex auto-discovers available models via the Bedrock control plane. You can customize discovery:
 
 ```yaml
 bedrock:
@@ -90,7 +90,7 @@ bedrock:
 
 ## Available Models
 
-Bedrock models use **inference profile IDs** for on-demand invocation. The `lucifexex model` picker shows these automatically, with recommended models at the top:
+Bedrock models use **inference profile IDs** for on-demand invocation. The `lucifex model` picker shows these automatically, with recommended models at the top:
 
 | Model | ID | Notes |
 |-------|-----|-------|
@@ -119,7 +119,7 @@ Use the `/model` command during a conversation:
 ## Diagnostics
 
 ```bash
-lucifexex doctor
+lucifex doctor
 ```
 
 The doctor checks:
@@ -130,10 +130,10 @@ The doctor checks:
 
 ## Gateway (Messaging Platforms)
 
-Bedrock works with all lucifexex gateway platforms (Telegram, Discord, Slack, Feishu, etc.). Configure Bedrock as your provider, then start the gateway normally:
+Bedrock works with all lucifex gateway platforms (Telegram, Discord, Slack, Feishu, etc.). Configure Bedrock as your provider, then start the gateway normally:
 
 ```bash
-lucifexex gateway setup
+lucifex gateway setup
 lucifex gateway start
 ```
 
@@ -143,7 +143,7 @@ The gateway reads `config.yaml` and uses the same Bedrock provider configuration
 
 ### "No API key found" / "No AWS credentials"
 
-lucifexex checks for credentials in this order:
+lucifex checks for credentials in this order:
 1. `AWS_BEARER_TOKEN_BEDROCK`
 2. `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY`
 3. `AWS_PROFILE`
@@ -161,7 +161,7 @@ Use an **inference profile ID** (prefixed with `us.` or `global.`) instead of th
 
 ### "ThrottlingException"
 
-You've hit the Bedrock per-model rate limit. lucifexex automatically retries with backoff. To increase limits, request a quota increase in the [AWS Service Quotas console](https://console.aws.amazon.com/servicequotas/).
+You've hit the Bedrock per-model rate limit. lucifex automatically retries with backoff. To increase limits, request a quota increase in the [AWS Service Quotas console](https://console.aws.amazon.com/servicequotas/).
 
 ## One-Click AWS Deployment
 

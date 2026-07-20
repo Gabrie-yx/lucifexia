@@ -256,7 +256,7 @@ export default function SkillsPage() {
       api
         .getSkills(selectedProfile || undefined)
         .then(setSkills)
-        .catch(() => {});
+        .catch(() => { });
     },
     [selectedProfile, showToast],
   );
@@ -446,11 +446,10 @@ export default function SkillsPage() {
                           >
                             <span className="flex-1 truncate">{name}</span>
                             <span
-                              className={`text-xs tabular-nums ${
-                                isActive
+                              className={`text-xs tabular-nums ${isActive
                                   ? "text-text-secondary"
                                   : "text-text-tertiary"
-                              }`}
+                                }`}
                             >
                               {count}
                             </span>
@@ -513,9 +512,9 @@ export default function SkillsPage() {
                     <Package className="h-4 w-4" />
                     {activeCategory
                       ? prettyCategory(
-                          activeCategory === "__none__" ? null : activeCategory,
-                          t.common.general,
-                        )
+                        activeCategory === "__none__" ? null : activeCategory,
+                        t.common.general,
+                      )
                       : t.skills.all}
                   </CardTitle>
                   <div className="flex items-center gap-2">
@@ -625,9 +624,9 @@ export default function SkillsPage() {
                                 <span className="text-xs text-text-tertiary">
                                   {ts.enabled
                                     ? t.skills.toolsetLabel.replace(
-                                        "{name}",
-                                        ts.name,
-                                      )
+                                      "{name}",
+                                      ts.name,
+                                    )
                                     : t.skills.disabledForCli}
                                 </span>
                               )}
@@ -675,7 +674,7 @@ export default function SkillsPage() {
           <DialogHeader>
             <DialogTitle>Learn a skill</DialogTitle>
             <DialogDescription>
-              Point lucifexex at anything and it will distill a reusable skill —
+              Point lucifex at anything and it will distill a reusable skill —
               following the house authoring standards. Fill in any combination
               below; the agent gathers the sources and writes the skill in chat.
             </DialogDescription>
@@ -752,9 +751,8 @@ function SkillRow({
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-0.5">
           <span
-            className={`font-mono-ui text-sm ${
-              skill.enabled ? "text-foreground" : "text-muted-foreground"
-            }`}
+            className={`font-mono-ui text-sm ${skill.enabled ? "text-foreground" : "text-muted-foreground"
+              }`}
           >
             {skill.name}
           </span>
@@ -951,7 +949,7 @@ function HubBrowser({
           api
             .getSkillHubSources(profile)
             .then((r) => !cancelled && setInstalled(r.installed))
-            .catch(() => {});
+            .catch(() => { });
         }
       } catch {
         if (!cancelled) setActionRunning(false);
@@ -1086,7 +1084,7 @@ function HubBrowser({
                   Featured skills
                 </span>
                 <span className="text-xs text-text-tertiary">
-                  from the lucifexex index — search above for thousands more
+                  from the lucifex index — search above for thousands more
                 </span>
               </div>
               {featured.map((r) => (
@@ -1177,7 +1175,7 @@ function ConnectedHubs({
     return (
       <p className="text-xs text-muted-foreground">
         Results come from the same sources as{" "}
-        <span className="font-mono">lucifexex skills search</span>.
+        <span className="font-mono">lucifex skills search</span>.
       </p>
     );
   }
@@ -1189,7 +1187,7 @@ function ConnectedHubs({
       </span>
       {sources.map((s) => {
         const down =
-          (s.id === "lucifexex-index" && s.available === false) ||
+          (s.id === "lucifex-index" && s.available === false) ||
           (s.id === "github" && s.rate_limited === true);
         return (
           <Badge
@@ -1199,7 +1197,7 @@ function ConnectedHubs({
             title={
               s.id === "github" && s.rate_limited
                 ? "GitHub API rate-limited — set GITHUB_TOKEN to raise the limit"
-                : s.id === "lucifexex-index" && s.available === false
+                : s.id === "lucifex-index" && s.available === false
                   ? "Centralized index unavailable — falling back to live sources"
                   : undefined
             }

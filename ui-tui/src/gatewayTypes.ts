@@ -1,4 +1,4 @@
-import type { UsageModelData } from '@lucifexex/shared/billing'
+import type { UsageModelData } from '@lucifex/shared/billing'
 
 import type { SessionInfo, SlashCategory, SubagentStatus, Usage } from './types.js'
 
@@ -47,7 +47,7 @@ export interface SlashExecResponse {
 
 // ── Terminal billing (Phase 2b) ──────────────────────────────────────
 
-// Wire shapes now live in @lucifexex/shared for reuse by TypeScript clients.
+// Wire shapes now live in @lucifex/shared for reuse by TypeScript clients.
 export type {
   BillingAutoReload,
   BillingCardInfo,
@@ -63,7 +63,7 @@ export type {
   SubscriptionUpgradeResponse,
   UsageBarData,
   UsageModelData
-} from '@lucifexex/shared/billing'
+} from '@lucifex/shared/billing'
 
 export type CommandDispatchResponse =
   | { output?: string; type: 'exec' | 'plugin' }
@@ -548,86 +548,86 @@ export type GatewayEvent =
   | { payload?: undefined; session_id?: string; type: 'message.start' }
   | { payload?: { kind?: string; text?: string }; session_id?: string; type: 'status.update' }
   | {
-      payload?: {
-        id?: string
-        key?: string
-        kind?: 'sticky' | 'ttl'
-        level?: 'error' | 'info' | 'success' | 'warn'
-        text?: string
-        ttl_ms?: null | number
-      }
-      session_id?: string
-      type: 'notification.show'
+    payload?: {
+      id?: string
+      key?: string
+      kind?: 'sticky' | 'ttl'
+      level?: 'error' | 'info' | 'success' | 'warn'
+      text?: string
+      ttl_ms?: null | number
     }
+    session_id?: string
+    type: 'notification.show'
+  }
   | { payload?: { key?: string }; session_id?: string; type: 'notification.clear' }
   | {
-      payload: { user_code?: string; verification_url: string }
-      session_id?: string
-      type: 'billing.step_up.verification'
-    }
+    payload: { user_code?: string; verification_url: string }
+    session_id?: string
+    type: 'billing.step_up.verification'
+  }
   | { payload?: { state?: 'idle' | 'listening' | 'transcribing' }; session_id?: string; type: 'voice.status' }
   | { payload?: { no_speech_limit?: boolean; text?: string }; session_id?: string; type: 'voice.transcript' }
   | { payload?: { reason?: string }; session_id?: string; type: 'dashboard.new_session_requested' }
   | { payload: { line: string }; session_id?: string; type: 'gateway.stderr' }
   | {
-      payload?: { level?: 'info' | 'warn' | 'error'; message?: string }
-      session_id?: string
-      type: 'browser.progress'
-    }
+    payload?: { level?: 'info' | 'warn' | 'error'; message?: string }
+    session_id?: string
+    type: 'browser.progress'
+  }
   | {
-      payload?: { cwd?: string; python?: string; stderr_tail?: string }
-      session_id?: string
-      type: 'gateway.start_timeout'
-    }
+    payload?: { cwd?: string; python?: string; stderr_tail?: string }
+    session_id?: string
+    type: 'gateway.start_timeout'
+  }
   | { payload?: { preview?: string }; session_id?: string; type: 'gateway.protocol_error' }
   | {
-      payload?: { text?: string; verbose?: boolean }
-      session_id?: string
-      type: 'reasoning.delta' | 'reasoning.available'
-    }
+    payload?: { text?: string; verbose?: boolean }
+    session_id?: string
+    type: 'reasoning.delta' | 'reasoning.available'
+  }
   | {
-      payload: { count?: number; index?: number; label?: string; text?: string }
-      session_id?: string
-      type: 'moa.reference'
-    }
+    payload: { count?: number; index?: number; label?: string; text?: string }
+    session_id?: string
+    type: 'moa.reference'
+  }
   | { payload?: { aggregator?: string }; session_id?: string; type: 'moa.aggregating' }
   | { payload: { name?: string; preview?: string }; session_id?: string; type: 'tool.progress' }
   | { payload: { name?: string }; session_id?: string; type: 'tool.generating' }
   | {
-      payload: { args_text?: string; context?: string; name?: string; tool_id: string; todos?: unknown[] }
-      session_id?: string
-      type: 'tool.start'
-    }
+    payload: { args_text?: string; context?: string; name?: string; tool_id: string; todos?: unknown[] }
+    session_id?: string
+    type: 'tool.start'
+  }
   | {
-      payload: {
-        duration_s?: number
-        error?: string
-        inline_diff?: string
-        name?: string
-        result_text?: string
-        summary?: string
-        tool_id: string
-        todos?: unknown[]
-      }
-      session_id?: string
-      type: 'tool.complete'
+    payload: {
+      duration_s?: number
+      error?: string
+      inline_diff?: string
+      name?: string
+      result_text?: string
+      summary?: string
+      tool_id: string
+      todos?: unknown[]
     }
+    session_id?: string
+    type: 'tool.complete'
+  }
   | {
-      payload: { choices: string[] | null; question: string; request_id: string }
-      session_id?: string
-      type: 'clarify.request'
-    }
+    payload: { choices: string[] | null; question: string; request_id: string }
+    session_id?: string
+    type: 'clarify.request'
+  }
   | {
-      payload: {
-        allow_permanent?: boolean
-        choices?: string[]
-        command: string
-        description: string
-        smart_denied?: boolean
-      }
-      session_id?: string
-      type: 'approval.request'
+    payload: {
+      allow_permanent?: boolean
+      choices?: string[]
+      command: string
+      description: string
+      smart_denied?: boolean
     }
+    session_id?: string
+    type: 'approval.request'
+  }
   | { payload: { request_id: string }; session_id?: string; type: 'sudo.request' }
   | { payload: { env_var: string; prompt: string; request_id: string }; session_id?: string; type: 'secret.request' }
   | { payload: { request_id: string }; session_id?: string; type: 'secret.expire' | 'sudo.expire' }
@@ -641,8 +641,8 @@ export type GatewayEvent =
   | { payload: SubagentEventPayload; session_id?: string; type: 'subagent.complete' }
   | { payload: { rendered?: string; text?: string }; session_id?: string; type: 'message.delta' }
   | {
-      payload?: { reasoning?: string; rendered?: string; text?: string; usage?: Usage }
-      session_id?: string
-      type: 'message.complete'
-    }
+    payload?: { reasoning?: string; rendered?: string; text?: string; usage?: Usage }
+    session_id?: string
+    type: 'message.complete'
+  }
   | { payload?: { message?: string }; session_id?: string; type: 'error' }

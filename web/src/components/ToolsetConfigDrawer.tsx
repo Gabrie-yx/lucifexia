@@ -30,7 +30,7 @@ interface Props {
 
 /**
  * Full configuration surface for a single toolset's backends — the dashboard
- * equivalent of selecting a toolset in the `lucifexex tools` curses UI: toggle
+ * equivalent of selecting a toolset in the `lucifex tools` curses UI: toggle
  * the toolset on/off, pick a provider, enter API keys, and run a provider's
  * post-setup install hook (npm/pip/binary) with a live log tail.
  */
@@ -408,14 +408,14 @@ export function ToolsetConfigDrawer({ toolset, profile, onClose, onChanged }: Pr
                         outlined
                         className={cn(
                           postSetupRunning &&
-                            postSetupKey === provider.post_setup &&
-                            "[&_svg]:animate-spin",
+                          postSetupKey === provider.post_setup &&
+                          "[&_svg]:animate-spin",
                         )}
                         onClick={() => void handleRunPostSetup(provider)}
                         disabled={postSetupRunning}
                         prefix={
                           postSetupRunning &&
-                          postSetupKey === provider.post_setup ? (
+                            postSetupKey === provider.post_setup ? (
                             <Loader2 />
                           ) : (
                             <Terminal />
@@ -423,7 +423,7 @@ export function ToolsetConfigDrawer({ toolset, profile, onClose, onChanged }: Pr
                         }
                       >
                         {postSetupRunning &&
-                        postSetupKey === provider.post_setup
+                          postSetupKey === provider.post_setup
                           ? "Installing…"
                           : "Run setup"}
                       </Button>

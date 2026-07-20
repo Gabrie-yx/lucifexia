@@ -2,19 +2,19 @@
 sidebar_position: 11
 sidebar_label: "Plugins"
 title: "Plugins"
-description: "Extend lucifexex with custom tools, hooks, and integrations via the plugin system"
+description: "Extend lucifex with custom tools, hooks, and integrations via the plugin system"
 ---
 
 # Plugins
 
-lucifexex has a plugin system for adding custom tools, hooks, and integrations without modifying core code.
+lucifex has a plugin system for adding custom tools, hooks, and integrations without modifying core code.
 
 If you want to create a custom tool for yourself, your team, or one project,
 this is usually the right path. The developer guide's
-[Adding Tools](/developer-guide/adding-tools) page is for built-in lucifexex
+[Adding Tools](/developer-guide/adding-tools) page is for built-in lucifex
 core tools that live in `tools/` and `toolsets.py`.
 
-**→ [Build a lucifexex Plugin](/developer-guide/plugins)** — step-by-step guide with a complete working example.
+**→ [Build a lucifex Plugin](/developer-guide/plugins)** — step-by-step guide with a complete working example.
 
 ## Quick overview
 
@@ -28,7 +28,7 @@ Drop a directory into `~/.lucifex/plugins/` with a `plugin.yaml` and Python code
 └── tools.py         # tool handlers (what runs when called)
 ```
 
-Start lucifexex — your tools appear alongside built-in tools. The model can call them immediately.
+Start lucifex — your tools appear alongside built-in tools. The model can call them immediately.
 
 ### Minimal working example
 
@@ -45,7 +45,7 @@ description: A minimal example plugin
 **`~/.lucifex/plugins/hello-world/__init__.py`**
 
 ```python
-"""Minimal lucifexex plugin — registers a tool and a hook."""
+"""Minimal lucifex plugin — registers a tool and a hook."""
 
 import json
 
@@ -87,9 +87,9 @@ def register(ctx):
     ctx.register_hook("post_tool_call", on_tool_call)
 ```
 
-Drop both files into `~/.lucifex/plugins/hello-world/`, restart lucifexex, and the model can immediately call `hello_world`. The hook prints a log line after every tool invocation.
+Drop both files into `~/.lucifex/plugins/hello-world/`, restart lucifex, and the model can immediately call `hello_world`. The hook prints a log line after every tool invocation.
 
-Project-local plugins under `./.lucifexex/plugins/` are disabled by default. Enable them only for trusted repositories by settinglucifexifex_ENABLE_PROJECT_PLUGINS=true` before startlucifexucifex.
+Project-local plugins under `./.lucifex/plugins/` are disabled by default. Enable them only for trusted repositories by settinglucifexifex_ENABLE_PROJECT_PLUGINS=true` before startlucifexucifex.
 
 ## What plugins can do
 
@@ -101,12 +101,12 @@ Every `ctx.*` API below is available inside a plugin's `register(ctx)` function.
 | Add hooks | `ctx.register_hook("post_tool_call", callback)` |
 | Add slash commands | `ctx.register_command(name, handler, description)` — adds `/name` in CLI and gateway sessions |
 | Dispatch tools from commands | `ctx.dispatch_tool(name, args)` — invokes a registered tool with parent-agent context auto-wired |
-| Add CLI commands | `ctx.register_cli_command(name, help, setup_fn, handler_fn)` — adds `lucifexex <plugin> <subcommand>` |
+| Add CLI commands | `ctx.register_cli_command(name, help, setup_fn, handler_fn)` — adds `lucifex <plugin> <subcommand>` |
 | Inject messages | `ctx.inject_message(content, role="user")` — see [Injecting Messages](#injecting-messages) |
 | Ship data files | `Path(__file__).parent / "data" / "file.yaml"` |
 | Bundle skills | `ctx.register_skill(name, path)` — namespaced as `plugin:skill`, loaded via `skill_view("plugin:skill")` |
-| Gate on env vars | `requires_env: [API_KEY]` in plugin.yaml — prompted during `lucifexex plugins install` |
-| Distribute via pip | `[project.entry-points."lucifexex_agent.plugins"]` |
+| Gate on env vars | `requires_env: [API_KEY]` in plugin.yaml — prompted during `lucifex plugins install` |
+| Distribute via pip | `[project.entry-points."lucifex_agent.plugins"]` |
 | Register a gateway platform (Discord, Telegram, IRC, …) | `ctx.register_platform(name, label, adapter_factory, check_fn, ...)` — see [Adding Platform Adapters](/developer-guide/adding-platform-adapters) |
 | Register an image-generation backend | `ctx.register_image_gen_provider(provider)` — see [Image Generation Provider Plugins](/developer-guide/image-gen-provider-plugin) |
 | Register a video-generation backend | `ctx.register_video_gen_provider(provider)` — see [Video Generation Provider Plugins](/developer-guide/video-gen-provider-plugin) |
@@ -119,17 +119,17 @@ Every `ctx.*` API below is available inside a plugin's `register(ctx)` function.
 
 | Source | Path | Use case |
 |--------|------|----------|
-| Bundled | `<repo>/plugins/` | Ships with lucifexex — see [Built-in Plugins](/user-guide/features/built-in-plugins) |
+| Bundled | `<repo>/plugins/` | Ships with lucifex — see [Built-in Plugins](/user-guide/features/built-in-plugins) |
 | User | `~/.lucifex/plugins/` | Personal plugins |
-| Project | `.lucifexex/plugins/` | Project-specific plugins (requireslucifexifex_ENABLE_PROJECT_PLUGINS=true`) |
-| pip | `lucifexex_agent.plugins` entry_points | Distributed packages |
+| Project | `.lucifex/plugins/` | Project-specific plugins (requireslucifexifex_ENABLE_PROJECT_PLUGINS=true`) |
+| pip | `lucifex_agent.plugins` entry_points | Distributed packages |
 | Nix | `services.lucifex-agent.extraPlugins` / `extraPythonPackages` | NixOS declarative installs — see [Nix Setup](/getting-started/nix-setup#plugins) |
 
 Later sources override earlier ones on name collision, so a user plugin with the same name as a bundled plugin replaces it.
 
 ### Plugin sub-categories
 
-Within each source, lucifexex also recognizes sub-category directories that route plugins to specialized discovery systems:
+Within each source, lucifex also recognizes sub-category directories that route plugins to specialized discovery systems:
 
 | Sub-directory | What it holds | Discovery system |
 |---|---|---|
@@ -144,7 +144,7 @@ User plugins at `~/.lucifex/plugins/model-providers/<name>/` and `~/.lucifex/plu
 
 ## Plugins are opt-in (with a few exceptions)
 
-**General plugins and user-installed backends are disabled by default** — discovery finds them (so they show up in `lucifexex plugins` and `/plugins`), but nothing with hooks or tools loads until you add the plugin's name to `plugins.enabled` in `~/.lucifex/config.yaml`. This stops third-party code from running without your explicit consent.
+**General plugins and user-installed backends are disabled by default** — discovery finds them (so they show up in `lucifex plugins` and `/plugins`), but nothing with hooks or tools loads until you add the plugin's name to `plugins.enabled` in `~/.lucifex/config.yaml`. This stops third-party code from running without your explicit consent.
 
 ```yaml
 plugins:
@@ -158,16 +158,16 @@ plugins:
 Three ways to flip state:
 
 ```bash
-lucifexex plugins                    # interactive toggle (space to check/uncheck)
-lucifexex plugins enable <name>      # add to allow-list
-lucifexex plugins disable <name>     # remove from allow-list + add to disabled
+lucifex plugins                    # interactive toggle (space to check/uncheck)
+lucifex plugins enable <name>      # add to allow-list
+lucifex plugins disable <name>     # remove from allow-list + add to disabled
 ```
 
-After `lucifexex plugins install owner/repo`, you're asked `Enable 'name' now? [y/N]` — defaults to no. Skip the prompt for scripted installs with `--enable` or `--no-enable`.
+After `lucifex plugins install owner/repo`, you're asked `Enable 'name' now? [y/N]` — defaults to no. Skip the prompt for scripted installs with `--enable` or `--no-enable`.
 
 ### What the allow-list does NOT gate
 
-Several categories of plugin bypass `plugins.enabled` — they're part of lucifexex' built-in surface and would break basic functionality if gated off by default:
+Several categories of plugin bypass `plugins.enabled` — they're part of lucifex' built-in surface and would break basic functionality if gated off by default:
 
 | Plugin kind | How it's activated instead |
 |---|---|
@@ -183,7 +183,7 @@ In short: **bundled "always-works" infrastructure loads automatically; third-par
 
 ### Migration for existing users
 
-When you upgrade to a version of lucifexex that has opt-in plugins (config schema v21+), any user plugins already installed under `~/.lucifex/plugins/` that weren't already in `plugins.disabled` are **automatically grandfathered** into `plugins.enabled`. Your existing setup keeps working. Bundled standalone plugins are NOT grandfathered — even existing users have to opt in explicitly. (Bundled platform/backend plugins never needed grandfathering because they were never gated.)
+When you upgrade to a version of lucifex that has opt-in plugins (config schema v21+), any user plugins already installed under `~/.lucifex/plugins/` that weren't already in `plugins.disabled` are **automatically grandfathered** into `plugins.enabled`. Your existing setup keeps working. Bundled standalone plugins are NOT grandfathered — even existing users have to opt in explicitly. (Bundled platform/backend plugins never needed grandfathering because they were never gated.)
 
 ## Available hooks
 
@@ -204,7 +204,7 @@ Plugins can register callbacks for these lifecycle events. See the **[Event Hook
 
 ## Plugin types
 
-lucifexex has four kinds of plugins:
+lucifex has four kinds of plugins:
 
 | Type | What it does | Selection | Location |
 |------|-------------|-----------|----------|
@@ -217,14 +217,14 @@ Memory providers and context engines are **provider plugins** — only one of ea
 
 ## Pluggable interfaces — where to go for each
 
-The table above shows the four plugin categories, but within "General plugins" the `PluginContext` exposes several distinct extension points — and lucifexex also accepts extensions outside the Python plugin system (config-driven backends, shell-hooked commands, external servers, etc.). Use this table to find the right doc for what you want to build:
+The table above shows the four plugin categories, but within "General plugins" the `PluginContext` exposes several distinct extension points — and lucifex also accepts extensions outside the Python plugin system (config-driven backends, shell-hooked commands, external servers, etc.). Use this table to find the right doc for what you want to build:
 
 | Want to add… | How | Authoring guide |
 |---|---|---|
-| A **tool** the LLM can call | Python plugin — `ctx.register_tool()` | [Build a lucifexex Plugin](/developer-guide/plugins) · [Adding Tools](/developer-guide/adding-tools) |
-| A **lifecycle hook** (pre/post LLM, session start/end, tool filter) | Python plugin — `ctx.register_hook()` | [Hooks reference](/user-guide/features/hooks) · [Build a lucifexex Plugin](/developer-guide/plugins) |
-| A **slash command** for the CLI / gateway | Python plugin — `ctx.register_command()` | [Build a lucifexex Plugin](/developer-guide/plugins) · [Extending the CLI](/developer-guide/extending-the-cli) |
-| A **subcommand** for `lucifexex <thing>` | Python plugin — `ctx.register_cli_command()` | [Extending the CLI](/developer-guide/extending-the-cli) |
+| A **tool** the LLM can call | Python plugin — `ctx.register_tool()` | [Build a lucifex Plugin](/developer-guide/plugins) · [Adding Tools](/developer-guide/adding-tools) |
+| A **lifecycle hook** (pre/post LLM, session start/end, tool filter) | Python plugin — `ctx.register_hook()` | [Hooks reference](/user-guide/features/hooks) · [Build a lucifex Plugin](/developer-guide/plugins) |
+| A **slash command** for the CLI / gateway | Python plugin — `ctx.register_command()` | [Build a lucifex Plugin](/developer-guide/plugins) · [Extending the CLI](/developer-guide/extending-the-cli) |
+| A **subcommand** for `lucifex <thing>` | Python plugin — `ctx.register_cli_command()` | [Extending the CLI](/developer-guide/extending-the-cli) |
 | A bundled **skill** that your plugin ships | Python plugin — `ctx.register_skill()` | [Creating Skills](/developer-guide/creating-skills) |
 | An **inference backend** (LLM provider: OpenAI-compat, Codex, Anthropic-Messages, Bedrock) | Provider plugin — `register_provider(ProviderProfile(...))` in `plugins/model-providers/<name>/` | **[Model Provider Plugins](/developer-guide/model-provider-plugin)** · [Adding Providers](/developer-guide/adding-providers) |
 | A **gateway channel** (Discord / Telegram / IRC / Teams / etc.) | Platform plugin — `ctx.register_platform()` in `plugins/platforms/<name>/` | [Adding Platform Adapters](/developer-guide/adding-platform-adapters) |
@@ -233,9 +233,9 @@ The table above shows the four plugin categories, but within "General plugins" t
 | An **image-generation backend** (DALL·E, SDXL, …) | Backend plugin — `ctx.register_image_gen_provider()` | [Image Generation Provider Plugins](/developer-guide/image-gen-provider-plugin) |
 | A **video-generation backend** (Veo, Kling, Pixverse, Grok-Imagine, Runway, …) | Backend plugin — `ctx.register_video_gen_provider()` | [Video Generation Provider Plugins](/developer-guide/video-gen-provider-plugin) |
 | A **TTS backend** (any CLI — Piper, VoxCPM, Kokoro, xtts, voice-cloning scripts, …) | Config-driven (recommended) — declare under `tts.providers.<name>` with `type: command` in `config.yaml`. OR Python backend plugin — `ctx.register_tts_provider()` for Python-SDK / streaming engines that need more than a shell template. | [TTS Setup](/user-guide/features/tts#custom-command-providers) · [Python plugin guide](/user-guide/features/tts#python-plugin-providers) |
-| An **STT backend** (any CLI — whisper.cpp, custom whisper binary, local ASR CLI) | Config-driven (recommended) — declare under `stt.providers.<name>` with `type: command` in `config.yaml`, or set `lucifexex_LOCAL_STT_COMMAND` for the legacy single-command escape hatch. OR Python backend plugin — `ctx.register_transcription_provider()` for Python-SDK engines (OpenRouter, SenseAudio, Gemini-STT, etc.). | [STT Setup](/user-guide/features/tts#stt-custom-command-providers) · [Python plugin guide](/user-guide/features/tts#python-plugin-providers-stt) |
-| **External tools via MCP** (filesystem, GitHub, Linear, Notion, any MCP server) | Config-driven — declare `mcp_servers.<name>` with `command:` / `url:` in `config.yaml`. lucifexex auto-discovers the server's tools and registers them alongside built-ins. | [MCP](/user-guide/features/mcp) |
-| **Additional skill sources** (custom GitHub repos, private skill indexes) | CLI — `lucifexex skills tap add <repo>` | [Skills Hub](/user-guide/features/skills#skills-hub) · [Publishing a custom tap](/user-guide/features/skills#publishing-a-custom-skill-tap) |
+| An **STT backend** (any CLI — whisper.cpp, custom whisper binary, local ASR CLI) | Config-driven (recommended) — declare under `stt.providers.<name>` with `type: command` in `config.yaml`, or set `lucifex_LOCAL_STT_COMMAND` for the legacy single-command escape hatch. OR Python backend plugin — `ctx.register_transcription_provider()` for Python-SDK engines (OpenRouter, SenseAudio, Gemini-STT, etc.). | [STT Setup](/user-guide/features/tts#stt-custom-command-providers) · [Python plugin guide](/user-guide/features/tts#python-plugin-providers-stt) |
+| **External tools via MCP** (filesystem, GitHub, Linear, Notion, any MCP server) | Config-driven — declare `mcp_servers.<name>` with `command:` / `url:` in `config.yaml`. lucifex auto-discovers the server's tools and registers them alongside built-ins. | [MCP](/user-guide/features/mcp) |
+| **Additional skill sources** (custom GitHub repos, private skill indexes) | CLI — `lucifex skills tap add <repo>` | [Skills Hub](/user-guide/features/skills#skills-hub) · [Publishing a custom tap](/user-guide/features/skills#publishing-a-custom-skill-tap) |
 | **Gateway event hooks** (fire on `gateway:startup`, `session:start`, `agent:end`, `command:*`) | Drop `HOOK.yaml` + `handler.py` into `~/.lucifex/hooks/<name>/` | [Event Hooks](/user-guide/features/hooks#gateway-event-hooks) |
 | **Shell hooks** (run a shell command on events — notifications, audit logs, desktop alerts) | Config-driven — declare under `hooks:` in `config.yaml` | [Shell Hooks](/user-guide/features/hooks#shell-hooks) |
 
@@ -245,7 +245,7 @@ Not everything is a Python plugin. Some extension surfaces intentionally use **c
 
 ## NixOS declarative plugins
 
-On NixOS, plugins can be installed declaratively via the module options — no `lucifexex plugins install` needed. See the **[Nix Setup guide](/getting-started/nix-setup#plugins)** for full details.
+On NixOS, plugins can be installed declaratively via the module options — no `lucifex plugins install` needed. See the **[Nix Setup guide](/getting-started/nix-setup#plugins)** for full details.
 
 ```nix
 services.lucifex-agent = {
@@ -263,20 +263,20 @@ Declarative plugins are symlinked with a `nix-managed-` prefix — they coexist 
 ## Managing plugins
 
 ```bash
-lucifexex plugins                               # unified interactive UI
-lucifexex plugins list                          # table: enabled / disabled / not enabled
-lucifexex plugins install user/repo             # install from Git, then prompt Enable? [y/N]
-lucifexex plugins install user/repo --enable    # install AND enable (no prompt)
-lucifexex plugins install user/repo --no-enable # install but leave disabled (no prompt)
-lucifexex plugins update my-plugin              # pull latest
-lucifexex plugins remove my-plugin              # uninstall
-lucifexex plugins enable my-plugin              # add to allow-list
-lucifexex plugins disable my-plugin             # remove from allow-list + add to disabled
+lucifex plugins                               # unified interactive UI
+lucifex plugins list                          # table: enabled / disabled / not enabled
+lucifex plugins install user/repo             # install from Git, then prompt Enable? [y/N]
+lucifex plugins install user/repo --enable    # install AND enable (no prompt)
+lucifex plugins install user/repo --no-enable # install but leave disabled (no prompt)
+lucifex plugins update my-plugin              # pull latest
+lucifex plugins remove my-plugin              # uninstall
+lucifex plugins enable my-plugin              # add to allow-list
+lucifex plugins disable my-plugin             # remove from allow-list + add to disabled
 ```
 
 ### Interactive UI
 
-Running `lucifexex plugins` with no arguments opens a composite interactive screen:
+Running `lucifex plugins` with no arguments opens a composite interactive screen:
 
 ```
 Plugins
@@ -316,7 +316,7 @@ Plugins occupy one of three states:
 | `disabled` | Explicitly off — won't load even if also in `enabled` | (irrelevant) | Yes |
 | `not enabled` | Discovered but never opted in | No | No |
 
-The default for a newly-installed or bundled plugin is `not enabled`. `lucifexex plugins list` shows all three distinct states so you can tell what's been explicitly turned off vs. what's just waiting to be enabled.
+The default for a newly-installed or bundled plugin is `not enabled`. `lucifex plugins list` shows all three distinct states so you can tell what's been explicitly turned off vs. what's just waiting to be enabled.
 
 In a running session, `/plugins` shows which plugins are currently loaded.
 

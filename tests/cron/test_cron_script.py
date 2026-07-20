@@ -24,7 +24,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 @pytest.fixture
 def cron_env(tmp_path, monkeypatch):
     """Isolated cron environment with temp LUCIFEX_HOME."""
-    LUCIFEX_HOME = tmp_path / ".lucifexex"
+    LUCIFEX_HOME = tmp_path / ".lucifex"
     LUCIFEX_HOME.mkdir()
     (LUCIFEX_HOME / "cron").mkdir()
     (LUCIFEX_HOME / "cron" / "output").mkdir()
@@ -33,7 +33,7 @@ def cron_env(tmp_path, monkeypatch):
 
     # Clear cached module-level paths
     import cron.jobs as jobs_mod
-    monkeypatch.setattr(jobs_mod, "lucifexex_DIR", LUCIFEX_HOME)
+    monkeypatch.setattr(jobs_mod, "lucifex_DIR", LUCIFEX_HOME)
     monkeypatch.setattr(jobs_mod, "CRON_DIR", LUCIFEX_HOME / "cron")
     monkeypatch.setattr(jobs_mod, "JOBS_FILE", LUCIFEX_HOME / "cron" / "jobs.json")
     monkeypatch.setattr(jobs_mod, "OUTPUT_DIR", LUCIFEX_HOME / "cron" / "output")
@@ -92,7 +92,7 @@ def test_cronjob_tool_rejects_stale_past_one_shot(cron_env, monkeypatch):
     from tools.cronjob_tools import cronjob
 
     now = datetime(2026, 3, 18, 4, 30, 0, tzinfo=timezone.utc)
-    monkeypatch.setattr("cron.jobs._lucifexex_now", lambda: now)
+    monkeypatch.setattr("cron.jobs._lucifex_now", lambda: now)
     stale = (now - timedelta(minutes=5)).isoformat()
 
     result = json.loads(cronjob(action="create", prompt="Too late", schedule=stale))
@@ -148,13 +148,13 @@ class TestRunJobScript:
         assert "error info" in output
 
     def test_script_subprocess_env_sanitized(self, cron_env, monkeypatch):
-        """Cron scripts must not inherit lucifexex provider env (SECURITY.md §2.3)."""
-        from tools.environments.local import _lucifexex_PROVIDER_ENV_BLOCKLIST
+        """Cron scripts must not inherit lucifex provider env (SECURITY.md §2.3)."""
+        from tools.environments.local import _lucifex_PROVIDER_ENV_BLOCKLIST
         from cron.scheduler import _run_job_script
 
         # sorted() so the probed var is deterministic across runs
         # (frozenset iteration order varies with PYTHONHASHSEED).
-        blocked_var = sorted(_lucifexex_PROVIDER_ENV_BLOCKLIST)[0]
+        blocked_var = sorted(_lucifex_PROVIDER_ENV_BLOCKLIST)[0]
         monkeypatch.setenv(blocked_var, "must_not_leak")
 
         script = cron_env / "scripts" / "env_probe.py"
@@ -361,7 +361,7 @@ class TestCronjobToolScript:
     """Test the cronjob tool's script parameter."""
 
     def test_create_with_script(self, cron_env, monkeypatch):
-        monkeypatch.setenv("lucifexex_INTERACTIVE", "1")
+        monkeypatch.setenv("lucifex_INTERACTIVE", "1")
         from tools.cronjob_tools import cronjob
 
         result = json.loads(cronjob(
@@ -374,7 +374,7 @@ class TestCronjobToolScript:
         assert result["job"]["script"] == "monitor.py"
 
     def test_update_script(self, cron_env, monkeypatch):
-        monkeypatch.setenv("lucifexex_INTERACTIVE", "1")
+        monkeypatch.setenv("lucifex_INTERACTIVE", "1")
         from tools.cronjob_tools import cronjob
 
         create_result = json.loads(cronjob(
@@ -393,7 +393,7 @@ class TestCronjobToolScript:
         assert update_result["job"]["script"] == "new_script.py"
 
     def test_clear_script(self, cron_env, monkeypatch):
-        monkeypatch.setenv("lucifexex_INTERACTIVE", "1")
+        monkeypatch.setenv("lucifex_INTERACTIVE", "1")
         from tools.cronjob_tools import cronjob
 
         create_result = json.loads(cronjob(
@@ -413,7 +413,7 @@ class TestCronjobToolScript:
         assert "script" not in update_result["job"]
 
     def test_list_shows_script(self, cron_env, monkeypatch):
-        monkeypatch.setenv("lucifexex_INTERACTIVE", "1")
+        monkeypatch.setenv("lucifex_INTERACTIVE", "1")
         from tools.cronjob_tools import cronjob
 
         cronjob(
@@ -541,7 +541,7 @@ class TestCronjobToolScriptValidation:
     """Test API-boundary validation of cron script paths in cronjob_tools."""
 
     def test_create_with_absolute_script_rejected(self, cron_env, monkeypatch):
-        monkeypatch.setenv("lucifexex_INTERACTIVE", "1")
+        monkeypatch.setenv("lucifex_INTERACTIVE", "1")
         from tools.cronjob_tools import cronjob
 
         result = json.loads(cronjob(
@@ -554,7 +554,7 @@ class TestCronjobToolScriptValidation:
         assert "relative" in result["error"].lower() or "absolute" in result["error"].lower()
 
     def test_create_with_tilde_script_rejected(self, cron_env, monkeypatch):
-        monkeypatch.setenv("lucifexex_INTERACTIVE", "1")
+        monkeypatch.setenv("lucifex_INTERACTIVE", "1")
         from tools.cronjob_tools import cronjob
 
         result = json.loads(cronjob(
@@ -567,7 +567,7 @@ class TestCronjobToolScriptValidation:
         assert "relative" in result["error"].lower() or "absolute" in result["error"].lower()
 
     def test_create_with_traversal_script_rejected(self, cron_env, monkeypatch):
-        monkeypatch.setenv("lucifexex_INTERACTIVE", "1")
+        monkeypatch.setenv("lucifex_INTERACTIVE", "1")
         from tools.cronjob_tools import cronjob
 
         result = json.loads(cronjob(
@@ -580,7 +580,7 @@ class TestCronjobToolScriptValidation:
         assert "escapes" in result["error"].lower() or "traversal" in result["error"].lower()
 
     def test_create_with_relative_script_allowed(self, cron_env, monkeypatch):
-        monkeypatch.setenv("lucifexex_INTERACTIVE", "1")
+        monkeypatch.setenv("lucifex_INTERACTIVE", "1")
         from tools.cronjob_tools import cronjob
 
         result = json.loads(cronjob(
@@ -593,7 +593,7 @@ class TestCronjobToolScriptValidation:
         assert result["job"]["script"] == "monitor.py"
 
     def test_update_with_absolute_script_rejected(self, cron_env, monkeypatch):
-        monkeypatch.setenv("lucifexex_INTERACTIVE", "1")
+        monkeypatch.setenv("lucifex_INTERACTIVE", "1")
         from tools.cronjob_tools import cronjob
 
         create_result = json.loads(cronjob(
@@ -613,7 +613,7 @@ class TestCronjobToolScriptValidation:
 
     def test_update_clear_script_allowed(self, cron_env, monkeypatch):
         """Clearing a script (empty string) should always be permitted."""
-        monkeypatch.setenv("lucifexex_INTERACTIVE", "1")
+        monkeypatch.setenv("lucifex_INTERACTIVE", "1")
         from tools.cronjob_tools import cronjob
 
         create_result = json.loads(cronjob(
@@ -633,7 +633,7 @@ class TestCronjobToolScriptValidation:
         assert "script" not in update_result["job"]
 
     def test_windows_absolute_path_rejected(self, cron_env, monkeypatch):
-        monkeypatch.setenv("lucifexex_INTERACTIVE", "1")
+        monkeypatch.setenv("lucifex_INTERACTIVE", "1")
         from tools.cronjob_tools import cronjob
 
         result = json.loads(cronjob(
@@ -652,9 +652,9 @@ class TestRunJobEnvVarCleanup:
         """Origin env vars must be cleaned up even if run_job fails early."""
         # Ensure env vars are clean before test
         for key in (
-            "lucifexex_SESSION_PLATFORM",
-            "lucifexex_SESSION_CHAT_ID",
-            "lucifexex_SESSION_CHAT_NAME",
+            "lucifex_SESSION_PLATFORM",
+            "lucifex_SESSION_CHAT_ID",
+            "lucifex_SESSION_CHAT_NAME",
         ):
             monkeypatch.delenv(key, raising=False)
 
@@ -681,6 +681,6 @@ class TestRunJobEnvVarCleanup:
             pass
 
         # Verify env vars were cleaned up by the finally block
-        assert os.environ.get("lucifexex_SESSION_PLATFORM") is None
-        assert os.environ.get("lucifexex_SESSION_CHAT_ID") is None
-        assert os.environ.get("lucifexex_SESSION_CHAT_NAME") is None
+        assert os.environ.get("lucifex_SESSION_PLATFORM") is None
+        assert os.environ.get("lucifex_SESSION_CHAT_ID") is None
+        assert os.environ.get("lucifex_SESSION_CHAT_NAME") is None

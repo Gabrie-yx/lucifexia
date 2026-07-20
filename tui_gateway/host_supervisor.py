@@ -314,7 +314,7 @@ class HostSupervisor:
         env.update(os.environ)
         if self.env:
             env.update(self.env)
-        env["lucifexex_COMPUTE_HOST_HEARTBEAT_SECS"] = str(self.heartbeat_secs)
+        env["lucifex_COMPUTE_HOST_HEARTBEAT_SECS"] = str(self.heartbeat_secs)
         env.setdefault("PYTHONPATH", str(_repo_root()))
         if str(_repo_root()) not in env["PYTHONPATH"].split(os.pathsep):
             env["PYTHONPATH"] = str(_repo_root()) + os.pathsep + env["PYTHONPATH"]

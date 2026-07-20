@@ -15,7 +15,7 @@ import { recordParentLifecycle } from './lib/parentLog.js'
 import { resetTerminalModes } from './lib/terminalModes.js'
 
 if (!process.stdin.isTTY) {
-  console.log('lucifexex-tui: no TTY')
+  console.log('lucifex-tui: no TTY')
   process.exit(0)
 }
 
@@ -53,7 +53,7 @@ const gw = new GatewayClient()
 gw.start()
 
 const dumpNotice = (snap: MemorySnapshot, dump: HeapDumpResult | null) =>
-  `lucifexex-tui: ${snap.level} memory (${formatBytes(snap.heapUsed)}) — auto heap dump → ${dump?.heapPath ?? dump?.diagPath ?? '(failed)'}\n`
+  `lucifex-tui: ${snap.level} memory (${formatBytes(snap.heapUsed)}) — auto heap dump → ${dump?.heapPath ?? dump?.diagPath ?? '(failed)'}\n`
 
 setupGracefulExit({
   cleanups: [
@@ -67,7 +67,7 @@ setupGracefulExit({
     const message = err instanceof Error ? `${err.name}: ${err.message}\n${err.stack ?? ''}` : String(err)
 
     recordParentLifecycle(`${scope}: ${message.split('\n')[0]?.slice(0, 400) ?? ''}`)
-    process.stderr.write(`lucifexex-tui lifecycle ${scope}: ${message.slice(0, 2000)}\n`)
+    process.stderr.write(`lucifex-tui lifecycle ${scope}: ${message.slice(0, 2000)}\n`)
   },
   onSignal: signal => {
     // The next line in the crash log is the child's `=== SIGTERM received ===`
@@ -75,7 +75,7 @@ setupGracefulExit({
     // what tells SIGHUP (terminal/SSH dropped) apart from a real SIGTERM.
     recordParentLifecycle(`graceful-exit received signal=${signal} → killing gateway`)
     resetTerminalModes()
-    process.stderr.write(`lucifexex-tui lifecycle: received ${signal}\n`)
+    process.stderr.write(`lucifex-tui lifecycle: received ${signal}\n`)
   },
   // The dashboard chat tab has no in-page restart path after the PTY child
   // exits. Ignore SIGINT there so Ctrl+C cannot kill the embedded TUI if raw
@@ -94,10 +94,10 @@ const stopMemoryMonitor = startMemoryMonitor({
     )
     resetTerminalModes()
     process.stderr.write(
-      `lucifexex-tui lifecycle: memory critical exit heap=${formatBytes(snap.heapUsed)} rss=${formatBytes(snap.rss)}\n`
+      `lucifex-tui lifecycle: memory critical exit heap=${formatBytes(snap.heapUsed)} rss=${formatBytes(snap.rss)}\n`
     )
     process.stderr.write(dumpNotice(snap, dump))
-    process.stderr.write('lucifexex-tui: exiting to avoid OOM; restart to recover\n')
+    process.stderr.write('lucifex-tui: exiting to avoid OOM; restart to recover\n')
     process.exit(137)
   },
   onHigh: (snap, dump) => process.stderr.write(dumpNotice(snap, dump)),
@@ -110,12 +110,12 @@ const stopMemoryMonitor = startMemoryMonitor({
       `memory-warning fast heap growth heap=${formatBytes(snap.heapUsed)} rss=${formatBytes(snap.rss)}`
     )
     process.stderr.write(
-      `lucifexex-tui: heap climbing fast (${formatBytes(snap.heapUsed)}) — a large tool output or long session may be straining memory\n`
+      `lucifex-tui: heap climbing fast (${formatBytes(snap.heapUsed)}) — a large tool output or long session may be straining memory\n`
     )
   }
 })
 
-if (process.env.lucifexex_HEAPDUMP_ON_START === '1') {
+if (process.env.lucifex_HEAPDUMP_ON_START === '1') {
   void performHeapDump('manual')
 }
 
@@ -133,9 +133,9 @@ const [ink, { App }, { logFrameEvent }, { trackFrame }] = await Promise.all([
 const onFrame =
   logFrameEvent || trackFrame
     ? (event: FrameEvent) => {
-        logFrameEvent?.(event)
-        trackFrame?.(event.durationMs)
-      }
+      logFrameEvent?.(event)
+      trackFrame?.(event.durationMs)
+    }
     : undefined
 
 ink.render(<App gw={gw} />, {

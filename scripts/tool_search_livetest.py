@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Live test harness for lucifexex Agent's Tool Search feature.
+"""Live test harness for lucifex Agent's Tool Search feature.
 
 Spins up a real AIAgent against a real model, registers ~20 fake "MCP" tools
 with realistic shapes (github-like, slack-like, calendar-like, search-like),
@@ -32,9 +32,9 @@ import traceback
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
-# Force-isolate the test environment BEFORE any lucifexex imports.
+# Force-isolate the test environment BEFORE any lucifex imports.
 ORIGINAL_HOME = os.environ.get("LUCIFEX_HOME")
-ORIGINAL_AUTH = Path.home() / ".lucifexex" / "auth.json"
+ORIGINAL_AUTH = Path.home() / ".lucifex" / "auth.json"
 
 _THIS_DIR = Path(__file__).resolve().parent
 _WORKTREE_ROOT = _THIS_DIR.parent
@@ -254,8 +254,8 @@ def setup_isolated_home(enabled: bool) -> Path:
     Also reads OPENROUTER_API_KEY from the user's real ``~/.lucifex/.env`` so
     the agent can authenticate against OpenRouter inside the isolated home.
     """
-    home_dir = Path(tempfile.mkdtemp(prefix="lucifexex_ts_live_"))
-    LUCIFEX_HOME = home_dir / ".lucifexex"
+    home_dir = Path(tempfile.mkdtemp(prefix="lucifex_ts_live_"))
+    LUCIFEX_HOME = home_dir / ".lucifex"
     LUCIFEX_HOME.mkdir(parents=True)
 
     if ORIGINAL_AUTH.exists():
@@ -263,7 +263,7 @@ def setup_isolated_home(enabled: bool) -> Path:
 
     # Copy .env so OPENROUTER_API_KEY (or others) are visible to the agent
     # running inside the isolated home.
-    real_env_file = Path.home() / ".lucifexex" / ".env"
+    real_env_file = Path.home() / ".lucifex" / ".env"
     if real_env_file.exists():
         shutil.copy(real_env_file, LUCIFEX_HOME / ".env")
         # Also load the real user env into this process so the provider
@@ -273,7 +273,7 @@ def setup_isolated_home(enabled: bool) -> Path:
         # this module, which both avoids a hand-rolled parser bug and keeps
         # static analysis from tainting the transcript records with the key.
         from lucifex_cli.env_loader import load_lucifex_dotenv
-        load_lucifex_dotenv(LUCIFEX_HOME=str(Path.home() / ".lucifexex"))
+        load_lucifex_dotenv(LUCIFEX_HOME=str(Path.home() / ".lucifex"))
 
     cfg = {
         "model": {
