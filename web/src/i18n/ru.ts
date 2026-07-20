@@ -120,8 +120,8 @@ export const ru: Translations = {
     starting: "Запуск",
     startedInBackground: "Запущено в фоне — следите за журналами",
     stopped: "Остановлено",
-    updatelucifex: "Обновитlucifexifex",
-    updatinglucifex: "Обновлениlucifexifex…",
+    updateLucifex: "Обновить Lucifex",
+    updatingLucifex: "Обновление Lucifex…",
     waitingForOutput: "Ожидание вывода…",
   },
 

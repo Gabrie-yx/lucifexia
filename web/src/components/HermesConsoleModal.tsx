@@ -49,7 +49,7 @@ type ConsoleFrame =
 
 type ConnectionState = "connecting" | "ready" | "running" | "closed" | "error";
 
-interface lucifexConsoleModalProps {
+interface LucifexConsoleModalProps {
   open: boolean;
   onClose: () => void;
 }
@@ -97,7 +97,7 @@ function isPrintable(data: string): boolean {
   return data >= " " || data === "\t";
 }
 
-export function lucifexConsoleModal({ open, onClose }lucifexifexConsoleModalProps) {
+export function LucifexConsoleModal({ open, onClose }: LucifexConsoleModalProps) {
   const modalRef = useModalBehavior({ open, onClose });
   const hostRef = useRef<HTMLDivElement | null>(null);
   const termRef = useRef<XtermTerminal | null>(null);

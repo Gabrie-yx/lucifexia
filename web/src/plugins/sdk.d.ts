@@ -152,7 +152,7 @@ export interface lucifexPluginSDK {
 
 declare global {
   interface Window {
-    __lucifex_PLUGIN_SDK__?lucifexifexPluginSDK;
+    __lucifex_PLUGIN_SDK__?: LucifexPluginSDK;
     __lucifex_PLUGINS__?: PluginRegistry;
   }
 }

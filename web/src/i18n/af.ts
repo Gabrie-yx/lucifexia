@@ -120,8 +120,8 @@ export const af: Translations = {
     starting: "Begin",
     startedInBackground: "Begin in agtergrond — kyk logs vir vordering",
     stopped: "Gestop",
-    updatelucifex: "Werlucifexifex op",
-    updatinglucifex: "Besig olucifexifex op te werk…",
+    updateLucifex: "Opdateer Lucifex",
+    updatingLucifex: "Opdateer Lucifex…",
     waitingForOutput: "Wag vir uitset…",
   },
 

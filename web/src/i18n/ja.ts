@@ -120,8 +120,8 @@ export const ja: Translations = {
     starting: "起動中",
     startedInBackground: "バックグラウンドで起動しました — 進行状況はログをご確認ください",
     stopped: "停止",
-    updatelucifex: lucifexifex を更新",
-    updatinglucifex: lucifexifex を更新しています…",
+    updateLucifex: "Lucifex を更新",
+    updatingLucifex: "Lucifex を更新中…",
     waitingForOutput: "出力を待機しています…",
   },
 

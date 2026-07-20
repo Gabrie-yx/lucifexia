@@ -42,7 +42,7 @@ import { useConfirmDelete } from "@nous-research/ui/hooks/use-confirm-delete";
 import { ConfirmDialog } from "@nous-research/ui/ui/components/confirm-dialog";
 import { useModalBehavior } from "@/hooks/useModalBehavior";
 import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
-import { lucifexConsoleModal } from "@/componentlucifexifexConsoleModal";
+import { LucifexConsoleModal } from "@/components/HermesConsoleModal";
 import { cn, themedBody } from "@/lib/utils";
 import { api } from "@/lib/api";
 import type {
@@ -636,7 +636,7 @@ export default function SystemPage() {
   }
 
   const gatewayRunning = status?.gateway_running;
-  const canUpdatelucifex = status?.can_updatlucifexifex !== false;
+  const canUpdateLucifex = status?.can_update_lucifex !== false;
   const activeMemoryProvider = memory?.active
     ? memory.providers.find((provider) => provider.name === memory.active)
     : null;
@@ -658,14 +658,14 @@ export default function SystemPage() {
       />
 
       <ConfirmDialog
-        open={canUpdatelucifex && updateConfirmOpen}
+        open={canUpdateLucifex && updateConfirmOpen}
         onCancel={() => setUpdateConfirmOpen(false)}
         onConfirm={() => void applyUpdate()}
         title="Update lucifex?"
         description={
           updateInfo && updateInfo.behind && updateInfo.behind > 0
             ? `This will run 'lucifex update' (${updateInfo.update_command}) and pull ${updateInfo.behind} new commit${updateInfo.behind === 1 ? "" : "s"}. The gateway restarts when the update finishes; the current session keeps its prompt cache until then.`
-            : `This will run 'lucifex update' (${updateInfo?.update_command ?? lucifexifex update"}) and restart the gateway when it finishes.`
+            : `This will run 'lucifex update' (${updateInfo?.update_command ?? "lucifex update"}) and restart the gateway when it finishes.`
         }
       confirmLabel="Update now"
       />
@@ -702,7 +702,7 @@ export default function SystemPage() {
         description="Remove this hook from config and revoke its consent? It stops firing on the next restart."
         loading={hookDelete.isDeleting}
       />
-      <lucifexConsoleModal
+      <LucifexConsoleModal
         open={consoleOpen}
         onClose={() => setConsoleOpen(false)}
       />
@@ -848,7 +848,7 @@ export default function SystemPage() {
                 <div className="text-xs uppercase tracking-wider text-muted-foreground">lucifex</div>
                 <div className="flex items-center gap-2">
                   <span>v{stats?.lucifex_version}</span>
-                  {canUpdatelucifex &&
+                  {canUpdateLucifex &&
                     updateInfo &&
                     (updateInfo.update_available ? (
                       <Badge tone="warning">
@@ -909,7 +909,7 @@ export default function SystemPage() {
                 CPU / memory / disk metrics.
               </p>
             )}
-            {canUpdatelucifex && (
+            {canUpdateLucifex && (
               <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border pt-4">
                 <Button
                   size="sm"

@@ -120,8 +120,8 @@ export const uk: Translations = {
     starting: "Запускається",
     startedInBackground: "Запущено у фоні — перевірте журнали для прогресу",
     stopped: "Зупинено",
-    updatelucifex: "Оновитlucifexifex",
-    updatinglucifex: "Оновленнlucifexifex…",
+    updateLucifex: "Оновити Lucifex",
+    updatingLucifex: "Оновлення Lucifex…",
     waitingForOutput: "Очікування виводу…",
   },
 

@@ -120,8 +120,8 @@ export const es: Translations = {
     starting: "Iniciando",
     startedInBackground: "Iniciado en segundo plano — revisa los registros para ver el progreso",
     stopped: "Detenido",
-    updatelucifex: "Actualizalucifexifex",
-    updatinglucifex: "Actualizandlucifexifex…",
+    updateLucifex: "Actualizar Lucifex",
+    updatingLucifex: "Actualizando Lucifex…",
     waitingForOutput: "Esperando salida…",
   },
 

@@ -120,8 +120,8 @@ export const fr: Translations = {
     starting: "Démarrage",
     startedInBackground: "Démarré en arrière-plan — consultez les journaux pour la progression",
     stopped: "Arrêté",
-    updatelucifex: "Mettre à joulucifexifex",
-    updatinglucifex: "Mise à jour dlucifexifex…",
+    updateLucifex: "Mettre à jour Lucifex",
+    updatingLucifex: "Mise à jour de Lucifex…",
     waitingForOutput: "En attente de la sortie…",
   },
 

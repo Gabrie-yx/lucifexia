@@ -119,8 +119,8 @@ export const zh: Translations = {
     starting: "启动中",
     startedInBackground: "已在后台启动 — 请查看日志",
     stopped: "已停止",
-    updatelucifex: "更lucifexifex",
-    updatinglucifex: "正在更lucifexifex…",
+    updateLucifex: "更新 Lucifex",
+    updatingLucifex: "正在更新 Lucifex…",
     waitingForOutput: "等待输出…",
   },
 

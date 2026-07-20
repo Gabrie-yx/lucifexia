@@ -15,7 +15,7 @@
 
 import {
   JsonRpcGatewayClient,
-  buildlucifexWebSocketUrl,
+  buildLucifexWebSocketUrl,
   type ConnectionState,
   type GatewayEvent,
   type GatewayEventName,
@@ -51,7 +51,7 @@ export class GatewayClient extends JsonRpcGatewayClient {
     }
 
     await super.connect(
-      buildlucifexWebSocketUrl({
+      buildLucifexWebSocketUrl({
         authParam,
         basePath: lucifex_BASE_PATH,
         path: "/api/ws",

@@ -148,11 +148,11 @@ export interface Translations {
     starting: string;
     startedInBackground: string;
     stopped: string;
-    updatelucifex: string;
-    updatelucifexConfirmMessage?: string;
-    updatelucifexConfirmNow?: string;
-    updatelucifexConfirmTitle?: string;
-    updatinglucifex: string;
+    updateLucifex: string;
+    updateLucifexConfirmMessage?: string;
+    updateLucifexConfirmNow?: string;
+    updateLucifexConfirmTitle?: string;
+    updatingLucifex: string;
     waitingForOutput: string;
   };
 

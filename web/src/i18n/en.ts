@@ -131,12 +131,11 @@ export const en: Translations = {
     starting: "Starting",
     startedInBackground: "Started in background — check logs for progress",
     stopped: "Stopped",
-    updatelucifex: "Updatlucifexifex",
-    updatelucifexConfirmMessage:
-      "This runs lucifex update and restarts the gateway when it finishes. Active sessions keep their prompt cache until then.",
-    updatelucifexConfirmNow: "Update now",
-    updatelucifexConfirmTitle: "Updatlucifexifex?",
-    updatinglucifex: "Updating Lucifex…",
+    updateLucifex: "Update Lucifex",
+    updateLucifexConfirmMessage: "This runs Lucifex update and restarts the gateway when it finishes. Active sessions keep their prompt cache until then.",
+    updateLucifexConfirmNow: "Update now",
+    updateLucifexConfirmTitle: "Update Lucifex?",
+    updatingLucifex: "Updating Lucifex…",
     waitingForOutput: "Waiting for output…",
   },
 

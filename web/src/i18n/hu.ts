@@ -120,8 +120,8 @@ export const hu: Translations = {
     starting: "Indul",
     startedInBackground: "Háttérben elindítva — kövesse a naplókat a folyamathoz",
     stopped: "Leállítva",
-    updatelucifex: lucifexifex frissítése",
-    updatinglucifex: lucifexifex frissítése…",
+    updateLucifex: "Lucifex frissítése",
+    updatingLucifex: "Lucifex frissítése…",
     waitingForOutput: "Várakozás a kimenetre…",
   },
 

@@ -1,0 +1,10 @@
+#!/usr/bin/env python3
+"""
+Lucifex (lucifexcompatibility) CLI launcher.
+
+This wrapper behaves like the installed `lucifex` / `lucifex command.
+"""
+
+if __name__ == "__main__":
+    from lucifex_cli.main import main
+    main()

@@ -120,8 +120,8 @@ export const pt: Translations = {
     starting: "A iniciar",
     startedInBackground: "Iniciado em segundo plano — verifique os registos para acompanhar",
     stopped: "Parado",
-    updatelucifex: "Atualizalucifexifex",
-    updatinglucifex: "A atualizalucifexifex…",
+    updateLucifex: "Atualizar Lucifex",
+    updatingLucifex: "Atualizando Lucifex…",
     waitingForOutput: "À espera de saída…",
   },
 

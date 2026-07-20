@@ -901,7 +901,7 @@ function SidebarSystemActions({
   const navigate = useNavigate();
   const { activeAction, isBusy, isRunning, pendingAction, runAction } =
     useSystemActions();
-  const canUpdatelucifex = status?.can_updatlucifexifex === true;
+  const canUpdatelucifex = status?.can_update_lucifex === true;
   const [restartConfirmOpen, setRestartConfirmOpen] = useState(false);
   const [updateConfirmOpen, setUpdateConfirmOpen] = useState(false);
   const [updateConfirmInfo, setUpdateConfirmInfo] =
@@ -939,10 +939,10 @@ function SidebarSystemActions({
     }
     const cmd = updateConfirmInfo?.update_command ?? "lucifex update";
     return (
-      t.status.updatelucifexConfirmMessage ??
+      t.status.updateLucifexConfirmMessage ??
       `This will run 'lucifex update' (${cmd}) and restart the gateway when it finishes.`
     );
-  }, [t.status.updatelucifexConfirmMessage, updateConfirmInfo]);
+  }, [t.status.updateLucifexConfirmMessage, updateConfirmInfo]);
 
   const items: SystemActionItem[] = [
     {
@@ -957,8 +957,8 @@ function SidebarSystemActions({
     items.push({
       action: "update",
       icon: Download,
-      label: t.status.updatelucifex,
-      runningLabel: t.status.updatinglucifex,
+      label: t.status.updateLucifex,
+      runningLabel: t.status.updatingLucifex,
       spin: false,
     });
   }
@@ -1051,7 +1051,7 @@ function SidebarSystemActions({
 
       <ConfirmDialog
         cancelLabel={t.common.cancel}
-        confirmLabel={t.status.updatelucifexConfirmNow ?? "Update now"}
+        confirmLabel={t.status.updateLucifexConfirmNow ?? "Update now"}
         description={
           updateConfirmChecking ? t.common.loading : updateConfirmDescription
         }
@@ -1059,7 +1059,7 @@ function SidebarSystemActions({
         onCancel={() => setUpdateConfirmOpen(false)}
         onConfirm={confirmUpdate}
         open={updateConfirmOpen}
-        title={t.status.updatelucifexConfirmTitle ?? `${t.status.updalucifexifex}?`}
+        title={t.status.updateLucifexConfirmTitle ?? `${t.status.updateLucifex}?`}
       />
     </>
   );

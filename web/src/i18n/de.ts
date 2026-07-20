@@ -120,8 +120,8 @@ export const de: Translations = {
     starting: "Startet",
     startedInBackground: "Im Hintergrund gestartet — siehe Protokolle für den Fortschritt",
     stopped: "Gestoppt",
-    updatelucifex: lucifexifex aktualisieren",
-    updatinglucifex: lucifexifex wird aktualisiert…",
+    updateLucifex: "Lucifex aktualisieren",
+    updatingLucifex: "Lucifex wird aktualisiert…",
     waitingForOutput: "Warte auf Ausgabe…",
   },
 
