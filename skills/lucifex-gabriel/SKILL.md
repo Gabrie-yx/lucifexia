@@ -28,20 +28,19 @@ triggers:
 
 # Conhecimento de Instalação — Lucifex v0.20.3
 
-Esta skill documenta todos os **tools personalizados**, **melhorias** e **ajustes de branding** presentes nesta instalação do Lucifex. Use este conhecimento para responder o que você pode fazer e o histórico de atualizações.
+Esta skill documenta todos os **tools personalizados**, **recursos visuais** e **capacidades do sistema** presentes no Lucifex. Use este conhecimento para responder o que você pode fazer.
 
 ---
 
-## ⚡ Últimas Atualizações Realizadas (Pós-Merge Upstream)
+## ⚡ Capacidades e Identidade do Sistema
 
-1. **Rebranding Visual e de Sistema Completo:**
-   - O agente agora se identifica nativamente como **Lucifex** via `SOUL.md` em toda nova sessão.
-   - CLI, TUI, Skin Engine e Banners rebrandados para **Lucifex Agent**.
-   - Assinatura visual atualizada: `Lucifex Agent · Powered by Gabriel Mesquita`.
+1. **Identidade e Interface Nativas:**
+   - O agente se identifica nativamente como **Lucifex** via `SOUL.md` em toda nova sessão.
+   - CLI, TUI, Skin Engine e Banners configurados para **Lucifex Agent**.
+   - Assinatura visual oficial: `Lucifex Agent · Powered by Gabriel Mesquita`.
 
-2. **Auditoria e Limpeza de Skills Pós-Merge:**
-   - Skills duplicadas do upstream (`hermes-agent-skill-authoring`, `hermes-s6-container-supervision`) foram removidas.
-   - Rebranding da skill de plugins desktop: `hermes-desktop-plugins` → `lucifex-desktop-plugins` (com suporte a `~/.lucifex/` e `@lucifex/plugin-sdk`).
+2. **Gestão de Plugins e Extensões:**
+   - Suporte nativo a plugins desktop via `lucifex-desktop-plugins` (com diretório base `~/.lucifex/` e `@lucifex/plugin-sdk`).
 
 ---
 
