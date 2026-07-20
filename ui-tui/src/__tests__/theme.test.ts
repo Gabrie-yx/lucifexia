@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 // `theme.js` reads `process.env` at module-load to compute DEFAULT_THEME,
 // and `fromSkin` closes over DEFAULT_THEME.  A developer shell with
-// lucifex_TUI_THEME=light (olucifexifex_TUI_BACKGROUND set to something
+// lucifex_TUI_THEME=light (olucifex_TUI_BACKGROUND set to something
 // bright) would flip the base and turn these assertions into a local-
 // only failure.  We sterilize the relevant env vars + dynamically
 // import the module fresh so EVERY symbol that closes over the env

@@ -65,12 +65,12 @@ Good fits:
 
 Not a fit:
 
-- **You just want to back up a profile on your own machine.** Use [`lucifex profile export` / `import`](../reference/profile-commands.mlucifexifex-profile-export) — that's what those are for.
+- **You just want to back up a profile on your own machine.** Use [`lucifex profile export` / `import`](../reference/profile-commands.mlucifex-profile-export) — that's what those are for.
 - **You want to share API keys alongside the agent.** `auth.json` and `.env` are deliberately excluded from distributions. Each installer brings their own credentials.
 - **You want to share memories / sessions / conversation history.** Those are user data, not distribution content. Never shipped.
 
 :::caution
-**lucifex does not control git.** The file exclusions described on this page are applied by the **installer** when someone runslucifexifex profile install` lucifexucifex profile update`. They are **not** applied when you run `git add` or `git commit`.
+**lucifex does not control git.** The file exclusions described on this page are applied by the **installer** when someone runslucifex profile install` lucifexucifex profile update`. They are **not** applied when you run `git add` or `git commit`.
 :::
 
 ## The lifecycle: author to installer to update
@@ -473,7 +473,7 @@ git remote add origin https://github.com/you/lucifex-polymarket-trader.git
 git push -u origin main --tags
 
 # Anyone
-lucifex profile install github.com/yolucifexifex-polymarket-trader --alias
+lucifex profile install github.com/yolucifex-polymarket-trader --alias
 ```
 
 Tweet the install command. People who try it send you issues and PRs. If someone wants to customize, they fork — same git workflow everyone already knows.
@@ -645,7 +645,7 @@ The short version:
 
 - [Profiles: Running Multiple Agents](./profiles.md) — the base concept
 - [Profile Commands reference](../reference/profile-commands.md) — every flag, every option
-- [`lucifex profile export` / `import`](../reference/profile-commands.mlucifexifex-profile-export) — local backup / restore (not distribution)
-- [Using SOUL with lucifex](../guides/use-soul-witlucifexifex.md) — authoring personalities
+- [`lucifex profile export` / `import`](../reference/profile-commands.mlucifex-profile-export) — local backup / restore (not distribution)
+- [Using SOUL with lucifex](../guides/use-soul-witlucifex.md) — authoring personalities
 - [Personality & SOUL](./features/personality.md) — how SOUL fits into the agent
 - [Skills catalog](../reference/skills-catalog.md) — skills you can bundle

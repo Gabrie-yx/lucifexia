@@ -117,7 +117,7 @@ python -m pip install -e '.' -c constraints-termux.txt
 ### 5. Put `lucifex` on your Termux PATH
 
 ```bash
-ln -sf "$PWD/venv/bin/lucifex" "$PREFIX/bilucifexifex"
+ln -sf "$PWD/venv/bin/lucifex" "$PREFIX/bilucifex"
 ```
 
 `$PREFIX/bin` is already on PATH in Termux, so this makes the `lucifex` command persist across new shells without re-activating the venv every time.

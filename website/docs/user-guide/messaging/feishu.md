@@ -257,7 +257,7 @@ FEISHU_BOT_NAME=MyBot         # only when auto-detection fails
 
 ## Bot-to-Bot Messaging
 
-By default lucifex ignores messages sent by other bots. Enable bot-to-bot messaging when you wanlucifexifex to participate in A2A orchestration or receive notifications from other bots in the same group.
+By default lucifex ignores messages sent by other bots. Enable bot-to-bot messaging when you wanlucifex to participate in A2A orchestration or receive notifications from other bots in the same group.
 
 ```bash
 FEISHU_ALLOW_BOTS=mentions   # default: none
@@ -283,7 +283,7 @@ When users click buttons or interact with interactive cards sent by the bot, the
 - The action's `value` payload from the card definition is included as JSON.
 - Card actions are deduplicated with a 15-minute window to prevent double processing.
 
-Gateway-driven update prompts use a native Feishu `Yes` / `No` card instead of falling back to plain text replies. When `lucifex update --gateway` needs confirmation, the adapter records the selected answer ilucifexifex's `.update_response` file and replaces the card inline with a resolved state.
+Gateway-driven update prompts use a native Feishu `Yes` / `No` card instead of falling back to plain text replies. When `lucifex update --gateway` needs confirmation, the adapter records the selected answer ilucifex's `.update_response` file and replaces the card inline with a resolved state.
 
 Card action events are dispatched with `MessageType.COMMAND`, so they flow through the normal command processing pipeline.
 
@@ -356,7 +356,7 @@ On top of the chat/card permissions already granted, add the drive comment event
 
 ## Meeting Invitation Events
 
-You can invite the lucifex Feishu/Lark bot into a video meeting the same way you invite a human participant. When the bot receives the meeting invitation eventlucifexifex can automatically start an agent turn that attempts to join the meeting.
+You can invite the lucifex Feishu/Lark bot into a video meeting the same way you invite a human participant. When the bot receives the meeting invitation eventlucifex can automatically start an agent turn that attempts to join the meeting.
 
 Powered by the `vc.bot.meeting_invited_v1` event, the flow is:
 
@@ -573,7 +573,7 @@ WebSocket and per-group ACL settings are configured via `config.yaml` under `pla
 | `websockets not installed; websocket mode unavailable` | Install websockets: `pip install websockets` |
 | `aiohttp not installed; webhook mode unavailable` | Install aiohttp: `pip install aiohttp` |
 | `FEISHU_APP_ID or FEISHU_APP_SECRET not set` | Set both env vars or configure via `lucifex gateway setup` |
-| `Another local lucifex gateway is already using this Feishu app_id` | Only onlucifexifex instance can use the same app_id at a time. Stop the other gateway first. |
+| `Another local lucifex gateway is already using this Feishu app_id` | Only onlucifex instance can use the same app_id at a time. Stop the other gateway first. |
 | Bot doesn't respond in groups | Ensure the bot is @mentioned, check `FEISHU_GROUP_POLICY`, and verify the sender is in `FEISHU_ALLOWED_USERS` if policy is `allowlist` |
 | `Webhook rejected: invalid verification token` | Ensure `FEISHU_VERIFICATION_TOKEN` matches the token in your Feishu app's Event Subscriptions config |
 | `Webhook rejected: invalid signature` | Ensure `FEISHU_ENCRYPT_KEY` matches the encrypt key in your Feishu app config |

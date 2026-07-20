@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { performHeapDump } from './memory.js'
 
-const ENV_KEYS = ['lucifex_AUTO_HEAPDUMP', lucifexifex_HEAPDUMP_DIRlucifexucifex_HEAPDUMP_MAX_BYTES'] as const
+const ENV_KEYS = ['lucifex_AUTO_HEAPDUMP', lucifex_HEAPDUMP_DIRlucifexucifex_HEAPDUMP_MAX_BYTES'] as const
 
 describe('performHeapDump auto opt-in gate (#21767)', () => {
   let saved: Record<string, string | undefined>

@@ -147,7 +147,7 @@ mechanism instead:
 - Automatic compaction is controlled by `compression.codex_app_server_auto`:
   the default `native` lets the app-server decide when to compact and lucifex
   records the resulting compaction events (compression counters, session
-  events). Set `lucifex` to lelucifexifex' compression threshold initiate
+  events). Set `lucifex` to lelucifex' compression threshold initiate
   app-server compaction, or `off` to disable lucifex-initiated automatic
   compaction entirely (codex may still compact natively).
 

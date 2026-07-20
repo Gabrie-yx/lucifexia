@@ -308,7 +308,7 @@ This usually exposes naming mismatches, missing required arguments, or non-seria
 
 ### lucifex cannot see the deployed server
 
-The server-building part may be correct while the lucifex config is not. Load the `native-mcp` skill and configure the server in `~/.lucifex/config.yaml`, then restarlucifexifex.
+The server-building part may be correct while the lucifex config is not. Load the `native-mcp` skill and configure the server in `~/.lucifex/config.yaml`, then restarlucifex.
 
 ## References
 

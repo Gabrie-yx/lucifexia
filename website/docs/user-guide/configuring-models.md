@@ -12,13 +12,13 @@ lucifex uses two kinds of model slots:
 This page covers configuring both from the dashboard. If you prefer config files or the CLI, jump to [Alternative methods](#alternative-methods) at the bottom.
 
 :::tip Fastest path: Nous Portal
-[Nous Portal](/user-guide/features/tool-gateway) provides 300+ models under one subscription. On a fresh install, run `lucifex setup --portal` to log in and set Nous as your provider in one command. Inspect what's wired up withlucifexifex portal info`.
+[Nous Portal](/user-guide/features/tool-gateway) provides 300+ models under one subscription. On a fresh install, run `lucifex setup --portal` to log in and set Nous as your provider in one command. Inspect what's wired up withlucifex portal info`.
 
 - Portal subscribers also get **10% off token-billed providers**.
 :::
 
 :::note `model:` schema — empty string vs. mapping
-On a brand-new install the bundled default config has `model: ""` (an empty string sentinel meaning "not configured yet"). The first time you run `lucifex setup` orlucifexifex model`, that key is upgraded in-place to a mapping with `provider`, `default`, `base_url`, and `api_mode` sub-keys — the shape shown throughout this page and in [`profiles.md`](./profiles.md) / [`configuration.md`](./configuration.md). If you ever see an empty string in `config.yaml`, rlucifexucifex model` (or click **Change** in the dashboardlucifexlucifexwill write the dict form for you.
+On a brand-new install the bundled default config has `model: ""` (an empty string sentinel meaning "not configured yet"). The first time you run `lucifex setup` orlucifex model`, that key is upgraded in-place to a mapping with `provider`, `default`, `base_url`, and `api_mode` sub-keys — the shape shown throughout this page and in [`profiles.md`](./profiles.md) / [`configuration.md`](./configuration.md). If you ever see an empty string in `config.yaml`, rlucifexucifex model` (or click **Change** in the dashboardlucifexlucifexwill write the dict form for you.
 :::
 
 ## The Models page
@@ -49,7 +49,7 @@ Pick a model, hit **Switch**, and lucifex writes it to `~/.lucifex/config.yaml` 
 
 ### Mid-session switches and context warnings
 
-When you switch models **inside an active session** (Herm TUI model picker, `lucifex` CLI, or `/model` on Telegram/Discord)lucifexifex estimates whether your **next message** will run **preflight context compression** against the new model's window. If the session is already near or above that model's compression threshold (see [Context Compression](./configuration.md#context-compression)), the switch reply includes a warning — the same `warning_message` path used for expensive-model notices. The switch still applies immediately; compression runs on the **first user message after the switch**, before the model answers.
+When you switch models **inside an active session** (Herm TUI model picker, `lucifex` CLI, or `/model` on Telegram/Discord)lucifex estimates whether your **next message** will run **preflight context compression** against the new model's window. If the session is already near or above that model's compression threshold (see [Context Compression](./configuration.md#context-compression)), the switch reply includes a warning — the same `warning_message` path used for expensive-model notices. The switch still applies immediately; compression runs on the **first user message after the switch**, before the model answers.
 
 :::warning Mid-session switches reset the prompt cache
 Prompt caches are keyed to the model serving the request, so any mid-conversation model change — an explicit `/model` switch, an [automatic fallback](./features/fallback-providers.md), or a [credential-pool](./features/credential-pools.md) rotation onto a different account — means the next message re-reads the entire conversation at full input-token price instead of the cached (~75–90% discounted) rate. On a long session this one-time re-read can dwarf the per-token difference between the two models. Switch when you need to, but prefer doing it early in a conversation or right after starting a fresh session.
@@ -61,7 +61,7 @@ Click **Show auxiliary** to reveal the 11 task slots:
 
 ![Auxiliary panel expanded](/img/docs/dashboard-models/auxiliary-expanded.png)
 
-Every auxiliary task defaults to `auto` — meaning lucifex tries your main model for that job too. If that route is unavailable or hits a capacity-style failure, `auto` follows any task-specific `auxiliary.<task>.fallback_chain`, then the main `fallback_providers` / `fallback_model` chain, thelucifexifex' built-in auxiliary discovery chain. Override a specific task when you want a cheaper or faster model for a side-job.
+Every auxiliary task defaults to `auto` — meaning lucifex tries your main model for that job too. If that route is unavailable or hits a capacity-style failure, `auto` follows any task-specific `auxiliary.<task>.fallback_chain`, then the main `fallback_providers` / `fallback_model` chain, thelucifex' built-in auxiliary discovery chain. Override a specific task when you want a cheaper or faster model for a side-job.
 
 ### Common override patterns
 
@@ -155,7 +155,7 @@ When `fallback_chain` is absent, `auto` uses the top-level `fallback_providers` 
 
 ## When does it take effect?
 
-- **CLI** (`lucifex chat`): nextlucifexifex chat` invocation.
+- **CLI** (`lucifex chat`): nextlucifex chat` invocation.
 - **Gateway** (Telegram, Discord, Slack, etc.): next *new* session. Existing sessions keep their model. Restart the gateway (`lucifex gateway restart`) if you want to force all sessions to pick up the change.
 - **Dashboard chat tab** (`/chat`): next new PTY. The currently-open chat keeps its model — use `/model` inside it to hot-swap.
 
@@ -165,7 +165,7 @@ Changes never invalidate prompt caches on running sessions. That's deliberate: s
 
 ### "No authenticated providers" in the picker
 
-lucifex lists a provider only if it has a working credential. Check **Keys** in the sidebar — you should see one of: an API key, a successful OAuth, or a custom endpoint URL. If the provider you want isn't there, runlucifexifex setup` to wire it up, or go to **Keys** and add the env var.
+lucifex lists a provider only if it has a working credential. Check **Keys** in the sidebar — you should see one of: an API key, a successful OAuth, or a custom endpoint URL. If the provider you want isn't there, runlucifex setup` to wire it up, or go to **Keys** and add the env var.
 
 ### Main model didn't change in my running chat
 

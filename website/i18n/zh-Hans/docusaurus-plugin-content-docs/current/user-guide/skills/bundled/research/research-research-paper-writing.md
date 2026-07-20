@@ -2134,7 +2134,7 @@ ACL 系列会议有不同的投稿类型：
 
 ## lucifex Agent 集成
 
-本 skill 专为 lucifex agent 设计。它使lucifexifex 工具、委派、调度和记忆来支撑完整的研究生命周期。
+本 skill 专为 lucifex agent 设计。它使lucifex 工具、委派、调度和记忆来支撑完整的研究生命周期。
 
 ### 相关 Skill
 

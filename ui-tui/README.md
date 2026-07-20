@@ -476,7 +476,7 @@ ui-tui/
       paste.ts                   bracketed paste snippet token regex
 
     types/
-      lucifex-ink.d.ts            type declarations forlucifexifex/ink
+      lucifex-ink.d.ts            type declarations forlucifex/ink
 
     __tests__/                   vitest suite
 ```

@@ -176,7 +176,7 @@ expiry, while the supervisor's long-lived connection keeps a valid session.
 - `tools/browser_supervisor.py` — `CDPSupervisor`, `SupervisorRegistry`, `PendingDialog`, `FrameInfo`
 - `tools/browser_dialog_tool.py` — `browser_dialog` tool handler
 - `tools/browser_tool.py` — `browser_navigate` start-hook, `browser_snapshot` merge, `/browser connect` reattach, `_cleanup_browser_session` teardown
-- `toolsets.py` — registers `browser_dialog` in `browser`, `lucifex-acp`,lucifexifex-api-server`, and core toolsets (gated on CDP reachability)
+- `toolsets.py` — registers `browser_dialog` in `browser`, `lucifex-acp`,lucifex-api-server`, and core toolsets (gated on CDP reachability)
 - `lucifex_cli/config.py` — `browser.dialog_policy` and `browser.dialog_timeout_s` defaults
 
 ## Non-goals

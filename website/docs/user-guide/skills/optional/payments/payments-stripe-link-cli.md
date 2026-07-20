@@ -31,7 +31,7 @@ The following is the complete skill definition that lucifex loads when this skil
 
 # Stripe Link CLI Skill
 
-Wraps [@stripe/link-cli](https://github.com/stripe/link-cli) so lucifex can complete purchases on the user's behalf using one-time-use virtual cards or Shared Payment Tokens (SPT). Every spend is gated by an in-app approval in the Link mobile/web app lucifexifex cannot self-approve.
+Wraps [@stripe/link-cli](https://github.com/stripe/link-cli) so lucifex can complete purchases on the user's behalf using one-time-use virtual cards or Shared Payment Tokens (SPT). Every spend is gated by an in-app approval in the Link mobile/web app lucifex cannot self-approve.
 
 US-only at the moment (Link account requirement). Windows is not supported by the upstream CLI — this skill is gated `[linux, macos]`.
 

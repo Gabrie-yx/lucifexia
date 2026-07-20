@@ -132,7 +132,7 @@ echo $XDG_SESSION_TYPE
 The clipboard data is transferred as base64-encoded PNG over stdout, so no file path conversion or temp files are needed.
 
 :::info WSLg Note
-If you're running WSLg (WSL2 with GUI support), lucifex tries the PowerShell path first, then falls back to `wl-paste`. WSLg's clipboard bridge only supports BMP format for images lucifexifex auto-converts BMP to PNG using Pillow (if installed) or ImageMagick's `convert` command.
+If you're running WSLg (WSL2 with GUI support), lucifex tries the PowerShell path first, then falls back to `wl-paste`. WSLg's clipboard bridge only supports BMP format for images lucifex auto-converts BMP to PNG using Pillow (if installed) or ImageMagick's `convert` command.
 :::
 
 #### Verify WSL2 clipboard access

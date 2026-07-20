@@ -8,7 +8,7 @@ Run multiple independent lucifex agents on the same machine — each with its ow
 
 ## What are profiles?
 
-A profile is a separate lucifex home directory. Each profile gets its own directory containing its own `config.yaml`, `.env`, `SOUL.md`, memories, sessions, skills, cron jobs, and state database. Profiles let you run separate agents for different purposes — a coding assistant, a personal bot, a research agent — without mixing ulucifexifex state.
+A profile is a separate lucifex home directory. Each profile gets its own directory containing its own `config.yaml`, `.env`, `SOUL.md`, memories, sessions, skills, cron jobs, and state database. Profiles let you run separate agents for different purposes — a coding assistant, a personal bot, a research agent — without mixing ulucifex state.
 
 When you create a profile, it automatically becomes its own command. Create a profile called `coder` and you immediately have `coder chat`, `coder setup`, `coder gateway start`, etc.
 
@@ -58,7 +58,7 @@ Copies your current profile's `config.yaml`, `.env`, `SOUL.md`, and skills into 
 lucifex profile create backup --clone-all
 ```
 
-Copies **everything** — config, API keys, personality, all memories, skills, cron jobs, plugins. A complete working snapshot. Per-profile history is excluded (session history, `state.db`, `backups/`, `state-snapshots/`, `checkpoints/`) — these belong to the source profile and can reach tens of GB. For a full backup including history, use `lucifex profile export` orlucifexifex backup` instead.
+Copies **everything** — config, API keys, personality, all memories, skills, cron jobs, plugins. A complete working snapshot. Per-profile history is excluded (session history, `state.db`, `backups/`, `state-snapshots/`, `checkpoints/`) — these belong to the source profile and can reach tens of GB. For a full backup including history, use `lucifex profile export` orlucifex backup` instead.
 
 ### Clone from a specific profile
 
@@ -91,7 +91,7 @@ coder skills list             # list coder's skills
 coder config set model.default anthropic/claude-sonnet-4
 ```
 
-The alias works with every lucifex subcommand — it's justlucifexifex -p <name>` under the hood.
+The alias works with every lucifex subcommand — it's justlucifex -p <name>` under the hood.
 
 ### The `-p` flag
 
@@ -183,7 +183,7 @@ assistant gateway install     # creates lucifex-gateway-assistant service
 Each profile gets its own service name. They run independently.
 
 :::note Inside the official Docker image
-Per-profile gateways are supervised by [s6-overlay](https://github.com/just-containers/s6-overlay) (PID 1 in the container), so `lucifex profile create <name>` automatically registers an s6 service slot at `/run/service/gateway-<name>/`.lucifexifex -p <name> gateway start/stop/restart` dispatches to `s6-svc` instead of spawning a bare process — crashes are auto-restarted and `docker restart` preserves the previously-running set of gateways. See [Per-profile gateway supervision](/user-guide/docker#per-profile-gateway-supervision) for details.
+Per-profile gateways are supervised by [s6-overlay](https://github.com/just-containers/s6-overlay) (PID 1 in the container), so `lucifex profile create <name>` automatically registers an s6 service slot at `/run/service/gateway-<name>/`.lucifex -p <name> gateway start/stop/restart` dispatches to `s6-svc` instead of spawning a bare process — crashes are auto-restarted and `docker restart` preserves the previously-running set of gateways. See [Per-profile gateway supervision](/user-guide/docker#per-profile-gateway-supervision) for details.
 :::
 
 ## Configuring profiles
@@ -252,7 +252,7 @@ This stops the gateway, removes the systemd/launchd service, removes the command
 Use `--yes` to skip confirmation: `lucifex profile delete coder --yes`
 
 :::note
-You cannot delete the default profile (`~/.lucifex`). To remove everything, uselucifexifex uninstall`.
+You cannot delete the default profile (`~/.lucifex`). To remove everything, uselucifex uninstall`.
 :::
 
 ## Tab completion
@@ -269,7 +269,7 @@ Add the line to your `~/.bashrc` or `~/.zshrc` for persistent completion. Comple
 
 ## How it works
 
-Profiles use the `LUCIFEX_HOME` environment variable. When you run `coder chat`, the wrapper script sets `LUCIFEX_HOME=~/.lucifex/profiles/coder` before launching lucifex. Since 119+ files in the codebase resolve paths via `get_lucifex_home()`lucifexifex state automatically scopes to the profile's directory — config, sessions, memory, skills, state database, gateway PID, logs, and cron jobs.
+Profiles use the `LUCIFEX_HOME` environment variable. When you run `coder chat`, the wrapper script sets `LUCIFEX_HOME=~/.lucifex/profiles/coder` before launching lucifex. Since 119+ files in the codebase resolve paths via `get_lucifex_home()`lucifex state automatically scopes to the profile's directory — config, sessions, memory, skills, state database, gateway PID, logs, and cron jobs.
 
 This is separate from terminal working directory. Tool execution starts from `terminal.cwd` (or the launch directory when `cwd: "."` on the local backend), not automatically from `LUCIFEX_HOME`.
 
@@ -296,7 +296,7 @@ subprocesses with `HOME={LUCIFEX_HOME}/home`; you then need to initialize or lin
 the profile-specific `~/.ssh`, `~/.gitconfig`, `~/.config/gh`, cloud CLI auth,
 Claude/Codex auth, npm state, and similar files inside that profile home.
 
-lucifex also exposeslucifexifex_REAL_HOME` to subprocesses so scripts can still find
+lucifex also exposeslucifex_REAL_HOME` to subprocesses so scripts can still find
 the actual account home when `home_mode: profile` is active.
 
 The default profile is simply `~/.lucifex` itself. No migration needed — existing installs work identically.

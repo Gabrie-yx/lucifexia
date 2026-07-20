@@ -46,7 +46,7 @@ if command -v gh &>/dev/null && gh auth status &>/dev/null; then
 else
   AUTH="git"
   if [ -z "$GITHUB_TOKEN" ]; then
-    if _lucifex_env="${LUCIFEX_HOME:-$HOMElucifexifex}/.env"; [ -flucifexucifex_env" ] && grep -q "^GITHUB_TOKENlucifexlucifexenv"; then
+    if _lucifex_env="${LUCIFEX_HOME:-$HOMElucifex}/.env"; [ -flucifexucifex_env" ] && grep -q "^GITHUB_TOKENlucifexlucifexenv"; then
       GITHUB_TOKEN=$(grep "^GITHUB_TOKEN=" "$_lucifex_env" | head -1 | cut -d= -f2 | tr -d '\n\r')
     elif grep -q "github.com" ~/.git-credentials 2>/dev/null; then
       GITHUB_TOKEN=$(grep "github.com" ~/.git-credentials 2>/dev/null | head -1 | sed 's|https://[^:]*:\([^@]*\)@.*|\1|')

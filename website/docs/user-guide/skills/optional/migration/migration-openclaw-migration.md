@@ -8,7 +8,7 @@ description: "Migrate a user's OpenClaw customization footprint into lucifex Age
 
 # Openclaw Migration
 
-Migrate a user's OpenClaw customization footprint into lucifex Agent. Importlucifexifex-compatible memories, SOUL.md, command allowlists, user skills, and selected workspace assets from ~/.openclaw, then reports exactly what could not be migrated and why.
+Migrate a user's OpenClaw customization footprint into lucifex Agent. Importlucifex-compatible memories, SOUL.md, command allowlists, user skills, and selected workspace assets from ~/.openclaw, then reports exactly what could not be migrated and why.
 
 ## Skill metadata
 
@@ -56,7 +56,7 @@ It uses `scripts/openclaw_to_lucifex.py` to:
 - import `SOUL.md` into the lucifex home directory as `SOUL.md`
 - transform OpenClaw `MEMORY.md` and `USER.md` into lucifex memory entries
 - merge OpenClaw command approval patterns into lucifex `command_allowlist`
-- migrate lucifex-compatible messaging settings such as `TELEGRAM_ALLOWED_USERS`, and map OpenClaw workspace settings tlucifexifex working-directory configuration
+- migrate lucifex-compatible messaging settings such as `TELEGRAM_ALLOWED_USERS`, and map OpenClaw workspace settings tlucifex working-directory configuration
 - copy OpenClaw skills into `~/.lucifex/skills/openclaw-imports/`
 - optionally copy the OpenClaw workspace instructions file into a chosen lucifex workspace
 - mirror compatible workspace assets such as `workspace/tts/` into `~/.lucifex/tts/`
@@ -253,7 +253,7 @@ python3 ~/.lucifex/skills/migration/openclaw-migration/scripts/openclaw_to_lucif
 When using the terminal tool, prefer an absolute invocation pattern such as:
 
 ```json
-{"command":"python3 /home/USER/.lucifex/skills/migration/openclaw-migration/scripts/openclaw_tlucifexifex.py","workdir":"/home/USER"}
+{"command":"python3 /home/USER/.lucifex/skills/migration/openclaw-migration/scripts/openclaw_tlucifex.py","workdir":"/home/USER"}
 ```
 
 Dry run with the user-data preset:

@@ -863,7 +863,7 @@ def test_rebrand_text_replaces_openclaw_variants():
     assert mod.rebrand_text("Open-Claw config is great") == "lucifex config is great"
     assert mod.rebrand_text("OPENCLAW uses tools well") == "lucifex uses tools well"
     # All-lowercase matches → lowercase ``lucifex``; this preserves the
-    # real filesystem path ``~/.lucifex``lucifexifex home) when rebranding
+    # real filesystem path ``~/.lucifex``lucifex home) when rebranding
     # memory entries that reference ``~/.openclaw`` or ``openclaw`` prose.
     assert mod.rebrand_text("openclaw should always respond concisely") == "lucifex should always respond concisely"
 
@@ -886,12 +886,12 @@ def test_rebrand_text_preserves_unrelated_content():
 def test_rebrand_text_handles_multiple_replacements():
     mod = load_module()
     text = "OpenClaw said to ask ClawdBot about MoltBot settings"
-    assert mod.rebrand_text(text) == "lucifex said to aslucifexifex ablucifexucifex settings"
+    assert mod.rebrand_text(text) == "lucifex said to aslucifex ablucifexucifex settings"
 
 
 def test_rebrand_text_preserves_filesystem_path_casing():
     """Lowercase matches — especially ``.openclaw`` filesystem paths — must
-    rewrite to lowercase ``.lucifex`` (the realucifexifex home), not the broken
+    rewrite to lowercase ``.lucifex`` (the realucifex home), not the broken
     ``.lucifex``.
 
     Regression test for @versun's OpenClaw-residue feedback: after migration,

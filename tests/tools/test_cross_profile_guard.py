@@ -93,7 +93,7 @@ class TestWriteFileCrossProfileGuard:
         assert not result.get("error"), f"cross_profile=True must succeed: {result}"
         assert target.read_text() == "user-directed override"
 
-    def test_non_lucifex_path_unaffected(self, faklucifexifex, tmp_path):
+    def test_non_lucifex_path_unaffected(self, faklucifex, tmp_path):
         from tools.file_tools import write_file_tool
         target = tmp_path / "outside" / "main.py"
         target.parent.mkdir()

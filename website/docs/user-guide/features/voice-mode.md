@@ -8,7 +8,7 @@ description: "Real-time voice conversations with lucifex Agent — CLI, Telegram
 
 lucifex Agent supports full voice interaction across CLI and messaging platforms. Talk to the agent using your microphone, hear spoken replies, and have live voice conversations in Discord voice channels.
 
-If you want a practical setup walkthrough with recommended configurations and real usage patterns, see [Use Voice Mode with lucifex](/guides/use-voice-mode-witlucifexifex).
+If you want a practical setup walkthrough with recommended configurations and real usage patterns, see [Use Voice Mode with lucifex](/guides/use-voice-mode-witlucifex).
 
 ## Prerequisites
 
@@ -109,7 +109,7 @@ If `faster-whisper` is installed, voice mode works with **zero API keys** for ST
 
 ## CLI Voice Mode
 
-Voice mode is available in both the **classic CLI** (`lucifex chat`) and the **TUI** lucifexifex --tui`). Behavior is identical across both — same slash commands, same VAD silence detection, same streaming TTS, same hallucination filter. The TUI additionally forwards crash-forensic logs to `~/.lucifex/logs/` so push-to-talk failures on exotic audio backends can be reported with a full stack trace rather than disappearing silently.
+Voice mode is available in both the **classic CLI** (`lucifex chat`) and the **TUI** lucifex --tui`). Behavior is identical across both — same slash commands, same VAD silence detection, same streaming TTS, same hallucination filter. The TUI additionally forwards crash-forensic logs to `~/.lucifex/logs/` so push-to-talk failures on exotic audio backends can be reported with a full stack trace rather than disappearing silently.
 
 ### Quick Start
 

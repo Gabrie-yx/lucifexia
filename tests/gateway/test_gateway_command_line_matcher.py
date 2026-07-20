@@ -25,7 +25,7 @@ ACCEPT = [
     "python -m lucifex_cli/main.py gateway run",
     "python gateway/run.py",
     "lucifex-gateway.exe",
-    "lucifex gateway",          # barelucifexifex gateway` defaults to run
+    "lucifex gateway",          # barelucifex gateway` defaults to run
     "lucifex gateway run",
     # profile selector AFTER the `gateway` token (argv is profile-position
     # agnostic — _apply_profile_override strips --profile/-p anywhere)

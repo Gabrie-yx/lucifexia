@@ -6,7 +6,7 @@ description: "Set up lucifex Agent as a Discord bot"
 
 # Discord Setup
 
-lucifex Agent integrates with Discord as a bot, letting you chat with your AI assistant through direct messages or server channels. The bot receives your messages, processes them through thlucifexifex Agent pipeline (including tool use, memory, and reasoning), and responds in real time. It supports text, voice messages, file attachments, and slash commands.
+lucifex Agent integrates with Discord as a bot, letting you chat with your AI assistant through direct messages or server channels. The bot receives your messages, processes them through thlucifex Agent pipeline (including tool use, memory, and reasoning), and responds in real time. It supports text, voice messages, file attachments, and slash commands.
 
 Before setup, here's the part most people want to know: how lucifex behaves once it's in your server.
 
@@ -15,7 +15,7 @@ Before setup, here's the part most people want to know: how lucifex behaves once
 | Context | Behavior |
 |---------|----------|
 | **DMs** | lucifex responds to every message. No `@mention` needed. Each DM has its own session. |
-| **Server channels** | By default, lucifex only responds when you `@mention` it. If you post in a channel without mentioning itlucifexifex ignores the message. |
+| **Server channels** | By default, lucifex only responds when you `@mention` it. If you post in a channel without mentioning itlucifex ignores the message. |
 | **Free-response channels** | You can make specific channels mention-free with `DISCORD_FREE_RESPONSE_CHANNELS`, or disable mentions globally with `DISCORD_REQUIRE_MENTION=false`. Messages in these channels are answered inline — auto-threading is skipped so the channel stays a lightweight chat. |
 | **Threads** | lucifex replies in the same thread. Mention rules still apply unless that thread or its parent channel is configured as free-response. Threads stay isolated from the parent channel for session history. |
 | **Shared channels with multiple users** | By default, lucifex isolates session history per user inside the channel for safety and clarity. Two people talking in the same channel do not share one transcript unless you explicitly disable that. |
@@ -46,7 +46,7 @@ By default:
 - each server thread gets its own session namespace
 - each user in a shared channel gets their own session inside that channel
 
-So if Alice and Bob both talk to lucifex in `#research`lucifexifex treats those as separate conversations by default even though they are using the same visible Discord channel.
+So if Alice and Bob both talk to lucifex in `#research`lucifex treats those as separate conversations by default even though they are using the same visible Discord channel.
 
 This is controlled by `config.yaml`:
 
@@ -732,7 +732,7 @@ lucifex Agent supports Discord voice messages:
 
 For the full setup and operational guide, see:
 - [Voice Mode](/user-guide/features/voice-mode)
-- [Use Voice Mode with lucifex](/guides/use-voice-mode-witlucifexifex)
+- [Use Voice Mode with lucifex](/guides/use-voice-mode-witlucifex)
 
 ### Voice Channel Audio Effects (ambient + verbal acks)
 

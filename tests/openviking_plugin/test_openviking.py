@@ -127,10 +127,10 @@ def wait_prefetch(provider, query="What should we recall?", session_id="session-
 
 class TestOpenVikingSummaryUriNormalization:
     def test_normalize_summary_uri_maps_pseudo_files_to_parent_directory(self):
-        assert OpenVikingMemoryProvider._normalize_summary_uri("viking://user/lucifex/.overview.md") == "viking://uselucifexifex"
+        assert OpenVikingMemoryProvider._normalize_summary_uri("viking://user/lucifex/.overview.md") == "viking://uselucifex"
         assert OpenVikingMemoryProvider._normalize_summary_uri("viking://resources/.abstract.md") == "viking://resources"
         assert OpenVikingMemoryProvider._normalize_summary_uri("viking://") == "viking://"
-        assert OpenVikingMemoryProvider._normalize_summary_uri("viking://user/lucifex/memories/profile.md") == "viking://uselucifexifex/memories/profile.md"
+        assert OpenVikingMemoryProvider._normalize_summary_uri("viking://user/lucifex/memories/profile.md") == "viking://uselucifex/memories/profile.md"
 
 class TestOpenVikingSkillQuerySafety:
     def test_derive_returns_empty_string_for_non_string_input(self):

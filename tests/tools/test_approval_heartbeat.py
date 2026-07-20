@@ -38,7 +38,7 @@ class TestApprovalHeartbeat:
         _clear_approval_state()
         self._saved_env = {
             k: os.environ.get(k)
-            for k in ("lucifex_GATEWAY_SESSION",lucifexifex_YOLO_MODE",
+            for k in ("lucifex_GATEWAY_SESSION",lucifex_YOLO_MODE",
                       "lucifex_SESSION_KEY")
         }
         os.environ.pop("lucifex_YOLO_MODE", None)

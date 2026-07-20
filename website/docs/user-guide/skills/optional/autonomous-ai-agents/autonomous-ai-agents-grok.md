@@ -282,7 +282,7 @@ Put global preferences in `~/.grok/config.toml` (not project-scoped
 1. **Auth is subscription-gated.** `grok login` requires a SuperGrok or X
    Premium+ subscription. If login fails or there's no `~/.grok/auth.json`,
    confirm the subscription is active before falling back to `XAI_API_KEY`.
-2. **Don't conflate lucifex' xAI auth with the `grok` CLI's auth.*lucifexifex'
+2. **Don't conflate lucifex' xAI auth with the `grok` CLI's auth.*lucifex'
    `x_search` runs on its own xAI OAuth; the standalone `grok` CLI has a
    separate token in `~/.grok/auth.json`. A working `x_search` does NOT mean
    `grok` is logged in.

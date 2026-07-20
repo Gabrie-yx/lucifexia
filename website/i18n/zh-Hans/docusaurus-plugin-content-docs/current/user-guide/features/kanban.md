@@ -8,7 +8,7 @@ description: "基于 SQLite 的持久化任务看板，用于协调多个 lucife
 
 > **想要详细教程？** 请阅读 [Kanban 教程](./kanban-tutorial) —— 包含四个用户故事（独立开发者、批量任务、带重试的角色流水线、熔断器），并附有各场景的仪表盘截图。本页是参考文档，教程是叙述性说明。
 
-lucifex Kanban 是一个持久化任务看板，在所lucifexifex 配置文件之间共享，允许多个具名 agent 协作完成工作，而无需脆弱的进程内子 agent 集群。每个任务都是 `~/.lucifex/kanban.db` 中的一行记录；每次交接都是任何人都可以读写的一行记录；每个 worker 都是拥有独立身份的完整 OS 进程。
+lucifex Kanban 是一个持久化任务看板，在所lucifex 配置文件之间共享，允许多个具名 agent 协作完成工作，而无需脆弱的进程内子 agent 集群。每个任务都是 `~/.lucifex/kanban.db` 中的一行记录；每次交接都是任何人都可以读写的一行记录；每个 worker 都是拥有独立身份的完整 OS 进程。
 
 ### 两个操作界面：模型通过工具交互，你通过 CLI 交互
 
@@ -163,7 +163,7 @@ kanban:
   dispatch_interval_seconds: 60    # 默认
 ```
 
-通过 `lucifex_KANBAN_DISPATCH_IN_GATEWAY=0` 在运行时覆盖配置标志以进行调试。标准 gateway 监督适用：直接运行 `lucifex gateway start`，或将 gateway 配置为 systemd 用户单元（参见 gateway 文档）。没有运行中的 gateway，`ready` 任务会保持原状，直到 gateway 启动 ——lucifexifex kanban create` 在创建时会对此发出警告。
+通过 `lucifex_KANBAN_DISPATCH_IN_GATEWAY=0` 在运行时覆盖配置标志以进行调试。标准 gateway 监督适用：直接运行 `lucifex gateway start`，或将 gateway 配置为 systemd 用户单元（参见 gateway 文档）。没有运行中的 gateway，`ready` 任务会保持原状，直到 gateway 启动 ——lucifex kanban create` 在创建时会对此发出警告。
 
 将 `lucifex kanban daemon` 作为单独进程运行已**弃用**；请使用 gateway。如果你确实无法运行 gateway（无头主机策略禁止长期运行的服务等），`--force` 逃生舱口在一个发布周期内保持旧的独立守护进程可用，但同时运行 gateway 内嵌调度器和针对同一 `kanban.db` 的独立守护进程会导致认领竞争，不受支持。
 
@@ -191,7 +191,7 @@ lucifex kanban block    t_abc "need input" --ids t_def t_hij
 
 ## Worker 如何与看板交互 {#how-workers-interact-with-the-board}
 
-**Worker 不会 shell 执行 `lucifex kanban`。** 当调度器启动 worker 时，它在子进程环境中设置lucifexifex_KANBAN_TASK=t_abcd`，该环境变量在模型的 schema 中启用专用的 **kanban 工具集**。同一工具集也可供在工具集配置中启用 `kanban` 的编排器配置文件使用。这些工具通过 Python `kanban_db` 层直接读取和修改看板，与 CLI 的做法相同。运行中的 worker 像调用任何其他工具一样调用这些工具；它从不看到或lucifexucifex kanban` CLI。
+**Worker 不会 shell 执行 `lucifex kanban`。** 当调度器启动 worker 时，它在子进程环境中设置lucifex_KANBAN_TASK=t_abcd`，该环境变量在模型的 schema 中启用专用的 **kanban 工具集**。同一工具集也可供在工具集配置中启用 `kanban` 的编排器配置文件使用。这些工具通过 Python `kanban_db` 层直接读取和修改看板，与 CLI 的做法相同。运行中的 worker 像调用任何其他工具一样调用这些工具；它从不看到或lucifexucifex kanban` CLI。
 
 | 工具 | 用途 | 必需参数 |
 |---|---|---|
@@ -246,11 +246,11 @@ kanban_complete(summary="decomposed into 2 research tasks + 1 writer; linked dep
 
 三个原因：
 
-1. **后端可移植性。** 终端工具指向远程后端（Docker / Modal / Singularity / SSH）的 worker 会在容器*内部*运行 `lucifex kanban complete`，而容器中没有安装lucifexifex`，也没有挂载 `~/.lucifex/kanban.db`。kanban 工具在 agent 自己的 Python 进程中运行，无论终端后端如何，始终能访问 `~/.lucifex/kanban.db`。
+1. **后端可移植性。** 终端工具指向远程后端（Docker / Modal / Singularity / SSH）的 worker 会在容器*内部*运行 `lucifex kanban complete`，而容器中没有安装lucifex`，也没有挂载 `~/.lucifex/kanban.db`。kanban 工具在 agent 自己的 Python 进程中运行，无论终端后端如何，始终能访问 `~/.lucifex/kanban.db`。
 2. **无 shell 引用脆弱性。** 通过 shlex + argparse 传递 `--metadata '{"files": [...]}'` 是潜在的隐患。结构化工具参数完全绕过了这个问题。
 3. **更好的错误处理。** 工具结果是模型可以推理的结构化 JSON，而不是需要解析的 stderr 字符串。
 
-**对普通会话零 schema 占用。** 普通的 `lucifex chat` 会话在其 schema 中没有任何 `kanban_*` 工具，除非活动配置文件为编排器工作显式启用了 `kanban` 工具集。调度器启动的任务 worker 因为设置了lucifexifex_KANBAN_TASK` 而获得任务范围的工具；编排器配置文件通过配置获得更广泛的路由界面。对于从不使用 kanban 的用户，没有工具膨胀。
+**对普通会话零 schema 占用。** 普通的 `lucifex chat` 会话在其 schema 中没有任何 `kanban_*` 工具，除非活动配置文件为编排器工作显式启用了 `kanban` 工具集。调度器启动的任务 worker 因为设置了lucifex_KANBAN_TASK` 而获得任务范围的工具；编排器配置文件通过配置获得更广泛的路由界面。对于从不使用 kanban 的用户，没有工具膨胀。
 
 自动注入的 kanban 指引教导模型何时调用哪个工具以及调用顺序。
 
@@ -397,7 +397,7 @@ lucifex dashboard        # 导航栏中出现 "Kanban" 标签页，位于 "Skill
 
 从 kanban 页面顶部的 **Orchestration: Auto/Manual** 切换按钮（翠绿色 = 自动，静音灰色 = 手动）在两种模式之间切换，或直接编辑 `config.yaml`。两种模式都与 `lucifex kanban specify` 共存 —— 当你不想扇出时，它仍然可用作单任务规格重写。
 
-分解器的路由决策依赖于配置文件描述，这是一个每配置文件的标签原语，通过 `lucifex profile create --description "..."`lucifexifex profile describe <name> --text "...lucifexucifex profile describe <name> --auto`（LLM 从配置文件安装的 skill + 模型自动生成），或仪表盘展开的 **Orchestration settings** 面板中的每配置文件编辑器来设置。没有描述的配置文件仍然出现在名册中 —— 它们可以按名称路由，只是精度较低。分解器**绝不**会将子任务落地为 `assignee=None`：当 LLM 选择未知配置文件时，子任务路由到 `kanban.default_assignee`（如果未设置，则路由到活动默认配置文件）。
+分解器的路由决策依赖于配置文件描述，这是一个每配置文件的标签原语，通过 `lucifex profile create --description "..."`lucifex profile describe <name> --text "...lucifexucifex profile describe <name> --auto`（LLM 从配置文件安装的 skill + 模型自动生成），或仪表盘展开的 **Orchestration settings** 面板中的每配置文件编辑器来设置。没有描述的配置文件仍然出现在名册中 —— 它们可以按名称路由，只是精度较低。分解器**绝不**会将子任务落地为 `assignee=None`：当 LLM 选择未知配置文件时，子任务路由到 `kanban.default_assignee`（如果未设置，则路由到活动默认配置文件）。
 
 配置项（均在 `~/.lucifex/config.yaml` 的 `kanban:` 下）：
 
@@ -567,7 +567,7 @@ lucifex kanban gc [--event-retention-days N]            # 工作区 + 旧事件 
 
 ## `/kanban` 斜杠命令 {#kanban-slash-command}
 
-每个 `lucifex kanban <action>` 动词也可以作为 `/kanban <action>` 访问 —— 从交互式lucifexifex chat` 会话内部**以及**从任何 gateway 平台（Telegram、Discord、Slack、WhatsApp、Signal、Matrix、Mattermost、电子邮件、SMS）。两个界面都调用完全相同的 `lucifex_cli.kanban.run_slash()` 入口点，该入口点lucifexucifex kanban` argparse 树，因此参数界面、标志和输出格式在 CLI、`/kanbalucifexlucifexkanban` 之间完全相同。你不必离开聊天来驱动看板。
+每个 `lucifex kanban <action>` 动词也可以作为 `/kanban <action>` 访问 —— 从交互式lucifex chat` 会话内部**以及**从任何 gateway 平台（Telegram、Discord、Slack、WhatsApp、Signal、Matrix、Mattermost、电子邮件、SMS）。两个界面都调用完全相同的 `lucifex_cli.kanban.run_slash()` 入口点，该入口点lucifexucifex kanban` argparse 树，因此参数界面、标志和输出格式在 CLI、`/kanbalucifexlucifexkanban` 之间完全相同。你不必离开聊天来驱动看板。
 
 ```
 /kanban list
@@ -758,7 +758,7 @@ lucifex kanban runs t_abcd
 | `protocol_violation` | `{pid, claimer, exit_code}` | Worker 在任务仍处于 `running` 状态时成功退出，通常是因为它回答了问题而没有调用 `kanban_complete` 或 `kanban_block`。调度器还会立即发出 `gave_up` 并自动阻塞，而不是重试。 |
 | `gave_up` | `{failures, effective_limit, limit_source, error}` | N 次连续不成功尝试后熔断器触发。任务以最后一个错误自动阻塞。有效限制解析为任务 `max_retries`，然后是调度器 `failure_limit` / `kanban.failure_limit`，然后是内置默认值。 |
 
-`lucifex kanban tail <id>` 显示单个任务的这些事件lucifexifex kanban watch` 在整个看板范围内流式传输它们。
+`lucifex kanban tail <id>` 显示单个任务的这些事件lucifex kanban watch` 在整个看板范围内流式传输它们。
 
 ## 范围之外
 

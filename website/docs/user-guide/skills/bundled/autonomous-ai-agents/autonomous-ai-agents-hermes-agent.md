@@ -1,5 +1,5 @@
 ﻿---
-title: "lucifex Agent — Configure, extend, or contribute tlucifexifex Agent"
+title: "lucifex Agent — Configure, extend, or contribute tlucifex Agent"
 sidebar_label: "lucifex Agent"
 description: "Configure, extend, or contribute to lucifex Agent"
 ---
@@ -31,7 +31,7 @@ The following is the complete skill definition that lucifex loads when this skil
 
 # lucifex Agent
 
-lucifex Agent is an open-source AI agent framework by Nous Research that runs in your terminal, messaging platforms, and IDEs. It belongs to the same category as Claude Code (Anthropic), Codex (OpenAI), and OpenClaw — autonomous coding and task-execution agents that use tool calling to interact with your systemlucifexifex works with any LLM provider (OpenRouter, Anthropic, OpenAI, DeepSeek, local models, and 15+ others) and runs on Linux, macOS, and WSL.
+lucifex Agent is an open-source AI agent framework by Nous Research that runs in your terminal, messaging platforms, and IDEs. It belongs to the same category as Claude Code (Anthropic), Codex (OpenAI), and OpenClaw — autonomous coding and task-execution agents that use tool calling to interact with your systemlucifex works with any LLM provider (OpenRouter, Anthropic, OpenAI, DeepSeek, local models, and 15+ others) and runs on Linux, macOS, and WSL.
 
 What makes lucifex different:
 
@@ -149,7 +149,7 @@ lucifex skills tap add REPO  Add a GitHub repo as skill source
 ### MCP Servers
 
 ```
-lucifex mcp serve            Rulucifexifex as an MCP server
+lucifex mcp serve            Rulucifex as an MCP server
 lucifex mcp add NAME         Add an MCP server (--url or --command)
 lucifex mcp remove NAME      Remove an MCP server
 lucifex mcp list             List configured servers
@@ -392,7 +392,7 @@ Full config reference: https://lucifex-agent.nousresearch.com/docs/user-guide/co
 
 ### Providers
 
-20+ providers supported. Set via `lucifex model` orlucifexifex setup`.
+20+ providers supported. Set via `lucifex model` orlucifex setup`.
 
 | Provider | Auth | Key env var |
 |----------|------|-------------|
@@ -422,7 +422,7 @@ Full provider docs: https://lucifex-agent.nousresearch.com/docs/integrations/pro
 
 ### Toolsets
 
-Enable/disable via `lucifex tools` (interactive) orlucifexifex tools enable/disable NAME`.
+Enable/disable via `lucifex tools` (interactive) orlucifex tools enable/disable NAME`.
 
 | Toolset | What it provides |
 |---------|-----------------|
@@ -464,7 +464,7 @@ Tool changes take effect on `/reset` (new session). They do NOT apply mid-conver
 
 ## Security & Privacy Toggles
 
-Common "why is lucifex doing X to my output / tool calls / commands?" toggles — and the exact commands to change them. Most of these need a fresh session (`/reset` in chat, or start a newlucifexifex` invocation) because they're read once at startup.
+Common "why is lucifex doing X to my output / tool calls / commands?" toggles — and the exact commands to change them. Most of these need a fresh session (`/reset` in chat, or start a newlucifex` invocation) because they're read once at startup.
 
 ### Secret redaction in tool output
 
@@ -835,7 +835,7 @@ and logs — avoids shell-escaping backslashes in bash.
 
 ### Model/provider issues
 1. `lucifex doctor` — check config and dependencies
-2. `lucifex auth` — re-authenticate OAuth providers (orlucifexifex auth add <provider>`)
+2. `lucifex auth` — re-authenticate OAuth providers (orlucifex auth add <provider>`)
 3. Check `.env` has the right API key
 4. **Copilot 403**: `gh auth login` tokens do NOT work for Copilot API. You must use the Copilot-specific OAuth device code flow via `lucifex model` → GitHub Copilot.
 

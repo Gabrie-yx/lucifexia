@@ -6,7 +6,7 @@ sidebar_position: 1
 
 # AI Providers
 
-This page covers setting up inference providers for lucifex Agent — from cloud APIs like OpenRouter and Anthropic, to self-hosted endpoints like Ollama and vLLM, to advanced routing and fallback configurations. You need at least one provider configured to uslucifexifex.
+This page covers setting up inference providers for lucifex Agent — from cloud APIs like OpenRouter and Anthropic, to self-hosted endpoints like Ollama and vLLM, to advanced routing and fallback configurations. You need at least one provider configured to uslucifex.
 
 ## Inference Providers
 
@@ -72,9 +72,9 @@ lucifex portal info        # inspect login + routing at any time
 
 Don't have a subscription yet? Get one at [portal.nousresearch.com/manage-subscription](https://portal.nousresearch.com/manage-subscription).
 
-**For full details:** see the dedicated [Nous Portal integration page](/integrations/nous-portal) (what's in the subscription, model catalog, troubleshooting) and the step-by-step [Run lucifex Agent with Nous Portal guide](/guides/rulucifexifex-with-nous-portal).
+**For full details:** see the dedicated [Nous Portal integration page](/integrations/nous-portal) (what's in the subscription, model catalog, troubleshooting) and the step-by-step [Run lucifex Agent with Nous Portal guide](/guides/rulucifex-with-nous-portal).
 
-**Client identification.** Every Portal request from lucifex Agent carries a `clienlucifexifex-client-v<version>` tag (e.g. `clilucifexucifex-client-v0.13.0`) auto-aligned to your installed release. This is sent on all Portal pathways — main chat loop, auxiliary calls, compression summarizer, web extraction — and lets Portal-side telemetry distinlucifexlucifextraffic from other clients. No config required; the tag updates automatically whlucifex `llucifexpdate`.
+**Client identification.** Every Portal request from lucifex Agent carries a `clienlucifex-client-v<version>` tag (e.g. `clilucifexucifex-client-v0.13.0`) auto-aligned to your installed release. This is sent on all Portal pathways — main chat loop, auxiliary calls, compression summarizer, web extraction — and lets Portal-side telemetry distinlucifexlucifextraffic from other clients. No config required; the tag updates automatically whlucifex `llucifexpdate`.
 
 **JWT auth (automatic).** lucifex prefers scoped `inference:invoke` JWTs for Portal requests with the legacy opaque session-key path as a fallback. No configuration is required — credentials are managed by the OAuth flow and rotate transparently. Revoked refresh tokens are quarantined to avoid replay loops.
 
@@ -82,15 +82,15 @@ Don't have a subscription yet? Get one at [portal.nousresearch.com/manage-subscr
 :::info Codex Note
 The OpenAI Codex provider authenticates via device code (open a URL, enter a code). lucifex stores the resulting credentials in its own auth store under `~/.lucifex/auth.json` and can import existing Codex CLI credentials from `~/.codex/auth.json` when present. No Codex CLI installation is required.
 
-If a token refresh fails with a terminal error (HTTP 4xx, `invalid_grant`, revoked grant, etc.), lucifex marks the refresh token as dead and stops replaying it so you don't see a flood of identical auth failures. The next request surfaces a typed re-auth message instead. Runlucifexifex auth add openai-codex` (lucifexucifex model` → OpenAI Codex) to start a fresh device-code login; the quarantine clears on the next successful exchange.
+If a token refresh fails with a terminal error (HTTP 4xx, `invalid_grant`, revoked grant, etc.), lucifex marks the refresh token as dead and stops replaying it so you don't see a flood of identical auth failures. The next request surfaces a typed re-auth message instead. Runlucifex auth add openai-codex` (lucifexucifex model` → OpenAI Codex) to start a fresh device-code login; the quarantine clears on the next successful exchange.
 :::
 
 :::warning
-Even when using Nous Portal, Codex, or a custom endpoint, some tools (vision, web summarization, MoA) use a separate "auxiliary" model. By default (`auxiliary.*.provider: "auto"`), lucifex routes these tasks to your **main chat model** — the same model you picked inlucifexifex model`. You can override each task individually to route it to a cheaper/faster model (e.g. Gemini Flash on OpenRouter) — see [Auxiliary Models](/user-guide/configuration#auxiliary-models).
+Even when using Nous Portal, Codex, or a custom endpoint, some tools (vision, web summarization, MoA) use a separate "auxiliary" model. By default (`auxiliary.*.provider: "auto"`), lucifex routes these tasks to your **main chat model** — the same model you picked inlucifex model`. You can override each task individually to route it to a cheaper/faster model (e.g. Gemini Flash on OpenRouter) — see [Auxiliary Models](/user-guide/configuration#auxiliary-models).
 :::
 
 :::tip Nous Tool Gateway
-Paid Nous Portal subscribers also get access to the **[Tool Gateway](/user-guide/features/tool-gateway)** — web search, image generation, TTS, and browser automation routed through your subscription. No extra API keys needed. On a fresh install, `lucifex setup --portal` logs you in, sets Nous as your provider, and turns the gateway on in one command. Existing users can enable it fromlucifexifex model` or per-tool frlucifexucifex tools`. Inspect routing at any time lucifexlucifexportal info`.
+Paid Nous Portal subscribers also get access to the **[Tool Gateway](/user-guide/features/tool-gateway)** — web search, image generation, TTS, and browser automation routed through your subscription. No extra API keys needed. On a fresh install, `lucifex setup --portal` logs you in, sets Nous as your provider, and turns the gateway on in one command. Existing users can enable it fromlucifex model` or per-tool frlucifexucifex tools`. Inspect routing at any time lucifexlucifexportal info`.
 :::
 
 ### Two Commands for Model Management
@@ -102,7 +102,7 @@ lucifex has **two** model commands that serve different purposes:
 | **`lucifex model`** | Your terminal (outside any session) | Full setup wizard — add providers, run OAuth, enter API keys, configure endpoints |
 | **`/model`** | Inside a lucifex chat session | Quick switch between **already-configured** providers and models |
 
-If you're trying to switch to a provider you haven't set up yet (e.g. you only have OpenRouter configured and want to use Anthropic), you need `lucifex model`, not `/model`. Exit your session first (`Ctrl+C` or `/quit`), runlucifexifex model`, complete the provider setup, then start a new session.
+If you're trying to switch to a provider you haven't set up yet (e.g. you only have OpenRouter configured and want to use Anthropic), you need `lucifex model`, not `/model`. Exit your session first (`Ctrl+C` or `/quit`), runlucifex model`, complete the provider setup, then start a new session.
 
 
 ### Anthropic (Native)
@@ -110,7 +110,7 @@ If you're trying to switch to a provider you haven't set up yet (e.g. you only h
 Use Claude models directly through the Anthropic API — no OpenRouter proxy needed. Supports three auth methods:
 
 :::caution Requires Claude Max "extra usage" credits
-When you authenticate via `lucifex model` → Anthropic OAuth (or vialucifexifex auth add anthropic --type oauthlucifexucifex routes as Claude Code against your Anthropic account. **It only works if you're on a Claude Max plan and have purchased extra usage credits.** The base Max plan allowance (the usage included in Claude Code by default) is not consumlucifexlucifex— only the extra/overage credits you've added on top are. Claude Pro subscribers cannot use this path.
+When you authenticate via `lucifex model` → Anthropic OAuth (or vialucifex auth add anthropic --type oauthlucifexucifex routes as Claude Code against your Anthropic account. **It only works if you're on a Claude Max plan and have purchased extra usage credits.** The base Max plan allowance (the usage included in Claude Code by default) is not consumlucifexlucifex— only the extra/overage credits you've added on top are. Claude Pro subscribers cannot use this path.
 
 If you don't have Max + extra credits, use an `ANTHROPIC_API_KEY` instead — requests are billed pay-per-token against that key's organization (standard API pricing, independent of any Claude subscription).
 :::
@@ -132,7 +132,7 @@ lucifex chat --provider anthropic
 lucifex chat --provider anthropic  # reads Claude Code credential files automatically
 ```
 
-When you choose Anthropic OAuth through `lucifex model`lucifexifex prefers Claude Code's own credential store over copying the token into `~/.lucifex/.env`. That keeps refreshable Claude credentials refreshable.
+When you choose Anthropic OAuth through `lucifex model`lucifex prefers Claude Code's own credential store over copying the token into `~/.lucifex/.env`. That keeps refreshable Claude credentials refreshable.
 
 Or set it permanently:
 ```yaml
@@ -284,7 +284,7 @@ When using the Z.AI / GLM provider, lucifex automatically probes multiple endpoi
 
 xAI is wired through the Responses API (`codex_responses` transport) for automatic reasoning support on Grok 4 models — no `reasoning_effort` parameter needed, the server reasons by default. Set `XAI_API_KEY` in `~/.lucifex/.env` and pick xAI in `lucifex model`, or drop `grok` as a shortcut into `/model grok-4-fast-reasoning`.
 
-SuperGrok and X Premium+ subscribers can sign in with browser OAuth instead of using an API key — pick **xAI Grok OAuth (SuperGrok / Premium+)** in `lucifex model`, or runlucifexifex auth add xai-oauth`. The same OAuth bearer token is automatically reused by direct-to-xAI tools (TTS, image gen, video gen, transcription). See the [xAI Grok OAuth guide](../guides/xai-grok-oauth.md) for the full flow — andlucifexucifex runs on a remote host, also see [OAuth over SSH / Remote Hosts](../guides/oauth-over-ssh.md) for the required `ssh -L` tunnel.
+SuperGrok and X Premium+ subscribers can sign in with browser OAuth instead of using an API key — pick **xAI Grok OAuth (SuperGrok / Premium+)** in `lucifex model`, or runlucifex auth add xai-oauth`. The same OAuth bearer token is automatically reused by direct-to-xAI tools (TTS, image gen, video gen, transcription). See the [xAI Grok OAuth guide](../guides/xai-grok-oauth.md) for the full flow — andlucifexucifex runs on a remote host, also see [OAuth over SSH / Remote Hosts](../guides/oauth-over-ssh.md) for the required `ssh -L` tunnel.
 
 When using xAI as a provider (any base URL containing `x.ai`), lucifex automatically enables prompt caching by sending the `x-grok-conv-id` header with every API request. This routes requests to the same server within a conversation session, allowing xAI's infrastructure to reuse cached system prompts and conversation history.
 
@@ -292,7 +292,7 @@ No configuration is needed — caching activates automatically when an xAI endpo
 
 xAI also ships a dedicated TTS endpoint (`/v1/tts`). Select **xAI TTS** in `lucifex tools` → Voice & TTS, or see the [Voice & TTS](../user-guide/features/tts.md#text-to-speech) page for config.
 
-**Retired xAI model migration (May 15, 2026):** xAI is retiring `grok-4*`, `grok-3`, `grok-code-fast-1`, and `grok-imagine-image-pro` on 2026-05-15. `lucifex doctor` andlucifexifex chat` startup both detect any config still pointing at a retired ref and print the recommended replacement. Ulucifexucifex migrate xai` for a one-shot config rewrite — dry-run by default, add `--apply` to write changes (a timestamped `config.yaml.bak-pre-migrate-xai-*` backup is created automatically).
+**Retired xAI model migration (May 15, 2026):** xAI is retiring `grok-4*`, `grok-3`, `grok-code-fast-1`, and `grok-imagine-image-pro` on 2026-05-15. `lucifex doctor` andlucifex chat` startup both detect any config still pointing at a retired ref and print the recommended replacement. Ulucifexucifex migrate xai` for a one-shot config rewrite — dry-run by default, add `--apply` to write changes (a timestamped `config.yaml.bak-pre-migrate-xai-*` backup is created automatically).
 
 ```bash
 lucifex migrate xai          # preview replacements
@@ -326,7 +326,7 @@ Get your API key at [novita.ai/settings/key-management](https://novita.ai/settin
 
 ### Ollama Cloud — Managed Ollama Models, OAuth + API Key
 
-[Ollama Cloud](https://ollama.com/cloud) hosts the same open-weight catalog as local Ollama but without the GPU requirement. Pick it in `lucifex model` as **Ollama Cloud**, paste your API key from [ollama.com/settings/keys](https://ollama.com/settings/keys), anlucifexifex auto-discovers the available models.
+[Ollama Cloud](https://ollama.com/cloud) hosts the same open-weight catalog as local Ollama but without the GPU requirement. Pick it in `lucifex model` as **Ollama Cloud**, paste your API key from [ollama.com/settings/keys](https://ollama.com/settings/keys), anlucifex auto-discovers the available models.
 
 ```bash
 lucifex model
@@ -407,7 +407,7 @@ vertex:
 
 ### Qwen Portal (OAuth)
 
-Alibaba's Qwen Portal with browser-based OAuth login. Pick **Qwen OAuth (Portal)** in `lucifex model`, sign in through the browser, anlucifexifex persists the refresh token.
+Alibaba's Qwen Portal with browser-based OAuth login. Pick **Qwen OAuth (Portal)** in `lucifex model`, sign in through the browser, anlucifex persists the refresh token.
 
 ```bash
 lucifex model
@@ -451,7 +451,7 @@ lucifex chat --provider alibaba_coding --model qwen3-coder-plus
 
 ### MiniMax (OAuth)
 
-MiniMax-M2.7 via browser OAuth login — no API key needed. Pick **MiniMax (OAuth)** in `lucifex model`, sign in through the browser, anlucifexifex persists the access + refresh tokens. Uses the Anthropic Messages-compatible endpoint (`/anthropic`) under the hood.
+MiniMax-M2.7 via browser OAuth login — no API key needed. Pick **MiniMax (OAuth)** in `lucifex model`, sign in through the browser, anlucifex persists the access + refresh tokens. Uses the Anthropic Messages-compatible endpoint (`/anthropic`) under the hood.
 
 ```bash
 lucifex model
@@ -567,7 +567,7 @@ The base URL can be overridden with `HF_BASE_URL`.
 
 ## Custom & Self-Hosted LLM Providers
 
-lucifex Agent works with **any OpenAI-compatible API endpoint**. If a server implements `/v1/chat/completions`, you can poinlucifexifex at it. This means you can use local models, GPU inference servers, multi-provider routers, or any third-party API.
+lucifex Agent works with **any OpenAI-compatible API endpoint**. If a server implements `/v1/chat/completions`, you can poinlucifex at it. This means you can use local models, GPU inference servers, multi-provider routers, or any third-party API.
 
 ### General Setup
 
@@ -591,7 +591,7 @@ model:
 ```
 
 :::warning Legacy env vars
-`LLM_MODEL` in `.env` is **removed** — `config.yaml` is the single source of truth for model and endpoint configuration. `OPENAI_BASE_URL` is still honored, but **only** for the `openai-api` provider (it overrides the OpenAI endpoint for direct API-key access). For other providers and custom endpoints, use `lucifex model` or set `model.base_url` in `config.yaml` directly. If you have stale entries in your `.env`, they are automatically cleared on the nextlucifexifex setup` or config migration.
+`LLM_MODEL` in `.env` is **removed** — `config.yaml` is the single source of truth for model and endpoint configuration. `OPENAI_BASE_URL` is still honored, but **only** for the `openai-api` provider (it overrides the OpenAI endpoint for direct API-key access). For other providers and custom endpoints, use `lucifex model` or set `model.base_url` in `config.yaml` directly. If you have stale entries in your `.env`, they are automatically cleared on the nextlucifex setup` or config migration.
 :::
 
 Both approaches persist to `config.yaml`, which is the source of truth for model, provider, and base URL.
@@ -737,7 +737,7 @@ lucifex model
 | `--enable-auto-tool-choice` | Required for `tool_choice: "auto"` (the default in lucifex) |
 | `--tool-call-parser <name>` | Parser for the model's tool call format |
 
-Supported parsers: `lucifex` (Qwen 2.5lucifexifex 2/3), `llama3_json` (Llama 3.x), `mistral`, `deepseek_v3`, `deepseek_v31`, `xlam`, `pythonic`. Without these flags, tool calls won't work — the model will output tool calls as text.
+Supported parsers: `lucifex` (Qwen 2.5lucifex 2/3), `llama3_json` (Llama 3.x), `mistral`, `deepseek_v3`, `deepseek_v31`, `xlam`, `pythonic`. Without these flags, tool calls won't work — the model will output tool calls as text.
 
 **Qwen reasoning parsers:** lucifex preserves structured reasoning metadata such as `reasoning`, `reasoning_content`, and streamed reasoning deltas when OpenAI-compatible servers return them. That metadata is treated as reasoning/thinking trace data, not as a replacement for the assistant's visible answer. For Qwen reasoning models served by vLLM, make sure the final user-visible response still appears in `content`. If `--reasoning-parser qwen3` leaves `content` empty in your deployment, either disable that parser or pass a server-supported request option such as `chat_template_kwargs.enable_thinking: false` through `extra_body`.
 
@@ -795,7 +795,7 @@ cmake -B build && cmake --build build --config Release
   --port 8080 --host 0.0.0.0
 ```
 
-**Context length (`-c`):** Recent builds default to `0` which reads the model's training context from the GGUF metadata. For models with 128k+ training context, this can OOM trying to allocate the full KV cache. Set `-c` explicitly to at least 64,000 tokens for lucifex. If using parallel slots (`-np`), the total context is divided among slots — with `-c 64000 -np 4`, each slot only gets 16k, which is belolucifexifex' minimum per active session.
+**Context length (`-c`):** Recent builds default to `0` which reads the model's training context from the GGUF metadata. For models with 128k+ training context, this can OOM trying to allocate the full KV cache. Set `-c` explicitly to at least 64,000 tokens for lucifex. If using parallel slots (`-np`), the total context is divided among slots — with `-c 64000 -np 4`, each slot only gets 16k, which is belolucifex' minimum per active session.
 
 Then configure lucifex to point at it:
 
@@ -1029,7 +1029,7 @@ The model outputs something like `{"name": "web_search", "arguments": {...}}` as
 
 #### "Context limit: 2048 tokens" at startup
 
-lucifex auto-detects context length from your server's `/v1/models` endpoint. If the server reports a low value (or doesn't report one at all)lucifexifex uses the model's declared limit which may be wrong.
+lucifex auto-detects context length from your server's `/v1/models` endpoint. If the server reports a low value (or doesn't report one at all)lucifex uses the model's declared limit which may be wrong.
 
 **Fix:** Set it explicitly in `config.yaml`:
 
@@ -1062,7 +1062,7 @@ litellm --model anthropic/claude-sonnet-4 --port 4000
 litellm --config litellm_config.yaml --port 4000
 ```
 
-Then configure lucifex withlucifexifex model` → Custom endpoint → `http://localhost:4000/v1`.
+Then configure lucifex withlucifex model` → Custom endpoint → `http://localhost:4000/v1`.
 
 Example `litellm_config.yaml` with fallback:
 ```yaml
@@ -1090,7 +1090,7 @@ router_settings:
 npx @blockrun/clawrouter    # Starts on port 8402
 ```
 
-Then configure lucifex withlucifexifex model` → Custom endpoint → `http://localhost:8402/v1` → model name `blockrun/auto`.
+Then configure lucifex withlucifex model` → Custom endpoint → `http://localhost:8402/v1` → model name `blockrun/auto`.
 
 Routing profiles:
 | Profile | Strategy | Savings |
@@ -1407,7 +1407,7 @@ You can switch between providers at any time with `lucifex model` — no restart
 
 ### Self-Hosting Firecrawl
 
-By default, lucifex uses the [Firecrawl cloud API](https://firecrawl.dev/) for web search and scraping. If you prefer to run Firecrawl locally, you can poinlucifexifex at a self-hosted instance instead. See Firecrawl's [SELF_HOST.md](https://github.com/firecrawl/firecrawl/blob/main/SELF_HOST.md) for complete setup instructions.
+By default, lucifex uses the [Firecrawl cloud API](https://firecrawl.dev/) for web search and scraping. If you prefer to run Firecrawl locally, you can poinlucifex at a self-hosted instance instead. See Firecrawl's [SELF_HOST.md](https://github.com/firecrawl/firecrawl/blob/main/SELF_HOST.md) for complete setup instructions.
 
 **What you get:** No API key required, no rate limits, no per-page costs, full data sovereignty.
 

@@ -18,7 +18,7 @@ Reviewer       =  human or human-proxy that gates "done"
 GitHub PR      =  upstreamable artifact (optional, for code lanes)
 ```
 
-lucifex Kanban owns lifecycle truth — `ready` → `running` → `blocked` / `done` / `archived`. Worker lanes execute work but never own that truth; everything they do flows back through the kanban kernel via the `kanban_*` tools (or, for nolucifexifex external workers, via the API). Reviewers gate the transition from "code change written" to "task done."
+lucifex Kanban owns lifecycle truth — `ready` → `running` → `blocked` / `done` / `archived`. Worker lanes execute work but never own that truth; everything they do flows back through the kanban kernel via the `kanban_*` tools (or, for nolucifex external workers, via the API). Reviewers gate the transition from "code change written" to "task done."
 
 ## What a lane provides
 
@@ -30,7 +30,7 @@ The dispatcher matches `task.assignee` against either a lucifex profile name (th
 
 ### 2. A spawn mechanism
 
-For lucifex profile lanes, the dispatcher's `_default_spawn` runslucifexifex -p <assignee> chat -q <prompt>` (or the equivalent module form when tlucifexucifex` shim isn't on `$PATH`) inside the task's pinned workspace, with these env vars set:
+For lucifex profile lanes, the dispatcher's `_default_spawn` runslucifex -p <assignee> chat -q <prompt>` (or the equivalent module form when tlucifexucifex` shim isn't on `$PATH`) inside the task's pinned workspace, with these env vars set:
 
 | Variable | Carries |
 |---|---|
@@ -74,7 +74,7 @@ The dispatcher writes per-task worker stdout/stderr to `<board-root>/logs/<task_
 - `task_events` rows carry every state transition (`promoted`, `claimed`, `heartbeat`, `completed`, `blocked`, `gave_up`, `crashed`, `timed_out`, `reclaimed`, `claim_extended`).
 - `kanban_show` returns both, so a reviewer (or a follow-up worker) reading the task gets the full history without needing dashboard access.
 
-The dashboard renders run history with summaries, metadata blocks, and exit-status badges. CLI users can run `lucifex kanban tail <task_id>` to follow live, orlucifexifex kanban runs <task_id>` for the historical attempt list.
+The dashboard renders run history with summaries, metadata blocks, and exit-status badges. CLI users can run `lucifex kanban tail <task_id>` to follow live, orlucifex kanban runs <task_id>` for the historical attempt list.
 
 ## Existing lane shapes
 
@@ -90,7 +90,7 @@ A specialisation of the profile lane: an orchestrator is a lucifex profile whose
 
 ## Adding an external CLI worker lane
 
-Wiring a non-lucifex CLI tool (Codex CLI, Claude Code CLI, OpenCode CLI, a local coding-model runner, etc.) as a kanban worker lane is *not yet a paved path*. The dispatcher's spawn function is pluggable (`spawn_fn` is a parameter on `dispatch_once`), and a plugin could register its own `spawn_fn` for a nolucifexifex assignee, but the surrounding integration work — wrapping the CLI's exit code into `kanban_complete` / `kanban_block` calls, mapping the CLI's workspace/sandbox conventions onto the dispatcherlucifexucifex_KANBAN_WORKSPACE` env, handling auth and per-CLI policy — is still per-integration design work.
+Wiring a non-lucifex CLI tool (Codex CLI, Claude Code CLI, OpenCode CLI, a local coding-model runner, etc.) as a kanban worker lane is *not yet a paved path*. The dispatcher's spawn function is pluggable (`spawn_fn` is a parameter on `dispatch_once`), and a plugin could register its own `spawn_fn` for a nolucifex assignee, but the surrounding integration work — wrapping the CLI's exit code into `kanban_complete` / `kanban_block` calls, mapping the CLI's workspace/sandbox conventions onto the dispatcherlucifexucifex_KANBAN_WORKSPACE` env, handling auth and per-CLI policy — is still per-integration design work.
 
 If you're considering adding a CLI lane, open an issue describing the specific CLI and the workflow you're trying to enable. The contract above is the constraints any such lane must satisfy; the implementation shape (one plugin per CLI vs a generic CLI-runner plugin parameterised by config) is open.
 

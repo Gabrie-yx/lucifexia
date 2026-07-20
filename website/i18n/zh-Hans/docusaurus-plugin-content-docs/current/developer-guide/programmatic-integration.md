@@ -95,7 +95,7 @@ GET  /v1/models                  列出 lucifex-agent
 GET  /health, /health/detailed
 ```
 
-配置、请求头（`X-lucifex-Session-Id`、`lucifexifex-Session-Key`）及前端接入：[API Server](../user-guide/features/api-server)。
+配置、请求头（`X-lucifex-Session-Id`、`lucifex-Session-Key`）及前端接入：[API Server](../user-guide/features/api-server)。
 
 ---
 

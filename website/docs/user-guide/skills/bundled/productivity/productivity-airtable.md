@@ -40,7 +40,7 @@ Work with Airtable's REST API directly via `curl` using the `terminal` tool. No 
    - `data.records:write` — create / update / delete rows
    - `schema.bases:read` — list bases and tables
 3. **Important:** in the same token UI, add each base you want to access to the token's **Access** list. PATs are scoped per-base — a valid token on the wrong base returns `403`.
-4. Store the token in `${LUCIFEX_HOME:-~/.lucifex}/.env` (or vialucifexifex setup`):
+4. Store the token in `${LUCIFEX_HOME:-~/.lucifex}/.env` (or vialucifex setup`):
    ```
    AIRTABLE_API_KEY=pat_your_token_here
    ```

@@ -320,7 +320,7 @@ export const de: Translations = {
     enableRuntime: "Aktivieren",
     forceReinstall: "Neuinstallation erzwingen (bestehenden Ordner zuerst löschen)",
     headline:
-      "lucifex-Plugins entdecken, installieren, aktivieren und aktualisieren (entsprichtlucifexifex plugins`).",
+      "lucifex-Plugins entdecken, installieren, aktivieren und aktualisieren (entsprichtlucifex plugins`).",
     identifierLabel: "Git-URL oder owner/repo",
     inactive: "inaktiv",
     installBtn: "Installieren",

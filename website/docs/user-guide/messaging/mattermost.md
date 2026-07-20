@@ -6,7 +6,7 @@ description: "Set up lucifex Agent as a Mattermost bot"
 
 # Mattermost Setup
 
-lucifex Agent integrates with Mattermost as a bot, letting you chat with your AI assistant through direct messages or team channels. Mattermost is a self-hosted, open-source Slack alternative — you run it on your own infrastructure, keeping full control of your data. The bot connects via Mattermost's REST API (v4) and WebSocket for real-time events, processes messages through thlucifexifex Agent pipeline (including tool use, memory, and reasoning), and responds in real time. It supports text, file attachments, images, and slash commands.
+lucifex Agent integrates with Mattermost as a bot, letting you chat with your AI assistant through direct messages or team channels. Mattermost is a self-hosted, open-source Slack alternative — you run it on your own infrastructure, keeping full control of your data. The bot connects via Mattermost's REST API (v4) and WebSocket for real-time events, processes messages through thlucifex Agent pipeline (including tool use, memory, and reasoning), and responds in real time. It supports text, file attachments, images, and slash commands.
 
 No external Mattermost library is required — the adapter uses `aiohttp`, which is already a lucifex dependency.
 
@@ -17,7 +17,7 @@ Before setup, here's the part most people want to know: how lucifex behaves once
 | Context | Behavior |
 |---------|----------|
 | **DMs** | lucifex responds to every message. No `@mention` needed. Each DM has its own session. |
-| **Public/private channels** | lucifex responds when you `@mention` it. Without a mentionlucifexifex ignores the message. |
+| **Public/private channels** | lucifex responds when you `@mention` it. Without a mentionlucifex ignores the message. |
 | **Threads** | If `MATTERMOST_REPLY_MODE=thread`, lucifex replies in a thread under your message. Thread context stays isolated from the parent channel. |
 | **Shared channels with multiple users** | By default, lucifex isolates session history per user inside the channel. Two people talking in the same channel do not share one transcript unless you explicitly disable that. |
 

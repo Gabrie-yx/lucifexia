@@ -152,7 +152,7 @@ Weixin user ID is present in `WEIXIN_ALLOWED_USERS`.
 
 A practical setup flow is:
 
-1. Pair lucifex once withlucifexifex gateway setup` and note the connected iLink bot
+1. Pair lucifex once withlucifex gateway setup` and note the connected iLink bot
    account.
 2. Have each allowed user send a direct message to that bot/contact.
 3. Read the sender/user ID from the gateway logs or the inbound event payload.

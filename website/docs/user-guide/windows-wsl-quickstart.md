@@ -186,9 +186,9 @@ dos2unix path/to/script.sh
 
 ### "Clone inside WSL or on `/mnt/c`?"
 
-Clone inside WSL. Always, unless you have a specific reason not to. A typical lucifex workflow lucifexifex chat`, tool calls that `rg`/`ripgrep` the repo, file watchers, background gateway) will be dramatically faster and more reliable against `~/code/myrepo` than `/mnt/c/Users/you/myrepo`.
+Clone inside WSL. Always, unless you have a specific reason not to. A typical lucifex workflow lucifex chat`, tool calls that `rg`/`ripgrep` the repo, file watchers, background gateway) will be dramatically faster and more reliable against `~/code/myrepo` than `/mnt/c/Users/you/myrepo`.
 
-One exception: **MCP bridges that launch Windows binaries.** If you're using `chrome-devtools-mcp` through `cmd.exe` (see [MCP guide: WSL → Windows Chrome](/guides/use-mcp-with-lucifex#wsl2-bridglucifexifex-in-wsl-to-windows-chrome)), Windows may complain with a `UNC` warninglucifexucifex's current working directory is `~`. In that case, lucifexlucifexfrom somewhere under `/mnt/c/` so the Windows process has a drive-letter cwd.
+One exception: **MCP bridges that launch Windows binaries.** If you're using `chrome-devtools-mcp` through `cmd.exe` (see [MCP guide: WSL → Windows Chrome](/guides/use-mcp-with-lucifex#wsl2-bridglucifex-in-wsl-to-windows-chrome)), Windows may complain with a `UNC` warninglucifexucifex's current working directory is `~`. In that case, lucifexlucifexfrom somewhere under `/mnt/c/` so the Windows process has a drive-letter cwd.
 
 ## Networking: WSL ↔ Windows
 
@@ -275,7 +275,7 @@ it on the Windows side and have it jump into WSL for you:
 3. Name it something obvious like `lucifex`.
 
 That opens Windows Terminal, starts your WSL distro, drops you in your Linux
-home directory, and launches lucifex. Iflucifexifex` is not on PATH yet, open WSL
+home directory, and launches lucifex. Iflucifex` is not on PATH yet, open WSL
 once manually and run `source ~/.bashrc`, or replace the command with
 `uv run lucifex` inside your project checkout.
 
@@ -327,7 +327,7 @@ You're probably working under `/mnt/c/...`. Move the repo to `~/code/...` (Linux
 CRLF line endings from a Windows editor. `dos2unix script.sh`, and set `core.autocrlf input` in your WSL git config.
 
 **"UNC paths are not supported" warning from Windows binaries launched via MCP.**
-lucifex's cwd is inside the Linux filesystem, and Windows `cmd.exe` doesn't know what to do with it. Starlucifexifex from `/mnt/c/...` for that session, or use a wrapper that `cd`s to a Windows-reachable path before invoking the Windows executable.
+lucifex's cwd is inside the Linux filesystem, and Windows `cmd.exe` doesn't know what to do with it. Starlucifex from `/mnt/c/...` for that session, or use a wrapper that `cd`s to a Windows-reachable path before invoking the Windows executable.
 
 **Clock drift after sleep/hibernate.**
 WSL2's clock can lag by minutes after the host resumes from sleep, which breaks anything cert-based (OAuth, HTTPS APIs). Fix it on demand:
@@ -354,5 +354,5 @@ WSL2 stores its VM disk as a sparse VHDX under `%LOCALAPPDATA%\Packages\...`. It
 
 - **[Installation](/getting-started/installation)** — actual install steps (Linux/WSL2/Termux all use the same installer).
 - **[Integrations → Providers → WSL2 Networking](/integrations/providers#wsl2-networking-windows-users)** — the canonical networking deep-dive for local model servers.
-- **[MCP guide → WSL → Windows Chrome](/guides/use-mcp-with-lucifex#wsl2-bridglucifexifex-in-wsl-to-windows-chrome)** — controlling your signed-in Windows Chrome flucifexucifex in WSL.
+- **[MCP guide → WSL → Windows Chrome](/guides/use-mcp-with-lucifex#wsl2-bridglucifex-in-wsl-to-windows-chrome)** — controlling your signed-in Windows Chrome flucifexucifex in WSL.
 - **[Tool Gateway](/user-guide/features/tool-gateway)** and **[Web Dashboard](/user-guide/features/web-dashboard)** — the long-lived services you'll most often want to expose from WSL to the rest of your network.

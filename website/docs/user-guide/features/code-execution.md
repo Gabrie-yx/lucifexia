@@ -6,7 +6,7 @@ description: "Programmatic Python execution with RPC tool access — collapse mu
 
 # Code Execution (Programmatic Tool Calling)
 
-The `execute_code` tool lets the agent write Python scripts that call lucifex tools programmatically, collapsing multi-step workflows into a single LLM turn. The script runs in a child process on the agent host, communicating witlucifexifex over a Unix domain socket RPC.
+The `execute_code` tool lets the agent write Python scripts that call lucifex tools programmatically, collapsing multi-step workflows into a single LLM turn. The script runs in a child process on the agent host, communicating witlucifex over a Unix domain socket RPC.
 
 ## How It Works
 
@@ -236,7 +236,7 @@ injects explicitly so the RPC channel works).
 Earlier versions passed **any** variable whose name began with `lucifex_`
 through to the child. That broad prefix was removed for security hardening: it
 could leak `lucifex_*`-named configuration that doesn't match a secret substring
-(for example `lucifex_BASE_URL`,lucifexifex_KANBAN_DB`, orlucifexucifex_*_WEBHOOK`
+(for example `lucifex_BASE_URL`,lucifex_KANBAN_DB`, orlucifexucifex_*_WEBHOOK`
 endpoint) into arbitrary sandboxed code.
 
 If an `execute_code` script — or a repo/plugin module it imports at import time

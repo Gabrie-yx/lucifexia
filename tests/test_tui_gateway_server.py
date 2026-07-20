@@ -2039,7 +2039,7 @@ def test_config_sync_config_wins_over_env_seed(monkeypatch):
 
 
 def test_config_sync_ignores_env_seed_without_config_model(monkeypatch):
-    # `lucifex --tui -m <model>` setlucifexifex_MODEL/LUCIFEX_INFERENCE_MODEL as a
+    # `lucifex --tui -m <model>` setlucifex_MODEL/LUCIFEX_INFERENCE_MODEL as a
     # launch-scoped seed. When config.yaml has NO model.default (typical
     # custom-provider-only setup), the sync must NOT adopt the env seed as a
     # config target — doing so replayed the -m flag as a /model switch and
@@ -2111,7 +2111,7 @@ def test_apply_model_switch_persist_override_false_never_persists(monkeypatch):
 
 
 def test_startup_runtime_uses_tui_provider_env(monkeypatch):
-    monkeypatch.setenv("lucifex_MODEL", "noulucifexifex-test")
+    monkeypatch.setenv("lucifex_MODEL", "noulucifex-test")
     monkeypatch.setenv("lucifex_TUI_PROVIDER", "nous")
     monkeypatch.delenv("lucifex_INFERENCE_PROVIDER", raising=False)
 
@@ -2119,7 +2119,7 @@ def test_startup_runtime_uses_tui_provider_env(monkeypatch):
 
 
 def test_startup_runtime_does_not_treat_inference_provider_as_explicit(monkeypatch):
-    monkeypatch.setenv("lucifex_MODEL", "noulucifexifex-test")
+    monkeypatch.setenv("lucifex_MODEL", "noulucifex-test")
     monkeypatch.delenv("lucifex_TUI_PROVIDER", raising=False)
     monkeypatch.setenv("lucifex_INFERENCE_PROVIDER", "nous")
     monkeypatch.setattr(
@@ -5206,7 +5206,7 @@ def test_config_set_model_records_per_session_override_not_env(monkeypatch):
 
 def test_config_set_model_switches_agent_without_touching_env(monkeypatch):
     """A /model switch mutates the target session's agent in place and records
-    a per-session override; it does NOT write lucifex_MODEL lucifexifex_TUI_PROVIDER
+    a per-session override; it does NOT write lucifex_MODEL lucifex_TUI_PROVIDER
     etc. into the shared process environment.
 
     (Was test_config_set_model_syncs_tui_provider_env.)

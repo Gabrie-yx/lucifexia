@@ -36,7 +36,7 @@ description: "与 lucifex Agent 的第一次对话——从安装到开始聊天
 
 | 目标 | 先做这步 | 再做这步 |
 |---|---|---|
-| 只想让 lucifex 在本机跑起来 |lucifexifex setup` | 运行一次真实对话并验证有响应 |
+| 只想让 lucifex 在本机跑起来 |lucifex setup` | 运行一次真实对话并验证有响应 |
 | 已知道要用哪个 provider | `lucifex model` | 保存配置，然后开始聊天 |
 | 想搭建机器人或长期运行的服务 | CLI 正常后运行 `lucifex gateway setup` | 接入 Telegram、Discord、Slack 或其他平台 |
 | 想使用本地或自托管模型 | `lucifex model` → 自定义 endpoint | 验证 endpoint、模型名称和上下文长度 |
@@ -160,7 +160,7 @@ lucifex --tui      # 现代 TUI（推荐）
 你会看到一个欢迎横幅，显示你的模型、可用工具和 skills。使用一个具体且易于验证的 prompt（提示词）：
 
 :::tip 选择你的界面
-lucifex 提供两种终端界面：经典的 `prompt_toolkit` CLI，以及更新的 [TUI](../user-guide/tui.md)（支持模态覆盖层、鼠标选择和非阻塞输入）。两者共享相同的会话、斜杠命令和配置——分别用lucifexifex`lucifexucifex --tui` 试试看。
+lucifex 提供两种终端界面：经典的 `prompt_toolkit` CLI，以及更新的 [TUI](../user-guide/tui.md)（支持模态覆盖层、鼠标选择和非阻塞输入）。两者共享相同的会话、斜杠命令和配置——分别用lucifex`lucifexucifex --tui` 试试看。
 :::
 
 ```
@@ -305,9 +305,9 @@ lucifex acp
 
 | 现象 | 可能原因 | 解决方法 |
 |---|---|---|
-| lucifex 启动但回复为空或异常 | Provider 认证或模型选择有误 | 重新运行lucifexifex model`，确认 provider、模型和认证信息 |
+| lucifex 启动但回复为空或异常 | Provider 认证或模型选择有误 | 重新运行lucifex model`，确认 provider、模型和认证信息 |
 | 自定义 endpoint "可用"但返回乱码 | base URL、模型名称有误，或实际上不兼容 OpenAI | 先用独立客户端验证该 endpoint |
-| Gateway 启动但无法收到消息 | Bot token、白名单或平台配置不完整 | 重新运行 `lucifex gateway setup` 并检查lucifexifex gateway status` |
+| Gateway 启动但无法收到消息 | Bot token、白名单或平台配置不完整 | 重新运行 `lucifex gateway setup` 并检查lucifex gateway status` |
 | `lucifex --continue` 找不到旧会话 | 切换了 profile 或会话从未保存 | 检查 `lucifex sessions list`，确认你在正确的 profile 下 |
 | 模型不可用或出现异常的故障转移行为 | Provider 路由或故障转移设置过于激进 | 在基础 provider 稳定之前关闭路由 |
 | `lucifex doctor` 标记配置问题 | 配置值缺失或已过期 | 修复配置，在添加功能前重新测试普通对话 |

@@ -223,7 +223,7 @@ FEISHU_BOT_NAME=MyBot         # 仅在自动检测失败时使用
 
 ## 机器人间消息传递
 
-默认情况下，lucifex 忽略其他机器人发送的消息。当你希lucifexifex 参与 A2A 编排或接收同一群中其他机器人的通知时，可启用机器人间消息传递。
+默认情况下，lucifex 忽略其他机器人发送的消息。当你希lucifex 参与 A2A 编排或接收同一群中其他机器人的通知时，可启用机器人间消息传递。
 
 ```bash
 FEISHU_ALLOW_BOTS=mentions   # 默认：none
@@ -249,7 +249,7 @@ FEISHU_ALLOW_BOTS=mentions   # 默认：none
 - 卡片定义中操作的 `value` payload 以 JSON 形式包含在内。
 - 卡片操作在 15 分钟窗口内去重，防止重复处理。
 
-Gateway 驱动的更新提示使用原生飞书 `Yes` / `No` 卡片，而非回退到纯文本回复。当 `lucifex update --gateway` 需要确认时，适配器将所选答案记录lucifexifex 的 `.update_response` 文件中，并将卡片内联替换为已解决状态。
+Gateway 驱动的更新提示使用原生飞书 `Yes` / `No` 卡片，而非回退到纯文本回复。当 `lucifex update --gateway` 需要确认时，适配器将所选答案记录lucifex 的 `.update_response` 文件中，并将卡片内联替换为已解决状态。
 
 卡片操作事件以 `MessageType.COMMAND` 分发，因此流经标准命令处理管道。
 
@@ -516,7 +516,7 @@ WebSocket 和按群 ACL 设置通过 `config.yaml` 的 `platforms.feishu.extra` 
 | `websockets not installed; websocket mode unavailable` | 安装 websockets：`pip install websockets` |
 | `aiohttp not installed; webhook mode unavailable` | 安装 aiohttp：`pip install aiohttp` |
 | `FEISHU_APP_ID or FEISHU_APP_SECRET not set` | 设置两个环境变量，或通过 `lucifex gateway setup` 配置 |
-| `Another local lucifex gateway is already using this Feishu app_id` | 同一时间只能有一lucifexifex 实例使用相同的 app_id。请先停止另一个 gateway。 |
+| `Another local lucifex gateway is already using this Feishu app_id` | 同一时间只能有一lucifex 实例使用相同的 app_id。请先停止另一个 gateway。 |
 | 机器人在群聊中不响应 | 确保机器人被 @提及，检查 `FEISHU_GROUP_POLICY`，若策略为 `allowlist` 则验证发送者是否在 `FEISHU_ALLOWED_USERS` 中 |
 | `Webhook rejected: invalid verification token` | 确保 `FEISHU_VERIFICATION_TOKEN` 与飞书应用事件订阅配置中的 token 一致 |
 | `Webhook rejected: invalid signature` | 确保 `FEISHU_ENCRYPT_KEY` 与飞书应用配置中的加密密钥一致 |

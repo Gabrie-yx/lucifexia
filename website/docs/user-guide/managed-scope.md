@@ -51,7 +51,7 @@ files. It is **never persisted** to any `.env` by lucifex.
 
 ```bash
 # Point managed scope at a custom directory (set by IT / the deployment, not the user)
-export lucifex_MANAGED_DIR=/opt/orlucifexifex-policy
+export lucifex_MANAGED_DIR=/opt/orlucifex-policy
 ```
 
 :::warning
@@ -68,7 +68,7 @@ For the keys a managed layer specifies, the order is (highest wins):
 
 | Tier | config.yaml | .env |
 |---|---|---|
-| 1 | `/etc/lucifex/config.yaml` (managed) | `/etlucifexifex/.env` (managed) |
+| 1 | `/etc/lucifex/config.yaml` (managed) | `/etlucifex/.env` (managed) |
 | 2 | `~/.lucifex/config.yaml` (user) | `~/.lucifex/.env` (user) |
 | 3 | built-in defaults | pre-existing shell environment |
 
@@ -127,7 +127,7 @@ OPENAI_API_BASE=https://inference.example.com/v1
 ENV
 
 sudo chmod 0755 /etc/lucifex
-sudo chmod 0644 /etc/lucifex/config.yaml /etlucifexifex/.env
+sudo chmod 0644 /etc/lucifex/config.yaml /etlucifex/.env
 ```
 
 Changes take effect on the next lucifex start (a malformed managed file is logged

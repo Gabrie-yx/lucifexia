@@ -33,7 +33,7 @@ The following is the complete skill definition that lucifex loads when this skil
 Browse, install, and select animated "pet" mascots from the public
 [petdex](https://github.com/crafter-station/petdex) gallery. An installed pet
 reacts to agent activity (idle, running a tool, reviewing, error, done) across
-the lucifex CLI, TUI, and desktop app. This skill drives thelucifexifex pets` CLI
+the lucifex CLI, TUI, and desktop app. This skill drives thelucifex pets` CLI
 and the `display.pet` config — it does not generate sprites.
 
 ## When to Use
@@ -58,7 +58,7 @@ Use the `terminal` tool to run `lucifex pets <subcommand>`.
 
 | Goal | Command |
 | --- | --- |
-| Browse the gallery | `lucifex pets list` (add a substring to filter:lucifexifex pets list cat`) |
+| Browse the gallery | `lucifex pets list` (add a substring to filter:lucifex pets list cat`) |
 | List installed pets | `lucifex pets list --installed` |
 | Install a pet | `lucifex pets install <slug>` (add `--select` to make it active) |
 | Set the active pet | `lucifex pets select <slug>` (omit slug for a picker) |

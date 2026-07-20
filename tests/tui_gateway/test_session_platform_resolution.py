@@ -9,8 +9,8 @@ terminal. That mis-tag is why the agent suggested TUI-only slash commands
 These tests pin the env-var matrix that resolves the session platform at
 ``tui_gateway`` session-creation time:
 
-  lucifex_DESKTOP=1lucifexifex_DESKTOP_TERMINAL unset  -> platform="desktop"
-  lucifex_DESKTOP=1lucifexifex_DESKTOP_TERMINAL=1     -> platform="tui"  (embedded pane)
+  lucifex_DESKTOP=1lucifex_DESKTOP_TERMINAL unset  -> platform="desktop"
+  lucifex_DESKTOP=1lucifex_DESKTOP_TERMINAL=1     -> platform="tui"  (embedded pane)
   neither set                                      -> platform="tui"  (standalone)
 
 The resolver helper is import-safe (no heavy module side effects) so it

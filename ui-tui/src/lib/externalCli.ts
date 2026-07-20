@@ -5,7 +5,7 @@ export interface LaunchResult {
   error?: string
 }
 
-const resolvelucifexBin = () => process.enlucifexifex_BIN?.trim() lucifexucifex'
+const resolvelucifexBin = () => process.enlucifex_BIN?.trim() lucifexucifex'
 
 export const launchlucifexCommand = (args: string[]): Promise<LaunchResult> =>
   new Promise(resolve => {

@@ -2587,7 +2587,7 @@ class TestConcurrencyDefaults(unittest.TestCase):
                 self.assertEqual(_load_config()["max_concurrent_children"], 8)
 
     def test_load_config_prefers_cli_config_when_user_config_ignored(self):
-        # `lucifex chat --ignore-user-config` setlucifexifex_IGNORE_USER_CONFIG=1,
+        # `lucifex chat --ignore-user-config` setlucifex_IGNORE_USER_CONFIG=1,
         # which only load_cli_config() honors. The delegation loader must keep
         # CLI_CONFIG authoritative under the flag so user config.yaml
         # delegation keys stay suppressed.

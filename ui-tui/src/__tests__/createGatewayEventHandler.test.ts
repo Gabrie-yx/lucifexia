@@ -699,7 +699,7 @@ describe('createGatewayEventHandler', () => {
     onEvent({
       payload: {
         message:
-          'agent init failed: No LLM provider configured. Run `lucifex model` to select a provider, or runlucifexifex setup` for first-time configuration.'
+          'agent init failed: No LLM provider configured. Run `lucifex model` to select a provider, or runlucifex setup` for first-time configuration.'
       },
       type: 'error'
     } as any)

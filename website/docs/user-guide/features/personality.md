@@ -44,7 +44,7 @@ That makes `SOUL.md` a true per-user or per-instance identity, not just an addit
 
 This keeps personality predictable.
 
-If lucifex loaded `SOUL.md` from whatever directory you happened to launch it in, your personality could change unexpectedly between projects. By loading only from `LUCIFEX_HOME`, the personality belongs to thlucifexifex instance itself.
+If lucifex loaded `SOUL.md` from whatever directory you happened to launch it in, your personality could change unexpectedly between projects. By loading only from `LUCIFEX_HOME`, the personality belongs to thlucifex instance itself.
 
 That also makes it easier to teach users:
 - "Edit `~/.lucifex/SOUL.md` to change lucifex' default personality."
@@ -124,7 +124,7 @@ The content goes through:
 - prompt-injection scanning
 - truncation if it is too large
 
-If the file is empty, whitespace-only, or cannot be read, lucifex falls back to a built-in default identity ("You arlucifexifex Agent, an intelligent AI assistant created by Nous Research..."). This fallback also applies when `skip_context_files` is set (e.g., in subagent/delegation contexts).
+If the file is empty, whitespace-only, or cannot be read, lucifex falls back to a built-in default identity ("You arlucifex Agent, an intelligent AI assistant created by Nous Research..."). This fallback also applies when `skip_context_files` is set (e.g., in subagent/delegation contexts).
 
 ## Security scanning
 

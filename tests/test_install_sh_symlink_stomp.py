@@ -5,7 +5,7 @@ symlink to the pip-generated entry point at ``$lucifex_BIN`` (i.e.
 ``venv/bin/lucifex``). When ``setup_path()`` later switched to writing a bash
 shim with ``cat > "$command_link_dir/lucifex" <<EOF``, the redirect followed
 the existing symlink and overwrote the pip entry point with the shim. The
-shim's ``exec "$lucifex_BIN" "$@"`` then self-recursed and lucifexifex`` hung on
+shim's ``exec "$lucifex_BIN" "$@"`` then self-recursed and lucifex`` hung on
 every invocation.
 
 These tests pin the fix: ``setup_path()`` must remove ``$command_link_dir/lucifex``
@@ -64,7 +64,7 @@ def test_re_running_setup_path_block_preserves_pip_entry_point(tmp_path: Path) -
 
         tmp/
           venv/bin/lucifex        <- pip entry point (the one we must preserve)
-          local_bin/lucifex       <- symlink → ../venv/bilucifexifex  (old install)
+          local_bin/lucifex       <- symlink → ../venv/bilucifex  (old install)
 
     Then we run the exact shim-write block from setup_path() with
     ``lucifex_BIN`` and ``command_link_dir`` pointed at this fixture. The fix

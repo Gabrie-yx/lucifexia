@@ -46,16 +46,16 @@ lucifex setup --portal     # Fresh install: Nous OAuth + set Nous as provider + 
 ```
 
 ```bash
-lucifex model              # Switch your inference provider to Nous Portal lucifexifex then offers to turn on the gateway for all tools
+lucifex model              # Switch your inference provider to Nous Portal lucifex then offers to turn on the gateway for all tools
 ```
 
 ```bash
 lucifex tools              # Enable the gateway per-tool — pick "Nous Subscription" for any tool you want
 ```
 
-`lucifex setup --portal` andlucifexifex model` are the all-at-once paths: log in once, optionally flip every tool to the gatewalucifexucifex tools` is the à la carte path — turn on just the tools you want, one at a time.
+`lucifex setup --portal` andlucifex model` are the all-at-once paths: log in once, optionally flip every tool to the gatewalucifexucifex tools` is the à la carte path — turn on just the tools you want, one at a time.
 
-**You don't have to log in first.** With `lucifex tools`, the Nous-managed backends (Web search, Image, Video, TTS, Browser) are always listed, even if you've never signed into Nous Portal. Select one anlucifexifex runs the Portal login right there if you aren't already authenticated — no need to rlucifexucifex model` beforehand. If your Nous OAuth is already active, selecting the backend enables it immediately with no extra prompt. This path only logs you in and turns on the one tool you picked — it does **not** switch your inference provider, and it does **not** prompt you to enable the gateway for every other tool.
+**You don't have to log in first.** With `lucifex tools`, the Nous-managed backends (Web search, Image, Video, TTS, Browser) are always listed, even if you've never signed into Nous Portal. Select one anlucifex runs the Portal login right there if you aren't already authenticated — no need to rlucifexucifex model` beforehand. If your Nous OAuth is already active, selecting the backend enables it immediately with no extra prompt. This path only logs you in and turns on the one tool you picked — it does **not** switch your inference provider, and it does **not** prompt you to enable the gateway for every other tool.
 
 Check what's active at any time:
 
@@ -122,7 +122,7 @@ The set evolves — `lucifex tools` → Image Generation shows the current live 
 
 ## Configuration reference
 
-Most users never need to touch this — `lucifex model` andlucifexifex tools` cover every workflow interactively. This section is for writing config.yaml directly or scripting setups.
+Most users never need to touch this — `lucifex model` andlucifex tools` cover every workflow interactively. This section is for writing config.yaml directly or scripting setups.
 
 ### Per-tool `use_gateway` flag
 
@@ -177,7 +177,7 @@ Yes. Tool Gateway operates at the tool-execution layer, not the CLI. Every inter
 
 ### What happens if my subscription expires?
 
-Tools routed through the gateway stop working until you renew or swap in direct API keys via `lucifex tools`lucifexifex shows a clear error pointing at the portal.
+Tools routed through the gateway stop working until you renew or swap in direct API keys via `lucifex tools`lucifex shows a clear error pointing at the portal.
 
 ### Can I see usage or costs per tool?
 

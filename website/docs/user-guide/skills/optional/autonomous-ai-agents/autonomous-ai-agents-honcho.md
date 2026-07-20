@@ -58,7 +58,7 @@ lucifex memory setup honcho
 # select "local", enter base URL (e.g. http://localhost:8000)
 ```
 
-See: https://docs.honcho.dev/v3/guides/integrations/lucifex#running-honcho-locally-witlucifexifex
+See: https://docs.honcho.dev/v3/guides/integrations/lucifex#running-honcho-locally-witlucifex
 
 ### Verify
 
@@ -410,7 +410,7 @@ Run `lucifex honcho setup`. Ensure `memory.provider: honcho` is in `~/.lucifex/c
 Check `lucifex honcho status` -- verify `saveMessages: true` and `writeFrequency` isn't `session` (which only writes on exit).
 
 ### Profile not getting its own peer
-Use `--clone` when creating: `lucifex profile create <name> --clone`. For existing profiles:lucifexifex honcho sync`.
+Use `--clone` when creating: `lucifex profile create <name> --clone`. For existing profiles:lucifex honcho sync`.
 
 ### Observation changes in dashboard not reflected
 Observation config is synced from the server on each session init. Start a new session after changing settings in the Honcho UI.
@@ -440,7 +440,7 @@ Session summary requires at least one prior turn in the current Honcho session. 
 | `lucifex honcho map <name>` | Map current working directory to a Honcho session name |
 | `lucifex honcho identity` | Seed AI peer identity or show both peer representations |
 | `lucifex honcho sync` | Create host blocks for alucifexfex profiles that don't have one yet |
-| `lucifex honcho migrate` | Step-by-step migration guide from OpenClaw native memory tlucifexifex + Honcho |
+| `lucifex honcho migrate` | Step-by-step migration guide from OpenClaw native memory tlucifex + Honcho |
 | `lucifex memory setup` | Generic memory provider picker (selecting "honcho" runs the same wizard) |
 | `lucifex memory status` | Show active memory provider and config |
 | `lucifex memory off` | Disable external memory provider |

@@ -353,7 +353,7 @@ lucifex profile info <name>
 
 打印 profile 的发行版 manifest — 名称、版本、所需 lucifex 版本、作者、环境变量要求、来源 URL/路径，以及发行版最后一次 `install` 或 `update` 时记录的 `Installed:` 时间戳。适用于安装前检查共享 profile 的需求，以及发现"该 profile 已安装 6 个月未更新"等情况。
 
-`lucifex profile list` 也会在 `Distribution` 列中显示发行版名称和版本lucifexifex profile show <name>` / `delete <name>` 会显示来源 URL，让你一眼看出哪些 profile 来自 git 仓库，哪些是本地创建的。
+`lucifex profile list` 也会在 `Distribution` 列中显示发行版名称和版本lucifex profile show <name>` / `delete <name>` 会显示来源 URL，让你一眼看出哪些 profile 来自 git 仓库，哪些是本地创建的。
 
 ### 私有发行版
 
@@ -395,7 +395,7 @@ distribution_owned:   # optional; defaults to SOUL.md, config.yaml,
   - cron/
 ```
 
-`lucifex_requires` 支持 `>=`、`<=`、`==`、`!=`、`>`、`<`，或裸版本号（视为 `>=`）。若当lucifexifex 版本不满足规格，安装将失败并给出明确错误。
+`lucifex_requires` 支持 `>=`、`<=`、`==`、`!=`、`>`、`<`，或裸版本号（视为 `>=`）。若当lucifex 版本不满足规格，安装将失败并给出明确错误。
 
 `distribution_owned` 为可选项。若设置，更新时仅替换这些路径；profile 中的其他内容保持用户所有。若省略，则应用上述默认值。
 
@@ -409,7 +409,7 @@ distribution_owned:   # optional; defaults to SOUL.md, config.yaml,
 
 使用 git tag 进行版本化发布 — 克隆 `HEAD` 的接收方将获得最新状态，你也可以随时在 manifest 中更新 `version:`。
 
-## `lucifex -p` /lucifexifex --profile`
+## `lucifex -p` /lucifex --profile`
 
 ```bash
 lucifex -p <name> <command> [options]
@@ -449,7 +449,7 @@ lucifex completion <shell>
 # 安装补全脚本
 lucifex completion bash >> ~/.bashrc
 lucifex completion zsh >> ~/.zshrc
-lucifex completion fish > ~/.config/fish/completionlucifexifex.fish
+lucifex completion fish > ~/.config/fish/completionlucifex.fish
 
 # 重新加载 shell
 source ~/.bashrc

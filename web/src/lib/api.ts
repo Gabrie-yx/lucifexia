@@ -147,7 +147,7 @@ export async function fetchJSON<T>(
       return new Promise<T>(() => { });
     }
     // Loopback mode: ``_SESSION_TOKEN`` rotates on every server restart
-    // (``lucifex update``, lucifexifex gateway restart``, etc.). A tab kept
+    // (``lucifex update``, lucifex gateway restart``, etc.). A tab kept
     // open across the restart holds the OLD token in
     // ``window.__lucifex_SESSION_TOKEN__`` from the previous HTML render,
     // so every fetch returns 401. The HTML is served ``Cache-Control:

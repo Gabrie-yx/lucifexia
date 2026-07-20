@@ -320,7 +320,7 @@ export const hu: Translations = {
     enableRuntime: "Engedélyezés",
     forceReinstall: "Kényszerített újratelepítés (a meglévő mappa előbb törlődik)",
     headline:
-      "lucifex-bővítmények felfedezése, telepítése, engedélyezése és frissítése (alucifexifex plugins` paritás).",
+      "lucifex-bővítmények felfedezése, telepítése, engedélyezése és frissítése (alucifex plugins` paritás).",
     identifierLabel: "Git URL vagy owner/repo",
     inactive: "inaktív",
     installBtn: "Telepítés",

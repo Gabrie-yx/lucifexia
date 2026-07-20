@@ -44,7 +44,7 @@ $LUCIFEX_HOME/SOUL.md
 
 这样可以保持个性的可预测性。
 
-如果 lucifex 从你启动它的任意目录加载 `SOUL.md`，你的个性可能会在不同项目之间意外改变。通过仅从 `LUCIFEX_HOME` 加载，个性归属lucifexifex 实例本身。
+如果 lucifex 从你启动它的任意目录加载 `SOUL.md`，你的个性可能会在不同项目之间意外改变。通过仅从 `LUCIFEX_HOME` 加载，个性归属lucifex 实例本身。
 
 这也让用户更容易理解：
 - "编辑 `~/.lucifex/SOUL.md` 来更改 lucifex 的默认个性。"
@@ -124,7 +124,7 @@ You optimize for truth, clarity, and usefulness over politeness theater.
 - 提示词注入扫描
 - 内容过大时进行截断
 
-如果文件为空、仅含空白字符或无法读取，lucifex 将回退到内置默认身份（"You arlucifexifex Agent, an intelligent AI assistant created by Nous Research..."）。当 `skip_context_files` 被设置时（例如在子 Agent/委托上下文中），同样适用此回退。
+如果文件为空、仅含空白字符或无法读取，lucifex 将回退到内置默认身份（"You arlucifex Agent, an intelligent AI assistant created by Nous Research..."）。当 `skip_context_files` 被设置时（例如在子 Agent/委托上下文中），同样适用此回退。
 
 ## 安全扫描
 

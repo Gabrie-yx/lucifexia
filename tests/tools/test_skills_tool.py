@@ -415,7 +415,7 @@ class TestSkillView:
             skill_dir = _make_skill(
                 tmp_path,
                 "templated",
-                body="Run ${lucifex_SKILL_DIR}/scripts/do.sh in lucifexifex_SESSION_ID}",
+                body="Run ${lucifex_SKILL_DIR}/scripts/do.sh in lucifex_SESSION_ID}",
             )
             raw = skill_view("templated", task_id="session-123")
 

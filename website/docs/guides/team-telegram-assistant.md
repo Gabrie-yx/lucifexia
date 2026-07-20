@@ -291,7 +291,7 @@ Users can also change this per-session with the `/verbose` command in chat.
 
 Customize how the bot communicates by editing `~/.lucifex/SOUL.md`:
 
-For a full guide, see [Use SOUL.md with lucifex](/guides/use-soul-witlucifexifex).
+For a full guide, see [Use SOUL.md with lucifex](/guides/use-soul-witlucifex).
 
 ```markdown
 # Soul

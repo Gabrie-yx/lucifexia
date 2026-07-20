@@ -69,7 +69,7 @@ openrouter (2 credentials):
   #2  backup-key           api_key manual
 
 anthropic (3 credentials):
-  #1  lucifex_pkce          oauth lucifexifex_pkce ←
+  #1  lucifex_pkce          oauth lucifex_pkce ←
   #2  claude_code          oauth   claude_code
   #3  ANTHROPIC_API_KEY    api_key env:ANTHROPIC_API_KEY
 ```
@@ -190,7 +190,7 @@ lucifex automatically discovers credentials from multiple sources and seeds the 
 
 Auto-seeded entries are updated on each pool load — if you remove an env var, its pool entry is automatically pruned. Manual entries (added via `lucifex auth add`) are never auto-pruned.
 
-Borrowed runtime secrets (for example env vars, Bitwarden/Vault/keyring/systemd references, and custom config values) are reference-only at the `auth.json` boundary. lucifex can use the resolved value in memory for the current run, but it persists only metadata such as the source ref, label, status, request counters, and a non-reversible fingerprint. Manual entries anlucifexifex-owned OAuth/device-code state keep the durable tokens they need to refresh.
+Borrowed runtime secrets (for example env vars, Bitwarden/Vault/keyring/systemd references, and custom config values) are reference-only at the `auth.json` boundary. lucifex can use the resolved value in memory for the current run, but it persists only metadata such as the source ref, label, status, request counters, and a non-reversible fingerprint. Manual entries anlucifex-owned OAuth/device-code state keep the durable tokens they need to refresh.
 
 ## Delegation & Subagent Sharing
 

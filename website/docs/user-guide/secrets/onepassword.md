@@ -6,10 +6,10 @@ Resolve provider API keys from [1Password](https://1password.com/) at process st
 
 1. You install the official [1Password CLI](https://developer.1password.com/docs/cli/get-started/) (`op`) and authenticate it — either with a **service-account token** (headless servers) or an **interactive/desktop session** (your laptop).
 2. You map environment-variable names to `op://` references in `~/.lucifex/config.yaml`.
-3. Every time `lucifex` (or the gateway, or a cron job) starts, after `~/.lucifex/.env` has loadedlucifexifex runs `op read` for each reference and sets the resolved values into `os.environ`.
-4. By default lucifex **overrides** values already in your environment, so 1Password is the source of truth — rotate a credential once and everlucifexifex process picks it up on next start. Flip `override_existing: false` if you want `.env` to win instead.
+3. Every time `lucifex` (or the gateway, or a cron job) starts, after `~/.lucifex/.env` has loadedlucifex runs `op read` for each reference and sets the resolved values into `os.environ`.
+4. By default lucifex **overrides** values already in your environment, so 1Password is the source of truth — rotate a credential once and everlucifex process picks it up on next start. Flip `override_existing: false` if you want `.env` to win instead.
 
-lucifex never authenticates on your behalf and never downloads `op`: it shells out to your already-installed, already-trusted CLI. If `op` is missing, your session is locked, or a reference is wronglucifexifex prints a one-line warning and continues with whatever credentials `.env` already had — it never blocks startup.
+lucifex never authenticates on your behalf and never downloads `op`: it shells out to your already-installed, already-trusted CLI. If `op` is missing, your session is locked, or a reference is wronglucifex prints a one-line warning and continues with whatever credentials `.env` already had — it never blocks startup.
 
 ## Authentication
 
@@ -131,7 +131,7 @@ secrets:
 
 ## Failure modes
 
-1Password never blocks lucifex startup. If anything goes wrong you'll see a one-line warning in stderr anlucifexifex continues:
+1Password never blocks lucifex startup. If anything goes wrong you'll see a one-line warning in stderr anlucifex continues:
 
 | Symptom | Cause | Fix |
 |---|---|---|

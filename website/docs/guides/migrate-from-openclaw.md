@@ -6,7 +6,7 @@ description: "Complete guide to migrating your OpenClaw / Clawdbot setup to luci
 
 # Migrate from OpenClaw
 
-`lucifex claw migrate` imports your OpenClaw (or legacy Clawdbot/Moldbot) setup intlucifexifex. This guide covers exactly what gets migrated, the config key mappings, and what to verify after migration.
+`lucifex claw migrate` imports your OpenClaw (or legacy Clawdbot/Moldbot) setup intlucifex. This guide covers exactly what gets migrated, the config key mappings, and what to verify after migration.
 
 :::tip
 If your OpenClaw setup was multi-provider, `lucifex setup --portal` collapses it to one OAuth — 300+ models plus the Tool Gateway in a single login. See [Nous Portal](/integrations/nous-portal).

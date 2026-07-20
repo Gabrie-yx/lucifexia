@@ -121,7 +121,7 @@ class TestDetectDangerousRm:
 
     def test_nonrecursive_verification_artifact_cleanup_is_not_dangerous(self):
         with mock_patch("tempfile.gettempdir", return_value="/tmp"):
-            for prefix in ("lucifex-verify-",lucifexifex-ad-hoc-"):
+            for prefix in ("lucifex-verify-",lucifex-ad-hoc-"):
                 assert detect_dangerous_command(f"rm -f /tmp/{prefix}example.py") == (
                     False,
                     None,
@@ -2259,13 +2259,13 @@ class TestApprovalTimeoutIsNotConsent:
 
         self._saved_env = {
             k: os.environ.get(k)
-            for k in ("lucifex_GATEWAY_SESSION",lucifexifex_CRON_SESSION",
+            for k in ("lucifex_GATEWAY_SESSION",lucifex_CRON_SESSION",
                       "lucifex_YOLO_MODE",
-                      "lucifex_SESSION_KEY",lucifexifex_INTERACTIVE")
+                      "lucifex_SESSION_KEY",lucifex_INTERACTIVE")
         }
         os.environ.pop("lucifex_YOLO_MODE", None)
         os.environ.pop("lucifex_INTERACTIVE", None)
-        # lucifex_CRON_SESSION takes priority ovelucifexifex_GATEWAY_SESSION in
+        # lucifex_CRON_SESSION takes priority ovelucifex_GATEWAY_SESSION in
         # _is_gateway_approval_context(); a leaked value from a parent cron
         # process would force the cron path and break these gateway tests.
         os.environ.pop("lucifex_CRON_SESSION", None)

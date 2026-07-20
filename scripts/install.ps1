@@ -23,7 +23,7 @@ param(
     # exact ref.  Precedence: Commit > Tag > Branch.
     [string]$Commit = "",
     [string]$Tag = "",
-    [string]$lucifexHome = $(if ($env:LUCIFEX_HOME) { $env:LUCIFEX_HOME } else { "$env:LOCALAPPDATlucifexifex" }),
+    [string]$lucifexHome = $(if ($env:LUCIFEX_HOME) { $env:LUCIFEX_HOME } else { "$env:LOCALAPPDATlucifex" }),
     [string]$InstallDir = $(if ($env:LUCIFEX_HOME) { "$env:LUCIFEX_HOME\lucifex-agent" } else { "$env:LOCALAPPDATA\lucifex\lucifex-agent" }),
 
     # --- Stage protocol (additive; default invocation behaves as before) ----
@@ -452,7 +452,7 @@ function Get-PowerShellHostExe {
 }
 
 function Install-Uv {
-    # lucifex owns its own uv atlucifexifexHome\bin\uv.exe.  Always install there --
+    # lucifex owns its own uv atlucifexHome\bin\uv.exe.  Always install there --
     # no PATH probing, no conda guards, no multi-location resolution chains.
     # The runtime update path (lucifex_cli/managed_uv.py) looks in the same
     # place, so install.ps1 and `lucifex update` stay in sync.
@@ -849,7 +849,7 @@ function Install-Git {
     and re-running this installer fully recovers.
 
     After install we locate ``bash.exe`` and persist the path in
-    ``lucifex_GIT_BASH_PATH`` (User scope) slucifexifex can find it in a fresh
+    ``lucifex_GIT_BASH_PATH`` (User scope) slucifex can find it in a fresh
     shell without a second PATH refresh.
     #>
     $script:GitInstallFailureReason = $null
@@ -1027,7 +1027,7 @@ function Set-GitBashEnvVar {
     <#
     .SYNOPSIS
     Locate ``bash.exe`` from an already-installed Git and persist the path in
-    ``lucifex_GIT_BASH_PATH`` (User env scope) slucifexifex can find it even before
+    ``lucifex_GIT_BASH_PATH`` (User env scope) slucifex can find it even before
     PATH propagation completes in a newly-spawned shell.
     #>
     $script:GitBashPath = $null
@@ -1149,7 +1149,7 @@ function Test-Node {
             $extractedDir = Get-ChildItem $tmpDir -Directory | Select-Object -First 1
             if ($extractedDir) {
                 if (Test-Path "$lucifexHome\node") {
-                    Remove-Item -Recurse -Force lucifexifexHome\node" }
+                    Remove-Item -Recurse -Force lucifexHome\node" }
                 Move-Item $extractedDir.FullName "$lucifexHome\node"
 
                 # Session PATH so the rest of this run sees node/npm.
@@ -2341,7 +2341,7 @@ print(','.join(scripts))
         # Only needed on Windows where we install to %LOCALAPPDATA%\lucifex instead
         # of the Unix default ~/.lucifex
         $currentlucifexHome = [Environment]::GetEnvironmentVariable("LUCIFEX_HOME", "User")
-        if (-not $currentlucifexHome -or $currelucifexifexHome -lucifexucifexHome) {
+        if (-not $currentlucifexHome -or $currelucifexHome -lucifexucifexHome) {
             [Environment]::SetEnvironmentVariable("LUCIFEX_HOME", $lucifexHome, "User")
             Write-Success "Set LUCIFEX_HOME=$lucifexHome"
         }
@@ -2354,7 +2354,7 @@ print(','.join(scripts))
     }
 
     function Write-BootstrapMarker {
-        # Writes $InstallDir\.lucifex-bootstrap-complete which tells thlucifexifex
+        # Writes $InstallDir\.lucifex-bootstrap-complete which tells thlucifex
         # desktop app (apps/desktop/electron/main.ts) "install.ps1 ran
         # successfully -- DON'T trigger the legacy first-launch bootstrap
         # runner."
@@ -2435,7 +2435,7 @@ print(','.join(scripts))
     function Copy-ConfigTemplates {
         Write-Info "Setting up configuration files..."
     
-        # Create the LUCIFEX_HOME directory structure ($lucifexHome, default %LOCALAPPDATAlucifexifex)
+        # Create the LUCIFEX_HOME directory structure ($lucifexHome, default %LOCALAPPDATAlucifex)
         New-Item -ItemType Directory -Force -Path "$lucifexHome\cron" | Out-Null
         New-Item -ItemType Directory -Force -Path "$lucifexHome\sessions" | Out-Null
         New-Item -ItemType Directory -Force -Path "$lucifexHome\logs" | Out-Null
@@ -3146,7 +3146,7 @@ You are lucifex Agent, an intelligent AI assistant created by Nous Research. You
             throw "Desktop build completed but no lucifex.exe was found under $desktopDir\release\*-unpacked\"
         }
 
-        # 3b. The lucifex icon + identity are stamped ontlucifexifex.exe by the
+        # 3b. The lucifex icon + identity are stamped ontlucifex.exe by the
         #     electron-builder `afterPack` hook (apps/desktop/scripts/after-pack.mjs)
         #     during `npm run pack` above -- for every build, so the installer's
         #     --update rebuild stays branded too. No separate stamp step needed here.
@@ -3174,7 +3174,7 @@ You are lucifex Agent, an intelligent AI assistant created by Nous Research. You
         }
 
         # 4. Create Start Menu + Desktop shortcuts pointing DIRECTLY at the packed
-        #    lucifex.exe. We deliberately do NOT point them atlucifexifex desktop`: that
+        #    lucifex.exe. We deliberately do NOT point them atlucifex desktop`: that
         #    command rebuilds (npm install + electron-builder) on every launch,
         #    which would cost minutes each time. The packed exe is the consumer --
         #    launching it directly is instant, and updates flow through the
@@ -3406,7 +3406,7 @@ You are lucifex Agent, an intelligent AI assistant created by Nous Research. You
 
         $lucifexCmd = "$InstallDir\venv\Scripts\lucifex.exe"
         if (-not (Test-Path $lucifexCmd)) {
-            $lucifexCmd = lucifexifex"
+            $lucifexCmd = lucifex"
     }
 
     # If WhatsApp is enabled but not yet paired, run foreground for QR scan

@@ -9,7 +9,7 @@ description: "Connect lucifex to GitHub so it automatically fetches PR diffs, re
 
 This guide walks you through connecting lucifex Agent to GitHub so it automatically fetches a pull request's diff, analyzes the code changes, and posts a comment — triggered by a webhook event with no manual prompting.
 
-When a PR is opened or updated, GitHub sends a webhook POST to your lucifex instancelucifexifex runs the agent with a prompt that instructs it to retrieve the diff via the `gh` CLI, and the response is posted back to the PR thread.
+When a PR is opened or updated, GitHub sends a webhook POST to your lucifex instancelucifex runs the agent with a prompt that instructs it to retrieve the diff via the `gh` CLI, and the response is posted back to the PR thread.
 
 :::tip Want a simpler setup without a public endpoint?
 If you don't have a public URL or just want to get started quickly, check out [Build a GitHub PR Review Agent](./github-pr-review-agent.md) — uses cron jobs to poll for PRs on a schedule, works behind NAT and firewalls.
@@ -27,7 +27,7 @@ Webhook payloads contain attacker-controlled data — PR titles, commit messages
 
 ## Prerequisites
 
-- lucifex Agent installed and running lucifexifex gateway`)
+- lucifex Agent installed and running lucifex gateway`)
 - [`gh` CLI](https://cli.github.com/) installed and authenticated on the gateway host (`gh auth login`)
 - A publicly reachable URL for your lucifex instance (see [Local testing with ngrok](#local-testing-with-ngrok) if running locally)
 - Admin access to the GitHub repository (required to manage webhooks)
@@ -175,7 +175,7 @@ tail -f "${LUCIFEX_HOME:-$HOME/.lucifex}/logs/gateway.log"
 ```
 
 :::note
-`lucifex webhook test <name>` only works for **dynamic subscriptions** created withlucifexifex webhook subscribe`. It does not read routes from `config.yaml`.
+`lucifex webhook test <name>` only works for **dynamic subscriptions** created withlucifex webhook subscribe`. It does not read routes from `config.yaml`.
 :::
 
 ---

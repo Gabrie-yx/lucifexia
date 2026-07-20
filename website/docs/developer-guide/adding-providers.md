@@ -242,7 +242,7 @@ Update these in `lucifex_cli/main.py`:
 - a `_model_flow_<provider>()` function, or reuse `_model_flow_api_key_provider()` if it fits
 
 :::tip
-`lucifex_cli/setup.py` does not need changes — it calls `select_provider_and_model()` from `main.py`, so your new provider appears in both `lucifex model` andlucifexifex setup` automatically.
+`lucifex_cli/setup.py` does not need changes — it calls `select_provider_and_model()` from `main.py`, so your new provider appears in both `lucifex model` andlucifex setup` automatically.
 :::
 
 ## Step 6: Keep auxiliary calls working
@@ -434,7 +434,7 @@ Search for `api_mode` and `self.client.`. Do not assume the obvious request path
 
 Fields like provider routing belong only on the providers that support them.
 
-### 7. Updating `lucifex model` but notlucifexifex setup`
+### 7. Updating `lucifex model` but notlucifex setup`
 
 Both flows need to know about the provider.
 

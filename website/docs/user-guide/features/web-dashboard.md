@@ -107,7 +107,7 @@ The status page auto-refreshes every 5 seconds.
 
 ### Chat
 
-The **Chat** tab embeds the full lucifex TUI (the same interface you get fromlucifexifex --tui`) directly in the browser. Everything you can do in the terminal TUI — slash commands, model picker, tool-call cards, markdown streaming, clarify/sudo/approval prompts, skin theming — works identically here, because the dashboard is running the real TUI binary and rendering its ANSI output through [xterm.js](https://xtermjs.org/) with its WebGL renderer for pixel-perfect cell layout.
+The **Chat** tab embeds the full lucifex TUI (the same interface you get fromlucifex --tui`) directly in the browser. Everything you can do in the terminal TUI — slash commands, model picker, tool-call cards, markdown streaming, clarify/sudo/approval prompts, skin theming — works identically here, because the dashboard is running the real TUI binary and rendering its ANSI output through [xterm.js](https://xtermjs.org/) with its WebGL renderer for pixel-perfect cell layout.
 
 **How it works:**
 
@@ -129,7 +129,7 @@ The **Chat** tab embeds the full lucifex TUI (the same interface you get fromluc
 
 Close the browser tab and the PTY is reaped cleanly on the server. Re-opening spawns a fresh session.
 
-To point [lucifex Desktop](#connectinlucifexifex-desktop-to-a-remote-backend) at a dashboard running on another machine instead of its own bundled backend, see the remote-backend section below.
+To point [lucifex Desktop](#connectinlucifex-desktop-to-a-remote-backend) at a dashboard running on another machine instead of its own bundled backend, see the remote-backend section below.
 
 ### Connecting lucifex Desktop to a remote backend
 
@@ -313,7 +313,7 @@ block in `config.yaml` that `lucifex mcp` reads from.
 **Catalog:** browse the Nous-approved MCP servers (the bundled `optional-mcps/`
 catalog) and install any of them with one click. Entries that need API keys
 prompt for them inline; the values go to `.env`. This is the same catalog
-`lucifex mcp catalog` /lucifexifex mcp install` use.
+`lucifex mcp catalog` /lucifex mcp install` use.
 
 ![MCP admin page — your servers with enable/disable toggles, plus the install catalog](/img/dashboard/admin-mcp.png)
 
@@ -361,7 +361,7 @@ the API server and webhook endpoints) with its live connection status.
 
 A consolidated administration panel for installation-wide operations:
 
-- **Host** — live system stats: OS / kernel, architecture, hostname, Python and lucifex versions, CPU core count + utilization, memory, disk usage of thlucifexifex home, uptime, and load average. (CPU/memory/disk come from `psutil` when installed; identity fields are always shown.) lucifexucifex version shows an **update-status badge** (up to date / N commits behind) and a **Check for updates** button. When an update is available on a git or pip install, an **Update now** button opens a confirmation dialog — showing how many commits you'll pull — before runlucifexlucifexupdate` in the background. On Docker/Nix/Homebrew installs the dashboard can't apply the update in place, so it shows the correct out-of-band command instead.
+- **Host** — live system stats: OS / kernel, architecture, hostname, Python and lucifex versions, CPU core count + utilization, memory, disk usage of thlucifex home, uptime, and load average. (CPU/memory/disk come from `psutil` when installed; identity fields are always shown.) lucifexucifex version shows an **update-status badge** (up to date / N commits behind) and a **Check for updates** button. When an update is available on a git or pip install, an **Update now** button opens a confirmation dialog — showing how many commits you'll pull — before runlucifexlucifexupdate` in the background. On Docker/Nix/Homebrew installs the dashboard can't apply the update in place, so it shows the correct out-of-band command instead.
 - **Nous Portal** — login status, the active inference provider, and the Tool Gateway routing table (which tools run via the Portal vs. locally), with a link to manage your subscription. Read-only mirror of `lucifex portal`.
 - **Skill curator** — the background skill-maintenance status (active / paused, interval, last run) with pause/resume and a run-now button. Mirrors `lucifex curator`.
 - **Gateway** — start, stop, and restart the messaging gateway, with live status (running/stopped, PID, state)
@@ -560,7 +560,7 @@ same auth gate as the rest of `/api/`.
 When the dashboard is bound to a public or non-loopback address — anything other than `127.0.0.1` / `localhost` — lucifex Agent engages an auth gate. Every request must carry a verified session cookie or it's bounced to the login page. Three providers ship in the box:
 
 - **[Username/password](#usernamepassword-provider-no-oauth-idp)** — the simplest way to put auth on a self-hosted / on-prem / homelab dashboard. No external identity provider. **Use it only on a trusted network or behind a VPN — not for public-internet exposure.**
-- **[OAuth (Nous Portal)](#default-provider-nous-research)** — for hosted deployments and any dashboard reachable over the public internet, and the recommended path for a [remote lucifex Desktop connection](#connectinlucifexifex-desktop-to-a-remote-backend). Every login is verified against your Nous account, so this is the provider suitable for internet-facing use.
+- **[OAuth (Nous Portal)](#default-provider-nous-research)** — for hosted deployments and any dashboard reachable over the public internet, and the recommended path for a [remote lucifex Desktop connection](#connectinlucifex-desktop-to-a-remote-backend). Every login is verified against your Nous account, so this is the provider suitable for internet-facing use.
 - **[Self-hosted OIDC](#self-hosted-oidc-provider)** — for bringing your own identity provider via standard OpenID Connect (Keycloak, Auth0, Okta, Google, GitHub via an OIDC bridge, etc.). No Nous Portal involved; suitable for public-internet exposure when fronted by a conformant OIDC server.
 
 Operator-owned dashboards bound to loopback are unaffected — no auth, no login page.
@@ -585,7 +585,7 @@ The gate is on if and only if:
 
 If the gate would engage but **no** `DashboardAuthProvider` is registered (no Nous plugin, no custom plugin), `lucifex dashboard` refuses to bind with an explicit error message. There is no "default-deny but accept everything" fallback — a misconfigured gated dashboard never starts.
 
-When you run `lucifex dashboard --host 0.0.0.0` **interactively** (a real terminal) and no provider is configured yetlucifexifex doesn't just fail — it offers to set one up on the spot: pick **username & password** (writes `dashboard.basic_auth` to `config.yaml` and you're running in seconds) or **OAuth** (points you lucifexucifex dashboard register`). Non-interactive callers — Docker/s6, CI, piped runs — skip the prompt and hit the fail-closed error above, so an unattended deploy still never starts without auth.
+When you run `lucifex dashboard --host 0.0.0.0` **interactively** (a real terminal) and no provider is configured yetlucifex doesn't just fail — it offers to set one up on the spot: pick **username & password** (writes `dashboard.basic_auth` to `config.yaml` and you're running in seconds) or **OAuth** (points you lucifexucifex dashboard register`). Non-interactive callers — Docker/s6, CI, piped runs — skip the prompt and hit the fail-closed error above, so an unattended deploy still never starts without auth.
 
 ### Default provider: Nous Research
 
@@ -597,7 +597,7 @@ Because every login is verified against Nous Portal and protected by your Nous a
 
 To use the Nous provider you need an OAuth client ID (shape `agent:{id}`). There are two ways to get one:
 
-- **CLI — `lucifex dashboard register`.** Run it on the host where the dashboard lives. It resolves your existing Nous login (runlucifexifex setup` first if you're not logged in), registers a self-hosted OAuth client with the Portal, and writlucifexucifex_DASHBOARD_OAUTH_CLIENT_ID` into `~/.lucifex/.env` for you. Optional flags: `--name` (a human-readable label, otherwise auto-generated) and `--redirect-uri` (a public HTTPS callback URL for an internet-facing host).
+- **CLI — `lucifex dashboard register`.** Run it on the host where the dashboard lives. It resolves your existing Nous login (runlucifex setup` first if you're not logged in), registers a self-hosted OAuth client with the Portal, and writlucifexucifex_DASHBOARD_OAUTH_CLIENT_ID` into `~/.lucifex/.env` for you. Optional flags: `--name` (a human-readable label, otherwise auto-generated) and `--redirect-uri` (a public HTTPS callback URL for an internet-facing host).
 
   ```bash
   lucifex dashboard register
@@ -623,7 +623,7 @@ dashboard:
 
 | Env var | Overrides | Format | Provisioned by |
 |---------|-----------|--------|----------------|
-| `lucifex_DASHBOARD_OAUTH_CLIENT_ID` | `dashboard.oauth.client_id` | `agent:{instance_id}` |lucifexifex dashboard register` |
+| `lucifex_DASHBOARD_OAUTH_CLIENT_ID` | `dashboard.oauth.client_id` | `agent:{instance_id}` |lucifex dashboard register` |
 
 Per the lucifex Agent convention (`~/.lucifex/.env` is for API keys / secrets only), **`config.yaml` is the recommended place to set these values** for local dev, on-prem, and any deployment you control directly. The environment-variable path exists so a hosting platform's secret injection can push per-deploy `client_id`s without anyone having to edit `config.yaml` inside the image — that's its primary purpose.
 
@@ -651,7 +651,7 @@ networks).
 
 From a logged-in lucifex install to a Nous-gated dashboard in three steps.
 
-**1. Log in and register the dashboard.** `lucifex dashboard register` uses your existing Nous login to provision an OAuth client and writeslucifexifex_DASHBOARD_OAUTH_CLIENT_ID` into `~/.lucifex/.env` for you:
+**1. Log in and register the dashboard.** `lucifex dashboard register` uses your existing Nous login to provision an OAuth client and writeslucifex_DASHBOARD_OAUTH_CLIENT_ID` into `~/.lucifex/.env` for you:
 
 ```bash
 lucifex setup            # if you're not already logged into Nous Portal
@@ -674,7 +674,7 @@ curl -s http://<host>:9119/api/status | jq '.auth_required, .auth_providers'
 # ["nous"]
 ```
 
-`GET /api/auth/me` then returns the verified session (`provider: nous`). For an internet-facing host, register with `--redirect-uri https://lucifex.example.com/auth/callback` and setlucifexifex_DASHBOARD_PUBLIC_URL` so the OAuth callback resolves to your public URL (see [Public URL override](#public-url-override)).
+`GET /api/auth/me` then returns the verified session (`provider: nous`). For an internet-facing host, register with `--redirect-uri https://lucifex.example.com/auth/callback` and setlucifex_DASHBOARD_PUBLIC_URL` so the OAuth callback resolves to your public URL (see [Public URL override](#public-url-override)).
 
 ### Username/password provider (no OAuth IDP)
 
@@ -812,7 +812,7 @@ The ID token is what establishes identity — the access token is treated as opa
 
 [Keycloak](https://www.keycloak.org/) is one of the easiest self-hosted OIDC servers to stand up for a local test — it runs as a single container in dev mode (in-memory DB) and exposes textbook OIDC discovery. This walkthrough gets you from nothing to a working dashboard login in a few minutes.
 
-**1. Run Keycloak with a pre-configured realm.** Save this realm export as `realm-lucifex.json` — it defines alucifexifex` realm, a **public PKCE client*lucifexucifex-dashboard`), and a test user, all imported on boot so there's nothing to click in the admin UI:
+**1. Run Keycloak with a pre-configured realm.** Save this realm export as `realm-lucifex.json` — it defines alucifex` realm, a **public PKCE client*lucifexucifex-dashboard`), and a test user, all imported on boot so there's nothing to click in the admin UI:
 
 ```json
 {
@@ -866,8 +866,8 @@ Once it's up, the realm advertises standard OIDC discovery at
 **2. Point the dashboard at it.** The self-hosted plugin permits a loopback `http://` issuer (HTTPS is required for any non-loopback issuer), so the local Keycloak works as-is:
 
 ```bash
-export lucifex_DASHBOARD_OIDC_ISSUER="http://localhost:8080/realmlucifexifex"
-export lucifex_DASHBOARD_OIDC_CLIENT_IDlucifexifex-dashboard"
+export lucifex_DASHBOARD_OIDC_ISSUER="http://localhost:8080/realmlucifex"
+export lucifex_DASHBOARD_OIDC_CLIENT_IDlucifex-dashboard"
 export lucifex_DASHBOARD_PUBLIC_URL="http://localhost:9119"
 lucifex dashboard --host 0.0.0.0 --port 9119 --no-open
 ```
@@ -999,7 +999,7 @@ The dashboard's React StatusPage shows the same fields under "Web server". A sid
 
 ## Connecting lucifex Desktop to a remote backend
 
-lucifex Desktop can drive lucifexifex backend running on another machine (a VPS, a home server, a Mini behind Tailscale). In the app this lives under **Settings → Gateway → Remote gateway**, which asks for a **Remote URL** and a way to **Sign in**. (For the desktop app itself — install, settings, chat — see tlucifexucifex Desktop](/user-guide/desktop) page.)
+lucifex Desktop can drive lucifex backend running on another machine (a VPS, a home server, a Mini behind Tailscale). In the app this lives under **Settings → Gateway → Remote gateway**, which asks for a **Remote URL** and a way to **Sign in**. (For the desktop app itself — install, settings, chat — see tlucifexucifex Desktop](/user-guide/desktop) page.)
 
 You protect the remote dashboard with one of the bundled auth providers, and the desktop app signs in against whichever one the backend advertises. For a backend reachable beyond your own machine — a VPS, a public host, anything internet-facing — the recommended provider is **OAuth (Nous Portal)** (register it with [`lucifex dashboard register`](#registering-a-dashboard) and sign in with *Sign in with Nous Research*). The bundled [username/password provider](#usernamepassword-provider-no-oauth-idp) is the quickest option when the backend is on a trusted LAN or reachable only over a VPN, but is **not suitable for direct public-internet exposure**. Binding the dashboard to a non-loopback address engages its auth gate; once signed in, Desktop reuses the session for the chat WebSocket automatically — there is no token to copy or paste.
 
@@ -1051,7 +1051,7 @@ Instead of the in-app setting, you can point the desktop at a backend with an en
 ### Troubleshooting
 
 - **"Remote gateway incomplete"** — you haven't entered a remote URL.
-- **Sign-in fails with 401 / "Invalid credentials"** — the username or password doesn't match the backend's `lucifex_DASHBOARD_BASIC_AUTH_USERNAME` /lucifexifex_DASHBOARD_BASIC_AUTH_PASSWORD`. The backend returns the same generic error for unknown user and wrong password, so check both. Confirm the gate with `curl -s http://<host>:9119/api/status | jq '.auth_required, .auth_providers'` — it should report `true` and include `"basic"`.
+- **Sign-in fails with 401 / "Invalid credentials"** — the username or password doesn't match the backend's `lucifex_DASHBOARD_BASIC_AUTH_USERNAME` /lucifex_DASHBOARD_BASIC_AUTH_PASSWORD`. The backend returns the same generic error for unknown user and wrong password, so check both. Confirm the gate with `curl -s http://<host>:9119/api/status | jq '.auth_required, .auth_providers'` — it should report `true` and include `"basic"`.
 - **No "Sign in" button — it asks for a session token instead** — the username/password provider isn't active (`/api/status` won't list `"basic"`). Make sure the username and a password (or password hash) are set and the dashboard process loaded them.
 - **Signed out on every restart** — set `lucifex_DASHBOARD_BASIC_AUTH_SECRET` to a stable value; otherwise the signing key is regenerated per boot.
 - **Connection refused / times out** — the backend bound to `127.0.0.1` (the default) instead of a reachable address, or a firewall/VPN is blocking the port. Bind to `0.0.0.0` or the tailscale IP and open the port to your trusted network.
@@ -1086,7 +1086,7 @@ The frontend is built with React 19, TypeScript, Tailwind CSS v4, and shadcn/ui-
 
 ## Automatic Build on Update
 
-When you run `lucifex update`, the web frontend is automatically rebuilt if `npm` is available. This keeps the dashboard in sync with code updates. If `npm` isn't installed, the update skips the frontend build andlucifexifex dashboard` will build it on first launch.
+When you run `lucifex update`, the web frontend is automatically rebuilt if `npm` is available. This keeps the dashboard in sync with code updates. If `npm` isn't installed, the update skips the frontend build andlucifex dashboard` will build it on first launch.
 
 ## Themes & plugins
 

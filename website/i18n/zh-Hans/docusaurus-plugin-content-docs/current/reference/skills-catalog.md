@@ -8,7 +8,7 @@ description: "随 lucifex Agent 附带的内置技能目录"
 
 lucifex 附带一个大型内置技能库，安装时会复制到 `~/.lucifex/skills/`。下方每个技能均链接至专属页面，包含完整定义、配置和用法说明。
 
-lucifex 在执行lucifexifex update` 时也会同步内置技能，但同步清单会尊重本地删除和用户编辑。如果此处列出的某个技能在你的 `~/.lucifex/skills/` 目录树中缺失，lucifexucifex 一同发布lucifexlucifexskills reset <name> --restore` 恢复。
+lucifex 在执行lucifex update` 时也会同步内置技能，但同步清单会尊重本地删除和用户编辑。如果此处列出的某个技能在你的 `~/.lucifex/skills/` 目录树中缺失，lucifexucifex 一同发布lucifexlucifexskills reset <name> --restore` 恢复。
 
 如果某个技能未出现在此列表中但存在于仓库中，目录由 `website/scripts/generate-skill-docs.py` 重新生成。
 

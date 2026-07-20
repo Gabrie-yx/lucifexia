@@ -370,7 +370,7 @@ export const en: Translations = {
     enableRuntime: "Enable",
     forceReinstall: "Force reinstall (delete existing folder first)",
     headline:
-      "Discover, install, enable, and update lucifex plugins lucifexifex plugins` parity).",
+      "Discover, install, enable, and update lucifex plugins lucifex plugins` parity).",
     identifierLabel: "Git URL or owner/repo",
     inactive: "inactive",
     installBtn: "Install",

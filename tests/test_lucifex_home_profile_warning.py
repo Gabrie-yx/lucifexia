@@ -42,7 +42,7 @@ class TestGetlucifexHomeProfileWarning:
         self, fresh_constants, tmp_path, capsys
     ):
         """active_profile=default → still no warning, returns ~/.lucifex."""
-        lucifex_dir = tmp_path / lucifexifex"
+        lucifex_dir = tmp_path / lucifex"
         lucifex_dir.mkdir()
         (lucifex_dir / "active_profile").write_text("default\n")
         result = fresh_constants.get_lucifex_home()
@@ -53,7 +53,7 @@ class TestGetlucifexHomeProfileWarning:
         self, fresh_constants, tmp_path, capsys
     ):
         """active_profile=coder + LUCIFEX_HOME unset → warn loudly, still return fallback."""
-        lucifex_dir = tmp_path / lucifexifex"
+        lucifex_dir = tmp_path / lucifex"
         lucifex_dir.mkdir()
         (lucifex_dir / "active_profile").write_text("coder\n")
 
@@ -91,7 +91,7 @@ class TestGetlucifexHomeProfileWarning:
         self, fresh_constants, tmp_path, capsys
     ):
         """active_profile that can't be decoded → fall through silently."""
-        lucifex_dir = tmp_path / lucifexifex"
+        lucifex_dir = tmp_path / lucifex"
         lucifex_dir.mkdir()
         # Write bytes that aren't valid utf-8
         (lucifex_dir / "active_profile").write_bytes(b"\xff\xfe\x00\x00")
@@ -106,7 +106,7 @@ class TestGetlucifexHomeProfileWarning:
         self, fresh_constants, tmp_path, capsys
     ):
         """Empty active_profile file → treated as default, no warning."""
-        lucifex_dir = tmp_path / lucifexifex"
+        lucifex_dir = tmp_path / lucifex"
         lucifex_dir.mkdir()
         (lucifex_dir / "active_profile").write_text("")
 

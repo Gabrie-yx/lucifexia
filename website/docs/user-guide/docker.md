@@ -40,7 +40,7 @@ docker run -it --rm \
 This drops you into the setup wizard, which will prompt you for your API keys and write them to `~/.lucifex/.env`. You only need to do this once. It is highly recommended to set up a chat system for the gateway to work with at this point.
 
 :::tip
-Inside the container, run `lucifex setup --portal` once — the refresh token persists in the mounted `~lucifexifex` volume. See [Nous Portal](/integrations/nous-portal).
+Inside the container, run `lucifex setup --portal` once — the refresh token persists in the mounted `~lucifex` volume. See [Nous Portal](/integrations/nous-portal).
 :::
 
 ## Running in gateway mode
@@ -132,13 +132,13 @@ The dashboard's auth gate engages automatically when both of the following are t
 
 There are three bundled ways to satisfy the second condition:
 
-- **Username/password** — the simplest for a self-hosted / on-prem / homelab container on a trusted network or behind a VPN: set `lucifex_DASHBOARD_BASIC_AUTH_USERNAME` +lucifexifex_DASHBOARD_BASIC_AUTH_PASSWORD` (alucifexucifex_DASHBOARD_BASIC_AUTH_SECRET` for restart-stable sessions). Not suitable for direct public-internet exposure.
+- **Username/password** — the simplest for a self-hosted / on-prem / homelab container on a trusted network or behind a VPN: set `lucifex_DASHBOARD_BASIC_AUTH_USERNAME` +lucifex_DASHBOARD_BASIC_AUTH_PASSWORD` (alucifexucifex_DASHBOARD_BASIC_AUTH_SECRET` for restart-stable sessions). Not suitable for direct public-internet exposure.
 - **OAuth (Nous Portal)** — for hosted/public deploys: the `dashboard_auth/nous` provider activates whenever `lucifex_DASHBOARD_OAUTH_CLIENT_ID` is set.
-- **Self-hosted OIDC** — to authenticate against your own identity provider via standard OpenID Connect: the `dashboard_auth/self_hosted` provider activates when `lucifex_DASHBOARD_OIDC_ISSUER` +lucifexifex_DASHBOARD_OIDC_CLIENT_ID` are set.
+- **Self-hosted OIDC** — to authenticate against your own identity provider via standard OpenID Connect: the `dashboard_auth/self_hosted` provider activates when `lucifex_DASHBOARD_OIDC_ISSUER` +lucifex_DASHBOARD_OIDC_CLIENT_ID` are set.
 
 Whichever you choose, the gate redirects callers to a login page before they can reach any protected route. See [Web Dashboard → Authentication](features/web-dashboard.md#authentication-gated-mode) for all three providers.
 
-If no provider is registered and the bind is non-loopback, the dashboard **fails closed at startup** with a specific error pointing at the missing env var. There is no longer an escape hatch that serves the dashboard unauthenticated on a public bind: `lucifex_DASHBOARD_INSECURE=1` is now a deprecated no-op (it logs a warning and is ignored). Configure a provider, or bindlucifexifex_DASHBOARD_HOST=127.0.0.1` and reach the dashboard over an SSH tunnel / Tailscale instead.
+If no provider is registered and the bind is non-loopback, the dashboard **fails closed at startup** with a specific error pointing at the missing env var. There is no longer an escape hatch that serves the dashboard unauthenticated on a public bind: `lucifex_DASHBOARD_INSECURE=1` is now a deprecated no-op (it logs a warning and is ignored). Configure a provider, or bindlucifex_DASHBOARD_HOST=127.0.0.1` and reach the dashboard over an SSH tunnel / Tailscale instead.
 
 :::warning Why `--insecure` was removed
 An unauthenticated public dashboard was the entry point for the June 2026 MCP-config persistence campaign: internet scanners reached exposed dashboards (and OpenAI API servers) and drove the agent into planting an SSH-key backdoor. The auth gate is now mandatory on every non-loopback bind. For a trusted-LAN / homelab box, the bundled username/password provider (`lucifex_DASHBOARD_BASIC_AUTH_USERNAME` + `_PASSWORD`) is the zero-infra way to satisfy it.
@@ -159,7 +159,7 @@ docker run -it --rm \
 Or if you have already opened a terminal in your running container (via Docker Desktop for instance), just run:
 
 ```sh
-/opt/lucifex/.venv/bilucifexifex
+/opt/lucifex/.venv/bilucifex
 ```
 
 ## Persistent volumes
@@ -182,9 +182,9 @@ The `/opt/data` volume is the single source of truth for all lucifex state. It m
 
 ### Immutable install tree
 
-In hosted and published Docker images, `/opt/lucifex` is the installed application tree. It is root-owned and read-only to the runtimelucifexifex` user, so agent turns, gateway sessions, dashboard actions, and normal `docker elucifexulucifexlucifex...` commands cannot edit the core source, bundled `.venv`, `node_modules`, or TUI bundle in place.
+In hosted and published Docker images, `/opt/lucifex` is the installed application tree. It is root-owned and read-only to the runtimelucifex` user, so agent turns, gateway sessions, dashboard actions, and normal `docker elucifexulucifexlucifex...` commands cannot edit the core source, bundled `.venv`, `node_modules`, or TUI bundle in place.
 
-All mutable lucifex state belongs under `/opt/data`: config, `.env`, profiles, skills, memories, sessions, logs, dashboard uploads, plugins, and other user-managed files. The image also disables runtime `.pyc` writes anlucifexifex lazy dependency installs into `/lucifexucifex`; optional platform dependencies needed by the published image should be baked into the image or installed through a new image build.
+All mutable lucifex state belongs under `/opt/data`: config, `.env`, profiles, skills, memories, sessions, logs, dashboard uploads, plugins, and other user-managed files. The image also disables runtime `.pyc` writes anlucifex lazy dependency installs into `/lucifexucifex`; optional platform dependencies needed by the published image should be baked into the image or installed through a new image build.
 
 On hosted/published images, agent self-improvement is scoped to skills, memory, plugins, and config under `/opt/data`. The installed core source under `/opt/lucifex` is immutable; core changes are made via PRs to the repo and shipped by updating the image, not by live-editing the running install.
 
@@ -211,18 +211,18 @@ The lifecycle commands you'd run on the host work the same way from inside the c
 
 ```sh
 # Create a profile — registers the gateway-<name> s6 slot.
-docker exec lucifexelucifexifex profile create coder
+docker exec lucifexelucifex profile create coder
 
 # Start / stop / restart — dispatches s6-svc; the gateway lifecycle survives docker restart.
-docker exec lucifexelucifexifex -p coder gateway start
-docker exec lucifexelucifexifex -p coder gateway stop
-docker exec lucifexelucifexifex -p coder gateway restart
+docker exec lucifexelucifex -p coder gateway start
+docker exec lucifexelucifex -p coder gateway stop
+docker exec lucifexelucifex -p coder gateway restart
 
 # Status — reports `Manager: s6 (container supervisor)` inside the container.
-docker exec lucifexelucifexifex -p coder gateway status
+docker exec lucifexelucifex -p coder gateway status
 
 # Remove a profile — tears down the s6 slot too.
-docker exec lucifexelucifexifex profile delete coder
+docker exec lucifexelucifex profile delete coder
 ```
 
 Under the hood, `lucifex gateway start/stop/restart` inside the container is intercepted and routed to `s6-svc` against the right service directory; you don't need to learn the s6 commands directly. For raw supervisor state, use `/command/s6-svstat /run/service/gateway-<name>` (note `/command/` is on PATH only for processes spawned by the supervision tree — when calling from `docker exec`, pass the absolute path).
@@ -231,13 +231,13 @@ Under the hood, `lucifex gateway start/stop/restart` inside the container is int
 
 Two different surfaces reach a profile's gateway from outside, and they behave differently — don't conflate them:
 
-**lucifex Desktop (and the web dashboard).** The Desktop app's **Remote Gateway** connection talks to alucifexifex dashboard` backend (default **port 9119**, enabled lucifexucifex_DASHBOARD=1`) — *not* the OpenAI API server. One dashboard backend serves **every** co-located profile: the app's profile switcher sends the target profile with each request and the backend opens that profile's `LUCIFEX_HOME` on disk. So you do **not** need a second port — or a second connection — per profile for Desktop; one `:9119` connection covers them all through the switcher.
+**lucifex Desktop (and the web dashboard).** The Desktop app's **Remote Gateway** connection talks to alucifex dashboard` backend (default **port 9119**, enabled lucifexucifex_DASHBOARD=1`) — *not* the OpenAI API server. One dashboard backend serves **every** co-located profile: the app's profile switcher sends the target profile with each request and the backend opens that profile's `LUCIFEX_HOME` on disk. So you do **not** need a second port — or a second connection — per profile for Desktop; one `:9119` connection covers them all through the switcher.
 
 **OpenAI-compatible API clients (Open WebUI, LobeChat, `/v1/...`).** These talk to each profile's **API server**, which binds **port 8642 for every profile** (resolved from `API_SERVER_PORT` / `platforms.api_server.extra.port` — there is no auto-allocation and no `config.yaml`/`gateway.port` key). If you want a client to reach a *specific* second profile, give that profile a distinct `API_SERVER_PORT` in **its own** `.env`, otherwise its gateway tries to bind 8642 too and conflicts with the default profile:
 
 ```sh
 # Create the profile (registers its gateway-<name> s6 slot)
-docker exec lucifexelucifexifex profile create work
+docker exec lucifexelucifex profile create work
 
 # Point its API server at a free port (write to the profile's own .env)
 cat >> /opt/data/profiles/work/.env <<'EOF'
@@ -245,7 +245,7 @@ API_SERVER_ENABLED=true
 API_SERVER_PORT=8643
 EOF
 
-docker exec lucifexelucifexifex -p work gateway restart
+docker exec lucifexelucifex -p work gateway restart
 ```
 
 Keep `API_SERVER_PORT` in each profile's **own** `.env`, never in the container-wide `environment:` block — a global value would force every profile onto the same port and they would collide. With bridge networking, publish the extra port in `docker-compose.yml` (`- "8643:8643"`); with `network_mode: host` it is already reachable on the host. The default profile's 8642 connection is untouched.
@@ -308,7 +308,7 @@ The s6 container has four distinct log surfaces, and "why isn't my gateway showi
 | Source | Where it lands | How to read it |
 |---|---|---|
 | **Per-profile gateway** (`lucifex gateway run` and per-profile gateways under s6) | Tee'd to two places: `docker logs <container>` (real time, no extra prefix) **and** `${LUCIFEX_HOME}/logs/gateways/<profile>/current` (rotated, ISO-8601 timestamped, 10 archives × 1 MB each) | `docker logs -f lucifex` or `tail -F ~/.lucifex/logs/gateways/default/current` on the host |
-| **Dashboard** (when `lucifex_DASHBOARD=1`) | `docker logs <container>` (no prefix) | `docker logs -lucifexifex` — interleaved with gateway lines |
+| **Dashboard** (when `lucifex_DASHBOARD=1`) | `docker logs <container>` (no prefix) | `docker logs -lucifex` — interleaved with gateway lines |
 | **Boot reconciler** (records which profile gateways were restored on each container start) | `${LUCIFEX_HOME}/logs/container-boot.log` (append-only audit log) | `tail -F ~/.lucifex/logs/container-boot.log` |
 | **Generic lucifex logs** (`agent.log`, `errors.log`) | `${LUCIFEX_HOME}/logs/` (profile-aware) | `docker exelucifexilucifexucifex logs --follow [--level WARNING] [--session <id>]` |
 
@@ -332,7 +332,7 @@ docker run -it --rm \
 Direct `-e` flags override values from `.env`. This is useful for CI/CD or secrets-manager integrations where you don't want keys on disk.
 
 :::note Looking for Docker as the **terminal backend**?
-This page covers running lucifex itself inside Docker. If you wanlucifexifex to execute the agent's `terminal` / `execute_code` calls inside a Docker sandbox container (one long-lived container shared acrlucifexucifex processes — see issue #20561), that's a separate config block — `terminal.backend: docker` plus `terminal.docker_image`, `terminal.docker_volumes`, `terminal.docker_forward_env`, `terminal.docker_env`, `terminal.docker_run_as_host_user`, `terminal.docker_extra_args`, `terminal.docker_persist_across_processes`, and `terminal.docker_orphan_reaper`. See [Configuration → Docker Backend](configuration.md#docker-backend) for the full set including container-lifecycle rules.
+This page covers running lucifex itself inside Docker. If you wanlucifex to execute the agent's `terminal` / `execute_code` calls inside a Docker sandbox container (one long-lived container shared acrlucifexucifex processes — see issue #20561), that's a separate config block — `terminal.backend: docker` plus `terminal.docker_image`, `terminal.docker_volumes`, `terminal.docker_forward_env`, `terminal.docker_env`, `terminal.docker_run_as_host_user`, `terminal.docker_extra_args`, `terminal.docker_persist_across_processes`, and `terminal.docker_orphan_reaper`. See [Configuration → Docker Backend](configuration.md#docker-backend) for the full set including container-lifecycle rules.
 :::
 
 ## Docker Compose example
@@ -371,7 +371,7 @@ Start with `docker compose up -d` and view logs with `docker compose logs -f`. T
 Voice mode in Docker needs two separate things to work: lucifex must be allowed to probe audio devices inside the container, and the container must be able to reach your host audio server. The setup below covers the host audio plumbing for Linux desktops that expose a PulseAudio-compatible socket, including many PipeWire setups.
 
 :::caution
-This is a Linux desktop workaround, not a general Docker Desktop feature. It is useful when you already have host audio working and want CLI voice mode inside the lucifex container. Ilucifexifex still reports `Running inside Docker container -- no audio devices`, use a build that includes Docker audio probing support for `PULSE_SERVER` / `PIPEWIRE_REMOTE`.
+This is a Linux desktop workaround, not a general Docker Desktop feature. It is useful when you already have host audio working and want CLI voice mode inside the lucifex container. Ilucifex still reports `Running inside Docker container -- no audio devices`, use a build that includes Docker audio probing support for `PULSE_SERVER` / `PIPEWIRE_REMOTE`.
 :::
 
 First, create an ALSA config next to your Compose file:
@@ -419,12 +419,12 @@ services:
     command: gateway run
     volumes:
       - ~/.lucifex:/opt/data
-      - /run/user/${lucifex_UID}/pulse:/run/user/lucifexifex_UID}/pulse
+      - /run/user/${lucifex_UID}/pulse:/run/user/lucifex_UID}/pulse
       - ~/.config/pulse/cookie:/tmp/pulse-cookie:ro
       - ./asound.conf:/etc/asound.conf:ro
     environment:
-      - lucifex_UID=lucifexifex_UID}
-      - lucifex_GID=lucifexifex_GID}
+      - lucifex_UID=lucifex_UID}
+      - lucifex_GID=lucifex_GID}
       - XDG_RUNTIME_DIR=/run/user/${lucifex_UID}
       - PULSE_SERVER=unix:/run/user/${lucifex_UID}/pulse/native
       - PULSE_COOKIE=/tmp/pulse-cookie
@@ -441,7 +441,7 @@ docker compose up -d --build
 To verify what PortAudio sees inside the container:
 
 ```sh
-docker exec lucifex /oplucifexifex/.venv/bin/python -c "import sounddevice as sd; print(sd.query_devices())"
+docker exec lucifex /oplucifex/.venv/bin/python -c "import sounddevice as sd; print(sd.query_devices())"
 ```
 
 ## Resource limits
@@ -480,10 +480,10 @@ The official image is based on `debian:13.4` and includes:
 - The WhatsApp bridge (`scripts/whatsapp-bridge/`)
 - **[`s6-overlay`](https://github.com/just-containers/s6-overlay) v3** as PID 1 (replaces the older `tini`) — supervises the dashboard and per-profile gateways with auto-restart on crash, reaps zombie subprocesses, and forwards signals.
 
-The image treats `/opt/lucifex` as an immutable install tree at runtime. Optional Python extras, Node workspaces, and TUI assets that must be available inside Docker need to be baked during the image build; runtime lazy installs are disabled so supervised gateways and `docker exelucifexifex …` commands do not try to write dependency artifacts back into the read-only source tree.
+The image treats `/opt/lucifex` as an immutable install tree at runtime. Optional Python extras, Node workspaces, and TUI assets that must be available inside Docker need to be baked during the image build; runtime lazy installs are disabled so supervised gateways and `docker exelucifex …` commands do not try to write dependency artifacts back into the read-only source tree.
 
 The container's `ENTRYPOINT` is s6-overlay's `/init`. On boot it:
-1. Runs `/etc/cont-init.d/01-lucifex-setup` (= `docker/stage2-hook.sh`) as root: optional UID/GID remap, fixes volume ownership, seeds `.env` / `config.yaml` / `SOUL.md` on first boot, runs non-interactive config-schema migrations unlesslucifexifex_SKIP_CONFIG_MIGRATION=1`, syncs bundled skills.
+1. Runs `/etc/cont-init.d/01-lucifex-setup` (= `docker/stage2-hook.sh`) as root: optional UID/GID remap, fixes volume ownership, seeds `.env` / `config.yaml` / `SOUL.md` on first boot, runs non-interactive config-schema migrations unlesslucifex_SKIP_CONFIG_MIGRATION=1`, syncs bundled skills.
 2. Runs `/etc/cont-init.d/02-reconcile-profiles` (= `lucifex_cli.container_boot`): walks `$LUCIFEX_HOME/profiles/<name>/`, recreates the per-profile gateway s6 service slot under `/run/service/gateway-<profile>/`, and auto-starts only those whose last recorded state was `running` (see [Per-profile gateway supervision](#per-profile-gateway-supervision)).
 3. Starts the static `main-lucifex` and `dashboard` s6-rc services.
 4. Exec's the container's CMD as the main program (`/opt/lucifex/docker/main-wrapper.sh`), which routes the arguments the user passed to `docker run`:
@@ -497,17 +497,17 @@ The container ENTRYPOINT is now `/init` (s6-overlay), not `/usr/bin/tini`. All f
 :::
 
 :::warning Privilege model
-Do not override the image entrypoint unless you keep `/init` (or, equivalently, the legacy `docker/entrypoint.sh` shim that forwards to the stage2 hook) in the command chain. s6-overlay's `/init` runs as root so it can chown the volume on first boot, then drops to the `lucifex` user via `s6-setuidgid` for every supervised service AND for the main program. Starting `lucifex gateway run` as root inside the official image is refused by default because it can leave root-owned files in `/opt/data` and break later dashboard or gateway starts. Setlucifexifex_ALLOW_ROOT_GATEWAY=1` only when you intentionally accept that risk.
+Do not override the image entrypoint unless you keep `/init` (or, equivalently, the legacy `docker/entrypoint.sh` shim that forwards to the stage2 hook) in the command chain. s6-overlay's `/init` runs as root so it can chown the volume on first boot, then drops to the `lucifex` user via `s6-setuidgid` for every supervised service AND for the main program. Starting `lucifex gateway run` as root inside the official image is refused by default because it can leave root-owned files in `/opt/data` and break later dashboard or gateway starts. Setlucifex_ALLOW_ROOT_GATEWAY=1` only when you intentionally accept that risk.
 :::
 
 ### `docker exec` automatically drops to the `lucifex` user
 
-`docker exec lucifex <cmd>` defaults to running as root inside the container, but the image ships a thin shim at `/oplucifexifex/lucifexucifex` (earliest on PATH) that detects root callers and transparently re-execs through `s6-setulucifexlucifex. So `docklucifexc llucifexogin`, `dolucifexxec lulucifexofile create …`, `lucifex exec luclucifexup`, etc. all write files owned by UID 10000 — i.e. readable by the supervised gateway — with no extra `--user` flag needed. Non-root callers (the supervised processes themselves, `dockelucifex --user lucilucifexnban subagents inside the container) hit a short-circuit that exec's the venv binary directly, so there's no overhead on the hot paths.
+`docker exec lucifex <cmd>` defaults to running as root inside the container, but the image ships a thin shim at `/oplucifex/lucifexucifex` (earliest on PATH) that detects root callers and transparently re-execs through `s6-setulucifexlucifex. So `docklucifexc llucifexogin`, `dolucifexxec lulucifexofile create …`, `lucifex exec luclucifexup`, etc. all write files owned by UID 10000 — i.e. readable by the supervised gateway — with no extra `--user` flag needed. Non-root callers (the supervised processes themselves, `dockelucifex --user lucilucifexnban subagents inside the container) hit a short-circuit that exec's the venv binary directly, so there's no overhead on the hot paths.
 
 If you specifically need a `docker exec` that retains root semantics (diagnostic sessions, inspecting root-only state, files outside `/opt/data` that root happens to own), opt out per invocation:
 
 ```sh
-docker exec -e lucifex_DOCKER_EXEC_AS_ROOT=lucifexifex <cmd>
+docker exec -e lucifex_DOCKER_EXEC_AS_ROOT=lucifex <cmd>
 ```
 
 The shim accepts `1` / `true` / `yes` (case-insensitive). Anything else — including typos like `=0` — falls through to the drop, so silent opt-outs aren't possible. If `s6-setuidgid` isn't available (custom builds that stripped s6-overlay), the shim refuses to run as root and exits 126 instead, surfacing the broken privilege model loudly rather than regressing to the historical footgun where `docker exec lucifex login` would write `auth.json` as `root:root` and break the supervised gateway's auth on every chat platform message.
@@ -555,7 +555,7 @@ persisted config manually before letting the new image rewrite it.
 
 ## Skills and credential files
 
-When using Docker as the execution environment (not the methods above, but when the agent runs commands inside a Docker sandbox — see [Configuration → Docker Backend](./configuration.md#docker-backend)), lucifex reuses a single long-lived container for all tool calls and automatically bind-mounts the skills directory (`~/.lucifex/skills/`) and any credential files declared by skills into that container as read-only volumes. Skill scripts, templates, and references are available inside the sandbox without manual configuration, and because the container persists for the life of thlucifexifex process, any dependencies you install or files you write stay around for the next tool call.
+When using Docker as the execution environment (not the methods above, but when the agent runs commands inside a Docker sandbox — see [Configuration → Docker Backend](./configuration.md#docker-backend)), lucifex reuses a single long-lived container for all tool calls and automatically bind-mounts the skills directory (`~/.lucifex/skills/`) and any credential files declared by skills into that container as read-only volumes. Skill scripts, templates, and references are available inside the sandbox without manual configuration, and because the container persists for the life of thlucifex process, any dependencies you install or files you write stay around for the next tool call.
 
 The same syncing happens for SSH and Modal backends — skills and credential files are uploaded via rsync or the Modal mount API before each command.
 
@@ -571,7 +571,7 @@ Dependencies are fetched on demand and cached for the life of the container. Con
 
 ### Other tools (apt packages, binaries) — install and remember
 
-For anything outside npm or PyPI — `apt` packages, prebuilt binaries, language runtimes not already in the image — instruct lucifex how to install it (e.g. `apt-get update && apt-get install -y <package>`) and tell it to remember the install command. The tool persists for the rest of the container's lifetime, anlucifexifex will re-run the install command after a container restart when it next needs the tool.
+For anything outside npm or PyPI — `apt` packages, prebuilt binaries, language runtimes not already in the image — instruct lucifex how to install it (e.g. `apt-get update && apt-get install -y <package>`) and tell it to remember the install command. The tool persists for the rest of the container's lifetime, anlucifex will re-run the install command after a container restart when it next needs the tool.
 
 This is a good fit for tools that are quick to install and used occasionally. For tools used constantly, prefer the next approach.
 
@@ -605,7 +605,7 @@ The entrypoint script and `/opt/data` semantics are inherited unchanged, so the 
 
 ### Complex tools or multi-service stacks — run a sidecar container
 
-For tools that bring their own service (a database, a web server, a queue, a headless browser farm) or that are too heavy to live inside the lucifex container, run them as a separate container on a shared Docker networklucifexifex reaches the sidecar by container name, the same way it reaches a local inference server (see [Connecting to local inference servers](#connecting-to-local-inference-servers-vllm-ollama-etc)).
+For tools that bring their own service (a database, a web server, a queue, a headless browser farm) or that are too heavy to live inside the lucifex container, run them as a separate container on a shared Docker networklucifex reaches the sidecar by container name, the same way it reaches a local inference server (see [Connecting to local inference servers](#connecting-to-local-inference-servers-vllm-ollama-etc)).
 
 ```yaml
 services:
@@ -633,7 +633,7 @@ networks:
     driver: bridge
 ```
 
-From inside the lucifex container, the sidecar is reachable at `http://my-tool:<port>` (or whatever protocol it serves). This pattern keeps each service's lifecycle, resource limits, and upgrade cadence independent, and avoids bloating thlucifexifex image with dependencies that are only needed by one tool.
+From inside the lucifex container, the sidecar is reachable at `http://my-tool:<port>` (or whatever protocol it serves). This pattern keeps each service's lifecycle, resource limits, and upgrade cadence independent, and avoids bloating thlucifex image with dependencies that are only needed by one tool.
 
 ### Broadly useful tools — open an issue or pull request
 
@@ -782,13 +782,13 @@ Check logs: `docker logs lucifex`. Common causes:
 
 ### "Permission denied" errors
 
-The container's stage2 hook drops privileges to the non-root `lucifex` user (UID 10000) via `s6-setuidgid` inside each supervised service. If your host `~/.lucifex/` is owned by a different UID, setlucifexifex_UIlucifexucifex_GID` — or their `PUID`/`PGID` aliases, for parity with LinuxServer.io and NAS images — to match your host user, or ensure the data directory is writable:
+The container's stage2 hook drops privileges to the non-root `lucifex` user (UID 10000) via `s6-setuidgid` inside each supervised service. If your host `~/.lucifex/` is owned by a different UID, setlucifex_UIlucifexucifex_GID` — or their `PUID`/`PGID` aliases, for parity with LinuxServer.io and NAS images — to match your host user, or ensure the data directory is writable:
 
 ```sh
 chmod -R 755 ~/.lucifex
 ```
 
-On a NAS (UGOS, Synology, unRAID) the data directory is typically a **bind mount** owned by a host UID the container cannot `chown`. Set `PUID`/`PGID` (or `lucifex_UID`lucifexifex_GID`) to that host user so the runtime runs as the owner of the mount rather than UID 10000:
+On a NAS (UGOS, Synology, unRAID) the data directory is typically a **bind mount** owned by a host UID the container cannot `chown`. Set `PUID`/`PGID` (or `lucifex_UID`lucifex_GID`) to that host user so the runtime runs as the owner of the mount rather than UID 10000:
 
 ```sh
 docker run -d \
@@ -798,7 +798,7 @@ docker run -d \
   nousresearch/lucifex-agent gateway run
 ```
 
-`docker exec lucifex <cmd>` automatically drops to UID 10000 too — see [`docker exec` automatically drops to thelucifexifex` user](#docker-exec-automatically-drops-to-lucifexucifex-user) for details and the per-invocation opt-out.
+`docker exec lucifex <cmd>` automatically drops to UID 10000 too — see [`docker exec` automatically drops to thelucifex` user](#docker-exec-automatically-drops-to-lucifexucifex-user) for details and the per-invocation opt-out.
 
 ### Browser tools not working
 

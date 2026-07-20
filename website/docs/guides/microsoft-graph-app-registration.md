@@ -137,7 +137,7 @@ chmod 600 ~/.lucifex/.env
 
 ## Step 6: Verify the Token Flow
 
-lucifex ships a Graph auth smoke-test. From youlucifexifex install:
+lucifex ships a Graph auth smoke-test. From youlucifex install:
 
 ```python
 python -c "

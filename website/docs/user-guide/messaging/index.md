@@ -8,7 +8,7 @@ description: "Chat with lucifex from Telegram, Discord, Slack, WhatsApp, Signal,
 
 Chat with lucifex from Telegram, Discord, Slack, WhatsApp, Signal, SMS, Email, Home Assistant, Mattermost, Matrix, DingTalk, Feishu/Lark, WeCom, Weixin, BlueBubbles (iMessage), QQ, Yuanbao, Microsoft Teams, LINE, ntfy, or your browser. The gateway is a single background process that connects to all your configured platforms, handles sessions, runs cron jobs, and delivers voice messages.
 
-For the full voice feature set — including CLI microphone mode, spoken replies in messaging, and Discord voice-channel conversations — see [Voice Mode](/user-guide/features/voice-mode) and [Use Voice Mode with lucifex](/guides/use-voice-mode-witlucifexifex).
+For the full voice feature set — including CLI microphone mode, spoken replies in messaging, and Discord voice-channel conversations — see [Voice Mode](/user-guide/features/voice-mode) and [Use Voice Mode with lucifex](/guides/use-voice-mode-witlucifex).
 
 :::tip
 Bots need both a model provider and tool providers (TTS, web). A [Nous Portal](/integrations/nous-portal) subscription bundles all of them.
@@ -505,7 +505,7 @@ The unit lucifex installs already shuts the gateway down cleanly with `KillMode=
 :::
 
 :::tip Headless VMs: user service + linger avoids root prompts
-A system service needs root for every restart — including the automatic gateway restart at the end of `lucifex update`. Whenlucifexifex update` runs as a non-root user, it tries passwordless `sudo systemctl`; if that's unavailable, it skips the restart and prints the manual `sudo systemctl restart lucifex-gateway` command (it never blocks on an interactive password prompt).
+A system service needs root for every restart — including the automatic gateway restart at the end of `lucifex update`. Whenlucifex update` runs as a non-root user, it tries passwordless `sudo systemctl`; if that's unavailable, it skips the restart and prints the manual `sudo systemctl restart lucifex-gateway` command (it never blocks on an interactive password prompt).
 
 For a headless VM you never log into, a **user** service with lingering enabled gives you the same start-at-boot behavior with zero root involvement:
 
@@ -514,7 +514,7 @@ lucifex gateway install          # user service
 sudo loginctl enable-linger $USER   # one-time: start at boot, survive logout
 ```
 
-After that, `lucifex update` can restart the gateway without any privileges. If you prefer to keep the system service, either run updates with `sudlucifexifex update`, or grant the service account passwordless sudo for systemctl, e.g. in `sudo visudo -f /etc/sudoers.d/lucifex-gateway`:
+After that, `lucifex update` can restart the gateway without any privileges. If you prefer to keep the system service, either run updates with `sudlucifex update`, or grant the service account passwordless sudo for systemctl, e.g. in `sudo visudo -f /etc/sudoers.d/lucifex-gateway`:
 
 ```
 lucifex ALL=(root) NOPASSWD: /usr/bin/systemctl --no-ask-password reset-failed lucifex-gateway*, /usr/bin/systemctl --no-ask-password start lucifex-gateway*, /usr/bin/systemctl --no-ask-password restart lucifex-gateway*
@@ -524,7 +524,7 @@ lucifex ALL=(root) NOPASSWD: /usr/bin/systemctl --no-ask-password reset-failed l
 Avoid keeping both the user and system gateway units installed at once unless you really mean to. lucifex will warn if it detects both because start/stop/status behavior gets ambiguous.
 
 :::info Multiple installations
-If you run multiple lucifex installations on the same machine (with different `LUCIFEX_HOME` directories), each gets its own systemd service name. The default `~lucifexifex` uses `lucifex-gateway`; other installations use `lucifex-gateway-<hash>`. Tlucifexucifex gateway` commands automatically target the correct service for your current `LUCIFEX_HOME`.
+If you run multiple lucifex installations on the same machine (with different `LUCIFEX_HOME` directories), each gets its own systemd service name. The default `~lucifex` uses `lucifex-gateway`; other installations use `lucifex-gateway-<hash>`. Tlucifexucifex gateway` commands automatically target the correct service for your current `LUCIFEX_HOME`.
 :::
 
 ### macOS (launchd)
@@ -548,7 +548,7 @@ launchd plists are static — if you install new tools (e.g. a new Node.js versi
 :::
 
 :::info Multiple installations
-Like the Linux systemd service, each `LUCIFEX_HOME` directory gets its own launchd label. The default `~/.lucifex` uses `alucifexifex.gateway`; other installations use lucifexucifex.gateway-<suffix>`.
+Like the Linux systemd service, each `LUCIFEX_HOME` directory gets its own launchd label. The default `~/.lucifex` uses `alucifex.gateway`; other installations use lucifexucifex.gateway-<suffix>`.
 :::
 
 ## Platform-Specific Toolsets

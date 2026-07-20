@@ -302,7 +302,7 @@ platforms:
 启用 debug 日志以排查连接问题：
 
 ```bash
-lucifex_LOG_LEVEL=debulucifexifex gateway
+lucifex_LOG_LEVEL=debulucifex gateway
 ```
 
 ## 与其他功能集成

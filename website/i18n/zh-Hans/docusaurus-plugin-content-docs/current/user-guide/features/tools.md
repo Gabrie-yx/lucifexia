@@ -33,7 +33,7 @@ lucifex 内置了丰富的工具注册表，涵盖网页搜索、浏览器自动
 如需查看由代码派生的权威注册表，请参阅 [内置工具参考](/reference/tools-reference) 和 [工具集参考](/reference/toolsets-reference)。
 
 :::tip Nous Tool Gateway
-付费 [Nous Portal](https://portal.nousresearch.com) 订阅者可通过 **[Tool Gateway](tool-gateway.md)** 使用网页搜索、图像生成、TTS 和浏览器自动化——无需单独配置 API 密钥。运行 `lucifex model` 启用，或通过lucifexifex tools` 配置各工具。
+付费 [Nous Portal](https://portal.nousresearch.com) 订阅者可通过 **[Tool Gateway](tool-gateway.md)** 使用网页搜索、图像生成、TTS 和浏览器自动化——无需单独配置 API 密钥。运行 `lucifex model` 启用，或通过lucifex tools` 配置各工具。
 :::
 
 ## 使用工具集
@@ -51,7 +51,7 @@ lucifex tools
 
 常用工具集包括 `web`、`search`、`terminal`、`file`、`browser`、`vision`、`image_gen`、`moa`、`skills`、`tts`、`todo`、`memory`、`session_search`、`cronjob`、`code_execution`、`delegation`、`clarify`、`homeassistant`、`messaging`、`spotify`、`discord`、`discord_admin`、`debugging` 和 `safe`。
 
-完整列表（包括 `lucifex-cli`lucifexifex-telegram` 等平台预设以及 `mcp-<server>` 等动态 MCP 工具集）请参阅 [工具集参考](/reference/toolsets-reference)。
+完整列表（包括 `lucifex-cli`lucifex-telegram` 等平台预设以及 `mcp-<server>` 等动态 MCP 工具集）请参阅 [工具集参考](/reference/toolsets-reference)。
 
 ## 终端后端
 
@@ -84,7 +84,7 @@ terminal:
   docker_image: python:3.11-slim
 ```
 
-**单个持久容器，在整个进程生命周期内共享。** lucifex 在首次使用时启动一个长期运行的容器（`docker run -d ... sleep 2h`），并通过 `docker exec` 将所有终端、文件及 `execute_code` 调用路由到同一容器中。工作目录变更、已安装的包、环境调整以及写入 `/workspace` 的文件，在同lucifexifex 进程的整个生命周期内，跨 `/new`、`/reset` 和 `delegate_task` 子 Agent 均会保留。容器在关闭时停止并删除。
+**单个持久容器，在整个进程生命周期内共享。** lucifex 在首次使用时启动一个长期运行的容器（`docker run -d ... sleep 2h`），并通过 `docker exec` 将所有终端、文件及 `execute_code` 调用路由到同一容器中。工作目录变更、已安装的包、环境调整以及写入 `/workspace` 的文件，在同lucifex 进程的整个生命周期内，跨 `/new`、`/reset` 和 `delegate_task` 子 Agent 均会保留。容器在关闭时停止并删除。
 
 这意味着 Docker 后端的行为类似持久化沙箱虚拟机，而非每次命令都使用全新容器。如果你执行过一次 `pip install foo`，该包在本次会话的剩余时间内均可用。如果你执行了 `cd /workspace/project`，后续的 `ls` 调用将看到该目录。完整的生命周期详情及控制 `/workspace` 和 `/root` 是否跨 lucifex 重启保留的 `container_persistent` 标志，请参阅 [配置 → Docker 后端](../configuration.md#docker-backend)。
 

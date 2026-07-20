@@ -1160,7 +1160,7 @@ class TestDiskFailureMarker:
 
 class TestlucifexHomeIsolation:
     def test_lucifex_bin_dir_respects_LUCIFEX_HOME(self):
-        """_lucifex_bin_dir must use LUCIFEX_HOME, not hardcoded ~lucifexifex."""
+        """_lucifex_bin_dir must use LUCIFEX_HOME, not hardcoded ~lucifex."""
         from tools.tirith_security import _lucifex_bin_dir
         import tempfile
         tmpdir = tempfile.mkdtemp()

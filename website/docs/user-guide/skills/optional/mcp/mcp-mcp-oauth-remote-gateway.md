@@ -135,7 +135,7 @@ are out of the dashboard's scope regardless.
 ## The Workaround
 
 Do the OAuth dance manually, then write the resulting tokens into the exact files
-lucifex' `LucifexTokenStorage` would have written, so on `/reload-mcplucifexifex finds
+lucifex' `LucifexTokenStorage` would have written, so on `/reload-mcplucifex finds
 cached tokens and skips the browser flow entirely.
 
 Run the shell commands below through the `terminal` tool on the gateway host and

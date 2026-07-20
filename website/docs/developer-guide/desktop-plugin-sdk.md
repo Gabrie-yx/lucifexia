@@ -22,7 +22,7 @@ and hot-reloads every save.
 
 :::warning This is not the web-dashboard plugin SDK
 "Plugin" means several unrelated things across lucifex. This page is the **native
-desktop app** (`lucifex desktop`) SDK — the lucifexifex/plugin-sdk` module and
+desktop app** (`lucifex desktop`) SDK — the lucifex/plugin-sdk` module and
 `$LUCIFEX_HOME/desktop-plugins/`. The **web dashboard** (`lucifex dashboard`) has
 its own, unrelated plugin system on `window.__lucifex_PLUGIN_SDK__` with a
 `manifest.json` — documented at
@@ -61,7 +61,7 @@ enable/disable live. Everything on this page is written against the disk door
 (what you and the agent write); [Bundled plugins](#bundled-plugins) notes the two
 differences. No desktop plugins ship in the core tree today — reference demos
 live in the companion
-[`lucifex-example-plugins`](https://github.com/NousResearclucifexifex-example-plugins)
+[`lucifex-example-plugins`](https://github.com/NousResearclucifex-example-plugins)
 repo.
 
 ## Quick start — your first plugin
@@ -551,7 +551,7 @@ enable/disable contract as a disk plugin. The two differences:
 
 No desktop plugins ship in the core tree today; the shipped app stays uncluttered
 and demos live in the
-[`lucifex-example-plugins`](https://github.com/NousResearclucifexifex-example-plugins)
+[`lucifex-example-plugins`](https://github.com/NousResearclucifex-example-plugins)
 companion repo.
 
 ## Security model

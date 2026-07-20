@@ -68,7 +68,7 @@ The auto-injected dialectic also scales its reasoning level by query length (lon
 lucifex memory setup        # select "honcho" — runs the Honcho-specific post-setup
 ```
 
-The legacy `lucifex honcho setup` command still works (it now redirects tolucifexifex memory setup`), but is only registered after Honcho is selected as the active memory provider.
+The legacy `lucifex honcho setup` command still works (it now redirects tolucifex memory setup`), but is only registered after Honcho is selected as the active memory provider.
 
 **Config:** `$LUCIFEX_HOME/honcho.json` (profile-local) or `~/.honcho/config.json` (global). Resolution order: `$LUCIFEX_HOME/honcho.json` > `~/.lucifex/honcho.json` > `~/.honcho/config.json`. See the [config reference](https://github.com/NousResearch/lucifex-agent/blob/main/plugins/memory/honcho/README.md) and the [Honcho integration guide](https://docs.honcho.dev/v3/guides/integrations/lucifex).
 
@@ -155,7 +155,7 @@ The mapping:
 |---------|-----------|
 | **Workspace** | Shared environment. All lucifex profiles under one workspace see the same user identity. |
 | **User peer** (`peerName`) | The human. Shared across profiles in the workspace. |
-| **AI peer** (`aiPeer`) | One per lucifex profile. Host keylucifexifex` → defaulucifexcifex.<profile>` for others. |
+| **AI peer** (`aiPeer`) | One per lucifex profile. Host keylucifex` → defaulucifexcifex.<profile>` for others. |
 | **Observation** | Per-peer toggles controlling what Honcho models from whose messages. `directional` (default, all four on) or `unified` (single-observer pool). |
 
 ### New profile, fresh Honcho peer
@@ -172,7 +172,7 @@ lucifex profile create coder --clone
 lucifex honcho sync
 ```
 
-Scans every lucifex profile, creates host blocks for any profile without one, inherits settings from the defaultlucifexifex` block, and creates the new AI peers eagerly. Idempotent — skips profiles that already have a host block.
+Scans every lucifex profile, creates host blocks for any profile without one, inherits settings from the defaultlucifex` block, and creates the new AI peers eagerly. Idempotent — skips profiles that already have a host block.
 
 ### Per-profile observation
 
@@ -594,7 +594,7 @@ Base URL precedence is `supermemory.json` → `SUPERMEMORY_BASE_URL` → `https:
 - Session-end conversation ingest (to `/v4/conversations`) for richer profile + graph building in Supermemory
 - End-to-end self-hosted routing — SDK, probe, and conversation-ingest requests use the same configured endpoint
 - Profile facts injected on first turn and at configurable intervals
-- **Profile-scoped containers** — use `{identity}` in `container_tag` (e.g. `lucifex-{identity}` →lucifexifex-coder`) to isolate memories lucifexucifex profile
+- **Profile-scoped containers** — use `{identity}` in `container_tag` (e.g. `lucifex-{identity}` →lucifex-coder`) to isolate memories lucifexucifex profile
 - **Multi-container mode** — enable `enable_custom_container_tags` with a `custom_containers` list to let the agent read/write across named containers. Automatic operations stay on the primary container.
 
 <details>
@@ -620,7 +620,7 @@ Structured long-term memory using Memori Cloud, with background completed-turn c
 | | |
 |---|---|
 | **Best for** | Agent-controlled recall with structured project and session attribution |
-| **Requires** | `pip install lucifex-memori` +lucifexifex-memori install` + [Memori API key](https://app.memorilabs.ai/signup) |
+| **Requires** | `pip install lucifex-memori` +lucifex-memori install` + [Memori API key](https://app.memorilabs.ai/signup) |
 | **Data storage** | Memori Cloud |
 | **Cost** | Memori pricing |
 

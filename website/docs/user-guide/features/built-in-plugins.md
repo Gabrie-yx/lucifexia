@@ -17,7 +17,7 @@ The `PluginManager` scans four sources, in order:
 
 1. **Bundled** — `<repo>/plugins/<name>/` (what this page documents)
 2. **User** — `~/.lucifex/plugins/<name>/`
-3. **Project** — `./.lucifex/plugins/<name>/` (requireslucifexifex_ENABLE_PROJECT_PLUGINS=1`)
+3. **Project** — `./.lucifex/plugins/<name>/` (requireslucifex_ENABLE_PROJECT_PLUGINS=1`)
 4. **Pip entry points** — `lucifex_agent.plugins`
 
 On name collision, later sources win — a user plugin named `disk-cleanup` would replace the bundled one.
@@ -26,7 +26,7 @@ On name collision, later sources win — a user plugin named `disk-cleanup` woul
 
 ## Bundled plugins are opt-in
 
-Bundled plugins ship disabled. Discovery finds them (they appear in `lucifex plugins list` and the interactivelucifexifex plugins` UI), but none load until you explicitly enable them:
+Bundled plugins ship disabled. Discovery finds them (they appear in `lucifex plugins list` and the interactivelucifex plugins` UI), but none load until you explicitly enable them:
 
 ```bash
 lucifex plugins enable disk-cleanup
@@ -65,10 +65,10 @@ The repo ships these bundled plugins under `plugins/`. All are opt-in — enable
 | `image_gen/openai` | image backend | OpenAI `gpt-image-2` image generation backend (alternative to FAL) |
 | `image_gen/openai-codex` | image backend | OpenAI image generation via Codex OAuth |
 | `image_gen/xai` | image backend | xAI `grok-2-image` backend |
-| `lucifex-achievements` | dashboard tab | Steam-style collectible badges generated from your realucifexifex session history |
+| `lucifex-achievements` | dashboard tab | Steam-style collectible badges generated from your realucifex session history |
 | `kanban/dashboard` | dashboard tab | Kanban board UI for the multi-agent dispatcher — tasks, comments, fan-out, board switching. See [Kanban Multi-Agent](./kanban.md). |
 
-Memory providers (`plugins/memory/*`) and context engines (`plugins/context_engine/*`) are listed separately on [Memory Providers](./memory-providers.md) — they're managed through `lucifex memory` andlucifexifex plugins` respectively. The full per-plugin detail for the two long-running hooks-based plugins follows.
+Memory providers (`plugins/memory/*`) and context engines (`plugins/context_engine/*`) are listed separately on [Memory Providers](./memory-providers.md) — they're managed through `lucifex memory` andlucifex plugins` respectively. The full per-plugin detail for the two long-running hooks-based plugins follows.
 
 ### disk-cleanup
 
@@ -114,7 +114,7 @@ Auto-tracks and removes ephemeral files created during sessions — test scripts
 
 **Safety** — cleanup only ever touches paths under `LUCIFEX_HOME` or `/tmp/lucifex-*`. Windows mounts (`/mnt/c/...`) are rejected. Well-known top-level state dirs (`logs/`, `memories/`, `sessions/`, `cron/`, `cache/`, `skills/`, `plugins/`, `disk-cleanup/` itself) are never removed even when empty — a fresh install does not get gutted on first session end.
 
-**Enabling:** `lucifex plugins enable disk-cleanup` (or check the box inlucifexifex plugins`).
+**Enabling:** `lucifex plugins enable disk-cleanup` (or check the box inlucifex plugins`).
 
 **Disabling again:** `lucifex plugins disable disk-cleanup`.
 
@@ -134,7 +134,7 @@ The file is still written. The model reads the warning in the next turn's tool m
 | `SECURITY_GUIDANCE_BLOCK=1` | **block mode** — write refused, warning returned as the block reason |
 | `SECURITY_GUIDANCE_DISABLE=1` | kill switch — plugin loads but does nothing |
 
-**Enabling:** `lucifex plugins enable security-guidance` (or check the box inlucifexifex plugins`).
+**Enabling:** `lucifex plugins enable security-guidance` (or check the box inlucifex plugins`).
 
 **Disabling again:** `lucifex plugins disable security-guidance`.
 
@@ -142,7 +142,7 @@ The file is still written. The model reads the warning in the next turn's tool m
 
 ### observability/langfuse
 
-Traces lucifex turns, LLM calls, and tool invocations to [Langfuse](https://langfuse.com) — an open-source LLM observability platform. One span per turn, one generation per API call, one tool observation per tool call. Usage totals, per-type token counts, and cost estimates come out olucifexifex' canonical `agent.usage_pricing` numbers, so the Langfuse dashboard sees the same breakdown (input / output / `cache_read_input_tokens` / `cache_creation_input_tokens` / `reasoning_tokens`) that appears lucifexucifex logs`.
+Traces lucifex turns, LLM calls, and tool invocations to [Langfuse](https://langfuse.com) — an open-source LLM observability platform. One span per turn, one generation per API call, one tool observation per tool call. Usage totals, per-type token counts, and cost estimates come out olucifex' canonical `agent.usage_pricing` numbers, so the Langfuse dashboard sees the same breakdown (input / output / `cache_read_input_tokens` / `cache_creation_input_tokens` / `reasoning_tokens`) that appears lucifexucifex logs`.
 
 The plugin is fail-open: no SDK installed, no credentials, or a transient Langfuse error — all turn into a silent no-op in the hook. The agent loop is never impacted.
 
@@ -178,13 +178,13 @@ lucifex_LANGFUSE_BASE_URL=https://cloud.langfuse.com   # or your self-hosted URL
 | `pre_tool_call` | Start a `tool` child observation with sanitized `args`. |
 | `post_tool_call` | Close the tool observation with sanitized `result`. `read_file` payloads get summarized (head + tail + omitted-line count) so a huge file read stays under `lucifex_LANGFUSE_MAX_CHARS`. |
 
-Session grouping keys off the lucifex session ID (or task ID for sub-agents) via `langfuse.propagate_attributes`, so everything in a singlelucifexifex chat` session lives under one Langfuse session.
+Session grouping keys off the lucifex session ID (or task ID for sub-agents) via `langfuse.propagate_attributes`, so everything in a singlelucifex chat` session lives under one Langfuse session.
 
 **Verify:**
 
 ```bash
 lucifex plugins list                 # observability/langfuse should show "enabled"
-lucifex chat -q "hello"              # check the Langfuse UI for alucifexifex turn" trace
+lucifex chat -q "hello"              # check the Langfuse UI for alucifex turn" trace
 ```
 
 **Optional tuning** (in `.env`):
@@ -197,7 +197,7 @@ lucifex chat -q "hello"              # check the Langfuse UI for alucifexifex tu
 | `lucifex_LANGFUSE_MAX_CHARS` | `12000` | Per-field truncation for message content / tool args / tool results |
 | `lucifex_LANGFUSE_DEBUG` | `false` | Verbose plugin logging to `agent.log` |
 
-lucifex-prefixed and standard SDK env vars (`LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, `LANGFUSE_BASE_URL`) are both accepted lucifexifex-prefixed wins when both are set.
+lucifex-prefixed and standard SDK env vars (`LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, `LANGFUSE_BASE_URL`) are both accepted lucifex-prefixed wins when both are set.
 
 **Performance:** the Langfuse client is cached after the first hook call. If credentials or SDK are missing, that decision is also cached — subsequent hooks fast-return without re-checking env vars or reloading config.
 
@@ -235,7 +235,7 @@ The agent kicks off the meeting join, streams the transcription back into its co
 
 ### lucifex-achievements
 
-Adds a **Steam-style achievements tab to the dashboard** — 60+ collectible, tiered badges generated from your real lucifex session history. Tool-chain feats, debugging patterns, vibe-coding streaks, skill/memory usage, model/provider variety, lifestyle quirks (weekend and night sessions). Originally authored by [@PCinkusz](https://github.com/PCinkusz) as an external plugin; brought in-tree so it stays in lockstep witlucifexifex feature changes.
+Adds a **Steam-style achievements tab to the dashboard** — 60+ collectible, tiered badges generated from your real lucifex session history. Tool-chain feats, debugging patterns, vibe-coding streaks, skill/memory usage, model/provider variety, lifestyle quirks (weekend and night sessions). Originally authored by [@PCinkusz](https://github.com/PCinkusz) as an external plugin; brought in-tree so it stays in lockstep witlucifex feature changes.
 
 **How it works:**
 
@@ -280,13 +280,13 @@ Adds a **Steam-style achievements tab to the dashboard** — 60+ collectible, ti
 - Warm rescan reuses per-session stats for every session whose `started_at` + `last_active` fingerprint matches the checkpoint — completes in seconds even on large histories.
 - The in-memory snapshot TTL is 120s; stale requests serve the old snapshot immediately and kick a background refresh. You never wait on a spinner just because TTL expired.
 
-**Enabling:** Nothing to enable — `lucifex-achievements` is a dashboard-only plugin (no lifecycle hooks, no model-visible tools). It auto-registers as a tab inlucifexifex dashboard` on first launch. The `plugins.enabled` config only gates lifecycle/tool plugins; dashboard plugins are discovered purely via their `dashboard/manifest.json`.
+**Enabling:** Nothing to enable — `lucifex-achievements` is a dashboard-only plugin (no lifecycle hooks, no model-visible tools). It auto-registers as a tab inlucifex dashboard` on first launch. The `plugins.enabled` config only gates lifecycle/tool plugins; dashboard plugins are discovered purely via their `dashboard/manifest.json`.
 
-**Opting out:** Delete or rename `plugins/lucifex-achievements/dashboard/manifest.json`, or override it with a user plugin of the same name in `~/.lucifex/pluginlucifexifex-achievements/` that ships no dashboard. The plugin's state files under `$LUCIFEX_HOME/pluglucifexucifex-achievements/` survive — reinstalling preserves your unlock history.
+**Opting out:** Delete or rename `plugins/lucifex-achievements/dashboard/manifest.json`, or override it with a user plugin of the same name in `~/.lucifex/pluginlucifex-achievements/` that ships no dashboard. The plugin's state files under `$LUCIFEX_HOME/pluglucifexucifex-achievements/` survive — reinstalling preserves your unlock history.
 
 ## Adding a bundled plugin
 
-Bundled plugins are written exactly like any other lucifex plugin — see [Build lucifexifex Plugin](/developer-guide/plugins). The only differences are:
+Bundled plugins are written exactly like any other lucifex plugin — see [Build lucifex Plugin](/developer-guide/plugins). The only differences are:
 
 - Directory lives at `<repo>/plugins/<name>/` instead of `~/.lucifex/plugins/<name>/`
 - Manifest source is reported as `bundled` in `lucifex plugins list`

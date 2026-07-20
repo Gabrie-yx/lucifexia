@@ -302,7 +302,7 @@ These values are currently not configurable via environment variables. They are 
 Enable debug logging to troubleshoot connection issues:
 
 ```bash
-lucifex_LOG_LEVEL=debulucifexifex gateway
+lucifex_LOG_LEVEL=debulucifex gateway
 ```
 
 ## Integration with Other Features

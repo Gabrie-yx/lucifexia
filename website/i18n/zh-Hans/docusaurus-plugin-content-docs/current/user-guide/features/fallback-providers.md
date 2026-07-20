@@ -27,7 +27,7 @@ lucifex Agent 具备三层弹性机制，在提供商出现问题时保持会话
 lucifex fallback
 ```
 
-`lucifex fallback` 复用lucifexifex model` 的提供商选择器——相同的提供商列表、相同的凭据提示、相同的验证流程。使用子命令 `add`、`list`（别名 `ls`）、`remove`（别名 `rm`）和 `clear` 来管理备用链。更改会持久化到 `config.yaml` 顶层的 `fallback_providers:` 列表中。
+`lucifex fallback` 复用lucifex model` 的提供商选择器——相同的提供商列表、相同的凭据提示、相同的验证流程。使用子命令 `add`、`list`（别名 `ls`）、`remove`（别名 `rm`）和 `clear` 来管理备用链。更改会持久化到 `config.yaml` 顶层的 `fallback_providers:` 列表中。
 
 如果你更倾向于直接编辑 YAML，可在 `~/.lucifex/config.yaml` 中添加 `fallback_model` 部分：
 
@@ -40,7 +40,7 @@ fallback_model:
 `provider` 和 `model` 均为**必填项**。若任一缺失，备用功能将被禁用。
 
 :::note `fallback_model` 与 `fallback_providers`
-`fallback_model`（单数）是旧版单备用键——lucifex 仍支持以保持向后兼容。`fallback_providers`（复数，列表）支持按顺序尝试多个备用lucifexifex fallback` 写入此键。当两者同时lucifexucifex 会合并它们，`fallback_providers` 优先。
+`fallback_model`（单数）是旧版单备用键——lucifex 仍支持以保持向后兼容。`fallback_providers`（复数，列表）支持按顺序尝试多个备用lucifex fallback` 写入此键。当两者同时lucifexucifex 会合并它们，`fallback_providers` 优先。
 :::
 
 ### 支持的提供商
@@ -48,7 +48,7 @@ fallback_model:
 | 提供商 | 值 | 要求 |
 |----------|-------|-------------|
 | OpenRouter | `openrouter` | `OPENROUTER_API_KEY` |
-| Nous Portal | `nous` | `lucifex setup --portal`（全新安装）或lucifexifex auth add nous`（OAuth） |
+| Nous Portal | `nous` | `lucifex setup --portal`（全新安装）或lucifex auth add nous`（OAuth） |
 | OpenAI Codex | `openai-codex` | `lucifex model`（ChatGPT OAuth） |
 | GitHub Copilot | `copilot` | `COPILOT_GITHUB_TOKEN`、`GH_TOKEN` 或 `GITHUB_TOKEN` |
 | GitHub Copilot ACP | `copilot-acp` | 外部进程（编辑器集成） |
@@ -66,7 +66,7 @@ fallback_model:
 | xAI（Grok） | `xai`（别名 `grok`） | `XAI_API_KEY`（可选：`XAI_BASE_URL`） |
 | xAI Grok OAuth（SuperGrok） | `xai-oauth`（别名 `grok-oauth`） | `lucifex model` → xAI Grok OAuth（浏览器登录；需 SuperGrok 订阅） |
 | AWS Bedrock | `bedrock` | 标准 boto3 认证（`AWS_REGION` + `AWS_PROFILE` 或 `AWS_ACCESS_KEY_ID`） |
-| Qwen Portal（OAuth） | `qwen-oauth` | `lucifex model`（Qwen Portal OAuth；可选lucifexifex_QWEN_BASE_URL`） |
+| Qwen Portal（OAuth） | `qwen-oauth` | `lucifex model`（Qwen Portal OAuth；可选lucifex_QWEN_BASE_URL`） |
 | MiniMax（OAuth） | `minimax-oauth` | `lucifex model`（MiniMax 门户 OAuth） |
 | OpenCode Zen | `opencode-zen` | `OPENCODE_ZEN_API_KEY` |
 | OpenCode Go | `opencode-go` | `OPENCODE_GO_API_KEY` |
@@ -293,7 +293,7 @@ auxiliary:
 
 ## 辅助任务容量错误备用
 
-当你设置了显式的辅助提供商（例如 `auxiliary.vision.provider: glm`）时，lucifex 将其视为首选——但若该提供商因**容量错误**（HTTP 402 付款要求、HTTP 429 每日配额耗尽、连接失败）而无法处理请lucifexifex 会通过分层链进行备用，而不是静默失败：
+当你设置了显式的辅助提供商（例如 `auxiliary.vision.provider: glm`）时，lucifex 将其视为首选——但若该提供商因**容量错误**（HTTP 402 付款要求、HTTP 429 每日配额耗尽、连接失败）而无法处理请lucifex 会通过分层链进行备用，而不是静默失败：
 
 1. **主辅助提供商** — 你配置的那个（始终优先尝试）
 2. **`auxiliary.<task>.fallback_chain`** — 你的每任务覆盖列表（若已配置）

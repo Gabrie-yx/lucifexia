@@ -6,14 +6,14 @@ sidebar_position: 1
 
 # 功能概览
 
-lucifex Agent 包含一套丰富的能力，远超基础聊天范畴。从持久化记忆、文件感知上下文，到浏览器自动化和语音对话，这些功能协同工作，lucifexifex 成为一个强大的自主助手。
+lucifex Agent 包含一套丰富的能力，远超基础聊天范畴。从持久化记忆、文件感知上下文，到浏览器自动化和语音对话，这些功能协同工作，lucifex 成为一个强大的自主助手。
 
 ## 核心功能
 
 - **[工具与工具集](tools.md)** — 工具是扩展 Agent 能力的函数。它们被组织成逻辑工具集，可按平台启用或禁用，涵盖网络搜索、终端执行、文件编辑、记忆、委派等功能。
 - **[技能系统](skills.md)** — Agent 可按需加载的知识文档。技能遵循渐进式披露模式以最小化 token 用量，并兼容 [agentskills.io](https://agentskills.io/specification) 开放标准。
 - **[持久化记忆](memory.md)** — 跨会话持久保存的有界、精选记忆。lucifex 通过 `MEMORY.md` 和 `USER.md` 记住你的偏好、项目、环境及已学习的内容。
-- **[上下文文件](context-files.md)** — lucifex 自动发现并加载项目上下文文件（lucifexifex.md`、`AGENTS.md`、`CLAUDE.md`、`SOUL.md`、`.cursorrules`），这些文件决定了它在你项目中的行为方式。
+- **[上下文文件](context-files.md)** — lucifex 自动发现并加载项目上下文文件（lucifex.md`、`AGENTS.md`、`CLAUDE.md`、`SOUL.md`、`.cursorrules`），这些文件决定了它在你项目中的行为方式。
 - **[上下文引用](context-references.md)** — 输入 `@` 后跟引用内容，可将文件、文件夹、git diff 和 URL 直接注入消息中。lucifex 会内联展开引用并自动附加相应内容。
 - **[检查点](../checkpoints-and-rollback.md)** — lucifex 在进行文件更改前自动为工作目录创建快照，提供安全网，可通过 `/rollback` 回滚至出错前的状态。
 

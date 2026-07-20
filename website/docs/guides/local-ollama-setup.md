@@ -12,7 +12,7 @@ Cloud LLM APIs charge per token. A heavy coding session can cost $5–20. For pe
 
 ## What This Guide Solves
 
-You'll set up lucifex Agent running entirely on your own hardware, using [Ollama](https://ollama.com) as the model backend. No API keys, no subscriptions, no data leaving your machine. Once configuredlucifexifex works exactly like it does with OpenRouter or Anthropic — terminal commands, file editing, web browsing, delegation — but the model runs locally.
+You'll set up lucifex Agent running entirely on your own hardware, using [Ollama](https://ollama.com) as the model backend. No API keys, no subscriptions, no data leaving your machine. Once configuredlucifex works exactly like it does with OpenRouter or Anthropic — terminal commands, file editing, web browsing, delegation — but the model runs locally.
 
 By the end, you'll have:
 

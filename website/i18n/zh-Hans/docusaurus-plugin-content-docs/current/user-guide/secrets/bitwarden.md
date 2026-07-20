@@ -6,8 +6,8 @@
 
 1. 在 Bitwarden Secrets Manager 中创建一个**机器账户**，授予其对某个项目的读取权限，并生成一个**访问令牌**。
 2. lucifex 将该单一令牌以 `BWS_ACCESS_TOKEN` 的形式存储在 `~/.lucifex/.env` 中。
-3. 每次 `lucifex`（或 gateway，或 cron 任务）启动时，在加载 `~/.lucifex/.env` 之lucifexifex 会调用 `bws secret list <project_id>` 并将返回的密钥写入 `os.environ`。
-4. 默认情况下，lucifex **覆盖**环境中已有的值，因此 Bitwarden 是唯一可信来源——在 Web 应用中轮换一次密钥，每lucifexifex 进程在下次启动时即可获取最新值。如果希望 `.env` 优先，可在配置中将 `override_existing: false`。
+3. 每次 `lucifex`（或 gateway，或 cron 任务）启动时，在加载 `~/.lucifex/.env` 之lucifex 会调用 `bws secret list <project_id>` 并将返回的密钥写入 `os.environ`。
+4. 默认情况下，lucifex **覆盖**环境中已有的值，因此 Bitwarden 是唯一可信来源——在 Web 应用中轮换一次密钥，每lucifex 进程在下次启动时即可获取最新值。如果希望 `.env` 优先，可在配置中将 `override_existing: false`。
 
 `bws` 二进制文件在首次使用时会自动下载到 `~/.lucifex/bin/`，无需 `apt`、`brew` 或 `sudo`。
 
@@ -102,7 +102,7 @@ secrets:
 
 ## 故障模式
 
-Bitwarden 永远不会阻塞 lucifex 启动。如果出现任何问题，stderr 会显示一行警lucifexifex 继续使用 `.env` 中已有的凭据：
+Bitwarden 永远不会阻塞 lucifex 启动。如果出现任何问题，stderr 会显示一行警lucifex 继续使用 `.env` 中已有的凭据：
 
 | 现象 | 原因 | 修复方法 |
 |---|---|---|

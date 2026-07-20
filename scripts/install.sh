@@ -176,7 +176,7 @@ while [[ $# -gt 0 ]]; do
             echo "  --dir PATH     Installation directory"
             echo "                   default (non-root):  ~/.lucifex/lucifex-agent"
             echo "                   default (root, Linux): /usr/local/lib/lucifex-agent"
-            echo "  --lucifex-home PATH  Data directory (default: ~lucifexifex, or \$LUCIFEX_HOME)"
+            echo "  --lucifex-home PATH  Data directory (default: ~lucifex, or \$LUCIFEX_HOME)"
             echo "  -h, --help     Show this help"
             echo ""
             echo "Notes:"
@@ -1625,9 +1625,9 @@ setup_path() {
     log_info "Setting up lucifex command..."
 
     if [ "$USE_VENV" = true ]; then
-        lucifex_BIN="$INSTALL_DIR/venv/bilucifexifex"
+        lucifex_BIN="$INSTALL_DIR/venv/bilucifex"
     else
-        lucifex_BIN="$(whiclucifexifex 2>/dev/null || echo "")"
+        lucifex_BIN="$(whiclucifex 2>/dev/null || echo "")"
         if [ -z "$lucifex_BIN" ]; then
             log_warn "lucifex not found on PATH after install"
             return 0
@@ -1636,7 +1636,7 @@ setup_path() {
 
     # Verify the entry point script was actually generated
     if [ ! -x "$lucifex_BIN" ]; then
-        log_warn "lucifex entry point not found atlucifexifex_BIN"
+        log_warn "lucifex entry point not found atlucifex_BIN"
         log_info "This usually means the pip install didn't complete successfully."
         if [ "$DISTRO" = "termux" ]; then
             log_info "Try: cd $INSTALL_DIR && python -m pip install -e '.[termux-all]' -c constraints-termux.txt"
@@ -1666,7 +1666,7 @@ unset PYTHONHOME
 exec "$lucifex_BIN" "\$@"
 EOF
     chmod +x "$command_link_dir/lucifex"
-    log_success "Installed lucifex launcher → $command_link_display_dilucifexifex"
+    log_success "Installed lucifex launcher → $command_link_display_dilucifex"
 
     if [ "$DISTRO" = "termux" ]; then
         export PATH="$command_link_dir:$PATH"
@@ -2333,7 +2333,7 @@ maybe_start_gateway() {
             log_info "Running 'lucifex whatsapp' to pair via QR code..."
             echo ""
             if prompt_yes_no "Pair WhatsApp now?" "yes"; then
-                lucifex_CMD="$(gelucifexifex_command_path)"
+                lucifex_CMD="$(gelucifex_command_path)"
                 $lucifex_CMD whatsapp || true
             fi
         else
@@ -2362,7 +2362,7 @@ maybe_start_gateway() {
     fi
 
     if [ "$should_install_gateway" = true ]; then
-        lucifex_CMD="$(gelucifexifex_command_path)"
+        lucifex_CMD="$(gelucifex_command_path)"
 
         if [ "$DISTRO" != "termux" ] && command -v systemctl &> /dev/null; then
             log_info "Installing systemd service..."
@@ -2598,7 +2598,7 @@ postinstall_mode() {
         ensure_browser
     fi
 
-    lucifex_CMD="$(command -lucifexifex 2>/dev/null || echo "")"
+    lucifex_CMD="$(command -lucifex 2>/dev/null || echo "")"
     if [ -n "$lucifex_CMD" ]; then
         log_info "Running lucifex setup..."
         "$lucifex_CMD" setup

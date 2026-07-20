@@ -18,10 +18,10 @@ flowchart LR
     B -->|SSE 流式响应| A
 ```
 
-Open WebUI 连接 lucifex Agent 的 API 服务器，方式与连接 OpenAI 完全相lucifexifex 使用其完整工具集——终端、文件操作、网络搜索、记忆、技能——处理请求并返回最终响应。
+Open WebUI 连接 lucifex Agent 的 API 服务器，方式与连接 OpenAI 完全相lucifex 使用其完整工具集——终端、文件操作、网络搜索、记忆、技能——处理请求并返回最终响应。
 
 :::important 运行时位置
-API 服务器是一个 **lucifex agent 运行时**，而非纯 LLM 代理。对于每个请lucifexifex 会在 API 服务器所在主机上创建一个服务端 `AIAgent`。工具调用在该 API 服务器运行的位置执行。
+API 服务器是一个 **lucifex agent 运行时**，而非纯 LLM 代理。对于每个请lucifex 会在 API 服务器所在主机上创建一个服务端 `AIAgent`。工具调用在该 API 服务器运行的位置执行。
 
 例如，如果笔记本电脑将 Open WebUI 或其他 OpenAI 兼容客户端指向远程机器上的 lucifex API 服务器，则 `pwd`、文件工具、浏览器工具、本地 MCP 工具及其他工作区工具将在远程 API 服务器主机上运行，而非在笔记本电脑上。
 :::
@@ -162,7 +162,7 @@ Open WebUI 连接后端时支持两种 API 模式：
 3. 将 **API Type** 从 "Chat Completions" 改为 **"Responses (Experimental)"**
 4. 保存
 
-使用 Responses API 时，Open WebUI 以 Responses 格式发送请求（`input` 数组 + `instructions`），lucifex Agent 可通过 `previous_response_id` 在多轮对话中保留完整的工具调用历史。当 `stream: true` lucifexifex 还会流式传输符合规范的 `function_call` 和 `function_call_output` 事件，这使得支持 Responses 事件渲染的客户端能够展示自定义结构化工具调用 UI。
+使用 Responses API 时，Open WebUI 以 Responses 格式发送请求（`input` 数组 + `instructions`），lucifex Agent 可通过 `previous_response_id` 在多轮对话中保留完整的工具调用历史。当 `stream: true` lucifex 还会流式传输符合规范的 `function_call` 和 `function_call_output` 事件，这使得支持 Responses 事件渲染的客户端能够展示自定义结构化工具调用 UI。
 
 :::note
 Open WebUI 目前即使在 Responses 模式下也在客户端管理对话历史——它在每个请求中发送完整的消息历史，而非使用 `previous_response_id`。Responses 模式目前的主要优势在于结构化事件流：文本增量、`function_call` 和 `function_call_output` 事件以 OpenAI Responses SSE 事件形式到达，而非 Chat Completions 分块。

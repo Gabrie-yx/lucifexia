@@ -36,7 +36,7 @@ Pick the row that matches your goal:
 
 | Goal | Do this first | Then do this |
 |---|---|---|
-| I just want lucifex working on my machine |lucifexifex setup` | Run a real chat and verify it responds |
+| I just want lucifex working on my machine |lucifex setup` | Run a real chat and verify it responds |
 | I already know my provider | `lucifex model` | Save the config, then start chatting |
 | I want a bot or always-on setup | `lucifex gateway setup` after CLI works | Connect Telegram, Discord, Slack, or another platform |
 | I want a local or self-hosted model | `lucifex model` → custom endpoint | Verify the endpoint, model name, and context length |
@@ -102,7 +102,7 @@ On a fresh install, `lucifex setup` offers three modes:
 - **Full Setup** — walk through every provider, tool, and option yourself (bring your own keys).
 - **Blank Slate** — everything starts **off** except the bare minimum needed to run an agent: **provider & model, the File Operations toolset, and the Terminal toolset**. No web, browser, code execution, vision, memory, delegation, cron, skills, plugins, or MCP servers — and compression, checkpoints, smart routing, and memory capture are all disabled. After the minimal baseline is applied, you choose one of two paths: **start with everything disabled** (finish now with the minimal agent), or **walk through all configurations** (opt in to tools, skills, plugins, MCP, and messaging). Pick this when you want a minimal, fully-controlled agent and intend to enable only exactly what you need.
 
-Blank Slate writes an explicit `platform_toolsets.cli` list plus `agent.disabled_toolsets`, so nothing you didn't choose ever loads — not even after `lucifex update`. Re-enable anything later withlucifexifex tools`, seed skills wilucifexucifex skills opt-in --sync`, or tune settings lucifexlucifexsetup agent`.
+Blank Slate writes an explicit `platform_toolsets.cli` list plus `agent.disabled_toolsets`, so nothing you didn't choose ever loads — not even after `lucifex update`. Re-enable anything later withlucifex tools`, seed skills wilucifexucifex skills opt-in --sync`, or tune settings lucifexlucifexsetup agent`.
 :::
 
 Good defaults:
@@ -182,7 +182,7 @@ lucifex --tui      # modern TUI (recommended)
 You'll see a welcome banner with your model, available tools, and skills. Use a prompt that's specific and easy to verify:
 
 :::tip Pick your interface
-lucifex ships with two terminal interfaces: the classic `prompt_toolkit` CLI and a newer [TUI](../user-guide/tui.md) with modal overlays, mouse selection, and non-blocking input. Both share the same sessions, slash commands, and config — try each withlucifexifex` lucifexucifex --tui`.
+lucifex ships with two terminal interfaces: the classic `prompt_toolkit` CLI and a newer [TUI](../user-guide/tui.md) with modal overlays, mouse selection, and non-blocking input. Both share the same sessions, slash commands, and config — try each withlucifex` lucifexucifex --tui`.
 :::
 
 ```
@@ -345,9 +345,9 @@ These are the problems that waste the most time:
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| lucifex opens but gives empty or broken replies | Provider auth or model selection is wrong | Runlucifexifex model` again and confirm provider, model, and auth |
+| lucifex opens but gives empty or broken replies | Provider auth or model selection is wrong | Runlucifex model` again and confirm provider, model, and auth |
 | Custom endpoint "works" but returns garbage | Wrong base URL, model name, or not actually OpenAI-compatible | Verify the endpoint in a separate client first |
-| Gateway starts but nobody can message it | Bot token, allowlist, or platform setup is incomplete | Re-run `lucifex gateway setup` and checklucifexifex gateway status` |
+| Gateway starts but nobody can message it | Bot token, allowlist, or platform setup is incomplete | Re-run `lucifex gateway setup` and checklucifex gateway status` |
 | `lucifex --continue` can't find old session | Switched profiles or session never saved | Check `lucifex sessions list` and confirm you're in the right profile |
 | Model unavailable or odd fallback behavior | Provider routing or fallback settings are too aggressive | Keep routing off until the base provider is stable |
 | `lucifex doctor` flags config problems | Config values are missing or stale | Fix the config, retest a plain chat before adding features |

@@ -97,7 +97,7 @@ Key behaviors:
 Toolsets are named bundles of tools. lucifex resolves them through:
 
 - explicit enabled/disabled toolset lists
-- platform presets (`lucifex-cli`,lucifexifex-telegram`, etc.)
+- platform presets (`lucifex-cli`,lucifex-telegram`, etc.)
 - dynamic MCP toolsets
 - curated special-purpose sets like `lucifex-acp`
 

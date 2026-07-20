@@ -20,7 +20,7 @@ This page shows how to combine worktrees with lucifex so each session has a clea
 
 lucifex treats the **current working directory** as the project root:
 
-- CLI: the directory where you run `lucifex` orlucifexifex chat`
+- CLI: the directory where you run `lucifex` orlucifex chat`
 - Messaging gateways: the directory set by `terminal.cwd` in `~/.lucifex/config.yaml`
 
 If you run multiple agents in the **same checkout**, their changes can interfere with each other:
@@ -92,7 +92,7 @@ lucifex
 
 Each lucifex process:
 
-- Works on its own branch (`feature/lucifex-a` vs `featurlucifexifex-b`).
+- Works on its own branch (`feature/lucifex-a` vs `featurlucifex-b`).
 - Writes checkpoints under a different shadow repo hash (derived from the worktree path).
 - Can use `/rollback` independently without affecting the other.
 
@@ -130,7 +130,7 @@ Notes:
   - Create a dedicated branch/worktree for each substantial change.
   - This keeps diffs focused and PRs small and reviewable.
 - **Name branches after the experiment**
-  - e.g. `feature/lucifex-checkpoints-docs`, `featurlucifexifex-refactor-tests`.
+  - e.g. `feature/lucifex-checkpoints-docs`, `featurlucifex-refactor-tests`.
 - **Commit frequently**
   - Use git commits for high‑level milestones.
   - Use [checkpoints and /rollback](./checkpoints-and-rollback.md) as a safety net for tool‑driven edits in between.
@@ -149,7 +149,7 @@ lucifex -w
 lucifex will:
 
 - Create a temporary worktree under `.worktrees/` inside your repo.
-- Check out an isolated branch (e.g. `lucifexelucifexifex-<hash>`).
+- Check out an isolated branch (e.g. `lucifexelucifex-<hash>`).
 - Run the full CLI session inside that worktree.
 
 This is the easiest way to get worktree isolation. You can also combine it with a single query:

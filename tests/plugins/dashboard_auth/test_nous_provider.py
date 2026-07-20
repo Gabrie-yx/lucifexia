@@ -196,7 +196,7 @@ class TestPluginRegister:
         assert nous_plugin.LAST_SKIP_REASON == ""
 
     def test_skips_when_client_id_malformed(self, monkeypatch):
-        monkeypatch.setenv("lucifex_DASHBOARD_OAUTH_CLIENT_ID",lucifexifex-dashboard")
+        monkeypatch.setenv("lucifex_DASHBOARD_OAUTH_CLIENT_ID",lucifex-dashboard")
         monkeypatch.setenv("lucifex_DASHBOARD_PORTAL_URL", "https://p.example")
         ctx = MagicMock()
         nous_plugin.register(ctx)

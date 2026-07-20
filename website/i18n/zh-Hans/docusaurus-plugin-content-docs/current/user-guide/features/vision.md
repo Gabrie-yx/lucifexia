@@ -128,7 +128,7 @@ echo $XDG_SESSION_TYPE
 剪贴板数据通过 stdout 以 base64 编码的 PNG 格式传输，无需路径转换或临时文件。
 
 :::info WSLg 说明
-如果你使用的是 WSLg（带 GUI 支持的 WSL2），lucifex 会优先尝试 PowerShell 路径，然后回退到 `wl-paste`。WSLg 的剪贴板桥接仅支持 BMP 格式的图像lucifexifex 会使用 Pillow（如已安装）或 ImageMagick 的 `convert` 命令自动将 BMP 转换为 PNG。
+如果你使用的是 WSLg（带 GUI 支持的 WSL2），lucifex 会优先尝试 PowerShell 路径，然后回退到 `wl-paste`。WSLg 的剪贴板桥接仅支持 BMP 格式的图像lucifex 会使用 Pillow（如已安装）或 ImageMagick 的 `convert` 命令自动将 BMP 转换为 PNG。
 :::
 
 #### 验证 WSL2 剪贴板访问

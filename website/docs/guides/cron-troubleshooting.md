@@ -38,7 +38,7 @@ If the job fires once and then disappears from the list, it's a one-shot schedul
 
 Cron jobs are fired by the gateway's background ticker thread, which ticks every 60 seconds. A regular CLI chat session does **not** automatically fire cron jobs.
 
-If you're expecting jobs to fire automatically, you need a running gateway (`lucifex gateway` for foreground, or `lucifex gateway start` for the installed service). For one-off debugging, you can manually trigger a tick withlucifexifex cron tick`.
+If you're expecting jobs to fire automatically, you need a running gateway (`lucifex gateway` for foreground, or `lucifex gateway start` for the installed service). For one-off debugging, you can manually trigger a tick withlucifex cron tick`.
 
 ### Check 4: Check the system clock and timezone
 
@@ -202,7 +202,7 @@ Scripts that dump megabytes of output will slow down the agent and may hit token
 lucifex cron list                    # Show all jobs, states, next_run times
 lucifex cron run <job_id>            # Schedule for next tick (for testing)
 lucifex cron edit <job_id>           # Fix configuration issues
-lucifex logs                         # View recenlucifexifex logs
+lucifex logs                         # View recenlucifex logs
 lucifex skills list                  # Verify installed skills
 ```
 

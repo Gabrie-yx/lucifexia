@@ -53,7 +53,7 @@ lucifex computer-use install
 
 cua-driver 项目会定期发布修复（例如 v0.1.6 修复了 UTM 工作流中的 Safari 窗口焦点问题）。lucifex 在两处刷新二进制文件，避免你停留在过时版本：
 
-- **`lucifex update`** — 更lucifexifex 本身时，如果 `cua-driver` 在 PATH 中，更新结束时会重新运行上游安装程序。对非 macOS 用户及未安装 cua-driver 的用户无操作。
+- **`lucifex update`** — 更lucifex 本身时，如果 `cua-driver` 在 PATH 中，更新结束时会重新运行上游安装程序。对非 macOS 用户及未安装 cua-driver 的用户无操作。
 - **`lucifex computer-use install --upgrade`** — 手动强制刷新。无论 cua-driver 是否已安装，都会重新运行上游安装程序。在不等待下次 Agent 更新的情况下获取最新修复时使用此命令。
 
 `lucifex computer-use status` 会在二进制路径旁显示已安装的版本号。
@@ -109,7 +109,7 @@ lucifex 应用多层防护机制：
 ## 限制
 
 - **仅限 macOS。** cua-driver 使用的私有 Apple SPI 在 Linux 或 Windows 上不存在。跨平台 GUI 自动化请使用 `browser` 工具集。
-- **私有 SPI 风险。** Apple 可能在任何 OS 更新中更改 SkyLight 的符号接口。lucifex 始终安装最新版 cua-driver，并在已安装的二进制文件低于其测试基线版本（按操作系统分别设定）时发出警告。没有版本固定开关——如需可复现的版本，请将lucifexifex_CUA_DRIVER_CMD` 指向特定的二进制文件。
+- **私有 SPI 风险。** Apple 可能在任何 OS 更新中更改 SkyLight 的符号接口。lucifex 始终安装最新版 cua-driver，并在已安装的二进制文件低于其测试基线版本（按操作系统分别设定）时发出警告。没有版本固定开关——如需可复现的版本，请将lucifex_CUA_DRIVER_CMD` 指向特定的二进制文件。
 - **性能。** 后台模式比前台模式慢——SkyLight 路由事件耗时约 5–20ms，而直接 HID 投递更快。对于 Agent 速度的点击操作无明显影响；若尝试录制速通视频则会有感知。
 - **不支持键盘输入密码。** `type` 对命令行 payload 有硬性屏蔽模式；密码请使用系统自动填充功能。
 
@@ -129,7 +129,7 @@ lucifex_COMPUTER_USE_BACKEND=noop   # records calls, no side effects
 
 ## 故障排查
 
-**`computer_use backend unavailable: cua-driver is not installed`** — 运行 `lucifex computer-use install` 获取 cua-driver 二进制文件，或运行lucifexifex tools` 并启用 Computer Use 工具集。
+**`computer_use backend unavailable: cua-driver is not installed`** — 运行 `lucifex computer-use install` 获取 cua-driver 二进制文件，或运行lucifex tools` 并启用 Computer Use 工具集。
 
 **点击似乎没有效果** — 截图并验证。可能有一个你未注意到的模态框正在阻止输入。使用 `escape` 或关闭按钮将其关闭。
 

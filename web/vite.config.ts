@@ -49,7 +49,7 @@ function lucifexDevToken(): Plugin {
       } catch (err) {
         console.warn(
           `[lucifex] Dashboard at ${BACKEND} unreachable — ` +
-          `start it with \`lucifex dashboard\` or selucifexifex_DASHBOARD_URL. ` +
+          `start it with \`lucifex dashboard\` or selucifex_DASHBOARD_URL. ` +
           `(${(err as Error).message})`,
         );
       }

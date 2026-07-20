@@ -171,7 +171,7 @@ def _connect(board: Optional[str] = None):
     When ``board`` is provided it's forwarded to :func:`kb.connect`, which
     routes the connection to that board's sqlite file. ``None`` (the
     default) preserves the legacy resolution chain
-    (``lucifex_KANBAN_DB`` → lucifexifex_KANBAN_BOARD`` env → current symlink
+    (``lucifex_KANBAN_DB`` → lucifex_KANBAN_BOARD`` env → current symlink
     → ``default``). Per-tool ``board`` lets a Telegram-side agent override
     the env-pinned active board without restarting lucifex.
     """

@@ -6,7 +6,7 @@ description: "Receive Microsoft Graph change notifications (meetings, calendar, 
 
 # Microsoft Graph Webhook Listener
 
-The `msgraph_webhook` gateway platform is an inbound event listener. It's how lucifex receives **change notifications** from Microsoft Graph — "a Teams meeting ended," "a new message landed in this chat," "this calendar event was updated." Different from the `teams` platform (which is a chat bot users type to) — this one is M365 tellinlucifexifex something happened, not a person.
+The `msgraph_webhook` gateway platform is an inbound event listener. It's how lucifex receives **change notifications** from Microsoft Graph — "a Teams meeting ended," "a new message landed in this chat," "this calendar event was updated." Different from the `teams` platform (which is a chat bot users type to) — this one is M365 tellinlucifex something happened, not a person.
 
 Right now the primary consumer is the Teams meeting summary pipeline: Graph notifies when a meeting produces a transcript, the pipeline fetches it, and lucifex posts a summary back into Teams. Other Graph resources (`/chats/.../messages`, `/users/.../events`) use the same listener — the pipeline consumers land with their own PRs.
 

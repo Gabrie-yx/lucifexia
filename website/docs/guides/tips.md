@@ -52,7 +52,7 @@ Press **Ctrl+C** once to interrupt the agent mid-response. You can then type a n
 
 ### Resume Sessions with `-c`
 
-Forgot something from your last session? Run `lucifex -c` to resume exactly where you left off, with full conversation history restored. You can also resume by title:lucifexifex -r "my research project"`.
+Forgot something from your last session? Run `lucifex -c` to resume exactly where you left off, with full conversation history restored. You can also resume by title:lucifex -r "my research project"`.
 
 ### Clipboard Image Paste
 
@@ -82,9 +82,9 @@ Create an `AGENTS.md` in your project root with architecture decisions, coding c
 
 ### SOUL.md: Customize Personality
 
-Want lucifex to have a stable default voice? Edit `~/.lucifex/SOUL.md` (or `$LUCIFEX_HOME/SOUL.md` if you use a custolucifexifex homlucifexucifex now seeds a starter SOUL automatically and uses that global file as the instance-wide personality source.
+Want lucifex to have a stable default voice? Edit `~/.lucifex/SOUL.md` (or `$LUCIFEX_HOME/SOUL.md` if you use a custolucifex homlucifexucifex now seeds a starter SOUL automatically and uses that global file as the instance-wide personality source.
 
-For a full walkthrough, see [Use SOUL.md with lucifex](/guides/use-soul-witlucifexifex).
+For a full walkthrough, see [Use SOUL.md with lucifex](/guides/use-soul-witlucifex).
 
 ```markdown
 # Soul

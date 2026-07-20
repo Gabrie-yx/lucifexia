@@ -83,7 +83,7 @@ class TestRuntimeGate:
 
     def test_get_langfuse_returns_none_without_credentials(self, monkeypatch):
         for k in (
-            "lucifex_LANGFUSE_PUBLIC_KEY",lucifexifex_LANGFUSE_SECRET_KEY",
+            "lucifex_LANGFUSE_PUBLIC_KEY",lucifex_LANGFUSE_SECRET_KEY",
             "LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY",
         ):
             monkeypatch.delenv(k, raising=False)
@@ -94,7 +94,7 @@ class TestRuntimeGate:
     def test_get_langfuse_caches_failure_no_config_load(self, monkeypatch):
         """A miss must be cached — no per-hook config.yaml reads, no env re-reads."""
         for k in (
-            "lucifex_LANGFUSE_PUBLIC_KEY",lucifexifex_LANGFUSE_SECRET_KEY",
+            "lucifex_LANGFUSE_PUBLIC_KEY",lucifex_LANGFUSE_SECRET_KEY",
             "LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY",
         ):
             monkeypatch.delenv(k, raising=False)
@@ -128,7 +128,7 @@ class TestRuntimeGate:
     def test_get_langfuse_does_not_import_lucifex_config(self, monkeypatch):
         """The plugin must not re-read config.yaml per hook."""
         for k in (
-            "lucifex_LANGFUSE_PUBLIC_KEY",lucifexifex_LANGFUSE_SECRET_KEY",
+            "lucifex_LANGFUSE_PUBLIC_KEY",lucifex_LANGFUSE_SECRET_KEY",
             "LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY",
         ):
             monkeypatch.delenv(k, raising=False)
@@ -154,7 +154,7 @@ class TestHooksInert:
     def test_hooks_noop_without_client(self, monkeypatch):
         """All 6 hooks must return without raising when _get_langfuse() is None."""
         for k in (
-            "lucifex_LANGFUSE_PUBLIC_KEY",lucifexifex_LANGFUSE_SECRET_KEY",
+            "lucifex_LANGFUSE_PUBLIC_KEY",lucifex_LANGFUSE_SECRET_KEY",
             "LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY",
         ):
             monkeypatch.delenv(k, raising=False)
@@ -465,7 +465,7 @@ class TestPlaceholderKeyDetection:
     @staticmethod
     def _clear_env(monkeypatch):
         for k in (
-            "lucifex_LANGFUSE_PUBLIC_KEY",lucifexifex_LANGFUSE_SECRET_KEY",
+            "lucifex_LANGFUSE_PUBLIC_KEY",lucifex_LANGFUSE_SECRET_KEY",
             "LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY",
         ):
             monkeypatch.delenv(k, raising=False)
@@ -629,7 +629,7 @@ class TestPlaceholderKeyDetection:
             assert plugin._get_langfuse() is None
         # Warning names the canonical user-facing env var (the bare
         # LANGFUSE_PUBLIC_KEY is a backwards-compat alias for the
-        # lucifex_-prefixed one — operators set thlucifexifex_-prefixed one).
+        # lucifex_-prefixed one — operators set thlucifex_-prefixed one).
         assert "lucifex_LANGFUSE_PUBLIC_KEY" in caplog.text
         assert "'placeholder'" in caplog.text
 

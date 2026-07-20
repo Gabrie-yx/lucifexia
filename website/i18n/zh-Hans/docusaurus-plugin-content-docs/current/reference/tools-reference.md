@@ -186,7 +186,7 @@ description: "lucifex 内置工具权威参考，按工具集分组"
 
 ## `video_gen` 工具集
 
-可选工具集（默认 `lucifex-cli` 集中不加载）。通过 `--toolsets video_gen` 添加，或在lucifexifex tools` → Video Generation 中启用（同时引导你选择后端）。
+可选工具集（默认 `lucifex-cli` 集中不加载）。通过 `--toolsets video_gen` 添加，或在lucifex tools` → Video Generation 中启用（同时引导你选择后端）。
 
 后端以插件形式存放于 `plugins/video_gen/<name>/`：
 

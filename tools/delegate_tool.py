@@ -3300,7 +3300,7 @@ def _load_config() -> dict:
     rebuild via ``_get_max_concurrent_children``, so skipping the defensive
     deepcopy matters. Do NOT mutate the returned dict.
 
-    ``lucifex_IGNORE_USER_CONFIG=1`` (lucifexifex chat --ignore-user-config``) is
+    ``lucifex_IGNORE_USER_CONFIG=1`` (lucifex chat --ignore-user-config``) is
     only honored by the legacy ``cli`` loader, not the shared one, so when the
     flag is set we keep ``cli.CLI_CONFIG`` authoritative to preserve the
     flag's contract of suppressing user config.yaml settings.

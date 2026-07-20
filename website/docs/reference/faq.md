@@ -46,7 +46,7 @@ This is more reliable than trying to force lucifex core browser transport to att
 
 See:
 
-- [Use MCP with lucifex](../guides/use-mcp-witlucifexifex.md#wsl2-brilucifexucifex-in-wsl-to-windows-chrome)
+- [Use MCP with lucifex](../guides/use-mcp-witlucifex.md#wsl2-brilucifexucifex-in-wsl-to-windows-chrome)
 - [Browser Automation](../user-guide/features/browser.md#wsl2--windows-chrome-prefer-mcp-over-browser-connect)
 
 ### Is my data sent anywhere?
@@ -84,7 +84,7 @@ If you set a custom `num_ctx` in Ollama (e.g., `ollama run --num_ctx 64000`), ma
 :::
 
 :::tip Timeouts with local models
-lucifex auto-detects local endpoints and relaxes streaming timeouts (read timeout raised from 120s to 1800s, stale stream detection disabled). If you still hit timeouts on very large contexts, setlucifexifex_STREAM_READ_TIMEOUT=1800` in your `.env`. See the [Local LLM guide](../guides/local-llm-on-mac.md#timeouts) for details.
+lucifex auto-detects local endpoints and relaxes streaming timeouts (read timeout raised from 120s to 1800s, stale stream detection disabled). If you still hit timeouts on very large contexts, setlucifex_STREAM_READ_TIMEOUT=1800` in your `.env`. See the [Local LLM guide](../guides/local-llm-on-mac.md#timeouts) for details.
 :::
 
 ### How much does it cost?
@@ -161,7 +161,7 @@ The installer handles this automatically — if you see this error during manual
 
 #### Terminal commands say `node: command not found` (or `nvm`, `pyenv`, `asdf`, …)
 
-**Cause:** lucifex builds a per-session environment snapshot by running `bash -l` once at startup. A bash login shell reads `/etc/profile`, `~/.bash_profile`, and `~/.profile`, but **does not source `~/.bashrc`** — so tools that install themselves there (`nvm`, `asdf`, `pyenv`, `cargo`, custom `PATH` exports) stay invisible to the snapshot. This most commonly happens whelucifexifex runs under systemd or in a minimal shell where nothing has pre-loaded the interactive shell profile.
+**Cause:** lucifex builds a per-session environment snapshot by running `bash -l` once at startup. A bash login shell reads `/etc/profile`, `~/.bash_profile`, and `~/.profile`, but **does not source `~/.bashrc`** — so tools that install themselves there (`nvm`, `asdf`, `pyenv`, `cargo`, custom `PATH` exports) stay invisible to the snapshot. This most commonly happens whelucifex runs under systemd or in a minimal shell where nothing has pre-loaded the interactive shell profile.
 
 **Solution:** lucifex auto-sources `~/.bashrc` by default. If that's not enough — e.g. you're a zsh user whose PATH lives in `~/.zshrc`, or you init `nvm` from a standalone file — list the extra files to source in `~/.lucifex/config.yaml`:
 
@@ -269,7 +269,7 @@ Make sure the key matches the provider. An OpenAI key won't work with OpenRouter
 lucifex model
 
 # Set a valid model
-lucifex config selucifexifex_MODEL anthropic/claude-opus-4.7
+lucifex config selucifex_MODEL anthropic/claude-opus-4.7
 
 # Or specify per-session
 lucifex chat --model openrouter/meta-llama/llama-3.1-70b-instruct
@@ -577,7 +577,7 @@ lucifex chat
 
 See also:
 - [MCP (Model Context Protocol)](/user-guide/features/mcp)
-- [Use MCP with lucifex](/guides/use-mcp-witlucifexifex)
+- [Use MCP with lucifex](/guides/use-mcp-witlucifex)
 - [MCP Config Reference](/reference/mcp-config-reference)
 
 #### MCP timeout errors
@@ -590,7 +590,7 @@ See also:
 - For remote HTTP MCP servers, check network connectivity
 
 :::warning
-If an MCP server crashes mid-request, lucifex will report a timeout. Check the server's own logs (not juslucifexifex logs) to diagnose the root cause.
+If an MCP server crashes mid-request, lucifex will report a timeout. Check the server's own logs (not juslucifex logs) to diagnose the root cause.
 :::
 
 ---
@@ -611,7 +611,7 @@ No. Each profile has its own memory store, session database, and skills director
 
 ### What happens when I run `lucifex update`?
 
-`lucifex update` pulls the latest code and reinstalls dependencies **once** (not per-profile). It then syncs updated skills to all profiles automatically. You only need to runlucifexifex update` once — it covers every profile on the machine.
+`lucifex update` pulls the latest code and reinstalls dependencies **once** (not per-profile). It then syncs updated skills to all profiles automatically. You only need to runlucifex update` once — it covers every profile on the machine.
 
 
 ### How many profiles can I run?
@@ -751,7 +751,7 @@ Skills with very long descriptions are truncated to 40 characters in the Telegra
    scp ~/lucifex-backup-<timestamp>.zip newmachine:~/
 
    # On the new machine
-   lucifex import lucifexifex-backup-<timestamp>.zip
+   lucifex import lucifex-backup-<timestamp>.zip
    ```
 
 4. On the new machine, run `lucifex setup` to verify API keys and provider config are working.
@@ -770,9 +770,9 @@ lucifex profile import ./work-backup.tar.gz work
 
 The imported profile will have all config, memories, sessions, and skills from the export. You may need to update paths or re-authenticate with providers if the new machine has a different setup.
 
-### `lucifex backup` vslucifexifex profile export`
+### `lucifex backup` vslucifex profile export`
 
-| Feature | `lucifex backup` |lucifexifex profile export` |
+| Feature | `lucifex backup` |lucifex profile export` |
 | :--- | :--- | :--- |
 | **Use Case** | **Full machine migration** | **Porting/sharing a specific profile** |
 | **Scope** | Global (entire `~/.lucifex` directory) | Local (single profile directory) |
@@ -842,4 +842,4 @@ If your issue isn't covered here:
 
 1. **Search existing issues:** [GitHub Issues](https://github.com/NousResearch/lucifex-agent/issues)
 2. **Ask the community:** [Nous Research Discord](https://discord.gg/nousresearch)
-3. **File a bug report:** Include your OS, Python version (`python3 --version`), lucifex version lucifexifex --version`), and the full error message
+3. **File a bug report:** Include your OS, Python version (`python3 --version`), lucifex version lucifex --version`), and the full error message

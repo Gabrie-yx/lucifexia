@@ -65,7 +65,7 @@ Chat 标签页是每次 `lucifex dashboard` 启动的一部分——内嵌的浏
 
 ### Chat（聊天）
 
-**Chat** 标签页将完整的 lucifex TUI（与lucifexifex --tui` 相同的界面）直接嵌入浏览器。你在终端 TUI 中能做的一切——斜杠命令、模型选择器、工具调用卡片、Markdown 流式输出、clarify/sudo/approval 提示、皮肤主题——在这里都完全一致，因为 Dashboard 运行的是真实的 TUI 二进制文件，并通过 [xterm.js](https://xtermjs.org/) 的 WebGL 渲染器以像素级精度渲染其 ANSI 输出。
+**Chat** 标签页将完整的 lucifex TUI（与lucifex --tui` 相同的界面）直接嵌入浏览器。你在终端 TUI 中能做的一切——斜杠命令、模型选择器、工具调用卡片、Markdown 流式输出、clarify/sudo/approval 提示、皮肤主题——在这里都完全一致，因为 Dashboard 运行的是真实的 TUI 二进制文件，并通过 [xterm.js](https://xtermjs.org/) 的 WebGL 渲染器以像素级精度渲染其 ANSI 输出。
 
 **工作原理：**
 
@@ -322,7 +322,7 @@ npm run dev
 
 ## 更新时自动构建
 
-运行 `lucifex update` 时，如果 `npm` 可用，Web 前端会自动重新构建。这使 Dashboard 与代码更新保持同步。如果未安装 `npm`，更新会跳过前端构建lucifexifex dashboard` 将在首次启动时构建。
+运行 `lucifex update` 时，如果 `npm` 可用，Web 前端会自动重新构建。这使 Dashboard 与代码更新保持同步。如果未安装 `npm`，更新会跳过前端构建lucifex dashboard` 将在首次启动时构建。
 
 ## 主题与插件
 

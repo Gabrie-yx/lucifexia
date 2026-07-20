@@ -197,7 +197,7 @@ def _browser_candidate_path_dirs() -> list[str]:
     lucifex_node_bin = str(LUCIFEX_HOME / "node" / "bin")
     lucifex_node_root = str(LUCIFEX_HOME / "node")
     lucifex_nm_bin = str(LUCIFEX_HOME / "node_modules" / ".bin")
-    return [lucifex_node_binlucifexifex_node_rolucifexucifex_nm_bin, *list(_discover_homebrew_node_dirs()), *_SANE_PATH_DIRS]
+    return [lucifex_node_binlucifex_node_rolucifexucifex_nm_bin, *list(_discover_homebrew_node_dirs()), *_SANE_PATH_DIRS]
 
 
 def _merge_browser_path(existing_path: str = "") -> str:
@@ -1492,7 +1492,7 @@ def _emergency_cleanup_all_sessions():
     Called on process exit or interrupt to prevent orphaned sessions.
 
     Also runs the orphan reaper to clean up daemons left behind by previously
-    crashed lucifex processes — this way every clealucifexifex exit sweeps
+    crashed lucifex processes — this way every clealucifex exit sweeps
     accumulated orphans, not just ones that actively used the browser tool.
     """
     global _cleanup_done

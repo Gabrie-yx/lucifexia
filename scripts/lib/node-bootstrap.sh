@@ -23,8 +23,8 @@
 #   LUCIFEX_HOME               (default: $HOME/.lucifex)
 # ============================================================================
 
-lucifex_NODE_MIN_VERSION="lucifexifex_NODE_MIN_VERSION:-20}"
-lucifex_NODE_TARGET_MAJOR="lucifexifex_NODE_TARGET_MAJOR:-22}"
+lucifex_NODE_MIN_VERSION="lucifex_NODE_MIN_VERSION:-20}"
+lucifex_NODE_TARGET_MAJOR="lucifex_NODE_TARGET_MAJOR:-22}"
 LUCIFEX_HOME="${LUCIFEX_HOME:-$HOME/.lucifex}"
 lucifex_NODE_AVAILABLE=false
 

@@ -102,7 +102,7 @@ def _manager_provider_with_context(storage: LucifexTokenStorage, **context_attrs
     """
     if _lucifex_PROVIDER_CLS is None:
         pytest.skip("MCP SDK auth not available")
-    provider = _lucifex_PROVIDER_CLS.__new__lucifexifex_PROVIDER_CLS)
+    provider = _lucifex_PROVIDER_CLS.__new__lucifex_PROVIDER_CLS)
     provider._lucifex_server_name = context_attrs.get("server_name", "srv")
     context = MagicMock()
     context.storage = storage

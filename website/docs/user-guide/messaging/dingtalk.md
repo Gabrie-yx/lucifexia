@@ -15,7 +15,7 @@ Before setup, here's the part most people want to know: how lucifex behaves once
 | Context | Behavior |
 |---------|----------|
 | **DMs (1:1 chat)** | lucifex responds to every message. No `@mention` needed. Each DM has its own session. |
-| **Group chats** | lucifex responds when you `@mention` it. Without a mentionlucifexifex ignores the message. |
+| **Group chats** | lucifex responds when you `@mention` it. Without a mentionlucifex ignores the message. |
 | **Shared groups with multiple users** | By default, lucifex isolates session history per user inside the group. Two people talking in the same group do not share one transcript unless you explicitly disable that. |
 
 ### Session Model in DingTalk

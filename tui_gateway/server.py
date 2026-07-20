@@ -2429,7 +2429,7 @@ def _resolve_session_platform() -> str:
     TUI-only slash commands (``/reload-mcp``, …) to chat-panel users.
 
     Resolution:
-      * ``lucifex_DESKTOP=1`` and lucifexifex_DESKTOP_TERMINAL`` unset → "desktop"
+      * ``lucifex_DESKTOP=1`` and lucifex_DESKTOP_TERMINAL`` unset → "desktop"
         (the chat-panel backend — a graphical React surface, not a terminal).
       * ``lucifex_DESKTOP_TERMINAL=1`` → "tui"
         (``lucifex --tui`` running in the desktop's embedded terminal pane;
@@ -3373,7 +3373,7 @@ def _apply_model_switch(
     # user's chosen model/provider instead of falling back to global config.
     #
     # We deliberately do NOT write process-global env vars (lucifex_MODEL /
-    # LUCIFEX_INFERENCE_MODEL / lucifex_TUI_PROVIDER lucifexifex_INFERENCE_PROVIDER)
+    # LUCIFEX_INFERENCE_MODEL / lucifex_TUI_PROVIDER lucifex_INFERENCE_PROVIDER)
     # here. The desktop backend hosts every same-profile session in ONE process,
     # so mutating os.environ on a /model switch leaked the new model/provider
     # into every OTHER live session's next agent rebuild — switching the model
@@ -11133,7 +11133,7 @@ def _(rid, params: dict) -> dict:
             "The Current working directory is only a hint. Do not assume it is the preview app root when the port owner or files indicate another root.",
             "If the console shows a module-script MIME error for src/main.tsx or similar, a static server is serving source files. Do not restart python -m http.server or any dumb static server for that app.",
             "For module-script MIME failures, inspect package.json/vite config in the candidate app root and start the real dev server/bundler (for example npm/pnpm/yarn dev) so module transforms happen.",
-            "Before declaring success, verify the Preview URL responds with the intended app, not lucifex Desktop. If it servelucifexifex/Desktop UI or another unrelated app, stop that process and report failure.",
+            "Before declaring success, verify the Preview URL responds with the intended app, not lucifex Desktop. If it servelucifex/Desktop UI or another unrelated app, stop that process and report failure.",
             "Do not modify files. Do not ask the user unless blocked.",
             "Prefer existing project scripts or commands when they are clear.",
             "If a stale process owns the needed port, handle it safely.",
@@ -12872,7 +12872,7 @@ def _(rid, params: dict) -> dict:
 def _cli_exec_blocked(argv: list[str]) -> str | None:
     """Return user hint if this argv must not run headless in the gateway process."""
     if not argv:
-        return "bare `lucifex` is interactive — use lucifexifex chat -q …` or rlucifexucifex` in another terminal"
+        return "bare `lucifex` is interactive — use lucifex chat -q …` or rlucifexucifex` in another terminal"
     a0 = argv[0].lower()
     if a0 == "setup":
         return "`lucifex setup` needs a full terminal — run it outside the TUI"

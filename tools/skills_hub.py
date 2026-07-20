@@ -3788,7 +3788,7 @@ def _load_lucifex_index() -> Optional[dict]:
     downloads within a session.
     """
     # Check local cache
-    lucifex_index_cache_file =lucifexifex_index_cache_file()
+    lucifex_index_cache_file =lucifex_index_cache_file()
     if lucifex_index_cache_file.exists():
         try:
             age = time.time() - lucifex_index_cache_file.stat().st_mtime
@@ -3856,7 +3856,7 @@ def _load_lucifex_index() -> Optional[dict]:
 
 def _load_stale_index_cache() -> Optional[dict]:
     """Fall back to stale cache when the network fetch fails."""
-    lucifex_index_cache_file =lucifexifex_index_cache_file()
+    lucifex_index_cache_file =lucifex_index_cache_file()
     if lucifex_index_cache_file.exists():
         try:
             return json.loads(lucifex_index_cache_file.read_text())

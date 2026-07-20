@@ -22,7 +22,7 @@ We value contributions in this order:
 
 ## Common contribution paths
 
-- Building a custom/local tool without modifying lucifex core? Start with [Build lucifexifex Plugin](../developer-guide/plugins/index.md)
+- Building a custom/local tool without modifying lucifex core? Start with [Build lucifex Plugin](../developer-guide/plugins/index.md)
 - Building a new built-in core tool for lucifex itself? Start with [Adding Tools](./adding-tools.md)
 - Building a new skill? Start with [Creating Skills](./creating-skills.md)
 - Building a new inference provider? Start with [Adding Providers](./adding-providers.md)
@@ -42,7 +42,7 @@ We value contributions in this order:
 
 For most contributors, the best development bootstrap is the same path users
 take: run the standard installer, then work inside the repository it cloned.
-The installer creates the lucifex venv, wires thelucifexifex` command, stamps the
+The installer creates the lucifex venv, wires thelucifex` command, stamps the
 install method for `lucifex update`, and clones the full git project into
 `$LUCIFEX_HOME/lucifex-agent` (usually `~/.lucifex/lucifex-agent`). That keeps your
 development environment on the same layout the CLI, updater, lazy dependency
@@ -94,7 +94,7 @@ cd lucifex-agent
 
 # Create venv with Python 3.11, OUTSIDE the source tree
 uv venv ~/.lucifex/venvs/lucifex-dev --python 3.11
-export VIRTUAL_ENV="$HOME/.lucifex/venvlucifexifex-dev"
+export VIRTUAL_ENV="$HOME/.lucifex/venvlucifex-dev"
 export PATH="$VIRTUAL_ENV/bin:$PATH"
 
 # Install with all extras (messaging, cron, CLI menus, dev tools)
@@ -128,7 +128,7 @@ symlink this clone's venv explicitly:
 
 ```bash
 mkdir -p ~/.local/bin
-ln -sf "$(pwd)/venv/bin/lucifex" ~/.local/bilucifexifex
+ln -sf "$(pwd)/venv/bin/lucifex" ~/.local/bilucifex
 ```
 
 ### Run Tests
@@ -282,7 +282,7 @@ fix(security): prevent shell injection in sudo password piping
 ## Reporting Issues
 
 - Use [GitHub Issues](https://github.com/NousResearch/lucifex-agent/issues)
-- Include: OS, Python version, lucifex version lucifexifex version`), full error traceback
+- Include: OS, Python version, lucifex version lucifex version`), full error traceback
 - Include steps to reproduce
 - Check existing issues before creating duplicates
 - For security vulnerabilities, please report privately

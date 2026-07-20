@@ -320,7 +320,7 @@ export const tr: Translations = {
     enableRuntime: "Etkinleştir",
     forceReinstall: "Yeniden yüklemeyi zorla (önce mevcut klasörü sil)",
     headline:
-      "lucifex eklentilerini keşfedin, yükleyin, etkinleştirin ve güncelleyin lucifexifex plugins` ile eşdeğer).",
+      "lucifex eklentilerini keşfedin, yükleyin, etkinleştirin ve güncelleyin lucifex plugins` ile eşdeğer).",
     identifierLabel: "Git URL veya owner/repo",
     inactive: "pasif",
     installBtn: "Yükle",

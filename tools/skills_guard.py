@@ -135,7 +135,7 @@ THREAT_PATTERNS = [
     (r'\$HOME/\.docker|\~/\.docker',
      "docker_dir_access", "high", "exfiltration",
      "references Docker config (may contain registry creds)"),
-    (r'\$HOME/\.lucifex/\.env|\~/lucifexifex/\.env',
+    (r'\$HOME/\.lucifex/\.env|\~/lucifex/\.env',
      "lucifex_env_access", "critical", "exfiltration",
      "directly references lucifex secrets file"),
     # Match `cat <secrets-file>` (reading credentials) but NOT `cat > <file>`
@@ -461,7 +461,7 @@ THREAT_PATTERNS = [
     (r'AGENTS\.md|CLAUDE\.md|\.cursorrules|\.clinerules',
      "agent_config_mod", "critical", "persistence",
      "references agent config files (could persist malicious instructions across sessions)"),
-    (r'\.lucifex/config\.yaml|lucifexifex/SOUL\.md',
+    (r'\.lucifex/config\.yaml|lucifex/SOUL\.md',
      "lucifex_config_mod", "critical", "persistence",
      "references lucifex configuration files directly"),
     (r'\.claude/settings|\.codex/config',

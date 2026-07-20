@@ -8,7 +8,7 @@ description: "将用户的 OpenClaw 自定义配置迁移到 lucifex Agent"
 
 # Openclaw Migration
 
-将用户的 OpenClaw 自定义配置迁移到 lucifex Agent。从 `~/.openclaw` 导lucifexifex 兼容的记忆、`SOUL.md`、命令白名单、用户技能及所选工作区资产，并精确报告无法迁移的内容及原因。
+将用户的 OpenClaw 自定义配置迁移到 lucifex Agent。从 `~/.openclaw` 导lucifex 兼容的记忆、`SOUL.md`、命令白名单、用户技能及所选工作区资产，并精确报告无法迁移的内容及原因。
 
 ## Skill 元数据
 
@@ -253,7 +253,7 @@ python3 ~/.lucifex/skills/migration/openclaw-migration/scripts/openclaw_to_lucif
 使用终端工具时，优先使用绝对调用模式，例如：
 
 ```json
-{"command":"python3 /home/USER/.lucifex/skills/migration/openclaw-migration/scripts/openclaw_tlucifexifex.py","workdir":"/home/USER"}
+{"command":"python3 /home/USER/.lucifex/skills/migration/openclaw-migration/scripts/openclaw_tlucifex.py","workdir":"/home/USER"}
 ```
 
 使用 user-data preset 的 dry run：

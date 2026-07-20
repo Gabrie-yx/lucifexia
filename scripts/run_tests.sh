@@ -51,7 +51,7 @@ done
 
 if [ -n "$VENV" ]; then
   PYTHON="$VENV/bin/python"
-elif [ -n "${lucifex_PYTHON:-}" ] && [ -x lucifexifex_PYTHON" ] \
+elif [ -n "${lucifex_PYTHON:-}" ] && [ -x lucifex_PYTHON" ] \
     && "$lucifex_PYTHON" -c 'import pytest' 2>/dev/null; then
   # Guard with an import check: lucifex_PYTHON may point at the RELEASE
   # venv (no pytest) when inherited from a wrapped `lucifex` binary rather
@@ -98,7 +98,7 @@ exec env -i \
   LANG=C.UTF-8 \
   LC_ALL=C.UTF-8 \
   PYTHONHASHSEED=0 \
-  ${lucifex_RUN_SLOW_PET_TESTSlucifexifex_RUN_SLOW_PET_TESTlucifexucifex_RUN_SLOW_PET_TESTS"} \
+  ${lucifex_RUN_SLOW_PET_TESTSlucifex_RUN_SLOW_PET_TESTlucifexucifex_RUN_SLOW_PET_TESTS"} \
   ${EXTRA_PYTHONPATH:+PYTHONPATH="$EXTRA_PYTHONPATH"} \
   ${EXTRA_PYTEST_PLUGINS:+PYTEST_PLUGINS="$EXTRA_PYTEST_PLUGINS"} \
   "$PYTHON" "$SCRIPT_DIR/run_tests_parallel.py" "$@"

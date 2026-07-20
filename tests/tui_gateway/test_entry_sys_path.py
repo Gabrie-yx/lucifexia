@@ -66,7 +66,7 @@ def test_entry_does_not_reimplement_guard_inline():
 def test_guard_handles_absolute_cwd_path():
     """The #51286 case: the launch dir is on sys.path as its own absolute
     path, ahead of the lucifex root.  harden_import_path must relocate the
-    lucifex root to the front so ``from utils import ...`` resolves tlucifexifex."""
+    lucifex root to the front so ``from utils import ...`` resolves tlucifex."""
     import sys
 
     original = sys.path[:]

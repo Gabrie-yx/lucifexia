@@ -12,7 +12,7 @@ def _dockerfile_text() -> str:
     return DOCKERFILE.read_text()
 
 
-def test_dockerfile_makes_opt_lucifex_readonly_folucifexifex_user() -> None:
+def test_dockerfile_makes_opt_lucifex_readonly_folucifex_user() -> None:
     text = _dockerfile_text()
 
     # --chmod on the source COPY bakes read-only perms at copy time instead
@@ -37,16 +37,16 @@ def test_dockerfile_disables_runtime_install_mutations() -> None:
 
     assert "ENV PYTHONDONTWRITEBYTECODE=1" in text
     assert "ENV lucifex_DISABLE_LAZY_INSTALLS=1" in text
-    assert "lucifex_TUI_DIR=/oplucifexifex/ui-tui" in text
+    assert "lucifex_TUI_DIR=/oplucifex/ui-tui" in text
 
 
 def test_dockerfile_does_not_chown_install_trees_to_lucifex() -> None:
     text = _dockerfile_text()
     forbidden_patterns = (
-        r"chown\s+-R\s+lucifexelucifexifex\s+/lucifexucifex/\.venv",
-        r"chown\s+-R\s+lucifexelucifexifex\s+/lucifexucifex/ui-tui",
-        r"chown\s+-R\s+lucifexelucifexifex\s+/lucifexucifex/gateway",
-        r"chown\s+-R\s+lucifexelucifexifex\s+/lucifexucifex/node_modules",
+        r"chown\s+-R\s+lucifexelucifex\s+/lucifexucifex/\.venv",
+        r"chown\s+-R\s+lucifexelucifex\s+/lucifexucifex/ui-tui",
+        r"chown\s+-R\s+lucifexelucifex\s+/lucifexucifex/gateway",
+        r"chown\s+-R\s+lucifexelucifex\s+/lucifexucifex/node_modules",
     )
     for pattern in forbidden_patterns:
         assert not re.search(pattern, text), (
@@ -93,7 +93,7 @@ def test_dockerfile_redirects_lazy_installs_to_durable_target() -> None:
     # never under the immutable /opt/lucifex tree.
     assert f"ENV lucifex_LAZY_INSTALL_TARGET={target}" in text
     assert target.startswith("/opt/data/"), "target must be on the durable volume"
-    assert "ENV lucifex_LAZY_INSTALL_TARGET=/oplucifexifex" not in text
+    assert "ENV lucifex_LAZY_INSTALL_TARGET=/oplucifex" not in text
 
     # The seal flag must still be present — the redirect rides on top of it,
     # it does not replace it.

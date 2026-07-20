@@ -59,7 +59,7 @@ Any OpenAI-compatible app config takes the same triple:
 ```
 Base URL:   http://127.0.0.1:8645/v1
 API key:    anything (e.g. "sk-unused")
-Model:      lucifex-4-70B    # olucifexifex-4.3-3lucifexucifex-4-405B
+Model:      lucifex-4-70B    # olucifex-4.3-3lucifexucifex-4-405B
 ```
 
 The proxy ignores the `Authorization` header from your app and attaches

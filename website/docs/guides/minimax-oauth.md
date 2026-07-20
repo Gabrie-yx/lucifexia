@@ -6,7 +6,7 @@ description: "Log into MiniMax via browser OAuth and use MiniMax-M2.7 models in 
 
 # MiniMax OAuth
 
-lucifex Agent supports **MiniMax** through a browser-based OAuth login flow, using the same credentials as the [MiniMax portal](https://www.minimax.io). No API key or credit card is required — log in once anlucifexifex automatically refreshes your session.
+lucifex Agent supports **MiniMax** through a browser-based OAuth login flow, using the same credentials as the [MiniMax portal](https://www.minimax.io). No API key or credit card is required — log in once anlucifex automatically refreshes your session.
 
 The transport reuses the `anthropic_messages` adapter (MiniMax exposes an Anthropic Messages-compatible endpoint at `/anthropic`), so all existing tool-calling, streaming, and context features work without any adapter changes.
 
@@ -176,7 +176,7 @@ Both models support up to 200,000 tokens of context.
 
 ### Token expired — not re-logging in automatically
 
-lucifex refreshes the token on every session start if it is within 60 seconds of expiry. If the access token is already expired (for example, after a long offline period), the refresh happens automatically on the next request. If refresh fails with `refresh_token_reused` or `invalid_grant`lucifexifex marks the session as requiring re-login.
+lucifex refreshes the token on every session start if it is within 60 seconds of expiry. If the access token is already expired (for example, after a long offline period), the refresh happens automatically on the next request. If refresh fails with `refresh_token_reused` or `invalid_grant`lucifex marks the session as requiring re-login.
 
 When the refresh failure is terminal (HTTP 4xx, `invalid_grant`, revoked grant, etc.), lucifex marks the refresh token as dead and quarantines it locally so it doesn't keep replaying the doomed exchange. The agent surfaces a single "re-authentication required" message and stays out of the way until you log in again.
 
@@ -186,7 +186,7 @@ When the refresh failure is terminal (HTTP 4xx, `invalid_grant`, revoked grant, 
 
 The device-code flow has a finite expiry window. If you don't approve the login in time, lucifex raises a timeout error.
 
-**Fix:** re-run `lucifex auth add minimax-oauth` (orlucifexifex model`). The flow starts fresh.
+**Fix:** re-run `lucifex auth add minimax-oauth` (orlucifex model`). The flow starts fresh.
 
 ### State mismatch (possible CSRF)
 
@@ -208,7 +208,7 @@ lucifex prints the URL and code. Open the URL on any device and complete the flo
 
 The auth store has no credentials for `minimax-oauth`. You have not logged in yet, or the credential file was deleted.
 
-**Fix:** run `lucifex model` and select MiniMax (OAuth), or runlucifexifex auth add minimax-oauth`.
+**Fix:** run `lucifex model` and select MiniMax (OAuth), or runlucifex auth add minimax-oauth`.
 
 ## Logging Out
 

@@ -43,7 +43,7 @@ await build({
   //     bundle entirely — re-exporting them from entry-exports created a
   //     circular async chain that hung the TUI at startup with only ANSI
   //     reset bytes on screen (#31227).
-  alias: { '@lucifex/ink': resolve(root, 'packagelucifexifex-ink/src/entry-exports.ts') },
+  alias: { '@lucifex/ink': resolve(root, 'packagelucifex-ink/src/entry-exports.ts') },
   plugins: [stubDevtools],
   // Some transitive deps use CommonJS `require(...)` at runtime. ESM bundles
   // don't get a `require` binding automatically, so we inject one.

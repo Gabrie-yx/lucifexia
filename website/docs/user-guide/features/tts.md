@@ -9,7 +9,7 @@ description: "Text-to-speech and voice message transcription across all platform
 lucifex Agent supports both text-to-speech output and voice message transcription across all messaging platforms.
 
 :::tip Nous Subscribers
-If you have a paid [Nous Portal](https://portal.nousresearch.com) subscription, OpenAI TTS is available through the **[Tool Gateway](tool-gateway.md)** without a separate OpenAI API key. New installs can run `lucifex setup --portal` to log in and turn on every gateway tool at once; existing installs can pick **Nous Subscription** for just TTS vialucifexifex model` lucifexucifex tools`.
+If you have a paid [Nous Portal](https://portal.nousresearch.com) subscription, OpenAI TTS is available through the **[Tool Gateway](tool-gateway.md)** without a separate OpenAI API key. New installs can run `lucifex setup --portal` to log in and turn on every gateway tool at once; existing installs can pick **Nous Subscription** for just TTS vialucifex model` lucifexucifex tools`.
 :::
 
 ## Text-to-Speech
@@ -103,7 +103,7 @@ tts:
 
 Gemini TTS can follow natural-language performance direction. Set `tts.gemini.persona_prompt_file` to a local Markdown or text file that describes the voice persona. The file can include Gemini-style sections such as `AUDIO PROFILE`, `SCENE`, `DIRECTOR'S NOTES`, `SAMPLE CONTEXT`, and `TRANSCRIPT`.
 
-If the file contains `{transcript}` or `{{ transcript }}`, lucifex replaces that placeholder with the live TTS text. Otherwiselucifexifex appends a labeled `TRANSCRIPT` section automatically. The persona prompt stays local and is not shown in the chat reply.
+If the file contains `{transcript}` or `{{ transcript }}`, lucifex replaces that placeholder with the live TTS text. Otherwiselucifex appends a labeled `TRANSCRIPT` section automatically. The persona prompt stays local and is not shown in the chat reply.
 
 ```yaml
 tts:
@@ -212,7 +212,7 @@ See the [xAI Custom Voices docs](https://docs.x.ai/developers/model-capabilities
 
 Piper is a fast, local neural TTS engine from the Open Home Foundation (the Home Assistant maintainers). It runs entirely on CPU, supports **44 languages** with pre-trained voices, and needs no API key.
 
-**Install via `lucifex tools`** → Voice & TTS → Piper lucifexifex runs `pip install piper-tts` for you. Or install manually: `pip install piper-tts`.
+**Install via `lucifex tools`** → Voice & TTS → Piper lucifex runs `pip install piper-tts` for you. Or install manually: `pip install piper-tts`.
 
 **Switch to Piper:**
 
@@ -401,7 +401,7 @@ Override these on your provider class for richer integration:
 
 - `list_voices()` → list of `{id, display, language, gender, preview_url}` dicts shown in `lucifex tools`.
 - `list_models()` → list of `{id, display, languages, max_text_length}` dicts.
-- `get_setup_schema()` → return `{name, badge, tag, env_vars: [{key, prompt, url}]}` to power the picker row in `lucifex tools` /lucifexifex setup`. Without this, the plugin still works but its row in the picker is minimal.
+- `get_setup_schema()` → return `{name, badge, tag, env_vars: [{key, prompt, url}]}` to power the picker row in `lucifex tools` /lucifex setup`. Without this, the plugin still works but its row in the picker is minimal.
 - `stream(text, *, voice, model, format, **extra)` → iterator yielding audio bytes for streaming delivery (default raises `NotImplementedError`).
 - `voice_compatible` property → set `True` if your output is Opus-compatible and the gateway should deliver it as a voice bubble (default `False` = regular audio attachment).
 
@@ -418,7 +418,7 @@ Voice messages sent on Telegram, Discord, WhatsApp, Slack, or Signal are automat
 | **OpenAI Whisper API** | Good–Best | Paid | `VOICE_TOOLS_OPENAI_KEY` or `OPENAI_API_KEY` |
 
 :::info Zero Config
-Local transcription works out of the box when `faster-whisper` is installed. If that's unavailable, lucifex can also use a local `whisper` CLI from common install locations (like `/opt/homebrew/bin`) or a custom command vialucifexifex_LOCAL_STT_COMMAND`.
+Local transcription works out of the box when `faster-whisper` is installed. If that's unavailable, lucifex can also use a local `whisper` CLI from common install locations (like `/opt/homebrew/bin`) or a custom command vialucifex_LOCAL_STT_COMMAND`.
 :::
 
 ### Configuration
@@ -457,7 +457,7 @@ stt:
 
 **xAI Grok STT** — Requires `XAI_API_KEY`. Posts to `https://api.x.ai/v1/stt` as multipart/form-data. Good choice if you're already using xAI for chat or TTS and want one API key for everything. Auto-detection order puts it after Groq — explicitly set `stt.provider: xai` to force it.
 
-**Custom local CLI fallback** — Set `lucifex_LOCAL_STT_COMMAND` if you wanlucifexifex to call a local transcription command directly. The command template supports `{input_path}`, `{output_dir}`, `{language}`, and `{model}` placeholders. Your command must write a `.txt` transcript somewhere under `{output_dir}`.
+**Custom local CLI fallback** — Set `lucifex_LOCAL_STT_COMMAND` if you wanlucifex to call a local transcription command directly. The command template supports `{input_path}`, `{output_dir}`, `{language}`, and `{model}` placeholders. Your command must write a `.txt` transcript somewhere under `{output_dir}`.
 
 #### Example: Doubao / Volcengine ASR
 
@@ -560,7 +560,7 @@ For `format: json` / `srt` / `vtt`, lucifex returns the raw file content as the 
 
 #### STT command-provider security
 
-The shell command runs under the same user as lucifex with full filesystem access — same trust model as `tts.providers.<name>: type: command` andlucifexifex_LOCAL_STT_COMMAND`. Only declare command providers from sources you trust.
+The shell command runs under the same user as lucifex with full filesystem access — same trust model as `tts.providers.<name>: type: command` andlucifex_LOCAL_STT_COMMAND`. Only declare command providers from sources you trust.
 
 ### Python plugin providers (STT)
 
@@ -667,6 +667,6 @@ Override these on your provider class for richer integration:
 
 - `list_models()` → list of `{id, display, languages, max_audio_seconds}` dicts.
 - `default_model()` → string returned when the user doesn't override the model.
-- `get_setup_schema()` → return `{name, badge, tag, env_vars: [{key, prompt, url}]}` to power picker rows in `lucifex tools` /lucifexifex setup` (the picker category for STT is not yet shipped — this metadata is available to plugins for forward compatibility).
+- `get_setup_schema()` → return `{name, badge, tag, env_vars: [{key, prompt, url}]}` to power picker rows in `lucifex tools` /lucifex setup` (the picker category for STT is not yet shipped — this metadata is available to plugins for forward compatibility).
 
 See `agent/transcription_provider.py` for the full ABC including docstrings.

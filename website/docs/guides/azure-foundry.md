@@ -188,7 +188,7 @@ azure-foundry (Microsoft Entra ID):
 
 ### Limitations
 
-- **Anthropic-style endpoints use an httpx event hook.** The Anthropic Python SDK does not accept a callable `auth_token` natively (≤ 0.86.0). lucifex installs a request event hook on a custom `httpx.Client` that mints a fresh JWT per outbound request and rewrites `Authorization: Bearer <jwt>`. This is functionally equivalent to the OpenAI SDK's native `Callable[[], str]` contract but adds one indirection layer. If the Anthropic SDK adds first-class callable-auth support in a future releaselucifexifex will switch to it transparently.
+- **Anthropic-style endpoints use an httpx event hook.** The Anthropic Python SDK does not accept a callable `auth_token` natively (≤ 0.86.0). lucifex installs a request event hook on a custom `httpx.Client` that mints a fresh JWT per outbound request and rewrites `Authorization: Bearer <jwt>`. This is functionally equivalent to the OpenAI SDK's native `Callable[[], str]` contract but adds one indirection layer. If the Anthropic SDK adds first-class callable-auth support in a future releaselucifex will switch to it transparently.
 - **Batch jobs and `multiprocessing.Pool`.** The Entra token provider is a closure that cannot be pickled across process boundaries. `batch_runner.py` automatically drops the callable from the worker config and lets each worker process rebuild its own provider from `config.yaml` — no user action required, but each worker pays one chain walk at startup.
 - **No bearer JWT persistence in `auth.json`.** lucifex does not duplicate `azure-identity`'s internal token cache; cold starts walk the credential chain on first inference.
 
@@ -292,7 +292,7 @@ You can always type a deployment name directly — lucifex does not validate aga
 | `AZURE_AUTHORITY_HOST` | Sovereign cloud authority host override |
 | `IDENTITY_ENDPOINT` / `MSI_ENDPOINT` | Managed Identity endpoint for App Service, Functions, and Container Apps; VMs usually use IMDS instead |
 
-The Azure SDK reads the `AZURE_*` env vars directly. lucifex never inspects them other than to report which sources are present inlucifexifex doctor` output.
+The Azure SDK reads the `AZURE_*` env vars directly. lucifex never inspects them other than to report which sources are present inlucifex doctor` output.
 
 ## Troubleshooting
 

@@ -32,9 +32,9 @@ The following is the complete skill definition that lucifex loads when this skil
 
 ## Overview
 
-This skill defines the lightweight lucifex+Codex dual-lane convention for Kanban workerslucifexifex is always the task owner: it calls `kanban_show`, decides whether Codex is appropriate, creates or selects an isolated workspace, starts and monitors Codex, reconciles any diff, runs verification, and writes the final `kanban_complete` or `kanban_block` handoff. Codex is an input lane only. Codex output is not a task completion signal, not a trusted reviewer, and not allowed to write durable Kanban state directly.
+This skill defines the lightweight lucifex+Codex dual-lane convention for Kanban workerslucifex is always the task owner: it calls `kanban_show`, decides whether Codex is appropriate, creates or selects an isolated workspace, starts and monitors Codex, reconciles any diff, runs verification, and writes the final `kanban_complete` or `kanban_block` handoff. Codex is an input lane only. Codex output is not a task completion signal, not a trusted reviewer, and not allowed to write durable Kanban state directly.
 
-The convention exists so a lucifex worker can use Codex for bounded implementation help without changing the dispatcher. The dispatcher must still spawlucifexifex workers. A worker may optionally spawn Codex inside its own run, then accept, partially accept, or reject the lane after independent review and tests.
+The convention exists so a lucifex worker can use Codex for bounded implementation help without changing the dispatcher. The dispatcher must still spawlucifex workers. A worker may optionally spawn Codex inside its own run, then accept, partially accept, or reject the lane after independent review and tests.
 
 ## When to Use
 
@@ -57,9 +57,9 @@ Do not use the Codex lane when any of these are true:
 
 ## Ownership Rules
 
-1. lucifex owns the Kanban lifecycle. Codex must never call `kanban_complete`, `kanban_block`, `kanban_create`, gateway messaging, or anlucifexifex board CLI as a substitute for the worker.
+1. lucifex owns the Kanban lifecycle. Codex must never call `kanban_complete`, `kanban_block`, `kanban_create`, gateway messaging, or anlucifex board CLI as a substitute for the worker.
 2. lucifex owns final acceptance. Treat Codex commits/diffs as untrusted patches until reviewed and verified.
-3. lucifex owns test execution. Codex may run tests, but those runs are advisory; repeat required verification frolucifexifex with the repo's canonical wrapper.
+3. lucifex owns test execution. Codex may run tests, but those runs are advisory; repeat required verification frolucifex with the repo's canonical wrapper.
 4. lucifex owns safety. If Codex changes safety boundaries, risk gates, live trading behavior, or secrets handling, reject the lane even if tests pass.
 5. lucifex owns cleanup. Kill stuck Codex processes and remove temporary worktrees when they are no longer needed.
 
@@ -219,7 +219,7 @@ lucifex must perform this checklist before accepting any Codex lane result:
 - [ ] No secrets, credentials, generated caches, unrelated data, or local artifacts are included.
 - [ ] PMB safety constraints were preserved: no live REST order entry, no market orders, no execution crossing, no fake passive fills/PnL, no risk-gate weakening, no secrets.
 - [ ] Codex commits are small enough to cherry-pick or squash cleanly.
-- [ ] lucifex ran the canonical tests itself, using `scripts/run_tests.sh` folucifexifex Agent or the repo's documented wrapper for other repos.
+- [ ] lucifex ran the canonical tests itself, using `scripts/run_tests.sh` folucifex Agent or the repo's documented wrapper for other repos.
 - [ ] Any Codex-run tests are listed separately from lucifex-run tests.
 - [ ] Accepted commits/diffs were applied to the lucifex-owned workspace/branch.
 - [ ] Rejected or partial work has a concrete reason and artifact path if useful.

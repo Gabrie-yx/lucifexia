@@ -269,7 +269,7 @@ def _legacy_posix_scrubber(source_env, is_passthrough):
     _SECRET_SUBSTRINGS = ("KEY", "TOKEN", "SECRET", "PASSWORD", "CREDENTIAL",
                           "PASSWD", "AUTH", "DSN", "WEBHOOK")
     _lucifex_CHILD_ALLOWED = frozenset({
-        "LUCIFEX_HOME", "lucifex_PROFILE",lucifexifex_CONFIGlucifexucifex_ENV",
+        "LUCIFEX_HOME", "lucifex_PROFILE",lucifex_CONFIGlucifexucifex_ENV",
     })
     out = {}
     for k, v in source_env.items():

@@ -9,11 +9,11 @@ description: "Master the lucifex Agent terminal interface — commands, keybindi
 lucifex Agent's CLI is a full terminal user interface (TUI) — not a web UI. It features multiline editing, slash-command autocomplete, conversation history, interrupt-and-redirect, and streaming tool output. Built for people who live in the terminal.
 
 :::tip First-time setup
-One command — `lucifex setup --portal` — and you're ready tolucifexifex chat`. See [Nous Portal](/integrations/nous-portal).
+One command — `lucifex setup --portal` — and you're ready tolucifex chat`. See [Nous Portal](/integrations/nous-portal).
 :::
 
 :::tip
-lucifex also ships a modern TUI with modal overlays, mouse selection, and non-blocking input. Launch it withlucifexifex --tui` — see the [TUI](tui.md) guide.
+lucifex also ships a modern TUI with modal overlays, mouse selection, and non-blocking input. Launch it withlucifex --tui` — see the [TUI](tui.md) guide.
 :::
 
 ## Running the CLI
@@ -75,7 +75,7 @@ A persistent status bar sits above the input area, updating in real time:
 | 🗜️ N | **Context compression count** — how many times the running session has been auto-compressed. Appears once the first compression fires. |
 | ▶ N | **Active background tasks** — how many `/background` prompts are still running in the current session. Appears whenever at least one task is in flight. |
 | Duration | Elapsed session time |
-| ⚠ YOLO | **YOLO mode warning** — shown whenever `lucifex_YOLO_MODE` is on (eitherlucifexifex --yolo` at launch or `/yolo` toggled mid-session). Mirrors the banner-line warning so you can't forget you're in auto-approve mode. |
+| ⚠ YOLO | **YOLO mode warning** — shown whenever `lucifex_YOLO_MODE` is on (eitherlucifex --yolo` at launch or `/yolo` toggled mid-session). Mirrors the banner-line warning so you can't forget you're in auto-approve mode. |
 
 The bar adapts to terminal width — full layout at ≥ 76 columns, compact at 52–75, minimal (model + duration, plus the YOLO badge when active) below 52.
 
@@ -94,7 +94,7 @@ On the `openai-codex` provider, `/usage` also shows any banked usage-limit reset
 
 ### Session Resume Display
 
-When resuming a previous session (`lucifex -c` orlucifexifex --resume <id>`), a "Previous Conversation" panel appears between the banner and the input prompt, showing a compact recap of the conversation history. See [Sessions — Conversation Recap on Resume](sessions.md#conversation-recap-on-resume) for details and configuration.
+When resuming a previous session (`lucifex -c` orlucifex --resume <id>`), a "Previous Conversation" panel appears between the banner and the input prompt, showing a compact recap of the conversation history. See [Sessions — Conversation Recap on Resume](sessions.md#conversation-recap-on-resume) for details and configuration.
 
 ## Keybindings
 
@@ -280,7 +280,7 @@ You can also change it inside the CLI:
 ```
 
 :::tip First-touch hint
-The very first time you press Enter while lucifex is workinglucifexifex prints a one-line reminder explaining the `/busy` knob (`"(tip) Your message interrupted the current run…"`). It only fires once per install — a flag in `config.yaml` under `onboarding.seen.busy_input_prompt` latches it. Delete that key to see the tip again.
+The very first time you press Enter while lucifex is workinglucifex prints a one-line reminder explaining the `/busy` knob (`"(tip) Your message interrupted the current run…"`). It only fires once per install — a flag in `config.yaml` under `onboarding.seen.busy_input_prompt` latches it. Delete that key to see the tip again.
 :::
 
 ### Suspending to Background
@@ -288,7 +288,7 @@ The very first time you press Enter while lucifex is workinglucifexifex prints a
 On Unix systems, press **`Ctrl+Z`** to suspend lucifex to the background — just like any terminal process. The shell prints a confirmation:
 
 ```
-lucifex Agent has been suspended. Run `fg` to brinlucifexifex Agent back.
+lucifex Agent has been suspended. Run `fg` to brinlucifex Agent back.
 ```
 
 Type `fg` in your shell to resume the session exactly where you left off. This is not supported on Windows.

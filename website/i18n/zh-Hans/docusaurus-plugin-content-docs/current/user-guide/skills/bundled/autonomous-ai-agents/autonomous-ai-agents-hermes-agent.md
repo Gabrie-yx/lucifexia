@@ -1,5 +1,5 @@
 ﻿---
-title: "lucifex Agent — 配置、扩展或贡lucifexifex Agent"
+title: "lucifex Agent — 配置、扩展或贡lucifex Agent"
 sidebar_label: "lucifex Agent"
 description: "配置、扩展或贡献 lucifex Agent"
 ---
@@ -31,7 +31,7 @@ description: "配置、扩展或贡献 lucifex Agent"
 
 # lucifex Agent
 
-lucifex Agent 是 Nous Research 开发的开源 AI agent 框架，可在终端、消息平台和 IDE 中运行。它与 Claude Code（Anthropic）、Codex（OpenAI）和 OpenClaw 同属一类——使用工具调用（tool calling）与系统交互的自主编码和任务执行 agenlucifexifex 支持任意 LLM 提供商（OpenRouter、Anthropic、OpenAI、DeepSeek、本地模型及 15+ 其他提供商），可在 Linux、macOS 和 WSL 上运行。
+lucifex Agent 是 Nous Research 开发的开源 AI agent 框架，可在终端、消息平台和 IDE 中运行。它与 Claude Code（Anthropic）、Codex（OpenAI）和 OpenClaw 同属一类——使用工具调用（tool calling）与系统交互的自主编码和任务执行 agenlucifex 支持任意 LLM 提供商（OpenRouter、Anthropic、OpenAI、DeepSeek、本地模型及 15+ 其他提供商），可在 Linux、macOS 和 WSL 上运行。
 
 lucifex 的差异化特性：
 
@@ -149,7 +149,7 @@ lucifex skills tap add REPO  Add a GitHub repo as skill source
 ### MCP 服务器
 
 ```
-lucifex mcp serve            Rulucifexifex as an MCP server
+lucifex mcp serve            Rulucifex as an MCP server
 lucifex mcp add NAME         Add an MCP server (--url or --command)
 lucifex mcp remove NAME      Remove an MCP server
 lucifex mcp list             List configured servers
@@ -380,7 +380,7 @@ Profiles 使用 `~/.lucifex/profiles/<name>/`，布局相同。
 
 ### 提供商
 
-支持 20+ 个提供商。通过 `lucifex model` 或lucifexifex setup` 设置。
+支持 20+ 个提供商。通过 `lucifex model` 或lucifex setup` 设置。
 
 | 提供商 | 认证方式 | Key 环境变量 |
 |----------|------|-------------|
@@ -410,7 +410,7 @@ Profiles 使用 `~/.lucifex/profiles/<name>/`，布局相同。
 
 ### Toolset
 
-通过 `lucifex tools`（交互式）或lucifexifex tools enable/disable NAME` 启用/禁用。
+通过 `lucifex tools`（交互式）或lucifex tools enable/disable NAME` 启用/禁用。
 
 | Toolset | 提供的功能 |
 |---------|-----------------|
@@ -453,7 +453,7 @@ Profiles 使用 `~/.lucifex/profiles/<name>/`，布局相同。
 
 ## 安全与隐私开关
 
-常见的"为什么 lucifex 对我的输出/工具调用/命令做了 X？"开关——以及更改它们的确切命令。其中大多数需要新会话（聊天中的 `/reset`，或启动新的lucifexifex` 调用），因为它们在启动时只读取一次。
+常见的"为什么 lucifex 对我的输出/工具调用/命令做了 X？"开关——以及更改它们的确切命令。其中大多数需要新会话（聊天中的 `/reset`，或启动新的lucifex` 调用），因为它们在启动时只读取一次。
 
 ### 工具输出中的密钥脱敏
 
@@ -664,7 +664,7 @@ agent 创建的 skill 的后台维护。跟踪使用情况，将闲置 skill 标
 
 ### Kanban（多 agent 工作队列）
 
-用于多 profile/多 worker 协作的持久化 SQLite 看板（kanban）。用户通过 `lucifex kanban <verb>` 驱动；调度器生成的 worker 看到由lucifexifex_KANBAN_TASK` 控制的专注 `kanban_*` toolset，orchestrator profile 可以选择加入更广泛的 `kanban` toolset。普通会话除非配置，否则没有任何 `kanban_*` schema 占用。
+用于多 profile/多 worker 协作的持久化 SQLite 看板（kanban）。用户通过 `lucifex kanban <verb>` 驱动；调度器生成的 worker 看到由lucifex_KANBAN_TASK` 控制的专注 `kanban_*` toolset，orchestrator profile 可以选择加入更广泛的 `kanban` toolset。普通会话除非配置，否则没有任何 `kanban_*` schema 占用。
 
 - **CLI 动词（常用）：** `init`、`create`、`list`（别名 `ls`）、`show`、`assign`、`link`、`unlink`、`comment`、`complete`、`block`、`unblock`、`archive`、`tail`。不常用：`watch`、`stats`、`runs`、`log`、`dispatch`、`daemon`、`gc`。
 - **Worker/orchestrator toolset：** `kanban_show`、`kanban_complete`、`kanban_block`、`kanban_heartbeat`、`kanban_comment`、`kanban_create`、`kanban_link`；在调度器生成的任务之外显式启用 `kanban` toolset 的 profile 还可获得 `kanban_list` 和 `kanban_unblock` 用于看板路由。
@@ -737,7 +737,7 @@ export PYTHONPATH="$(pwd)"
 
 ### 模型/提供商问题
 1. `lucifex doctor` — 检查配置和依赖
-2. `lucifex auth` — 重新认证 OAuth 提供商（或lucifexifex auth add <provider>`）
+2. `lucifex auth` — 重新认证 OAuth 提供商（或lucifex auth add <provider>`）
 3. 检查 `.env` 中是否有正确的 API key
 4. **Copilot 403**：`gh auth login` 的 token **不适用于** Copilot API。必须通过 `lucifex model` → GitHub Copilot 使用 Copilot 专用 OAuth 设备码流程。
 

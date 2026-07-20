@@ -6,7 +6,7 @@ description: "Connect lucifex Agent to external tool servers via MCP — and con
 
 # MCP (Model Context Protocol)
 
-MCP lets lucifex Agent connect to external tool servers so the agent can use tools that live outsidlucifexifex itself — GitHub, databases, file systems, browser stacks, internal APIs, and more.
+MCP lets lucifex Agent connect to external tool servers so the agent can use tools that live outsidlucifex itself — GitHub, databases, file systems, browser stacks, internal APIs, and more.
 
 If you have ever wanted lucifex to use a tool that already exists somewhere else, MCP is usually the cleanest way to do it.
 
@@ -139,7 +139,7 @@ before clicking Install.
 Manifests pin a `manifest_version`. The catalog is forward-compatible: if a
 PR adds an entry with a newer `manifest_version` than your installed lucifex
 understands, the picker will surface a warning (`⚠ '<name>' requires a newer
-lucifex`) for that entry instead of silently hiding it. Runlucifexifex update`
+lucifex`) for that entry instead of silently hiding it. Runlucifex update`
 to install the latest lucifex when you see that.
 
 ### Runtime `${ENV_VAR}` substitution
@@ -244,7 +244,7 @@ For fully headless gateways (messaging bot, no interactive terminal at all), the
 
 See [OAuth over SSH / Remote Hosts](../../guides/oauth-over-ssh.md#mcp-servers) for the full walkthrough, including DCR-less servers (e.g. Slack), pre-registered `client_id`/`client_secret`, scope customization, and re-auth via `lucifex mcp login <server>`.
 
-**Pitfall — providers that don't support automatic registration (Google Drive, Atlassian).** Some servers reject the dynamic client registration step (RFC 7591) that bare `auth: oauth` relies on — Google's official Drive server (`https://drivemcp.googleapis.com/mcp/v1`) returns a `400 Bad Request`, so no OAuth client is created and no token is acquired. The symptom is subtle: these servers also serve `tools/list` *without* auth, so `lucifex mcp login` can list the tools and look like it worked, but every real tool call later times out.lucifexifex mcp login` now detects this (it checks that a token actually landed on disk) and tells you to supply your own OAuth client. Create one in the provider's console and add it to config:
+**Pitfall — providers that don't support automatic registration (Google Drive, Atlassian).** Some servers reject the dynamic client registration step (RFC 7591) that bare `auth: oauth` relies on — Google's official Drive server (`https://drivemcp.googleapis.com/mcp/v1`) returns a `400 Bad Request`, so no OAuth client is created and no token is acquired. The symptom is subtle: these servers also serve `tools/list` *without* auth, so `lucifex mcp login` can list the tools and look like it worked, but every real tool call later times out.lucifex mcp login` now detects this (it checks that a token actually landed on disk) and tells you to supply your own OAuth client. Create one in the provider's console and add it to config:
 
 ```yaml
 mcp_servers:
@@ -256,9 +256,9 @@ mcp_servers:
       client_secret: "<your-oauth-client-secret>"
 ```
 
-Then run `lucifex mcp login googledrive` — with the pre-registered clientlucifexifex skips registration and runs the normal browser authorization flow.
+Then run `lucifex mcp login googledrive` — with the pre-registered clientlucifex skips registration and runs the normal browser authorization flow.
 
-**Pitfall — config auto-reload race.** When you edit `~/.lucifex/config.yaml` from inside a running lucifex session, the CLI auto-reloads MCP connections with a 30s timeout. That's not enough for an interactive OAuth flow. Add the entry, then runlucifexifex mcp login <server>` from a fresh terminal — it waits the full 5 minutes for you to complete auth.
+**Pitfall — config auto-reload race.** When you edit `~/.lucifex/config.yaml` from inside a running lucifex session, the CLI auto-reloads MCP connections with a 30s timeout. That's not enough for an interactive OAuth flow. Add the entry, then runlucifex mcp login <server>` from a fresh terminal — it waits the full 5 minutes for you to complete auth.
 
 ## mTLS / client certificates
 
@@ -529,7 +529,7 @@ lucifex discovers MCP servers at startup and registers their tools into the norm
 
 ### Dynamic Tool Discovery
 
-MCP servers can notify lucifex when their available tools change at runtime by sending a `notifications/tools/list_changed` notification. Whelucifexifex receives this notification, it automatically re-fetches the server's tool list and updates the registry — no manual `/reload-mcp` required.
+MCP servers can notify lucifex when their available tools change at runtime by sending a `notifications/tools/list_changed` notification. Whelucifex receives this notification, it automatically re-fetches the server's tool list and updates the registry — no manual `/reload-mcp` required.
 
 This is useful for MCP servers whose capabilities change dynamically (e.g. a server that adds tools when a new database schema is loaded, or removes tools when a service goes offline).
 
@@ -680,7 +680,7 @@ Only enable parallel calls for MCP servers whose tools are safe to run at the sa
 
 ## MCP Sampling Support
 
-MCP servers can request LLM inference from lucifex via the `sampling/createMessage` protocol. This allows an MCP server to aslucifexifex to generate text on its behalf — useful for servers that need LLM capabilities but don't have their own model access.
+MCP servers can request LLM inference from lucifex via the `sampling/createMessage` protocol. This allows an MCP server to aslucifex to generate text on its behalf — useful for servers that need LLM capabilities but don't have their own model access.
 
 Sampling is **enabled by default** for all MCP servers (when the MCP SDK supports it). Configure it per-server under the `sampling` key:
 
@@ -713,7 +713,7 @@ mcp_servers:
 
 ## Running lucifex as an MCP server
 
-In addition to connecting **to** MCP servers, lucifex can also **be** an MCP server. This lets other MCP-capable agents (Claude Code, Cursor, Codex, or any MCP client) uslucifexifex's messaging capabilities — list conversations, read message history, and send messages across all your connected platforms.
+In addition to connecting **to** MCP servers, lucifex can also **be** an MCP server. This lets other MCP-capable agents (Claude Code, Cursor, Codex, or any MCP client) uslucifex's messaging capabilities — list conversations, read message history, and send messages across all your connected platforms.
 
 ### When to use this
 
@@ -750,7 +750,7 @@ Or if you installed lucifex in a specific location:
 {
   "mcpServers": {
     "lucifex": {
-      "command": "/home/user/.lucifex/lucifex-agent/venv/bilucifexifex",
+      "command": "/home/user/.lucifex/lucifex-agent/venv/bilucifex",
       "args": ["mcp", "serve"]
     }
   }
@@ -799,20 +799,20 @@ lucifex mcp serve --verbose    # Debug logging on stderr
 
 ### How it works
 
-The MCP server reads conversation data directly from lucifex's session store (`~/.lucifex/sessions/sessions.json` and the SQLite database). A background thread polls the database for new messages and maintains an in-memory event queue. For sending messages, it uses the same internal send engine (`tools/send_message_tool.py`) that powers cron delivery and thelucifexifex send` CLI.
+The MCP server reads conversation data directly from lucifex's session store (`~/.lucifex/sessions/sessions.json` and the SQLite database). A background thread polls the database for new messages and maintains an in-memory event queue. For sending messages, it uses the same internal send engine (`tools/send_message_tool.py`) that powers cron delivery and thelucifex send` CLI.
 
 The gateway does NOT need to be running for read operations (listing conversations, reading history, polling events). It DOES need to be running for send operations, since the platform adapters need active connections.
 
 ### Current limits
 
-- The embedded `lucifex mcp serve` exposes a **stdio-only** MCP server today. If you need an HTTP MCP server, run a separate adapter — or, much more commonly, use the MCP **client** side olucifexifex, which already speaks both stdio and HTTP (`url` + `headers` in `mcp_servers.yaml` / `config.yaml`; see [HTTP servers](#http-servers) above).
+- The embedded `lucifex mcp serve` exposes a **stdio-only** MCP server today. If you need an HTTP MCP server, run a separate adapter — or, much more commonly, use the MCP **client** side olucifex, which already speaks both stdio and HTTP (`url` + `headers` in `mcp_servers.yaml` / `config.yaml`; see [HTTP servers](#http-servers) above).
 - Event polling at ~200ms intervals via mtime-optimized DB polling (skips work when files are unchanged)
 - No `claude/channel` push notification protocol yet
 - Text-only sends (no media/attachment sending through `messages_send`)
 
 ## Related docs
 
-- [Use MCP with lucifex](/guides/use-mcp-witlucifexifex)
+- [Use MCP with lucifex](/guides/use-mcp-witlucifex)
 - [CLI Commands](/reference/cli-commands)
 - [Slash Commands](/reference/slash-commands)
 - [FAQ](/reference/faq)

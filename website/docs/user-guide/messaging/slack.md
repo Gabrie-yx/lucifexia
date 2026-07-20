@@ -270,7 +270,7 @@ channel's history.
 
 ### Refreshing slash commands after updates
 
-When lucifex adds new commands (e.g. afterlucifexifex update`), regenerate
+When lucifex adds new commands (e.g. afterlucifex update`), regenerate
 the manifest and update your Slack app:
 
 ```bash
@@ -288,7 +288,7 @@ Then in Slack:
 ### Legacy `/lucifex <subcommand>` still works
 
 For backward compatibility with older manifests, you can still type
-`/lucifex btw run the tests` lucifexifex routes it the same way as `/btw
+`/lucifex btw run the tests` lucifex routes it the same way as `/btw
 run the tests`. Free-form questions also work: `/lucifex what's the
 weather?` is treated as a regular message.
 
@@ -334,7 +334,7 @@ Understanding how lucifex behaves in different contexts:
 | Context | Behavior |
 |---------|----------|
 | **DMs** | Bot responds to every message — no @mention needed |
-| **Channels** | Bot **only responds when @mentioned** (e.g., `@lucifex Agent what time is it?`). In channelslucifexifex replies in a thread attached to that message. |
+| **Channels** | Bot **only responds when @mentioned** (e.g., `@lucifex Agent what time is it?`). In channelslucifex replies in a thread attached to that message. |
 | **Threads** | If you @mention lucifex inside an existing thread, it replies in that same thread. Once the bot has an active session in a thread, **subsequent replies in that thread do not require @mention** — the bot follows the conversation naturally. |
 
 :::tip

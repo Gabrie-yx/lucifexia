@@ -21,7 +21,7 @@ import { Profiler, type ProfilerOnRenderCallback, type ReactNode } from 'react'
 
 const ENABLED = /^(?:1|true|yes|on)$/i.test((process.env.lucifex_DEV_PERF ?? '').trim())
 const THRESHOLD_MS = Number(process.env.lucifex_DEV_PERF_MS ?? '2') || 0
-const LOG_PATH = process.env.lucifex_DEV_PERF_LOG?.trim() || join(homedir(), lucifexifex', 'perf.log')
+const LOG_PATH = process.env.lucifex_DEV_PERF_LOG?.trim() || join(homedir(), lucifex', 'perf.log')
 
 let logReady = false
 

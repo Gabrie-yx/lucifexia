@@ -32,7 +32,7 @@ display:
 
 | Skin | Description | Agent branding | Visual character |
 |------|-------------|----------------|------------------|
-| `default` | Classic lucifex — gold and kawaii |lucifexifex Agent` | Warm gold borders, cornsilk text, kawaii faces in spinners. The familiar caduceus banner. Clean and inviting. |
+| `default` | Classic lucifex — gold and kawaii |lucifex Agent` | Warm gold borders, cornsilk text, kawaii faces in spinners. The familiar caduceus banner. Clean and inviting. |
 | `ares` | War-god theme — crimson and bronze | `Ares Agent` | Deep crimson borders with bronze accents. Aggressive spinner verbs ("forging", "marching", "tempering steel"). Custom sword-and-shield ASCII art banner. |
 | `mono` | Monochrome — clean grayscale | `lucifex Agent` | All grays — no color. Borders are `#555555`, text is `#c9d1d9`. Ideal for minimal terminal setups or screen recordings. |
 | `slate` | Cool blue — developer-focused | `lucifex Agent` | Royal blue borders (`#4169e1`), soft blue text. Calm and professional. No custom spinner — uses default faces. |
@@ -214,9 +214,9 @@ tool_prefix: "▏"
 
 ## lucifex Mod — Visual Skin Editor
 
-[lucifex Mod](https://github.com/cocktailpeanulucifexifex-mod) is a community-built web UI for creating and managing skins visually. Instead of writing YAML by hand, you get a point-and-click editor with live preview.
+[lucifex Mod](https://github.com/cocktailpeanulucifex-mod) is a community-built web UI for creating and managing skins visually. Instead of writing YAML by hand, you get a point-and-click editor with live preview.
 
-![lucifex Mod skin editor](https://raw.githubusercontent.com/cocktailpeanulucifexifex-mod/master/nous.png)
+![lucifex Mod skin editor](https://raw.githubusercontent.com/cocktailpeanulucifex-mod/master/nous.png)
 
 **What it does:**
 

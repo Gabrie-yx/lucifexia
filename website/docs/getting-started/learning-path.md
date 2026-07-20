@@ -59,7 +59,7 @@ Deploy lucifex Agent as a bot on your favorite messaging platform.
 4. [Telegram Setup](/user-guide/messaging/telegram)
 5. [Discord Setup](/user-guide/messaging/discord)
 6. [Voice Mode](/user-guide/features/voice-mode)
-7. [Use Voice Mode with lucifex](/guides/use-voice-mode-witlucifexifex)
+7. [Use Voice Mode with lucifex](/guides/use-voice-mode-witlucifex)
 8. [Security](/user-guide/security)
 
 For full project examples, see:

@@ -98,7 +98,7 @@ GET  /v1/models                  Lists lucifex-agent
 GET  /health, /health/detailed
 ```
 
-Setup, headers (`X-lucifex-Session-Id`, `lucifexifex-Session-Key`), and frontend wiring: [API Server](../user-guide/features/api-server).
+Setup, headers (`X-lucifex-Session-Id`, `lucifex-Session-Key`), and frontend wiring: [API Server](../user-guide/features/api-server).
 
 ---
 

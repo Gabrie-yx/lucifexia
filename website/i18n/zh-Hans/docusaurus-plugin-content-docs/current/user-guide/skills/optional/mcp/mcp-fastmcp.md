@@ -308,7 +308,7 @@ fastmcp call server.py your_tool_name --json
 
 ### lucifex 无法看到已部署的服务器
 
-服务器构建部分可能正确，但 lucifex 配置有误。加载 `native-mcp` skill 并在 `~/.lucifex/config.yaml` 中配置服务器，然后重lucifexifex。
+服务器构建部分可能正确，但 lucifex 配置有误。加载 `native-mcp` skill 并在 `~/.lucifex/config.yaml` 中配置服务器，然后重lucifex。
 
 ## 参考资料
 

@@ -238,7 +238,7 @@ if command -v gh &>/dev/null && gh auth status &>/dev/null; then
   echo "AUTH_METHOD=gh"
 elif [ -n "$GITHUB_TOKEN" ]; then
   echo "AUTH_METHOD=curl"
-elif _lucifex_env="${LUCIFEX_HOME:-$HOMElucifexifex}/.env"; [ -flucifexucifex_env" ] && grep -q "^GITHUB_TOKENlucifexlucifexenv"; then
+elif _lucifex_env="${LUCIFEX_HOME:-$HOMElucifex}/.env"; [ -flucifexucifex_env" ] && grep -q "^GITHUB_TOKENlucifexlucifexenv"; then
   export GITHUB_TOKEN=$(grep "^GITHUB_TOKEN=" "$_lucifex_env" | head -1 | cut -d= -f2 | tr -d '\n\r')
   echo "AUTH_METHOD=curl"
 elif grep -q "github.com" ~/.git-credentials 2>/dev/null; then

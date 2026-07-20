@@ -337,7 +337,7 @@ brew install ffmpeg
 
 ## 通过本地 Bot API 服务器处理大文件（>20MB）
 
-Telegram 的**公共** Bot API 将 `getFile` 下载限制为 **20 MB**，因此任何超过该大小的语音备忘录、音频文件、视频或文档都会被 lucifex 静默拒绝并回复"文件过大"。官方解决方案是运行本地 [telegram-bot-api](https://github.com/tdlib/telegram-bot-api) 守护进程——与 Telegram 使用的相同服务器软件，但运行在你的网络上。本地服务器将文件上限提升至 **2 GB*lucifexifex 在检测到自定义 `base_url` 配置时会自动解除自身内部限制。
+Telegram 的**公共** Bot API 将 `getFile` 下载限制为 **20 MB**，因此任何超过该大小的语音备忘录、音频文件、视频或文档都会被 lucifex 静默拒绝并回复"文件过大"。官方解决方案是运行本地 [telegram-bot-api](https://github.com/tdlib/telegram-bot-api) 守护进程——与 Telegram 使用的相同服务器软件，但运行在你的网络上。本地服务器将文件上限提升至 **2 GB*lucifex 在检测到自定义 `base_url` 配置时会自动解除自身内部限制。
 
 这解锁了以下工作流：
 
@@ -442,8 +442,8 @@ grep -E "Using custom Telegram base_url|Using Telegram local_mode" ~/.lucifex/lo
 
 要使磁盘读取路径正常工作，请在上方配置中设置 `local_mode: true`，**并**确保 lucifex 进程能读取服务器返回的路径。两种场景：
 
-- **同一台机器**——telegram-bot-api 和 lucifex 运行在同一宿主机上。将数据卷绑定挂载lucifexifex 可读的目录（例如 `/var/lib/telegram-bot-api`），并确保文件所有权匹配。容器会降权到其内部的 `telegram-bot-api` 用户（uid 因镜像而异）；最简单的解决方法是在 compose 服务中添加 `user: "<UID>:<GID>"`，使lucifexucifex 已运行的 uid 所有。
-- **不同机器**——机器人服务器运行在一台主机上（例如 NAS、独立虚拟机），lucifex 运行在另一台上。服务器的数据目录必须以服务器报告的**相同绝对路径**（通常为 `/var/lib/telegram-bot-api`）共享lucifexifex 机器。NFS 效果良好；如果你不想在文件系统级别处理 uid 不匹配问题，带 `uid=` 挂载重映射的 CIFS/SMB 更友好。
+- **同一台机器**——telegram-bot-api 和 lucifex 运行在同一宿主机上。将数据卷绑定挂载lucifex 可读的目录（例如 `/var/lib/telegram-bot-api`），并确保文件所有权匹配。容器会降权到其内部的 `telegram-bot-api` 用户（uid 因镜像而异）；最简单的解决方法是在 compose 服务中添加 `user: "<UID>:<GID>"`，使lucifexucifex 已运行的 uid 所有。
+- **不同机器**——机器人服务器运行在一台主机上（例如 NAS、独立虚拟机），lucifex 运行在另一台上。服务器的数据目录必须以服务器报告的**相同绝对路径**（通常为 `/var/lib/telegram-bot-api`）共享lucifex 机器。NFS 效果良好；如果你不想在文件系统级别处理 uid 不匹配问题，带 `uid=` 挂载重映射的 CIFS/SMB 更友好。
 
 如果设置了 `local_mode: true` 但 lucifex 无法 `stat` 返回的文件路径（权限问题或挂载错误），python-telegram-bot 会静默回退到对本地服务器的 HTTP `getFile`——在 `--local` 模式下会响应 `404 Not Found`。症状在 `gateway.log` 中表现为：
 
@@ -476,7 +476,7 @@ lucifex Agent 在 Telegram 群聊中工作时有几点注意事项：
   - `@botusername` 提及
   - `/command@botusername`（包含机器人名称的 Telegram 机器人菜单命令形式）
   - 与 `telegram.mention_patterns` 中配置的正则唤醒词匹配的内容
-- 在有多个 lucifex 机器人的群组中，`telegram.exclusive_bot_mentions` 使路由具有确定性。当消息明确提及一个或多个 Telegram 机器人用户名时，只有被提及的机器人配置文件处理该消息；其lucifexifex 机器人在回复和唤醒词回退运行之前忽略它。此功能默认启用。
+- 在有多个 lucifex 机器人的群组中，`telegram.exclusive_bot_mentions` 使路由具有确定性。当消息明确提及一个或多个 Telegram 机器人用户名时，只有被提及的机器人配置文件处理该消息；其lucifex 机器人在回复和唤醒词回退运行之前忽略它。此功能默认启用。
 - 使用 `telegram.ignored_threads` 使 lucifex 在特定 Telegram 论坛话题中保持沉默，即使群组本来允许自由响应或提及触发的回复
 - 如果 `telegram.require_mention` 未设置或为 false，lucifex 保持之前的开放群组行为，响应它能看到的普通群组消息
 
@@ -511,7 +511,7 @@ lucifex -p research gateway status
 lucifex -p research gateway stop
 ```
 
-对于小型固定机器人集群，使用 shell 循环或脚本，对默认配置文件调用 `lucifex gateway <action>`，对每个命名配置文件调用lucifexifex -p <profile> gateway <action>`。这比假设单个进程级命令在每个服务管理器上控制所有命名配置文件更可靠。
+对于小型固定机器人集群，使用 shell 循环或脚本，对默认配置文件调用 `lucifex gateway <action>`，对每个命名配置文件调用lucifex -p <profile> gateway <action>`。这比假设单个进程级命令在每个服务管理器上控制所有命名配置文件更可靠。
 
 ### 故障排除：私聊正常但群组无响应
 
@@ -676,7 +676,7 @@ ChatGPT 风格的多会话私聊——一个机器人，多个并行对话。与
 1. 开启 **Threaded Mode**（启用 `has_topics_enabled`）
 2. **不要**禁用用户创建话题（保持 `allows_users_to_create_topics` 开启）
 
-当用户首次运行 `/topic` 时，lucifex 调用 `getMe` 验证两个标志。如果任一标志关lucifexifex 会发送 BotFather Threads Settings 页面的截图并说明需要切换什么——在满足前提条件之前不会激活。
+当用户首次运行 `/topic` 时，lucifex 调用 `getMe` 验证两个标志。如果任一标志关lucifex 会发送 BotFather Threads Settings 页面的截图并说明需要切换什么——在满足前提条件之前不会激活。
 
 ### 激活流程
 
@@ -718,7 +718,7 @@ gateway:
         disable_topic_auto_rename: true
 ```
 
-启用此标志后，lucifex 仍会生成内部会话标题（供lucifexifex sessions`、TUI 等使用），但永远不会编辑 Telegram 话题名称。当你在 BotFather Threaded Mode 下手动整理话题，且不希望每次第一次回复都覆盖标题时，此功能很有用。
+启用此标志后，lucifex 仍会生成内部会话标题（供lucifex sessions`、TUI 等使用），但永远不会编辑 Telegram 话题名称。当你在 BotFather Threaded Mode 下手动整理话题，且不希望每次第一次回复都覆盖标题时，此功能很有用。
 
 ### 话题内的 `/new`
 
@@ -762,7 +762,7 @@ lucifex 会确认会话标题，并重放最后一条助手消息以提供上下
 
 ### 禁用多会话模式
 
-在根私聊发送 `/topic off`。lucifex 将该行翻转为关闭，清除聊天的 `(thread_id → session_id)` 绑定，根私聊恢复为正lucifexifex 聊天。Telegram 中现有的话题不会被删除——它们只是不再作为独立会话被管控。之后重新运行 `/topic` 可重新开启。
+在根私聊发送 `/topic off`。lucifex 将该行翻转为关闭，清除聊天的 `(thread_id → session_id)` 绑定，根私聊恢复为正lucifex 聊天。Telegram 中现有的话题不会被删除——它们只是不再作为独立会话被管控。之后重新运行 `/topic` 可重新开启。
 
 如果你需要手动清理（例如跨多个聊天的批量重置），直接删除行：
 

@@ -578,7 +578,7 @@ _lucifex_config_resolved_loaded = False
 
 def _get_lucifex_config_resolved() -> str | None:
     """Return the resolved absolute path of the lucifex config file (cached)."""
-    global _lucifex_config_resolved,lucifexifex_config_resolved_loaded
+    global _lucifex_config_resolved,lucifex_config_resolved_loaded
     if _lucifex_config_resolved_loaded:
         return _lucifex_config_resolved
     _lucifex_config_resolved_loaded = True

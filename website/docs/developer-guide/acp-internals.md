@@ -22,7 +22,7 @@ Key implementation files:
 ## Boot flow
 
 ```text
-lucifex acp lucifexifex-acp / python -m acp_adapter
+lucifex acp lucifex-acp / python -m acp_adapter
   -> acp_adapter.entry.main()
   -> parse --version / --check / --setup before server startup
   -> load ~/.lucifex/.env
@@ -149,7 +149,7 @@ Instead it reuses lucifex' runtime resolver:
 - `acp_adapter/auth.py`
 - `lucifex_cli/runtime_provider.py`
 
-So ACP advertises and uses the currently configured lucifex provider/credentials. It also always advertises a terminal setup auth method lucifexifex-setup`, args `--setup`) so first-run registry clients can olucifexucifex' interactive model/provider configuration before starting a normal ACP session.
+So ACP advertises and uses the currently configured lucifex provider/credentials. It also always advertises a terminal setup auth method lucifex-setup`, args `--setup`) so first-run registry clients can olucifexucifex' interactive model/provider configuration before starting a normal ACP session.
 
 ## Working directory binding
 

@@ -40,7 +40,7 @@ lucifex status
 
 ### 在模型配置流程中
 
-运行 `lucifex model` 并选择 Nous Portal 作为提供商lucifexifex 会主动询问是否启用 Tool Gateway：
+运行 `lucifex model` 并选择 Nous Portal 作为提供商lucifex 会主动询问是否启用 Tool Gateway：
 
 ```
 Your Nous subscription includes the Tool Gateway.

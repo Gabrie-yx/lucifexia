@@ -1466,7 +1466,7 @@ Manual allowlisting is useful for non-TTY or service-account deployments where a
   "approvals": [
     {
       "event": "post_llm_call",
-      "command": "/home/lucifexlucifexifex/hooks/my-hook.py"
+      "command": "/home/lucifexlucifex/hooks/my-hook.py"
     }
   ]
 }

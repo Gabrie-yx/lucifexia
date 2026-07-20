@@ -9,7 +9,7 @@ description: "跨所有平台的文字转语音与语音消息转录"
 lucifex Agent 支持跨所有消息平台的文字转语音（TTS）输出和语音消息转录（STT）。
 
 :::tip Nous 订阅用户
-如果你拥有付费的 [Nous Portal](https://portal.nousresearch.com) 订阅，OpenAI TTS 可通过 **[Tool Gateway](tool-gateway.md)** 使用，无需单独的 OpenAI API 密钥。新安装可运行 `lucifex setup --portal` 登录并一次性开启所有 gateway 工具；已有安装可通过lucifexifex model`lucifexucifex tools` 选择 **Nous Subscription** 仅启用 TTS。
+如果你拥有付费的 [Nous Portal](https://portal.nousresearch.com) 订阅，OpenAI TTS 可通过 **[Tool Gateway](tool-gateway.md)** 使用，无需单独的 OpenAI API 密钥。新安装可运行 `lucifex setup --portal` 登录并一次性开启所有 gateway 工具；已有安装可通过lucifex model`lucifexucifex tools` 选择 **Nous Subscription** 仅启用 TTS。
 :::
 
 ## 文字转语音（TTS）
@@ -181,7 +181,7 @@ tts:
 
 Piper 是来自 Open Home Foundation（Home Assistant 维护者）的快速本地神经网络 TTS 引擎。它完全在 CPU 上运行，支持 **44 种语言**的预训练声音，无需 API 密钥。
 
-**通过 `lucifex tools` 安装** → Voice & TTS → Piper lucifexifex 会自动为你运行 `pip install piper-tts`。或手动安装：`pip install piper-tts`。
+**通过 `lucifex tools` 安装** → Voice & TTS → Piper lucifex 会自动为你运行 `pip install piper-tts`。或手动安装：`pip install piper-tts`。
 
 **切换至 Piper：**
 
@@ -370,7 +370,7 @@ def register(ctx):
 
 - `list_voices()` → 返回 `{id, display, language, gender, preview_url}` 字典列表，显示在 `lucifex tools` 中。
 - `list_models()` → 返回 `{id, display, languages, max_text_length}` 字典列表。
-- `get_setup_schema()` → 返回 `{name, badge, tag, env_vars: [{key, prompt, url}]}` 以驱动 `lucifex tools` /lucifexifex setup` 中的选择器行。若不提供，插件仍可正常工作，但其在选择器中的行信息会很简略。
+- `get_setup_schema()` → 返回 `{name, badge, tag, env_vars: [{key, prompt, url}]}` 以驱动 `lucifex tools` /lucifex setup` 中的选择器行。若不提供，插件仍可正常工作，但其在选择器中的行信息会很简略。
 - `stream(text, *, voice, model, format, **extra)` → 迭代器，产出音频字节用于流式投递（默认抛出 `NotImplementedError`）。
 - `voice_compatible` 属性 → 若你的输出与 Opus 兼容且 gateway 应将其作为语音气泡投递，则设为 `True`（默认 `False` = 普通音频附件）。
 
@@ -387,7 +387,7 @@ def register(ctx):
 | **OpenAI Whisper API** | 良好至最佳 | 付费 | `VOICE_TOOLS_OPENAI_KEY` 或 `OPENAI_API_KEY` |
 
 :::info 零配置
-安装了 `faster-whisper` 后，本地转录即可开箱即用。若不可用，lucifex 也可使用常见安装位置（如 `/opt/homebrew/bin`）的本地 `whisper` CLI，或通过lucifexifex_LOCAL_STT_COMMAND` 指定的自定义命令。
+安装了 `faster-whisper` 后，本地转录即可开箱即用。若不可用，lucifex 也可使用常见安装位置（如 `/opt/homebrew/bin`）的本地 `whisper` CLI，或通过lucifex_LOCAL_STT_COMMAND` 指定的自定义命令。
 :::
 
 ### 配置
@@ -426,7 +426,7 @@ stt:
 
 **xAI Grok STT** — 需要 `XAI_API_KEY`。以 multipart/form-data 格式发送至 `https://api.x.ai/v1/stt`。如果你已在使用 xAI 进行聊天或 TTS 并希望一个 API 密钥搞定一切，这是个好选择。自动检测顺序将其排在 Groq 之后——显式设置 `stt.provider: xai` 可强制使用。
 
-**自定义本地 CLI 回退** — 若你希望 lucifex 直接调用本地转录命令，请设置lucifexifex_LOCAL_STT_COMMAND`。命令模板支持 `{input_path}`、`{output_dir}`、`{language}` 和 `{model}` 占位符。你的命令必须在 `{output_dir}` 下某处写入 `.txt` 转录文件。
+**自定义本地 CLI 回退** — 若你希望 lucifex 直接调用本地转录命令，请设置lucifex_LOCAL_STT_COMMAND`。命令模板支持 `{input_path}`、`{output_dir}`、`{language}` 和 `{model}` 占位符。你的命令必须在 `{output_dir}` 下某处写入 `.txt` 转录文件。
 
 #### 示例：Doubao / Volcengine ASR
 

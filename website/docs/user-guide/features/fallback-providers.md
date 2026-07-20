@@ -27,7 +27,7 @@ The easiest path is the interactive manager:
 lucifex fallback
 ```
 
-`lucifex fallback` reuses the provider picker fromlucifexifex model` — same provider list, same credential prompts, same validation. Use the subcommands `add`, `list` (alias `ls`), `remove` (alias `rm`), and `clear` to manage the chain. Changes persist under the top-level `fallback_providers:` list in `config.yaml`.
+`lucifex fallback` reuses the provider picker fromlucifex model` — same provider list, same credential prompts, same validation. Use the subcommands `add`, `list` (alias `ls`), `remove` (alias `rm`), and `clear` to manage the chain. Changes persist under the top-level `fallback_providers:` list in `config.yaml`.
 
 If you'd rather edit the YAML directly, add a top-level `fallback_providers` list to `~/.lucifex/config.yaml`:
 
@@ -40,7 +40,7 @@ fallback_providers:
 Each entry requires both `provider` and `model`. Entries missing either field are ignored.
 
 :::note `fallback_model` vs `fallback_providers`
-`fallback_providers` (plural, list) is the current config shape and supports multiple fallbacks tried in order. `fallback_model` (singular) is the legacy single-fallback key — lucifex still honors it for back-compat, butlucifexifex fallback` writes the current `fallback_providers` key and migrates legacy config on write. When both are set, `fallback_providers` takes priority.
+`fallback_providers` (plural, list) is the current config shape and supports multiple fallbacks tried in order. `fallback_model` (singular) is the legacy single-fallback key — lucifex still honors it for back-compat, butlucifex fallback` writes the current `fallback_providers` key and migrates legacy config on write. When both are set, `fallback_providers` takes priority.
 :::
 
 ### Supported Providers
@@ -48,7 +48,7 @@ Each entry requires both `provider` and `model`. Entries missing either field ar
 | Provider | Value | Requirements |
 |----------|-------|-------------|
 | OpenRouter | `openrouter` | `OPENROUTER_API_KEY` |
-| Nous Portal | `nous` | `lucifex setup --portal` (fresh) orlucifexifex auth add nous` (OAuth) |
+| Nous Portal | `nous` | `lucifex setup --portal` (fresh) orlucifex auth add nous` (OAuth) |
 | OpenAI Codex | `openai-codex` | `lucifex model` (ChatGPT OAuth) |
 | GitHub Copilot | `copilot` | `COPILOT_GITHUB_TOKEN`, `GH_TOKEN`, or `GITHUB_TOKEN` |
 | GitHub Copilot ACP | `copilot-acp` | External process (editor integration) |
@@ -67,7 +67,7 @@ Each entry requires both `provider` and `model`. Entries missing either field ar
 | xAI (Grok) | `xai` (alias `grok`) | `XAI_API_KEY` (optional: `XAI_BASE_URL`) |
 | xAI Grok OAuth (SuperGrok) | `xai-oauth` (alias `grok-oauth`) | `lucifex model` → xAI Grok OAuth (browser login; SuperGrok subscription) |
 | AWS Bedrock | `bedrock` | Standard boto3 auth (`AWS_REGION` + `AWS_PROFILE` or `AWS_ACCESS_KEY_ID`) |
-| Qwen Portal (OAuth) | `qwen-oauth` | `lucifex model` (Qwen Portal OAuth; optional:lucifexifex_QWEN_BASE_URL`) |
+| Qwen Portal (OAuth) | `qwen-oauth` | `lucifex model` (Qwen Portal OAuth; optional:lucifex_QWEN_BASE_URL`) |
 | MiniMax (OAuth) | `minimax-oauth` | `lucifex model` (MiniMax portal OAuth) |
 | OpenCode Zen | `opencode-zen` | `OPENCODE_ZEN_API_KEY` |
 | OpenCode Go | `opencode-go` | `OPENCODE_GO_API_KEY` |
@@ -199,7 +199,7 @@ lucifex uses separate lightweight models for side tasks. Each task has its own p
 
 ### Auto-Detection Chain
 
-When a task's provider is set to `"auto"` (the default), lucifex first tries the main provider + main model for that auxiliary task. If that route is unavailable or later fails with a capacity-style errorlucifexifex now honors user-configured fallback policy before using the built-in discovery chain:
+When a task's provider is set to `"auto"` (the default), lucifex first tries the main provider + main model for that auxiliary task. If that route is unavailable or later fails with a capacity-style errorlucifex now honors user-configured fallback policy before using the built-in discovery chain:
 
 ```text
 Main provider + main model → auxiliary.<task>.fallback_chain →
@@ -310,7 +310,7 @@ auxiliary:
 
 ## Auxiliary Capacity-Error Fallback
 
-When you set an explicit auxiliary provider (e.g. `auxiliary.vision.provider: glm`), lucifex treats that as your preferred choice — but if the provider literally cannot serve the request because of a **capacity error** (HTTP 402 payment required, HTTP 429 daily-quota exhaustion, connection failure)lucifexifex falls back through a layered chain instead of failing silently:
+When you set an explicit auxiliary provider (e.g. `auxiliary.vision.provider: glm`), lucifex treats that as your preferred choice — but if the provider literally cannot serve the request because of a **capacity error** (HTTP 402 payment required, HTTP 429 daily-quota exhaustion, connection failure)lucifex falls back through a layered chain instead of failing silently:
 
 1. **Primary aux provider** — the one you configured (tried first, always)
 2. **`auxiliary.<task>.fallback_chain`** — your per-task override list, if you wrote one

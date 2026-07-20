@@ -87,7 +87,7 @@ def register(ctx):
 
 将两个文件放入 `~/.lucifex/plugins/hello-world/`，重启 lucifex，模型即可立即调用 `hello_world`。每次工具调用后，hook 会打印一行日志。
 
-`./.lucifex/plugins/` 下的项目本地插件默认禁用。仅对可信仓库启用，方法是在启lucifexifex 前lucifexucifex_ENABLE_PROJECT_PLUGINS=true`。
+`./.lucifex/plugins/` 下的项目本地插件默认禁用。仅对可信仓库启用，方法是在启lucifex 前lucifexucifex_ENABLE_PROJECT_PLUGINS=true`。
 
 ## 插件能做什么
 
@@ -119,7 +119,7 @@ def register(ctx):
 |--------|------|----------|
 | 内置 | `<repo>/plugins/` | 随 lucifex 附带 — 参见 [Built-in Plugins](/user-guide/features/built-in-plugins) |
 | 用户 | `~/.lucifex/plugins/` | 个人插件 |
-| 项目 | `.lucifex/plugins/` | 项目专属插件（需要lucifexifex_ENABLE_PROJECT_PLUGINS=true`） |
+| 项目 | `.lucifex/plugins/` | 项目专属插件（需要lucifex_ENABLE_PROJECT_PLUGINS=true`） |
 | pip | `lucifex_agent.plugins` entry_points | 分发包 |
 | Nix | `services.lucifex-agent.extraPlugins` / `extraPythonPackages` | NixOS 声明式安装 — 参见 [Nix Setup](/getting-started/nix-setup#plugins) |
 
@@ -140,7 +140,7 @@ def register(ctx):
 
 `~/.lucifex/plugins/model-providers/<name>/` 和 `~/.lucifex/plugins/memory/<name>/` 下的用户插件会覆盖同名内置插件 — `register_provider()` / `register_memory_provider()` 中后写者胜出。放入一个目录即可替换内置实现，无需修改仓库。
 
-子分类插件在 `lucifex plugins list` 和交互式lucifexifex plugins` UI 中以**路径派生的 key** 显示 — 例如 `observability/langfuse`、`image_gen/openai`、`platforms/teams`。该 key（而非 manifest 中的 `name:`）是lucifexucifex plugins enable …` / `disable …` 的值，也是在 `config.yaml` 的 `plugins.enabled` 下填写的字符串。
+子分类插件在 `lucifex plugins list` 和交互式lucifex plugins` UI 中以**路径派生的 key** 显示 — 例如 `observability/langfuse`、`image_gen/openai`、`platforms/teams`。该 key（而非 manifest 中的 `name:`）是lucifexucifex plugins enable …` / `disable …` 的值，也是在 `config.yaml` 的 `plugins.enabled` 下填写的字符串。
 
 ## 插件默认关闭（少数例外）
 

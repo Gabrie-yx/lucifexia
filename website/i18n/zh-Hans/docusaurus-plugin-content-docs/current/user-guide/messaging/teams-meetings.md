@@ -196,7 +196,7 @@ lucifex teams-pipeline subscribe \
 
 :::warning Graph 订阅在 72 小时后过期
 
-Microsoft Graph 将 webhook 订阅上限设为 72 小时，且不会自动续期。你**必须**在上线前调度 `lucifex teams-pipeline maintain-subscriptions`，否则通知将在手动创建订阅三天后静默停止。请参阅运维手册中的[自动化订阅续期](/guides/operate-teams-meeting-pipeline#automating-subscription-renewal-required-for-production)——提供三种方lucifexifex cron、systemd timer、普通 crontab）。
+Microsoft Graph 将 webhook 订阅上限设为 72 小时，且不会自动续期。你**必须**在上线前调度 `lucifex teams-pipeline maintain-subscriptions`，否则通知将在手动创建订阅三天后静默停止。请参阅运维手册中的[自动化订阅续期](/guides/operate-teams-meeting-pipeline#automating-subscription-renewal-required-for-production)——提供三种方lucifex cron、systemd timer、普通 crontab）。
 
 :::
 

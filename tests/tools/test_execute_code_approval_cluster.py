@@ -463,9 +463,9 @@ def test_env_scrub_lucifex_allowlist_and_secret_blocks():
     env = {
         # operational allowlist → kept
         "LUCIFEX_HOME": "/h", "lucifex_PROFILE": "p",
-        "lucifex_CONFIG": "/c.yaml",lucifexifex_ENV": "/e",
+        "lucifex_CONFIG": "/c.yaml",lucifex_ENV": "/e",
         # other lucifex_* → dropped (broad prefix removed)
-        "lucifex_BASE_URL": "https://x",lucifexifex_INTERACTIVE": "1",
+        "lucifex_BASE_URL": "https://x",lucifex_INTERACTIVE": "1",
         "lucifex_KANBAN_DB": "postgres://u:p@h/db",
         # secret substrings (incl. new DSN/WEBHOOK) → dropped
         "SENTRY_DSN": "https://a@s.io/1", "SLACK_WEBHOOK": "https://h/x",
@@ -475,10 +475,10 @@ def test_env_scrub_lucifex_allowlist_and_secret_blocks():
     }
     out = _scrub_child_env(env, is_passthrough=lambda _: False, is_windows=False)
 
-    for kept in ("LUCIFEX_HOME", "lucifex_PROFILE",lucifexifex_CONFIGlucifexucifex_ENV", "PATH"):
+    for kept in ("LUCIFEX_HOME", "lucifex_PROFILE",lucifex_CONFIGlucifexucifex_ENV", "PATH"):
         assert kept in out, f"{kept} should be kept"
     for dropped in (
-        "lucifex_BASE_URL",lucifexifex_INTERACTIVElucifexucifex_KANBAN_DB",
+        "lucifex_BASE_URL",lucifex_INTERACTIVElucifexucifex_KANBAN_DB",
         "SENTRY_DSN", "SLACK_WEBHOOK", "OPENAI_API_KEY", "GITHUB_TOKEN",
         "RANDOM_X",
     ):
@@ -550,10 +550,10 @@ def test_env_scrub_logs_dropped_lucifex_vars(caplog):
         out = _scrub_child_env(env, is_passthrough=lambda _: False, is_windows=False)
 
     assert "LUCIFEX_HOME" in out and "PATH" in out
-    assert "lucifex_BASE_URL" not in out andlucifexifex_KANBAN_DB" not in out
+    assert "lucifex_BASE_URL" not in out andlucifex_KANBAN_DB" not in out
 
     msgs = "\n".join(r.getMessage() for r in caplog.records)
-    assert "lucifex_BASE_URL" in msgs andlucifexifex_KANBAN_DB" in msgs
+    assert "lucifex_BASE_URL" in msgs andlucifex_KANBAN_DB" in msgs
     assert "env_passthrough" in msgs
     # Secret vars are dropped but must NOT be named in the diagnostic log.
     assert "lucifex_API_KEY" not in msgs

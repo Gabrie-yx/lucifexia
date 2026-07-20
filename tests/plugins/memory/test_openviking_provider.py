@@ -370,7 +370,7 @@ def test_post_setup_create_remote_user_profile_can_mirror_to_openviking_store(tm
         _prompt_from_values({
             "OpenViking server URL": "https://openviking.example",
             "OpenViking user API key": "user-secret",
-            "lucifex peer ID in OpenViking":lucifexifex",
+            "lucifex peer ID in OpenViking":lucifex",
             "OpenViking profile name": "VPS",
         }),
     )

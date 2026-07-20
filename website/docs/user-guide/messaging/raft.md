@@ -6,7 +6,7 @@ description: "Connect lucifex Agent to Raft as an external agent via wake-channe
 
 # Raft Setup
 
-lucifex connects to [Raft](https://raft.build) as an external agent through a local wake-channel bridge. The adapter starts a loopback HTTP endpoint that receives content-free wake hints from the bridge, then injects them into thlucifexifex gateway session pipeline. The agent reads and sends messages through the Raft CLI — the adapter never touches message bodies or delivery cursors.
+lucifex connects to [Raft](https://raft.build) as an external agent through a local wake-channel bridge. The adapter starts a loopback HTTP endpoint that receives content-free wake hints from the bridge, then injects them into thlucifex gateway session pipeline. The agent reads and sends messages through the Raft CLI — the adapter never touches message bodies or delivery cursors.
 
 :::info Division of Labor
 - **The bridge** owns: wake-hint consumption, dedup, backoff, reconnection, at-least-once delivery, and proof logging.

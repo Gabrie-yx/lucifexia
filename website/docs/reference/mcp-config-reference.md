@@ -10,7 +10,7 @@ This page is the compact reference companion to the main MCP docs.
 
 For conceptual guidance, see:
 - [MCP (Model Context Protocol)](/user-guide/features/mcp)
-- [Use MCP with lucifex](/guides/use-mcp-witlucifexifex)
+- [Use MCP with lucifex](/guides/use-mcp-witlucifex)
 
 ## Root config shape
 

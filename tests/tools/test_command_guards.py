@@ -40,7 +40,7 @@ def _clean_state():
     approval_module._pending.clear()
     approval_module._permanent_approved.clear()
     saved = {}
-    for k in ("lucifex_INTERACTIVE",lucifexifex_GATEWAY_SESSIONlucifexucifex_EXEC_Alucifexlucifex_YOLO_MODE"):
+    for k in ("lucifex_INTERACTIVE",lucifex_GATEWAY_SESSIONlucifexucifex_EXEC_Alucifexlucifex_YOLO_MODE"):
         if k in os.environ:
             saved[k] = os.environ.pop(k)
     yield
@@ -49,7 +49,7 @@ def _clean_state():
     approval_module._permanent_approved.clear()
     for k, v in saved.items():
         os.environ[k] = v
-    for k in ("lucifex_INTERACTIVE",lucifexifex_GATEWAY_SESSIONlucifexucifex_EXEC_Alucifexlucifex_YOLO_MODE"):
+    for k in ("lucifex_INTERACTIVE",lucifex_GATEWAY_SESSIONlucifexucifex_EXEC_Alucifexlucifex_YOLO_MODE"):
         os.environ.pop(k, None)
 
 
@@ -180,7 +180,7 @@ class TestTirithWarnSafe:
                                        [{"rule_id": "shortened_url"}],
                                        "shortened URL detected"))
     def test_warn_non_interactive_auto_allow(self, mock_tirith):
-        # No lucifex_INTERACTIVE olucifexifex_GATEWAY_SESSION set
+        # No lucifex_INTERACTIVE olucifex_GATEWAY_SESSION set
         result = check_all_command_guards("curl https://bit.ly/abc", "local")
         assert result["approved"] is True
 

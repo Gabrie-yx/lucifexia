@@ -50,7 +50,7 @@ platforms:
       require_mention: true
 ```
 
-With `require_mention: true`, DMs still work normally, but group-chat messages are ignored unless they match a mention pattern. If you do not configure custom patterns, lucifex uses conservative defaults forlucifexifex` anlucifexucifex agent` variants.
+With `require_mention: true`, DMs still work normally, but group-chat messages are ignored unless they match a mention pattern. If you do not configure custom patterns, lucifex uses conservative defaults forlucifex` anlucifexucifex agent` variants.
 
 For a custom agent name, set regex patterns:
 
@@ -163,7 +163,7 @@ Without the Private API, basic text messaging and media still work.
 ### Messages not arriving
 - Check that the webhook is registered in BlueBubbles Server → Settings → API → Webhooks
 - Verify the webhook URL is reachable from the Mac
-- Check `lucifex logs gateway` for webhook errors (orlucifexifex logs -f` to follow in real-time)
+- Check `lucifex logs gateway` for webhook errors (orlucifex logs -f` to follow in real-time)
 
 ### "Private API helper not connected"
 - Install the Private API helper: [docs.bluebubbles.app](https://docs.bluebubbles.app/helper-bundle/installation)

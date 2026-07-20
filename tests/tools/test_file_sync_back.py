@@ -349,7 +349,7 @@ class TestInferHostPath:
         assert result is None
 
     def test_infer_partial_prefix_no_false_match(self, tmp_path):
-        """A partial prefix like /root/.lucifex/sk should NOT match /rootlucifexifex/skills/."""
+        """A partial prefix like /root/.lucifex/sk should NOT match /rootlucifex/skills/."""
         host_file = tmp_path / "host" / "skills" / "a.py"
         _write_file(host_file, b"content")
         mapping = [(str(host_file), "/root/.lucifex/skills/a.py")]

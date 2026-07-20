@@ -398,7 +398,7 @@ Configure the TTS provider in your `config.yaml` under the `tts.provider` key.
 
 ## Large Files (>20MB) via Local Bot API Server
 
-Telegram's **public** Bot API caps `getFile` downloads at **20 MB**, so any voice note, audio file, video, or document larger than that is silently rejected by lucifex with a "too large" reply. The documented way around this is to run a **local** [telegram-bot-api](https://github.com/tdlib/telegram-bot-api) daemon — the same server software Telegram uses, but running on your network. A local server raises the file ceiling to **2 GB** anlucifexifex auto-lifts its own internal cap when it sees a custom `base_url` configured.
+Telegram's **public** Bot API caps `getFile` downloads at **20 MB**, so any voice note, audio file, video, or document larger than that is silently rejected by lucifex with a "too large" reply. The documented way around this is to run a **local** [telegram-bot-api](https://github.com/tdlib/telegram-bot-api) daemon — the same server software Telegram uses, but running on your network. A local server raises the file ceiling to **2 GB** anlucifex auto-lifts its own internal cap when it sees a custom `base_url` configured.
 
 This unlocks workflows like:
 
@@ -503,8 +503,8 @@ The local server has **two ways** to deliver files:
 
 To make the disk-read path work, set `local_mode: true` in the config above **and** make sure the lucifex process can read the path the server returns. Two scenarios:
 
-- **Same machine** — telegram-bot-api and lucifex run on the same host. Bind-mount the data volume to a directory thalucifexifex can read (e.g., `/var/lib/telegram-bot-api`), and make sure the file ownership matches. The container drops privileges to its internal `telegram-bot-api` user (uid varies by image); the simplest fix is to add `user: "<UID>:<GID>"` to the compose service so files are owned by a lucifexucifex already runs as.
-- **Different machines** — the bot server runs on one host (e.g., a NAS, a separate VM) and lucifex on another. The server's data directory must be shared with thlucifexifex machine at the **same absolute path** the server reports (typically `/var/lib/telegram-bot-api`). NFS works well for this; CIFS/SMB with `uid=` mount remapping is friendlier if you don't want to deal with uid mismatches at the filesystem level.
+- **Same machine** — telegram-bot-api and lucifex run on the same host. Bind-mount the data volume to a directory thalucifex can read (e.g., `/var/lib/telegram-bot-api`), and make sure the file ownership matches. The container drops privileges to its internal `telegram-bot-api` user (uid varies by image); the simplest fix is to add `user: "<UID>:<GID>"` to the compose service so files are owned by a lucifexucifex already runs as.
+- **Different machines** — the bot server runs on one host (e.g., a NAS, a separate VM) and lucifex on another. The server's data directory must be shared with thlucifex machine at the **same absolute path** the server reports (typically `/var/lib/telegram-bot-api`). NFS works well for this; CIFS/SMB with `uid=` mount remapping is friendlier if you don't want to deal with uid mismatches at the filesystem level.
 
 If `local_mode: true` is set but lucifex can't `stat` the returned file path (permissions or wrong mount), python-telegram-bot silently falls back to an HTTP `getFile` against the local server — which in `--local` mode responds with `404 Not Found`. The symptom shows up in `gateway.log` as:
 
@@ -537,7 +537,7 @@ lucifex Agent works in Telegram group chats with a few considerations:
   - `@botusername` mentions
   - `/command@botusername` (Telegram's bot-menu command form that includes the bot name)
   - matches for one of your configured regex wake words in `telegram.mention_patterns`
-- In groups with multiple lucifex bots, `telegram.exclusive_bot_mentions` keeps routing deterministic. When a message explicitly mentions one or more Telegram bot usernames, only the mentioned bot profiles process it; othelucifexifex bots ignore it before reply and wake-word fallbacks run. This is enabled by default.
+- In groups with multiple lucifex bots, `telegram.exclusive_bot_mentions` keeps routing deterministic. When a message explicitly mentions one or more Telegram bot usernames, only the mentioned bot profiles process it; othelucifex bots ignore it before reply and wake-word fallbacks run. This is enabled by default.
 - Use `telegram.ignored_threads` to keep lucifex silent in specific Telegram forum topics, even when the group would otherwise allow free responses or mention-triggered replies
 - If `telegram.require_mention` is left unset or false, lucifex keeps the previous open-group behavior and responds to normal group messages it can see
 
@@ -572,7 +572,7 @@ lucifex -p research gateway status
 lucifex -p research gateway stop
 ```
 
-For a small fixed fleet, use a shell loop or script that calls `lucifex gateway <action>` for the default profile andlucifexifex -p <profile> gateway <action>` for each named profile. This is more reliable than assuming a single process-level command controls every named profile on every service manager.
+For a small fixed fleet, use a shell loop or script that calls `lucifex gateway <action>` for the default profile andlucifex -p <profile> gateway <action>` for each named profile. This is more reliable than assuming a single process-level command controls every named profile on every service manager.
 
 ### Troubleshooting: works in DMs but not groups
 
@@ -755,7 +755,7 @@ In **@BotFather**, open your bot → **Bot Settings → Threads Settings**:
 1. Turn on **Threaded Mode** (enables `has_topics_enabled`)
 2. Do **not** disable users creating topics (keeps `allows_users_to_create_topics` on)
 
-When the user first runs `/topic`, lucifex calls `getMe` to verify both flags. If either is offlucifexifex sends a screenshot of the BotFather Threads Settings page and explains what to toggle — no activation happens until prerequisites are met.
+When the user first runs `/topic`, lucifex calls `getMe` to verify both flags. If either is offlucifex sends a screenshot of the BotFather Threads Settings page and explains what to toggle — no activation happens until prerequisites are met.
 
 ### Activation flow
 
@@ -797,7 +797,7 @@ gateway:
         disable_topic_auto_rename: true
 ```
 
-When this flag is on, lucifex still generates an internal session title (used bylucifexifex sessions`, the TUI, etc.) but never edits the Telegram topic name. Useful when you organise topics by hand under BotFather Threaded Mode and don't want every first reply to overwrite the title.
+When this flag is on, lucifex still generates an internal session title (used bylucifex sessions`, the TUI, etc.) but never edits the Telegram topic name. Useful when you organise topics by hand under BotFather Threaded Mode and don't want every first reply to overwrite the title.
 
 ### `/new` inside a topic
 
@@ -841,7 +841,7 @@ Shows the current topic's binding: session title, session ID, and hints for `/ne
 
 ### Disabling multi-session mode
 
-Send `/topic off` in the root DM. lucifex flips the row off, clears the chat's `(thread_id → session_id)` bindings, and the root DM reverts to a normalucifexifex chat. Existing topics in Telegram aren't deleted — they just stop being gated as independent sessions. Re-run `/topic` later to turn it back on.
+Send `/topic off` in the root DM. lucifex flips the row off, clears the chat's `(thread_id → session_id)` bindings, and the root DM reverts to a normalucifex chat. Existing topics in Telegram aren't deleted — they just stop being gated as independent sessions. Re-run `/topic` later to turn it back on.
 
 If you need to clean up by hand (e.g. a bulk reset across many chats), remove the rows directly:
 

@@ -16,7 +16,7 @@ Use MCP when:
 - a tool already exists in MCP form and you do not want to build a native lucifex tool
 - you want lucifex to operate against a local or remote system through a clean RPC layer
 - you want fine-grained per-server exposure control
-- you want to connect lucifex to internal APIs, databases, or company systems without modifyinlucifexifex core
+- you want to connect lucifex to internal APIs, databases, or company systems without modifyinlucifex core
 
 Do not use MCP when:
 - a built-in lucifex tool already solves the job well
@@ -266,7 +266,7 @@ Check the local git state and summarize what changed recently.
 
 ### Pattern 2: repo-native work record with Open Scaffold
 
-Use [Open Scaffold](https://github.com/graphanov/open-scaffold) when you want lucifex to read a repository's durable AI-work record: mission, plans, evidence notes, handoff packets, and review/gate resultslucifexifex remains the agent; Open Scaffold remains the repo-local record.
+Use [Open Scaffold](https://github.com/graphanov/open-scaffold) when you want lucifex to read a repository's durable AI-work record: mission, plans, evidence notes, handoff packets, and review/gate resultslucifex remains the agent; Open Scaffold remains the repo-local record.
 
 Add the server for one scaffolded repository:
 

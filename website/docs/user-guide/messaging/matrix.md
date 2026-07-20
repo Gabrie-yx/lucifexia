@@ -6,7 +6,7 @@ description: "Set up lucifex Agent as a Matrix bot"
 
 # Matrix Setup
 
-lucifex Agent integrates with Matrix, the open, federated messaging protocol. Matrix lets you run your own homeserver or use a public one like matrix.org — either way, you keep control of your communications. The bot connects via the `mautrix` Python SDK, processes messages through thlucifexifex Agent pipeline (including tool use, memory, and reasoning), and responds in real time. It supports text, file attachments, images, audio, video, and optional end-to-end encryption (E2EE).
+lucifex Agent integrates with Matrix, the open, federated messaging protocol. Matrix lets you run your own homeserver or use a public one like matrix.org — either way, you keep control of your communications. The bot connects via the `mautrix` Python SDK, processes messages through thlucifex Agent pipeline (including tool use, memory, and reasoning), and responds in real time. It supports text, file attachments, images, audio, video, and optional end-to-end encryption (E2EE).
 
 lucifex works with any Matrix homeserver — Synapse, Conduit, Dendrite, or matrix.org.
 
@@ -18,9 +18,9 @@ Before setup, here's the part most people want to know: how lucifex behaves once
 |---------|----------|
 | **DMs** | lucifex responds to every message. No `@mention` needed. Each DM has its own session. Set `MATRIX_DM_MENTION_THREADS=true` to start a thread when the bot is `@mentioned` in a DM. |
 | **Rooms** | By default, lucifex requires an `@mention` to respond. Set `MATRIX_REQUIRE_MENTION=false` or add room IDs to `MATRIX_FREE_RESPONSE_ROOMS` for free-response rooms. Room invites are auto-accepted. |
-| **Threads** | lucifex supports Matrix threads (MSC3440). If you reply in a threadlucifexifex keeps the thread context isolated from the main room timeline. Threads where the bot has already participated do not require a mention. |
+| **Threads** | lucifex supports Matrix threads (MSC3440). If you reply in a threadlucifex keeps the thread context isolated from the main room timeline. Threads where the bot has already participated do not require a mention. |
 | **Auto-threading** | By default, lucifex auto-creates a thread for each message it responds to in a room. This keeps conversations isolated. Set `MATRIX_AUTO_THREAD=false` to disable. Set `MATRIX_DM_AUTO_THREAD=true` (default false) to also auto-create threads for DM messages — this is distinct from `MATRIX_DM_MENTION_THREADS`, which only starts a thread when the bot is `@mentioned` in a DM. |
-| **Commands** | lucifex accepts normal `/commands` when your Matrix client sends them. If your client reserves `/` for local commands, use `!commands` insteadlucifexifex normalizes known `!command` aliases to `/command`. |
+| **Commands** | lucifex accepts normal `/commands` when your Matrix client sends them. If your client reserves `/` for local commands, use `!commands` insteadlucifex normalizes known `!command` aliases to `/command`. |
 | **Interactive controls** | Dangerous-command approval and `/model` selection can use Matrix reactions. Approval reactions can be limited to the user who requested the action. |
 | **Thinking and tool activity** | Matrix uses threaded, editable thinking/tool-activity panes when gateway progress is enabled, so updates do not flood the main room timeline. |
 | **Shared rooms with multiple users** | By default, lucifex isolates session history per user inside the room. Two people talking in the same room do not share one transcript unless you explicitly disable that. |
@@ -174,7 +174,7 @@ If you run your own homeserver (Synapse, Conduit, Dendrite):
 register_new_matrix_user -c /etc/synapse/homeserver.yaml http://localhost:8008
 ```
 
-2. Choose a username like `lucifex` — the full user ID will be lucifexifex:your-server.org`.
+2. Choose a username like `lucifex` — the full user ID will be lucifex:your-server.org`.
 
 ### Option B: Use matrix.org or Another Public Homeserver
 
@@ -219,7 +219,7 @@ The access token gives full access to the bot's Matrix account. Never share it p
 
 ### Option B: Password Login
 
-Instead of providing an access token, you can give lucifex the bot's user ID and passwordlucifexifex will log in automatically on startup. This is simpler but means the password is stored in your `.env` file.
+Instead of providing an access token, you can give lucifex the bot's user ID and passwordlucifex will log in automatically on startup. This is simpler but means the password is stored in your `.env` file.
 
 ```bash
 MATRIX_USER_ID=@lucifex:your-server.org

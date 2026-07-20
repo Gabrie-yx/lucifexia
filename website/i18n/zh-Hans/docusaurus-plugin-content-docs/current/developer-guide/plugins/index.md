@@ -320,7 +320,7 @@ Plugins (1):
 如果你的插件没有出现，或出现了但未加载——设置 `lucifex_PLUGINS_DEBUG=1` 可在 stderr 获取详细的发现日志：
 
 ```bash
-lucifex_PLUGINS_DEBUG=lucifexifex plugins list
+lucifex_PLUGINS_DEBUG=lucifex plugins list
 ```
 
 你将看到每个插件来源（内置、用户、项目、entry-points）的以下信息：
@@ -477,7 +477,7 @@ def my_tool_handler(args, **kwargs):
 
 | 规则 | 原因 |
 |---|---|
-| 你的功能键必须出现在内置的 `LAZY_DEPS` 允许列表中 | 防止恶意配置诱使 lucifex 安装任意包——只lucifexifex 自身随附的规格才符合条件 |
+| 你的功能键必须出现在内置的 `LAZY_DEPS` 允许列表中 | 防止恶意配置诱使 lucifex 安装任意包——只lucifex 自身随附的规格才符合条件 |
 | 规格仅限 PyPI 包名 | 不允许 `--index-url`、`git+https://` 或 `file:` 路径。在允许列表条目中使用 PEP 440 固定版本（`"my-sdk>=1.2,<2"`） |
 
 对于通过 pip 分发的第三方插件，在你自己的 `pyproject.toml` 中将可选依赖声明为 `[project.optional-dependencies]` extras，并告知用户执行 `pip install your-plugin[backend]`——该路径不经过 `lazy_deps`。懒加载安装最适合**内置**插件，因为对每次安装都强制依赖会增加 lucifex 基础安装的体积。
@@ -673,7 +673,7 @@ def register(ctx):
     )
 ```
 
-注册后，用户可以运行 `lucifex my-plugin status`lucifexifex my-plugin config` 等命令。
+注册后，用户可以运行 `lucifex my-plugin status`lucifex my-plugin config` 等命令。
 
 **记忆提供商插件**使用基于约定的方式：在插件的 `cli.py` 文件中添加 `register_cli(subparser)` 函数。记忆插件发现系统会自动找到它——无需调用 `ctx.register_cli_command()`。详见[记忆提供商插件指南](/developer-guide/memory-provider-plugin#adding-cli-commands)。
 

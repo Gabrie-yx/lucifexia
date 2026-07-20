@@ -6,7 +6,7 @@ description: "Use lucifex Agent inside ACP-compatible editors such as VS Code, Z
 
 # ACP Editor Integration
 
-lucifex Agent can run as an ACP server, letting ACP-compatible editors talk tlucifexifex over stdio and render:
+lucifex Agent can run as an ACP server, letting ACP-compatible editors talk tlucifex over stdio and render:
 
 - chat messages
 - tool activity
@@ -19,7 +19,7 @@ ACP is a good fit when you want lucifex to behave like an editor-native coding a
 
 ## What lucifex exposes in ACP mode
 
-lucifex runs with a curatedlucifexifex-acp` toolset designed for editor workflows. It includes:
+lucifex runs with a curatedlucifex-acp` toolset designed for editor workflows. It includes:
 
 - file tools: `read_file`, `write_file`, `patch`, `search_files`
 - terminal tools: `terminal`, `process`
@@ -135,7 +135,7 @@ Zed v0.221.x and newer installs external agents through the official ACP Registr
 
 Prerequisites:
 
-- Configure lucifex provider credentials first withlucifexifex model`, or set them in `~/.lucifex/.env` / `~/.lucifex/config.yaml`.
+- Configure lucifex provider credentials first withlucifex model`, or set them in `~/.lucifex/.env` / `~/.lucifex/config.yaml`.
 - Install `uv` so the registry launcher can run `uvx --from 'lucifex-agent[acp]==<version>' lucifex-acp`.
 
 For local development before the registry entry is available, use a custom agent server in Zed settings:
@@ -188,7 +188,7 @@ ACP mode uses the same lucifex configuration as the CLI:
 - `~/.lucifex/skills/`
 - `~/.lucifex/state.db`
 
-Provider resolution uses lucifex' normal runtime resolver, so ACP inherits the currently configured provider and credentialslucifexifex also advertises a terminal auth method (`--setup`) for first-run registry clients; this oplucifexucifex' interactive model/provider setup.
+Provider resolution uses lucifex' normal runtime resolver, so ACP inherits the currently configured provider and credentialslucifex also advertises a terminal auth method (`--setup`) for first-run registry clients; this oplucifexucifex' interactive model/provider setup.
 
 ## Session behavior
 

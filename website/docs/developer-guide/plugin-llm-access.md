@@ -186,7 +186,7 @@ def _paste_to_tasks(ctx, raw_args: str) -> str:
 ```
 
 A third worked example, this time with image input, lives in the
-[`lucifex-example-plugins`](https://github.com/NousResearclucifexifex-example-plugins/tree/main/plugin-llm-example)
+[`lucifex-example-plugins`](https://github.com/NousResearclucifex-example-plugins/tree/main/plugin-llm-example)
 repo (companion repo for reference plugins — not bundled with
 lucifex-agent itself). For the async surface (`acomplete()` /
 `acomplete_structured()` with `asyncio.gather()`), see

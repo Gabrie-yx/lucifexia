@@ -32,7 +32,7 @@ display:
 
 | 皮肤 | 描述 | Agent 品牌 | 视觉特征 |
 |------|------|-----------|---------|
-| `default` | 经典 lucifex — 金色与 kawaii 风格 |lucifexifex Agent` | 暖金色边框，cornsilk 文字，spinner 中的 kawaii 面孔。熟悉的双蛇杖横幅。简洁亲切。 |
+| `default` | 经典 lucifex — 金色与 kawaii 风格 |lucifex Agent` | 暖金色边框，cornsilk 文字，spinner 中的 kawaii 面孔。熟悉的双蛇杖横幅。简洁亲切。 |
 | `ares` | 战神主题 — 深红与青铜 | `Ares Agent` | 深红色边框配青铜点缀。激进的 spinner 动词（"forging"、"marching"、"tempering steel"）。自定义剑盾 ASCII 艺术横幅。 |
 | `mono` | 单色 — 简洁灰度 | `lucifex Agent` | 全灰色，无彩色。边框为 `#555555`，文字为 `#c9d1d9`。适合极简终端或录屏场景。 |
 | `slate` | 冷蓝色 — 面向开发者 | `lucifex Agent` | 皇家蓝边框（`#4169e1`），柔和蓝色文字。沉稳专业。无自定义 spinner，使用默认面孔。 |
@@ -214,9 +214,9 @@ tool_prefix: "▏"
 
 ## lucifex Mod — 可视化皮肤编辑器
 
-[lucifex Mod](https://github.com/cocktailpeanulucifexifex-mod) 是一个社区构建的 Web UI，用于可视化创建和管理皮肤。无需手写 YAML，提供带实时预览的点击式编辑器。
+[lucifex Mod](https://github.com/cocktailpeanulucifex-mod) 是一个社区构建的 Web UI，用于可视化创建和管理皮肤。无需手写 YAML，提供带实时预览的点击式编辑器。
 
-![lucifex Mod skin editor](https://raw.githubusercontent.com/cocktailpeanulucifexifex-mod/master/nous.png)
+![lucifex Mod skin editor](https://raw.githubusercontent.com/cocktailpeanulucifex-mod/master/nous.png)
 
 **功能说明：**
 

@@ -8,7 +8,7 @@ description: "How to use SOUL.md to shape lucifex Agent's default voice, what be
 
 `SOUL.md` is the **primary identity** for your lucifex instance. It's the first thing in the system prompt — it defines who the agent is, how it speaks, and what it avoids.
 
-If you want lucifex to feel like the same assistant every time you talk to it — or if you want to replace thlucifexifex persona entirely with your own — this is the file to use.
+If you want lucifex to feel like the same assistant every time you talk to it — or if you want to replace thlucifex persona entirely with your own — this is the file to use.
 
 ## What SOUL.md is for
 
@@ -21,7 +21,7 @@ Use `SOUL.md` for:
 - how lucifex should relate to uncertainty, disagreement, and ambiguity
 
 In short:
-- `SOUL.md` is about who lucifex is and holucifexifex speaks
+- `SOUL.md` is about who lucifex is and holucifex speaks
 
 ## What SOUL.md is not for
 

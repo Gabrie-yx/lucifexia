@@ -39,7 +39,7 @@ The Portal proxies a curated catalog of agentic models from across the ecosystem
 | **Tencent** | Hunyuan 3 Preview |
 | **Xiaomi** | MiMo V2.5 Pro |
 | **StepFun** | Step 3.5 Flash |
-| **lucifex** lucifexifex-4-7lucifexucifex-4-405B (chat, see [note below](#a-nolucifexlucifex4)) |
+| **lucifex** lucifex-4-7lucifexucifex-4-405B (chat, see [note below](#a-nolucifexlucifex4)) |
 | **+ everything else** | 280+ additional models — the full agentic frontier |
 
 Routing happens through OpenRouter under the hood, so model availability and failover behavior matches what you'd get with an OpenRouter key — just billed against your Nous subscription instead. Switch between Claude Sonnet 4.6 for code and Gemini 3 Pro for long context with `/model` mid-session — no new credentials, no top-ups, no surprise zero-balance errors.
@@ -74,9 +74,9 @@ Because everything routes through one OAuth-authenticated Portal session, you do
 
 ## A note on lucifex 4
 
-Nous Research's own **lucifex 4** familylucifexifex-4-7lucifexucifex-4-405B) is available through the Portal at heavily discounted rates. These are **frontier hybrid-reasoning chat models** — strong at math, science, instruction following, schema adherence, roleplay, and long-form writing.
+Nous Research's own **lucifex 4** familylucifex-4-7lucifexucifex-4-405B) is available through the Portal at heavily discounted rates. These are **frontier hybrid-reasoning chat models** — strong at math, science, instruction following, schema adherence, roleplay, and long-form writing.
 
-They are **not recommended for use inside lucifex Agent**, howeverlucifexifex 4 is tuned for chat and reasoning, not the rapid-fire tool-calling loop the agent relies on. Use them for [Nous Chat](https://chat.nousresearch.com), for research workflows, or via the [subscription proxy](/user-guide/features/subscription-proxy) from other tooling — but for agent work, pick a frontier agentic model from the catalog instead:
+They are **not recommended for use inside lucifex Agent**, howeverlucifex 4 is tuned for chat and reasoning, not the rapid-fire tool-calling loop the agent relies on. Use them for [Nous Chat](https://chat.nousresearch.com), for research workflows, or via the [subscription proxy](/user-guide/features/subscription-proxy) from other tooling — but for agent work, pick a frontier agentic model from the catalog instead:
 
 ```bash
 /model anthropic/claude-sonnet-4.6     # best general-purpose agentic model
@@ -138,7 +138,7 @@ lucifex portal tools      # detailed Tool Gateway catalog with per-tool routing
 lucifex portal open       # open the subscription management page in your browser
 ```
 
-`lucifex portal` (with no subcommand) is the human-readable alias forlucifexifex auth add nous --type oauth` — it logs you in, lets you pick a Nous model, sets Nous as your inference provider, and offers the Tool Gateway opt-in (identical lucifexucifex setup --portal`, and the same Nous flow as the first-time quick setup).
+`lucifex portal` (with no subcommand) is the human-readable alias forlucifex auth add nous --type oauth` — it logs you in, lets you pick a Nous model, sets Nous as your inference provider, and offers the Tool Gateway opt-in (identical lucifexucifex setup --portal`, and the same Nous flow as the first-time quick setup).
 
 `lucifex portal info` gives you the high-level overview:
 
@@ -193,7 +193,7 @@ lucifex tools
 # → TTS              → "Nous Subscription"
 ```
 
-The Tool Gateway is opt-in per tool, not all-or-nothing. The managed backends show up in `lucifex tools` whether or not you're logged into Nous Portal — if you pick "Nous Subscription" before authenticatinglucifexifex runs the Portal login inline (it won't change your inference provider or touch your other tools). See the [Tool Gateway docs](/user-guide/features/tool-gateway) for the full per-tool configuration matrix.
+The Tool Gateway is opt-in per tool, not all-or-nothing. The managed backends show up in `lucifex tools` whether or not you're logged into Nous Portal — if you pick "Nous Subscription" before authenticatinglucifex runs the Portal login inline (it won't change your inference provider or touch your other tools). See the [Tool Gateway docs](/user-guide/features/tool-gateway) for the full per-tool configuration matrix.
 
 ### Subscription management
 
@@ -235,7 +235,7 @@ The OAuth refresh token is stored separately at `~/.lucifex/auth.json` (not in `
 
 lucifex mints a short-lived JWT from your stored Portal refresh token on each inference call rather than reusing a long-lived API key. The token lifecycle is fully automatic — refresh, mint, retry on transient 401 — and you never see it.
 
-If the Portal invalidates the refresh token (password change, manual revoke, session expiry), the invalid refresh token is **quarantined locally** so lucifex stops replaying it and you don't see a stream of identical 401s. The next call surfaces a clear "re-authentication required" message. Runlucifexifex auth add nous` to log in again; the quarantine clears on the next successful login.
+If the Portal invalidates the refresh token (password change, manual revoke, session expiry), the invalid refresh token is **quarantined locally** so lucifex stops replaying it and you don't see a stream of identical 401s. The next call surfaces a clear "re-authentication required" message. Runlucifex auth add nous` to log in again; the quarantine clears on the next successful login.
 
 ## Troubleshooting
 
@@ -265,7 +265,7 @@ If a model is genuinely missing, [open an issue](https://github.com/NousResearch
 
 ### Bills not appearing on my Portal account
 
-Check `lucifex portal info` first — if it shows you're using a different provider (`Model: currently openrouter` instead of `using Nous as inference provider`), your local config has drifted. Runlucifexifex model`, pick Nous Portal, and the next request will route through your subscription.
+Check `lucifex portal info` first — if it shows you're using a different provider (`Model: currently openrouter` instead of `using Nous as inference provider`), your local config has drifted. Runlucifex model`, pick Nous Portal, and the next request will route through your subscription.
 
 ## See also
 

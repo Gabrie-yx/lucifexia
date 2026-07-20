@@ -512,7 +512,7 @@ class BaseEnvironment(ABC):
             # name list (only private funcs present) would otherwise leak the
             # very functions we meant to drop.
             f"__lucifex_fns=$(declare -F | awk '{{print $3}}' | grep -vE '^_[^_]') || true\n"
-            f"[ -n \"$__lucifex_fns\" ] && declare -f $lucifexifex_fns "
+            f"[ -n \"$__lucifex_fns\" ] && declare -f $lucifex_fns "
             f">> {_snap_tmp} 2>/dev/null || true\n"
             f"alias -p >> {_snap_tmp}\n"
             f"echo 'shopt -s expand_aliases' >> {_snap_tmp}\n"

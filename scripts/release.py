@@ -1828,8 +1828,8 @@ LEGACY_AUTHOR_MAP = {
     "zealy@tz.co": "dgians",  # PR #26034 (bot-committed by zealy-tzco under dgians' PR)
     "mottei.survive@gmail.com": "flanny7",  # PR #27030 (setup_open_webui python var)
     "20530505+flanny7@users.noreply.github.com": "flanny7",
-    "lucifexagent26@gmail.com":lucifexifexagent26",  # PR #26438 (kimi model-name reasoning pad)
-    "276067471+lucifexagent26@users.noreply.github.com":lucifexifexagent26",
+    "lucifexagent26@gmail.com":lucifexagent26",  # PR #26438 (kimi model-name reasoning pad)
+    "276067471+lucifexagent26@users.noreply.github.com":lucifexagent26",
     "71590782+kriscolab@users.noreply.github.com": "kriscolab",  # PR #26926 (deepseek default_aux_model)
     # batch salvage (May 2026 LHF run, group 3)
     "darvsum@users.noreply.github.com": "darvsum",  # PR #26766 (preserve discover_models in normalize)

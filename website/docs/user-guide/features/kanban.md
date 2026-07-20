@@ -8,7 +8,7 @@ description: "Durable SQLite-backed task board for coordinating multiple lucifex
 
 > **Want a walkthrough?** Read the [Kanban tutorial](./kanban-tutorial) — four user stories (solo dev, fleet farming, role pipeline with retry, circuit breaker) with dashboard screenshots of each. This page is the reference; the tutorial is the narrative.
 
-lucifex Kanban is a durable task board, shared across all youlucifexifex profiles, that lets multiple named agents collaborate on work without fragile in-process subagent swarms. Every task is a row in `~/.lucifex/kanban.db`; every handoff is a row anyone can read and write; every worker is a full OS process with its own identity.
+lucifex Kanban is a durable task board, shared across all youlucifex profiles, that lets multiple named agents collaborate on work without fragile in-process subagent swarms. Every task is a row in `~/.lucifex/kanban.db`; every handoff is a row anyone can read and write; every worker is a full OS process with its own identity.
 
 ### Two surfaces: the model talks through tools, you talk through the CLI
 
@@ -286,7 +286,7 @@ parent, missing input, unmet capability) before unblocking, or raise
 
 ## How workers interact with the board
 
-**Workers do not shell out to `lucifex kanban`.** When the dispatcher spawns a worker it setslucifexifex_KANBAN_TASK=t_abcd` in the child's env, and that env var flips on a dedicated **kanban toolset** in the model's schema. The same toolset is also available to orchestrator profiles that enable `kanban` in their toolsets config. These tools read and mutate the board directly via the Python `kanban_db` layer, same as the CLI does. A running worker calls these like any other tool; it never sees or needs tlucifexucifex kanban` CLI.
+**Workers do not shell out to `lucifex kanban`.** When the dispatcher spawns a worker it setslucifex_KANBAN_TASK=t_abcd` in the child's env, and that env var flips on a dedicated **kanban toolset** in the model's schema. The same toolset is also available to orchestrator profiles that enable `kanban` in their toolsets config. These tools read and mutate the board directly via the Python `kanban_db` layer, same as the CLI does. A running worker calls these like any other tool; it never sees or needs tlucifexucifex kanban` CLI.
 
 | Tool | Purpose | Required params |
 |---|---|---|
@@ -341,11 +341,11 @@ The "(Orchestrators)" tools — `kanban_list`, `kanban_create`, `kanban_link`, `
 
 Three reasons:
 
-1. **Backend portability.** Workers whose terminal tool points at a remote backend (Docker / Modal / Singularity / SSH) would run `lucifex kanban complete` *inside* the container, wherelucifexifex` isn't installed and `~/.lucifex/kanban.db` isn't mounted. The kanban tools run in the agent's own Python process and always reach `~/.lucifex/kanban.db` regardless of terminal backend.
+1. **Backend portability.** Workers whose terminal tool points at a remote backend (Docker / Modal / Singularity / SSH) would run `lucifex kanban complete` *inside* the container, wherelucifex` isn't installed and `~/.lucifex/kanban.db` isn't mounted. The kanban tools run in the agent's own Python process and always reach `~/.lucifex/kanban.db` regardless of terminal backend.
 2. **No shell-quoting fragility.** Passing `--metadata '{"files": [...]}'` through shlex + argparse is a latent footgun. Structured tool args skip it entirely.
 3. **Better errors.** Tool results are structured JSON the model can reason about, not stderr strings it has to parse.
 
-**Zero schema footprint on normal sessions.** A regular `lucifex chat` session has zero `kanban_*` tools in its schema unless the active profile explicitly enables the `kanban` toolset for orchestrator work. Dispatcher-spawned task workers get task-scoped tools becauselucifexifex_KANBAN_TASK` is set; orchestrator profiles get the broader routing surface through config. No tool bloat for users who never touch kanban.
+**Zero schema footprint on normal sessions.** A regular `lucifex chat` session has zero `kanban_*` tools in its schema unless the active profile explicitly enables the `kanban` toolset for orchestrator work. Dispatcher-spawned task workers get task-scoped tools becauselucifex_KANBAN_TASK` is set; orchestrator profiles get the broader routing surface through config. No tool bloat for users who never touch kanban.
 
 The auto-injected kanban guidance teaches the model which tool to call when and in what order.
 
@@ -537,7 +537,7 @@ The kanban board has two ways to handle a task you drop into the Triage column:
 
 Flip between the two modes from the **Orchestration: Auto/Manual** pill at the top of the kanban page (emerald = Auto, muted gray = Manual), or by editing `config.yaml` directly. Both modes coexist with `lucifex kanban specify` — that's still available as a single-task spec rewrite when you don't want fan-out.
 
-The decomposer's routing decisions depend on profile descriptions, which is a per-profile labeling primitive you set with `lucifex profile create --description "..."`,lucifexifex profile describe <name> --text "..."lucifexucifex profile describe <name> --auto` (LLM-generates from the profile's installed skills + model), or the dashboard's per-profile editor in the expanded **Orchestration settings** panel. Profiles without a description still appear in the roster — they're routable by name, just less precisely. The decomposer NEVER lands a child task with `assignee=None`: when the LLM picks an unknown profile, the child gets routed to `kanban.default_assignee` (or the active default profile if that's unset).
+The decomposer's routing decisions depend on profile descriptions, which is a per-profile labeling primitive you set with `lucifex profile create --description "..."`,lucifex profile describe <name> --text "..."lucifexucifex profile describe <name> --auto` (LLM-generates from the profile's installed skills + model), or the dashboard's per-profile editor in the expanded **Orchestration settings** panel. Profiles without a description still appear in the roster — they're routable by name, just less precisely. The decomposer NEVER lands a child task with `assignee=None`: when the LLM picks an unknown profile, the child gets routed to `kanban.default_assignee` (or the active default profile if that's unset).
 
 `kanban.orchestrator_profile` does not load that profile's prompt, skills, or custom logic into the decomposition call. It controls who owns the root/orchestration task after fan-out. To change the decomposer's model/provider, configure `auxiliary.kanban_decomposer`. To use a profile's custom task-splitting logic instead of the built-in decomposer, switch to Manual mode and have that profile create or decompose tasks explicitly.
 
@@ -777,7 +777,7 @@ The resulting graph dispatches normally — workers run in parallel, the verifie
 
 ## `/kanban` slash command {#kanban-slash-command}
 
-Every `lucifex kanban <action>` verb is also reachable as `/kanban <action>` — from inside an interactivelucifexifex chat` session **and** from any gateway platform (Telegram, Discord, Slack, WhatsApp, Signal, Matrix, Mattermost, email, SMS). Both surfaces call the exact same `lucifex_cli.kanban.run_slash()` entry point that reuses tlucifexucifex kanban` argparse tree, so the argument surface, flags, and output format are identical across CLI, `/kanban`,lucifexlucifexkanban`. You don't have to leave the chat to drive the board.
+Every `lucifex kanban <action>` verb is also reachable as `/kanban <action>` — from inside an interactivelucifex chat` session **and** from any gateway platform (Telegram, Discord, Slack, WhatsApp, Signal, Matrix, Mattermost, email, SMS). Both surfaces call the exact same `lucifex_cli.kanban.run_slash()` entry point that reuses tlucifexucifex kanban` argparse tree, so the argument surface, flags, and output format are identical across CLI, `/kanban`,lucifexlucifexkanban`. You don't have to leave the chat to drive the board.
 
 ```
 /kanban list
@@ -970,7 +970,7 @@ Every transition appends a row to `task_events`. Each row carries an optional `r
 | `protocol_violation` | `{pid, claimer, exit_code, protocol_violation}` | Worker exited successfully while the task was still `running`, usually because it answered without calling `kanban_complete` or `kanban_block`. Emitted on every violation (the payload's `protocol_violation: true` marker is copied into the run metadata and feeds the violation-only retry budget). Below the budget — up to `_PROTOCOL_VIOLATION_FAILURE_LIMIT` (default 3) *consecutive* violations, per-task `max_retries` overriding — the task simply returns to `ready` for another attempt; when the streak reaches the bound the dispatcher also emits `gave_up` and auto-blocks. |
 | `gave_up` | `{failures, effective_limit, limit_source, error}` | Circuit breaker fired after N consecutive non-successful attempts. Task auto-blocks with the last error. The effective limit resolves as task `max_retries`, then dispatcher `failure_limit` / `kanban.failure_limit`, then the built-in default. |
 
-`lucifex kanban tail <id>` shows these for a single task.lucifexifex kanban watch` streams them board-wide.
+`lucifex kanban tail <id>` shows these for a single task.lucifex kanban watch` streams them board-wide.
 
 ## Out of scope
 

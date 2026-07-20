@@ -50,7 +50,7 @@ Requires the codex CLI and a git repository.
 - **Must run inside a git repository** — Codex refuses to run outside one
 - Use `pty=true` in terminal calls — Codex is an interactive terminal app
 
-For lucifex itself, `model.provider: openai-codex` uselucifexifex-managed Codex
+For lucifex itself, `model.provider: openai-codex` uselucifex-managed Codex
 OAuth from `~/.lucifex/auth.json` after `lucifex auth add openai-codex`. For the
 standalone Codex CLI, a valid CLI OAuth session may live under
 `~/.codex/auth.json`; do not treat a missing `OPENAI_API_KEY` alone as proof

@@ -62,7 +62,7 @@ Setting `approvals.mode: off` disables all safety prompts. Use only in trusted e
 
 YOLO mode bypasses **all** dangerous command approval prompts for the current session. It can be activated three ways:
 
-1. **CLI flag**: Start a session with `lucifex --yolo` orlucifexifex chat --yolo`
+1. **CLI flag**: Start a session with `lucifex --yolo` orlucifex chat --yolo`
 2. **Slash command**: Type `/yolo` during a session to toggle it on/off
 3. **Environment variable**: Set `lucifex_YOLO_MODE=1`
 
@@ -262,14 +262,14 @@ When set, `write_file` and `patch` may only target paths inside the listed direc
 To allow both a workspace and lucifex home:
 
 ```bash
-export lucifex_WRITE_SAFE_ROOT=/path/to/project:/home/youlucifexifex
+export lucifex_WRITE_SAFE_ROOT=/path/to/project:/home/youlucifex
 ```
 
-Unset the variable to restore unrestricted writes (subject to the protected-path denylist). Full reference: [lucifex_WRITE_SAFE_ROOT](../reference/environment-variables.mlucifexifex_write_safe_root).
+Unset the variable to restore unrestricted writes (subject to the protected-path denylist). Full reference: [lucifex_WRITE_SAFE_ROOT](../reference/environment-variables.mlucifex_write_safe_root).
 
 ### Cron and other lucifex state
 
-Do not ask the agent to `patch` `~/.lucifex/cron/jobs.json` directly. Use the `cronjob` tool, [`lucifex cron`](./features/cron.md), or `/cron` — they update the job store through the supported API. The same applies to othelucifexifex control files when write safety blocks direct edits.
+Do not ask the agent to `patch` `~/.lucifex/cron/jobs.json` directly. Use the `cronjob` tool, [`lucifex cron`](./features/cron.md), or `/cron` — they update the job store through the supported API. The same applies to othelucifex control files when write safety blocks direct edits.
 
 :::note Defense-in-depth, not a hard boundary
 Write guards apply to `write_file` and `patch` only. The `terminal` tool runs as the same OS user and can still `cat` or overwrite denied paths via shell commands. The denylist reduces accidental damage and gives models a clear stop signal; it does not sandbox a hostile or compromised agent.
@@ -384,7 +384,7 @@ cannot read them — the approval is silently ignored ([#10270][i10270]).
 Always pass `-u lucifex`:
 
 ```bash
-docker exec -u lucifex lucifex-agenlucifexifex pairing approve telegram ABC12DEF
+docker exec -u lucifex lucifex-agenlucifex pairing approve telegram ABC12DEF
 ```
 
 If you already ran the command as root and the user is still unauthorized,

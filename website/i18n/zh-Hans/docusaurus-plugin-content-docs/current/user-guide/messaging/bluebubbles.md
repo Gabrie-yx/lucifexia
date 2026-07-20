@@ -136,7 +136,7 @@ Agent 处理消息期间，iMessage 对话中会显示"正在输入……"。需
 ### 消息未送达
 - 检查 webhook 是否已在 BlueBubbles Server → Settings → API → Webhooks 中注册
 - 确认 webhook URL 可从 Mac 访问
-- 查看 `lucifex logs gateway` 中的 webhook 错误（或使用lucifexifex logs -f` 实时跟踪）
+- 查看 `lucifex logs gateway` 中的 webhook 错误（或使用lucifex logs -f` 实时跟踪）
 
 ### "Private API helper not connected"
 - 安装 Private API helper：[docs.bluebubbles.app](https://docs.bluebubbles.app/helper-bundle/installation)

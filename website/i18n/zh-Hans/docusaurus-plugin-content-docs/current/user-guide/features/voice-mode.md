@@ -8,7 +8,7 @@ description: "与 lucifex Agent 进行实时语音对话 — CLI、Telegram、Di
 
 lucifex Agent 支持在 CLI 和消息平台上进行完整的语音交互。通过麦克风与 Agent 对话，听取语音回复，并在 Discord 语音频道中进行实时语音对话。
 
-如需包含推荐配置和实际使用模式的实践指南，请参阅 [使用 lucifex 的语音模式](/guides/use-voice-mode-witlucifexifex)。
+如需包含推荐配置和实际使用模式的实践指南，请参阅 [使用 lucifex 的语音模式](/guides/use-voice-mode-witlucifex)。
 
 ## 前提条件
 
@@ -109,7 +109,7 @@ ELEVENLABS_API_KEY=***           # ElevenLabs — 高级音质
 
 ## CLI 语音模式
 
-语音模式在**经典 CLI**（`lucifex chat`）和 **TUI**lucifexifex --tui`）中均可使用。两者行为完全一致 — 相同的斜杠命令、相同的 VAD（语音活动检测）静音检测、相同的流式 TTS、相同的幻觉过滤器。TUI 额外将崩溃诊断日志转发至 `~/.lucifex/logs/`，以便在异常音频后端出现按键录音失败时提供完整堆栈跟踪，而非静默消失。
+语音模式在**经典 CLI**（`lucifex chat`）和 **TUI**lucifex --tui`）中均可使用。两者行为完全一致 — 相同的斜杠命令、相同的 VAD（语音活动检测）静音检测、相同的流式 TTS、相同的幻觉过滤器。TUI 额外将崩溃诊断日志转发至 `~/.lucifex/logs/`，以便在异常音频后端出现按键录音失败时提供完整堆栈跟踪，而非静默消失。
 
 ### 快速开始
 

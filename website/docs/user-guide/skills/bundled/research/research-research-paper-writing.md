@@ -2134,7 +2134,7 @@ The main pipeline above targets empirical ML papers. Other paper types require d
 
 ## lucifex Agent Integration
 
-This skill is designed for the lucifex agent. It uselucifexifex tools, delegation, scheduling, and memory for the full research lifecycle.
+This skill is designed for the lucifex agent. It uselucifex tools, delegation, scheduling, and memory for the full research lifecycle.
 
 ### Related Skills
 

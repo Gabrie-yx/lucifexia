@@ -120,7 +120,7 @@ lucifex config set model.default anthropic/claude-sonnet-4.6
 
 ### Don't pick lucifex-4 for agent work
 
-lucifex-4-70B anlucifexifex-4-405B are available on the Portal at deep discounts, but they're **chat/reasoning models**, not tool-call-tuned. They will struggle with multi-step agent loops. Use them via [Nous Chat](https://chat.nousresearch.com) for conversation/research work, or through the [subscription proxy](/user-guide/features/subscription-proxy) from non-agent tools. lucifexucifex Agent itself, stick to the frontier agentic models above.
+lucifex-4-70B anlucifex-4-405B are available on the Portal at deep discounts, but they're **chat/reasoning models**, not tool-call-tuned. They will struggle with multi-step agent loops. Use them via [Nous Chat](https://chat.nousresearch.com) for conversation/research work, or through the [subscription proxy](/user-guide/features/subscription-proxy) from non-agent tools. lucifexucifex Agent itself, stick to the frontier agentic models above.
 
 The Portal's own [info page](https://portal.nousresearch.com/info) carries this warning too — it's the official Nous guidance, not just a lucifex-side opinion.
 
@@ -136,7 +136,7 @@ lucifex tools
 # → TTS              → "Nous Subscription"     (recommended)
 ```
 
-These rows appear in `lucifex tools` even before you've logged into Nous Portal — if you pick "Nous Subscription" without an active sessionlucifexifex runs the Portal login inline (without changing your inference provider or your other tools).
+These rows appear in `lucifex tools` even before you've logged into Nous Portal — if you pick "Nous Subscription" without an active sessionlucifex runs the Portal login inline (without changing your inference provider or your other tools).
 
 Verify your mix with:
 
@@ -178,7 +178,7 @@ For team setups where multiple humans share a machine, each human has their own 
 
 ## Troubleshooting
 
-### `lucifex portal info` shows "not logged in" afterlucifexifex setup --portal`
+### `lucifex portal info` shows "not logged in" afterlucifex setup --portal`
 
 The OAuth flow didn't complete. Re-run it:
 
@@ -243,7 +243,7 @@ If a model is genuinely unavailable, [open an issue](https://github.com/NousRese
 
 - `model.provider` set to `openrouter`/`anthropic`/etc. instead of `nous`
 - An OAuth refresh failure that fell back to a different configured provider
-- Multiple lucifex profiles where you're using the wrong one (checklucifexifex profile list`)
+- Multiple lucifex profiles where you're using the wrong one (checklucifex profile list`)
 
 ### Want to revoke and start clean
 

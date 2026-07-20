@@ -5,9 +5,9 @@ sidebar_label: Codex App-Server Runtime
 
 # Codex App-Server Runtime
 
-lucifex can optionally hand `openai/*` and `openai-codex/*` turns to the [Codex CLI app-server](https://github.com/openai/codex) instead of running its own tool loop. When enabled, terminal commands, file edits, sandboxing, and MCP tool calls all execute inside Codex's runtime lucifexifex becomes the shell around it (sessions DB, slash commands, gateway, memory and skill review).
+lucifex can optionally hand `openai/*` and `openai-codex/*` turns to the [Codex CLI app-server](https://github.com/openai/codex) instead of running its own tool loop. When enabled, terminal commands, file edits, sandboxing, and MCP tool calls all execute inside Codex's runtime lucifex becomes the shell around it (sessions DB, slash commands, gateway, memory and skill review).
 
-This is **opt-in only**. Default lucifex behavior is unchanged unless you flip the flaglucifexifex never auto-routes you onto this runtime.
+This is **opt-in only**. Default lucifex behavior is unchanged unless you flip the flaglucifex never auto-routes you onto this runtime.
 
 :::tip
 Not using OpenAI Codex? `lucifex setup --portal` configures a non-Codex backend with Claude/Gemini/etc. in one step. See [Nous Portal](/integrations/nous-portal).
@@ -18,7 +18,7 @@ Not using OpenAI Codex? `lucifex setup --portal` configures a non-Codex backend 
 - Run OpenAI agent turns against your **ChatGPT subscription** (no API key required) using the same auth flow Codex CLI uses.
 - Use **Codex's own toolset and sandbox** — `shell` for terminal/read/write/search, `apply_patch` for structured edits, `update_plan` for planning, all running inside seatbelt/landlock sandboxing.
 - **Native Codex plugins** — Linear, GitHub, Gmail, Calendar, Canva, etc. — installed via `codex plugin` are auto-migrated and active in your lucifex session.
-- **lucifex' richer tools come along** — web_search, web_extract, browser automation, vision, image generation, skills, and TTS work via an MCP callback. Codex calls back intlucifexifex for tools it doesn't have built in.
+- **lucifex' richer tools come along** — web_search, web_extract, browser automation, vision, image generation, skills, and TTS work via an MCP callback. Codex calls back intlucifex for tools it doesn't have built in.
 - **Memory and skill nudges keep working** — Codex's events are projected into lucifex' message shape so the self-improvement loop sees a normal-looking transcript.
 
 ## What tools the model actually has
@@ -95,11 +95,11 @@ What works inside a codex-runtime worker:
 - The lucifex tool callback for browser_*, vision, image_gen, skills, TTS
 
 What also works because the MCP callback exposes them:
-- **`kanban_complete` / `kanban_block` / `kanban_comment` / `kanban_heartbeat`** — the worker handoff tools. These read `lucifex_KANBAN_TASK` from env (set by the dispatcher), gate access correctly, and write to the per-board SQLite DB pinned bylucifexifex_KANBAN_DB`. Without these in the callback, a worker on this runtime could do its task but couldn't report back, hanging until the dispatcher's timeout.
+- **`kanban_complete` / `kanban_block` / `kanban_comment` / `kanban_heartbeat`** — the worker handoff tools. These read `lucifex_KANBAN_TASK` from env (set by the dispatcher), gate access correctly, and write to the per-board SQLite DB pinned bylucifex_KANBAN_DB`. Without these in the callback, a worker on this runtime could do its task but couldn't report back, hanging until the dispatcher's timeout.
 - **`kanban_show` / `kanban_list`** — read-only board queries for the worker to check its own context.
 - **`kanban_create` / `kanban_unblock` / `kanban_link`** — orchestrator-only operations. Available for orchestrator agents running on the codex runtime that need to dispatch new tasks.
 
-The kanban tools are gated by `lucifex_KANBAN_TASK` env var the dispatcher sets — that var is propagated to the codex subprocess (codex inherits env) and from there to the spawnedlucifexifex-tools` MCP server subprocess. So the tools see the right task id and gate correctly. For Codex app-server workelucifexucifex also passes narrow app-server sandbox overrides lucifexlucifexKANBAN_TASK` is present: keep `workspace-write` sandboxing, add the **board DB directory plus every Kanban path the dispatcher pinned** as extra writable lucifex(`llucifexANBAN_WORKSPACElucifex`, `lulucifexNBAN_WORKSPAClucifexgacy `luclucifexBAN_ROOT` — deduplicated, DB-dir first), and keep network disabled by default. This avoids the brittle `:danger-no-sandbox` workaround while letting `kanban_complete` / `kanban_block` update the board DB **and** letting workers write reports/artifacts under workspace mounts that live outside the DB directory (e.g. `/media/.../kanban-workspaces/...` on a separate drive — [issue #27941](https://github.com/NousResearch/lucifex-agent/issues/27941)).
+The kanban tools are gated by `lucifex_KANBAN_TASK` env var the dispatcher sets — that var is propagated to the codex subprocess (codex inherits env) and from there to the spawnedlucifex-tools` MCP server subprocess. So the tools see the right task id and gate correctly. For Codex app-server workelucifexucifex also passes narrow app-server sandbox overrides lucifexlucifexKANBAN_TASK` is present: keep `workspace-write` sandboxing, add the **board DB directory plus every Kanban path the dispatcher pinned** as extra writable lucifex(`llucifexANBAN_WORKSPACElucifex`, `lulucifexNBAN_WORKSPAClucifexgacy `luclucifexBAN_ROOT` — deduplicated, DB-dir first), and keep network disabled by default. This avoids the brittle `:danger-no-sandbox` workaround while letting `kanban_complete` / `kanban_block` update the board DB **and** letting workers write reports/artifacts under workspace mounts that live outside the DB directory (e.g. `/media/.../kanban-workspaces/...` on a separate drive — [issue #27941](https://github.com/NousResearch/lucifex-agent/issues/27941)).
 
 ### Cron jobs
 
@@ -158,7 +158,7 @@ uses:
    ```bash
    codex login                  # writes tokens to ~/.codex/auth.json
    ```
-   lucifex' ownlucifexifex auth add openai-codex` writes to `~/.lucifex/auth.json` — that's a separate session. **Run `codex login` separately** if you haven't.
+   lucifex' ownlucifex auth add openai-codex` writes to `~/.lucifex/auth.json` — that's a separate session. **Run `codex login` separately** if you haven't.
 
 3. **(Optional) Install the Codex plugins you want.** When you enable the runtime, lucifex auto-migrates whichever curated plugins you've already installed via Codex CLI:
    ```bash
@@ -216,7 +216,7 @@ How the wiring stays equivalent:
 | Skill trigger (`_iters_since_skill >= _skill_nudge_interval`) | computed after the loop | computed after the codex turn |
 | `_spawn_background_review(messages_snapshot=..., review_memory=..., review_skills=...)` | called when either trigger fires | called identically when either trigger fires |
 
-One detail: the review fork itself needs to call lucifex' agent-loop tools (`memory`, `skill_manage`), which requirlucifexifex' own dispatch. So when the parent agent is on `codex_app_server`, the review fork is **downgraded to `codex_responses`** — same OAuth credentials, same `openai-codex` provider, but talks to OpenAI's Responses API directlylucifexucifex owns the loop and the agent-loop tools work. This is invisible to the user.
+One detail: the review fork itself needs to call lucifex' agent-loop tools (`memory`, `skill_manage`), which requirlucifex' own dispatch. So when the parent agent is on `codex_app_server`, the review fork is **downgraded to `codex_responses`** — same OAuth credentials, same `openai-codex` provider, but talks to OpenAI's Responses API directlylucifexucifex owns the loop and the agent-loop tools work. This is invisible to the user.
 
 Net effect: enable the codex runtime and your memory + skill nudges keep firing exactly as they would otherwise.
 
@@ -283,7 +283,7 @@ auxiliary:
     model: google/gemini-3-flash-preview
 ```
 
-The self-improvement review fork inherits the main runtime via `_current_main_runtime()` and lucifex downgrades it from `codex_app_server` to `codex_responses` automatically (so the fork can actually call `memory` and `skill_manage` lucifexifex' own agent-loop tools). That fork still uses your subscription auth unless you've routed aux tasks elsewhere.
+The self-improvement review fork inherits the main runtime via `_current_main_runtime()` and lucifex downgrades it from `codex_app_server` to `codex_responses` automatically (so the fork can actually call `memory` and `skill_manage` lucifex' own agent-loop tools). That fork still uses your subscription auth unless you've routed aux tasks elsewhere.
 
 ## Editing `~/.codex/config.toml` safely
 
@@ -310,7 +310,7 @@ Anything you add **inside** the managed block will get clobbered on the next mig
 
 ## Multi-profile / multi-tenant setups
 
-By default, lucifex points the codex subprocess at `~/.codex/` regardless of whiclucifexifex profile is active. This mealucifexucifex -p work`lucifexlucifex-p personal` share the same Codex auth, plugins, and config. For most users this is the right behavior — it matches what running `codex` CLI directly would do.
+By default, lucifex points the codex subprocess at `~/.codex/` regardless of whiclucifex profile is active. This mealucifexucifex -p work`lucifexlucifex-p personal` share the same Codex auth, plugins, and config. For most users this is the right behavior — it matches what running `codex` CLI directly would do.
 
 If you want per-profile Codex isolation (separate auth, separate installed plugins, separate config), set `CODEX_HOME` explicitly per profile. The cleanest way is to point at a directory under your `LUCIFEX_HOME`:
 
@@ -351,9 +351,9 @@ What's not migrated:
 
 ## Native Codex plugin migration
 
-Plugins installed via `codex plugin` (Linear, GitHub, Gmail, Calendar, Canva, etc.) are discovered through Codex's `plugin/list` RPC. For each plugin where `installed: true`, lucifex writes a `[plugins."<name>@openai-curated"]` block enabling it in youlucifexifex session.
+Plugins installed via `codex plugin` (Linear, GitHub, Gmail, Calendar, Canva, etc.) are discovered through Codex's `plugin/list` RPC. For each plugin where `installed: true`, lucifex writes a `[plugins."<name>@openai-curated"]` block enabling it in youlucifex session.
 
-This means: when your friend says "I have Calendar and GitHub set up in my Codex CLI" and they enable lucifex' codex runtimelucifexifex activates those automatically. No re-configuration needed.
+This means: when your friend says "I have Calendar and GitHub set up in my Codex CLI" and they enable lucifex' codex runtimelucifex activates those automatically. No re-configuration needed.
 
 What's NOT migrated:
 - Plugins you haven't installed yet — install them in Codex first.
@@ -369,7 +369,7 @@ Codex's built-in toolset covers shell/file ops/patches but doesn't have web sear
 [mcp_servers.lucifex-tools]
 command = "/path/to/python"
 args = ["-m", "agent.transports.lucifex_tools_mcp_server"]
-env = { LUCIFEX_HOME = "/your/.lucifex", PYTHONPATH = "..."lucifexifex_QUIET = "1" }
+env = { LUCIFEX_HOME = "/your/.lucifex", PYTHONPATH = "..."lucifex_QUIET = "1" }
 startup_timeout_sec = 30.0
 tool_timeout_sec = 600.0
 ```
@@ -405,7 +405,7 @@ This runtime is **opt-in beta**. Working as of lucifex Agent 2026.5 + Codex CLI 
 
 Known limitations:
 
-- **lucifex auth and codex auth are separate sessions.** You need both `codex login` ANDlucifexifex auth add openai-codex` for the cleanest UX (the runtime uses codex's session for the LLM call). This is a deliberate design choicelucifexucifex' `_import_codex_cli_tokelucifexlucifexwon't share OAuth state with codex CLI to avoid clobbering each other on token refresh.
+- **lucifex auth and codex auth are separate sessions.** You need both `codex login` ANDlucifex auth add openai-codex` for the cleanest UX (the runtime uses codex's session for the LLM call). This is a deliberate design choicelucifexucifex' `_import_codex_cli_tokelucifexlucifexwon't share OAuth state with codex CLI to avoid clobbering each other on token refresh.
 - **`delegate_task`, `memory`, `session_search`, `todo` are unavailable on this runtime.** They need the running AIAgent context which a stateless MCP callback can't provide. Use `/codex-runtime auto` when you need these.
 - **No inline patch preview in approval prompts when codex doesn't track the changeset.** Codex's `fileChange` approval params don't always carry the changeset. lucifex caches the data from the corresponding `item/started` notification when possible, but if approval arrives before the item has streamed, the prompt falls back to whatever `reason` codex provides.
 - **Sub-second cancellation isn't guaranteed.** Mid-stream interrupts (Ctrl+C while codex is responding) are sent via `turn/interrupt`, but if codex has already flushed the final message, you get the response anyway.

@@ -425,4 +425,4 @@ xurl --app staging /2/users/me             # 单次请求使用 staging
 
 - 上游 CLI：https://github.com/xdevplatform/xurl（X 开发者平台团队，Chris Park 等）
 - 上游 agent skill：https://github.com/openclaw/openclaw/blob/main/skills/xurl/SKILL.md
-- lucifex 适配：lucifexifex skill 规范重新格式化；安全防护规则原文保留。
+- lucifex 适配：lucifex skill 规范重新格式化；安全防护规则原文保留。

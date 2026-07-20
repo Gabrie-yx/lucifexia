@@ -124,7 +124,7 @@ if [ "$ram_pct" -ge 85 ]; then
 fi
 ```
 
-Because `lucifex send` reuses youlucifexifex config, the same script works on
+Because `lucifex send` reuses youlucifex config, the same script works on
 any host where lucifex is installed — no need to export bot tokens into
 each machine's environment manually.
 
@@ -153,7 +153,7 @@ fi
 ```bash
 # Crontab entry
 0 9 * * * /usr/local/bin/generate-metrics.sh \
-  | /home/me/.lucifex/bilucifexifex send \
+  | /home/me/.lucifex/bilucifex send \
       --to telegram --subject "Daily metrics $(date +%Y-%m-%d)"
 ```
 

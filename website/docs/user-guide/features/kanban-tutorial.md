@@ -5,7 +5,7 @@ A walkthrough of the four use-cases the lucifex Kanban system was designed for, 
 ## Setup
 
 ```bash
-lucifex kanban init           # optional; firstlucifexifex kanban <anything>` auto-inits
+lucifex kanban init           # optional; firstlucifex kanban <anything>` auto-inits
 lucifex dashboard             # opens http://127.0.0.1:9119 in your browser
 # click Kanban in the left nav
 ```

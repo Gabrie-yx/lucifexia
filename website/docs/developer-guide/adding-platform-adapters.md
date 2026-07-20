@@ -4,7 +4,7 @@ sidebar_position: 9
 
 # Adding a Platform Adapter
 
-This guide covers adding a new messaging platform to the lucifex gateway. A platform adapter connectlucifexifex to an external messaging service (Telegram, Discord, WeCom, etc.) so users can interact with the agent through that service.
+This guide covers adding a new messaging platform to the lucifex gateway. A platform adapter connectlucifex to an external messaging service (Telegram, Discord, WeCom, etc.) so users can interact with the agent through that service.
 
 :::tip
 There are two ways to add a platform:
@@ -194,7 +194,7 @@ When you call `ctx.register_platform()`, the following integration points are ha
 | PII redaction | `pii_safe` flag |
 | `lucifex status` | Shows plugin platforms with `(plugin)` tag |
 | `lucifex gateway setup` | Plugin platforms appear in setup menu |
-| `lucifex tools` /lucifexifex skills` | Plugin platforms in per-platform config |
+| `lucifex tools` /lucifex skills` | Plugin platforms in per-platform config |
 | Token lock (multi-profile) | Use `acquire_scoped_lock()` in your `connect()` |
 | Orphaned config warning | Descriptive log when plugin is missing |
 
@@ -296,7 +296,7 @@ The scheduler reads this env var when resolving the home target for `deliver=my_
 
 ### Out-of-process cron delivery
 
-`cron_deliver_env_var` makes your platform a recognized `deliver=` target. To make the actual send succeed when the cron job runs in a separate process from the gateway (i.e., `lucifex cron run` separate fromlucifexifex gateway`), register a `standalone_sender_fn`:
+`cron_deliver_env_var` makes your platform a recognized `deliver=` target. To make the actual send succeed when the cron job runs in a separate process from the gateway (i.e., `lucifex cron run` separate fromlucifex gateway`), register a `standalone_sender_fn`:
 
 ```python
 async def _standalone_send(
@@ -571,7 +571,7 @@ Five touchpoints:
 
 ### 8. Toolsets
 
-1. **`toolsets.py`** — Add `"lucifex-newplat"` toolset definition with lucifexifex_CORE_TOOLS`
+1. **`toolsets.py`** — Add `"lucifex-newplat"` toolset definition with lucifex_CORE_TOOLS`
 2. **`toolsets.py`** — Add `"lucifex-newplat"` to the `"lucifex-gateway"` includes list
 
 ### 9. Optional: Platform Hints

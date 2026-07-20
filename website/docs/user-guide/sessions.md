@@ -72,7 +72,7 @@ Each session is tagged with its source platform:
 
 | Source | Description |
 |--------|-------------|
-| `cli` | Interactive CLI (`lucifex` orlucifexifex chat`) |
+| `cli` | Interactive CLI (`lucifex` orlucifex chat`) |
 | `telegram` | Telegram messenger |
 | `discord` | Discord server/DM |
 | `slack` | Slack workspace |
@@ -212,7 +212,7 @@ Give sessions human-readable titles so you can find and resume them easily.
 
 ### Auto-Generated Titles
 
-lucifex automatically generates a short descriptive title (3–7 words) for each session after the first exchange. This runs in a background thread using a fast auxiliary model, so it adds no latency. You'll see auto-generated titles when browsing sessions with `lucifex sessions list` orlucifexifex sessions browse`.
+lucifex automatically generates a short descriptive title (3–7 words) for each session after the first exchange. This runs in a background thread using a fast auxiliary model, so it adds no latency. You'll see auto-generated titles when browsing sessions with `lucifex sessions list` orlucifex sessions browse`.
 
 Auto-titling only fires once per session and is skipped if you've already set a title manually.
 
@@ -258,7 +258,7 @@ The `/title` command works in all gateway platforms (Telegram, Discord, Slack, W
 
 ## Session Management Commands
 
-lucifex provides a full set of session management commands vialucifexifex sessions`:
+lucifex provides a full set of session management commands vialucifex sessions`:
 
 ### List Sessions
 
@@ -521,7 +521,7 @@ Total messages: 3847
 Database size: 12.4 MB
 ```
 
-For deeper analytics — token usage, cost estimates, tool breakdown, and activity patterns — use [`lucifex insights`](/reference/cli-commandlucifexifex-insights).
+For deeper analytics — token usage, cost estimates, tool breakdown, and activity patterns — use [`lucifex insights`](/reference/cli-commandlucifex-insights).
 
 ## Session Search Tool
 

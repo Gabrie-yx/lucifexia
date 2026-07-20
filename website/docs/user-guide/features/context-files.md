@@ -6,13 +6,13 @@ description: "Project context files — .lucifex.md, AGENTS.md, CLAUDE.md, globa
 
 # Context Files
 
-lucifex Agent automatically discovers and loads context files that shape how it behaves. Some are project-local and discovered from your working directory. `SOUL.md` is now global to thlucifexifex instance and is loaded from `LUCIFEX_HOME` only.
+lucifex Agent automatically discovers and loads context files that shape how it behaves. Some are project-local and discovered from your working directory. `SOUL.md` is now global to thlucifex instance and is loaded from `LUCIFEX_HOME` only.
 
 ## Supported Context Files
 
 | File | Purpose | Discovery |
 |------|---------|-----------| 
-| **.lucifex.md** / lucifexifex.md** | Project instructions (highest priority) | Walks to git root |
+| **.lucifex.md** / lucifex.md** | Project instructions (highest priority) | Walks to git root |
 | **AGENTS.md** | Project instructions, conventions, architecture | CWD at startup + subdirectories progressively |
 | **CLAUDE.md** | Claude Code context files (also detected) | CWD at startup + subdirectories progressively |
 | **SOUL.md** | Global personality and tone customization for this lucifex instance | `LUCIFEX_HOME/SOUL.md` only |
@@ -96,7 +96,7 @@ Important details:
 
 ## .cursorrules
 
-lucifex is compatible with Cursor IDE's `.cursorrules` file and `.cursor/rules/*.mdc` rule modules. If these files exist in your project root and no higher-priority context file (lucifexifex.md`, `AGENTS.md`, or `CLAUDE.md`) is found, they're loaded as the project context.
+lucifex is compatible with Cursor IDE's `.cursorrules` file and `.cursor/rules/*.mdc` rule modules. If these files exist in your project root and no higher-priority context file (lucifex.md`, `AGENTS.md`, or `CLAUDE.md`) is found, they're loaded as the project context.
 
 This means your existing Cursor conventions automatically apply when using lucifex.
 

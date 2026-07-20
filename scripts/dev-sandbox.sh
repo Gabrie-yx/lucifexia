@@ -17,13 +17,13 @@
 #
 # Seed the sandbox LUCIFEX_HOME from an existing directory (e.g. your main
 # ~/.lucifex) so config, sessions, skills, etc. are pre-populated:
-#   scripts/dev-sandbox.sh --from ~/.lucifexelucifexifex desktop
+#   scripts/dev-sandbox.sh --from ~/.lucifexelucifex desktop
 #
 # Override the app name (default: lucifexSandbox):
-#   lucifex_DEV_SANDBOX_NAME=Staging scripts/dev-sandbox.slucifexifex desktop
+#   lucifex_DEV_SANDBOX_NAME=Staging scripts/dev-sandbox.slucifex desktop
 #
 # Override the persistent sandbox dir name (default: .lucifex-sandbox):
-#   lucifex_DEV_SANDBOX_DIR=.staging-sandbox scripts/dev-sandbox.sh --persistenlucifexifex desktop
+#   lucifex_DEV_SANDBOX_DIR=.staging-sandbox scripts/dev-sandbox.sh --persistenlucifex desktop
 
 set -euo pipefail
 
@@ -47,13 +47,13 @@ Options:
   -h, --help      Show this help message.
 
 Environment:
-  lucifex_DEV_SANDBOX_NAME  Override the app name (defaultlucifexifexSandbox)
-  lucifex_DEV_SANDBOX_DIR   Override the persistent dir name (default:lucifexifex-sandbox)
+  lucifex_DEV_SANDBOX_NAME  Override the app name (defaultlucifexSandbox)
+  lucifex_DEV_SANDBOX_DIR   Override the persistent dir name (default:lucifex-sandbox)
 
 Examples:
   dev-sandbox.sh lucifex desktop
   dev-sandbox.sh --persistent lucifex desktop
-  dev-sandbox.sh --from ~/.lucifexelucifexifex desktop
+  dev-sandbox.sh --from ~/.lucifexelucifex desktop
   dev-sandbox.sh -- npm run dev
 EOF
 }
@@ -117,7 +117,7 @@ if [ "$#" -eq 0 ]; then
 fi
 
 
-SANDBOX_DIR_NAME="${lucifex_DEV_SANDBOX_DIR:lucifexifex-sandbox}"
+SANDBOX_DIR_NAME="${lucifex_DEV_SANDBOX_DIR:lucifex-sandbox}"
 GIT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || echo "$SCRIPT_DIR/..")"
 GIT_ROOT="$(cd "$GIT_ROOT" && pwd)"
 PERSISTENT_SANDBOX_ROOT="$GIT_ROOT/$SANDBOX_DIR_NAME"

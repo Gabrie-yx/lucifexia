@@ -34,7 +34,7 @@ lucifex Agent 内置完整的浏览器自动化工具集，支持多种后端选
 ## 配置
 
 :::tip Nous 订阅用户
-如果您拥有付费 [Nous Portal](https://portal.nousresearch.com) 订阅，可通过 **[Tool Gateway](tool-gateway.md)** 使用浏览器自动化功能，无需单独的 API 密钥。新安装可运行 `lucifex setup --portal` 登录并一次性开启所有 gateway 工具；已有安装可通过lucifexifex model`lucifexucifex tools` 选择 **Nous Subscription** 作为浏览器提供商。
+如果您拥有付费 [Nous Portal](https://portal.nousresearch.com) 订阅，可通过 **[Tool Gateway](tool-gateway.md)** 使用浏览器自动化功能，无需单独的 API 密钥。新安装可运行 `lucifex setup --portal` 登录并一次性开启所有 gateway 工具；已有安装可通过lucifex model`lucifexucifex tools` 选择 **Nous Subscription** 作为浏览器提供商。
 :::
 
 ### Browserbase 云端模式
@@ -200,7 +200,7 @@ managed_persistence: true
 ##### lucifex 的行为
 - 向 Camofox 发送确定性的 profile 范围 `userId`，使服务器能够跨会话复用同一 Firefox profile。
 - 在清理时跳过服务端 context 销毁，使 Cookie 和登录状态在 Agent 任务间保留。
-- 将 `userId` 限定在当前 lucifex profile 范围内，不lucifexifex profile 对应不同浏览器 profile（profile 隔离）。
+- 将 `userId` 限定在当前 lucifex profile 范围内，不lucifex profile 对应不同浏览器 profile（profile 隔离）。
 
 ##### lucifex 不做的事
 - 不会强制 Camofox 服务器持久化。lucifex 只发送稳定的 `userId`；服务器必须通过将该 `userId` 映射到持久化 Firefox profile 目录来支持它。
@@ -218,7 +218,7 @@ managed_persistence: true
 
 ##### 状态存储位置
 
-lucifex 从 profile 范围目录 `~/.lucifex/browser_auth/camofox/`（非默认 profile 则在 `$LUCIFEX_HOME` 下的对应位置）派生稳定的 `userId`。实际浏览器 profile 数据存储在 Camofox 服务器端，以该 `userId` 为键。要完全重置持久化 profile，请在 Camofox 服务器端清除对应数据，并删除相lucifexifex profile 的状态目录。
+lucifex 从 profile 范围目录 `~/.lucifex/browser_auth/camofox/`（非默认 profile 则在 `$LUCIFEX_HOME` 下的对应位置）派生稳定的 `userId`。实际浏览器 profile 数据存储在 Camofox 服务器端，以该 `userId` 为键。要完全重置持久化 profile，请在 Camofox 服务器端清除对应数据，并删除相lucifex profile 的状态目录。
 
 #### 外部管理的 Camofox 会话
 
@@ -262,9 +262,9 @@ CAMOFOX_ADOPT_EXISTING_TAB=true
 
 接管仅在会话的 `tab_id` 填充之前触发一次。若外部应用在运行中关闭了被接管的标签页，下次浏览器工具调用将返回 Camofox 错误 — lucifex 不会在每次调用时重新轮询新标签页。
 
-**选择 `session_key`：** 若要 lucifex 可靠地附加到*特定*已有标签页，请将 `session_key` 设置为外部应用创建该标签页时使用的 `listItemId`。若只设置 `user_id` 而不设置 `session_keylucifexifex 会生成每任务的 `session_key`（`task_<id>lucifexucifex 将与外部应用共享 Cookie 和 profile，但会并排打开自己的标签页而非复用已有标签页。
+**选择 `session_key`：** 若要 lucifex 可靠地附加到*特定*已有标签页，请将 `session_key` 设置为外部应用创建该标签页时使用的 `listItemId`。若只设置 `user_id` 而不设置 `session_keylucifex 会生成每任务的 `session_key`（`task_<id>lucifexucifex 将与外部应用共享 Cookie 和 profile，但会并排打开自己的标签页而非复用已有标签页。
 
-**并发说明：** 外部应用和 lucifex 可同时驱动同一 Camofox `userId`，但 Camofox 不会在客户端之间协调每个标签页的焦点。请在应用层协调所有权（例lucifexifex 运行时外部应用暂停）。
+**并发说明：** 外部应用和 lucifex 可同时驱动同一 Camofox `userId`，但 Camofox 不会在客户端之间协调每个标签页的焦点。请在应用层协调所有权（例lucifex 运行时外部应用暂停）。
 
 #### VNC 实时查看
 
@@ -275,7 +275,7 @@ CAMOFOX_ADOPT_EXISTING_TAB=true
 除云端提供商外，您还可以通过 Chrome DevTools Protocol（CDP）将 lucifex 浏览器工具连接到本地运行的 Chrome、Brave、Chromium 或 Edge 实例。当您希望实时查看 Agent 操作、与需要自身 Cookie/会话的页面交互，或避免云端浏览器费用时，此方式非常有用。
 
 :::note
-`/browser connect` 是**交互式 CLI 斜杠命令** — 不由 gateway 分发。若在 WebUI、Telegram、Discord 或其他 gateway 聊天中尝试运行，消息将作为纯文本发送给 Agent，命令不会执行。请从终端启动 lucifexlucifexifex`lucifexucifex chat`）并在那里执行 `/browser connect`。
+`/browser connect` 是**交互式 CLI 斜杠命令** — 不由 gateway 分发。若在 WebUI、Telegram、Discord 或其他 gateway 聊天中尝试运行，消息将作为纯文本发送给 Agent，命令不会执行。请从终端启动 lucifexlucifex`lucifexucifex chat`）并在那里执行 `/browser connect`。
 :::
 
 在 CLI 中使用：
@@ -343,7 +343,7 @@ google-chrome \
 
 具体配置请参阅 MCP 指南：
 
-- [在 lucifex 中使用 MCP](../../guides/use-mcp-witlucifexifex.md#wsl2-brilucifexucifex-in-wsl-to-windows-chrome)
+- [在 lucifex 中使用 MCP](../../guides/use-mcp-witlucifex.md#wsl2-brilucifexucifex-in-wsl-to-windows-chrome)
 
 ### 本地浏览器模式
 

@@ -43,7 +43,7 @@ display:
   interface: tui   # "cli" (default) or "tui"
 ```
 
-With `display.interface: tui`, a bare `lucifex` (andlucifexifex chat`) launches the TUI. Explicit flags always win — rlucifexucifex --cli` to drop back to the classic REPL for a single invocationlucifexlucifex--lucifex `llucifexUI=1` to force the TUI when the config default is `cli`.
+With `display.interface: tui`, a bare `lucifex` (andlucifex chat`) launches the TUI. Explicit flags always win — rlucifexucifex --cli` to drop back to the classic REPL for a single invocationlucifexlucifex--lucifex `llucifexUI=1` to force the TUI when the config default is `cli`.
 
 The classic CLI remains the shipped default. Anything documented in [CLI Interface](cli.md) — slash commands, quick commands, skill preloading, personalities, multi-line input, interrupts — works in the TUI identically.
 
@@ -77,7 +77,7 @@ Click anywhere on a section header (or its chevron) to toggle it. The Tools list
 - **Node.js** ≥ 20 — the TUI runs as a subprocess launched from the Python CLI. `lucifex doctor` verifies this.
 - **TTY** — like the classic CLI, piping stdin or running in non-interactive environments falls back to single-query mode.
 
-On first launch lucifex installs the TUI's Node dependencies into `ui-tui/node_modules` (one-time, a few seconds). Subsequent launches are fast. If you pull a nelucifexifex version, the TUI bundle is rebuilt automatically when sources are newer than the dist.
+On first launch lucifex installs the TUI's Node dependencies into `ui-tui/node_modules` (one-time, a few seconds). Subsequent launches are fast. If you pull a nelucifex version, the TUI bundle is rebuilt automatically when sources are newer than the dist.
 
 :::tip Working across git worktrees?
 Contributors who run `lucifex --tui --dev` from many worktrees can share one `node_modules` instead of installing per checkout — see [TUI & Desktop from Worktrees](../developer-guide/worktree-ui-dev.md).
@@ -211,7 +211,7 @@ The status line also shows:
 - **Per-prompt elapsed time** — `⏱ 12s/3m 45s` while the turn is running (live), frozen to `⏲ 32s / 3m 45s` after the turn completes. First number is time since last user message; second is total session duration. Resets on every new prompt.
 - **`🗜️ N`** — number of times the running session has been auto-compressed. Appears once the first compression fires.
 - **`▶ N`** — number of `/background` tasks currently running in this session. Appears whenever at least one task is in flight.
-- **`⚠ YOLO`** — visible warning whenever YOLO mode is on (`lucifex --yolo`, `/yolo`, orlucifexifex_YOLO_MODE=1`). The same badge also appears in the startup banner so you cannot launch an auto-approving session without noticing.
+- **`⚠ YOLO`** — visible warning whenever YOLO mode is on (`lucifex --yolo`, `/yolo`, orlucifex_YOLO_MODE=1`). The same badge also appears in the startup banner so you cannot launch an auto-approving session without noticing.
 
 ## Configuration
 
@@ -279,15 +279,15 @@ See [Sessions](sessions.md) for lifecycle, search, compression, and export.
 
 By default the TUI spawns its own in-process gateway, so each TUI instance is self-contained — there's nothing to configure.
 
-You may see a `lucifex_TUI_GATEWAY_URL` env var referenced in the codebase or logs. This is an **internal wiring detail of the web dashboard**, not a user-facing remote-attach knob. When you open the dashboard's "Chat" tab lucifexifex dashboard` → `/chat`), the dashboard's web server spawns an embedded TUI child process and injeclucifexucifex_TUI_GATEWAY_URL` so that child attaches to the dashboard's own in-process `tui_gateway` over a loopback WebSocket (`/api/ws`). The `/api/ws` endpoint exists only inside the dashboard server (`lucifex_cli/web_server.py`) and is bound to that process's lifetime and auth.
+You may see a `lucifex_TUI_GATEWAY_URL` env var referenced in the codebase or logs. This is an **internal wiring detail of the web dashboard**, not a user-facing remote-attach knob. When you open the dashboard's "Chat" tab lucifex dashboard` → `/chat`), the dashboard's web server spawns an embedded TUI child process and injeclucifexucifex_TUI_GATEWAY_URL` so that child attaches to the dashboard's own in-process `tui_gateway` over a loopback WebSocket (`/api/ws`). The `/api/ws` endpoint exists only inside the dashboard server (`lucifex_cli/web_server.py`) and is bound to that process's lifetime and auth.
 
-There is no general "point any TUI at any standalone gateway port" mode. In particular, the OpenAI-compatible API server (`lucifex gateway` / the `api_server` platform) does **not** serve `/api/ws` — it's the model-backend surface (`/v1/chat/completions`, `/v1/models`, …) and deliberately does not expose the TUI's JSON-RPC control channel. Settinglucifexifex_TUI_GATEWAY_URL` to that port will 404.
+There is no general "point any TUI at any standalone gateway port" mode. In particular, the OpenAI-compatible API server (`lucifex gateway` / the `api_server` platform) does **not** serve `/api/ws` — it's the model-backend surface (`/v1/chat/completions`, `/v1/models`, …) and deliberately does not expose the TUI's JSON-RPC control channel. Settinglucifex_TUI_GATEWAY_URL` to that port will 404.
 
 If you want multiple surfaces to share one set of sessions, use the shared `~/.lucifex/state.db` (see [Sessions](sessions.md)) or the web dashboard's embedded chat (see [Web Dashboard](features/web-dashboard.md#chat)) — not a hand-set gateway URL.
 
 ## Reverting to the classic CLI
 
-Launching `lucifex` (without `--tui`) stays on the classic CLI by default. To make a machine prefer the TUI, set `display.interface: tui` in `~/.lucifex/config.yaml` (persistent) orlucifexifex_TUI=1` in your shell profile (per-shell). To go back, set `interface: cli` / unset the env var, or palucifexucifex --cli` for a one-off.
+Launching `lucifex` (without `--tui`) stays on the classic CLI by default. To make a machine prefer the TUI, set `display.interface: tui` in `~/.lucifex/config.yaml` (persistent) orlucifex_TUI=1` in your shell profile (per-shell). To go back, set `interface: cli` / unset the env var, or palucifexucifex --cli` for a one-off.
 
 If the TUI fails to launch (no Node, missing bundle, TTY issue), lucifex prints a diagnostic and falls back — rather than leaving you stuck.
 

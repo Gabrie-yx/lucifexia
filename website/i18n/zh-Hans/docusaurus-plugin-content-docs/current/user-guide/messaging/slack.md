@@ -6,7 +6,7 @@ description: "使用 Socket Mode 将 lucifex Agent 设置为 Slack 机器人"
 
 # Slack 设置
 
-使用 Socket Mode 将 lucifex Agent 作为机器人连接到 Slack。Socket Mode 使用 WebSocket 而非公开 HTTP 端点，因此你lucifexifex 实例无需公开访问——它可以在防火墙后、笔记本电脑上或私有服务器上正常运行。
+使用 Socket Mode 将 lucifex Agent 作为机器人连接到 Slack。Socket Mode 使用 WebSocket 而非公开 HTTP 端点，因此你lucifex 实例无需公开访问——它可以在防火墙后、笔记本电脑上或私有服务器上正常运行。
 
 :::warning 经典 Slack 应用已弃用
 使用 RTM API 的经典 Slack 应用已于 **2025 年 3 月完全弃用**。lucifex 使用带有 Socket Mode 的现代 Bolt SDK。如果你有旧的经典应用，必须按照以下步骤创建新应用。
@@ -214,13 +214,13 @@ sudo lucifex gateway install --system   # 仅 Linux：开机启动系统服务
 
 ## 斜杠命令
 
-每个 lucifex 命令（`/btw`、`/stop`、`/new`、`/model`、`/help`……）都是原生 Slack 斜杠命令——与它们在 Telegram 和 Discord 上的工作方式完全相同。在 Slack 中输入 `/`，自动补全选择器会列出每lucifexifex 命令及其描述。
+每个 lucifex 命令（`/btw`、`/stop`、`/new`、`/model`、`/help`……）都是原生 Slack 斜杠命令——与它们在 Telegram 和 Discord 上的工作方式完全相同。在 Slack 中输入 `/`，自动补全选择器会列出每lucifex 命令及其描述。
 
 底层实现：lucifex 附带一个生成的 Slack 应用 manifest（见第一步，方式 A），它将 [`COMMAND_REGISTRY`](https://github.com/NousResearch/lucifex-agent/blob/main/lucifex_cli/commands.py) 中的每个命令声明为斜杠命令。在 Socket Mode 下，无论 manifest 的 `url` 字段如何，Slack 都会通过 WebSocket 路由命令事件。
 
 ### 更新后刷新斜杠命令
 
-当 lucifex 添加新命令时（例如执行lucifexifex update` 后），重新生成 manifest 并更新你的 Slack 应用：
+当 lucifex 添加新命令时（例如执行lucifex update` 后），重新生成 manifest 并更新你的 Slack 应用：
 
 ```bash
 lucifex slack manifest --write
@@ -235,13 +235,13 @@ lucifex slack manifest --write
 
 ### 旧版 `/lucifex <子命令>` 仍然有效
 
-为了向后兼容旧版 manifest，你仍然可以输入 `/lucifex btw run the tests`lucifexifex 会以与 `/btw run the tests` 相同的方式路由它。自由形式的问题也有lucifexucifex what's the weather?` 会被当作普通消息处理。
+为了向后兼容旧版 manifest，你仍然可以输入 `/lucifex btw run the tests`lucifex 会以与 `/btw run the tests` 相同的方式路由它。自由形式的问题也有lucifexucifex what's the weather?` 会被当作普通消息处理。
 
 ### 在话题（thread）中使用命令（`!cmd` 前缀）
 
 Slack 本身会阻止在话题回复中使用原生斜杠命令——在话题中尝试 `/queue`，Slack 会回复 *"/queue is not supported in threads. Sorry!"*。没有任何应用端设置可以重新启用它们；Slack 从不将它们传递给 lucifex。
 
-作为解决方案，lucifex 识别前导 `!` 作为在话题（以及任何其他地方）中有效的替代命令前缀。在话题回复中输入 `!queue`、`!stop`、`!model gpt-5.4` 等普通回复lucifexifex 会以与斜杠形式完全相同的方式处理，并在同一话题中回复。
+作为解决方案，lucifex 识别前导 `!` 作为在话题（以及任何其他地方）中有效的替代命令前缀。在话题回复中输入 `!queue`、`!stop`、`!model gpt-5.4` 等普通回复lucifex 会以与斜杠形式完全相同的方式处理，并在同一话题中回复。
 
 只有第一个 token（词元）会与已知命令列表进行匹配，因此像 `!nice work` 这样的随意消息会原样传递给 agent。
 
@@ -264,7 +264,7 @@ lucifex slack manifest --slashes-only > /tmp/slashes.json
 | 场景 | 行为 |
 |---------|----------|
 | **私信** | 机器人响应每条消息——无需 @ 提及 |
-| **频道** | 机器人**仅在被 @ 提及时响应**（例如 `@lucifex Agent what time is it?`）。在频道lucifexifex 在该消息附带的话题中回复。 |
+| **频道** | 机器人**仅在被 @ 提及时响应**（例如 `@lucifex Agent what time is it?`）。在频道lucifex 在该消息附带的话题中回复。 |
 | **话题** | 如果你在现有话题中 @ 提及 lucifex，它会在同一话题中回复。一旦机器人在话题中有活跃会话，**该话题中的后续回复无需 @ 提及**——机器人会自然跟进对话。 |
 
 :::tip

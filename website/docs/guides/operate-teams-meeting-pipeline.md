@@ -52,7 +52,7 @@ lucifex teams-pipeline maintain-subscriptions --dry-run
 
 You MUST run `maintain-subscriptions` on a schedule. Pick one of these three options:
 
-#### Option 1: lucifex cron (recommended if you already run thlucifexifex gateway)
+#### Option 1: lucifex cron (recommended if you already run thlucifex gateway)
 
 lucifex ships a built-in cron scheduler. The `--no-agent` mode runs a script as the job (rather than using an LLM), and `--script` must point at a file under `~/.lucifex/scripts/`. First create the script:
 
@@ -124,7 +124,7 @@ systemctl list-timers lucifex-teams-pipeline-maintain.timer
 #### Option 3: Plain crontab
 
 ```cron
-0 */12 * * * /usr/local/bin/lucifex teams-pipeline maintain-subscriptions >> /var/lolucifexifex/teams-pipeline-maintain.log 2>&1
+0 */12 * * * /usr/local/bin/lucifex teams-pipeline maintain-subscriptions >> /var/lolucifex/teams-pipeline-maintain.log 2>&1
 ```
 
 Make sure the cron environment has the `MSGRAPH_*` credentials. Simplest fix: source `~/.lucifex/.env` at the top of a wrapper script that crontab calls.

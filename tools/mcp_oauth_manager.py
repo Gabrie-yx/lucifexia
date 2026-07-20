@@ -435,7 +435,7 @@ def _make_lucifex_provider_class() -> Optional[type]:
 
 
 # Cached at import time. Tested and used by :class:`MCPOAuthManager`.
-_lucifex_PROVIDER_CLS: Optional[type] = _maklucifexifex_provider_class()
+_lucifex_PROVIDER_CLS: Optional[type] = _maklucifex_provider_class()
 
 
 # ---------------------------------------------------------------------------

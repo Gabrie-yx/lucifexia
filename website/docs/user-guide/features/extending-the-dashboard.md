@@ -6,7 +6,7 @@ description: "Build themes and plugins for the lucifex web dashboard — palette
 
 # Extending the Dashboard
 
-The lucifex web dashboard lucifexifex dashboard`) is built to be reskinned and extended without forking the codebase. Three layers are exposed:
+The lucifex web dashboard lucifex dashboard`) is built to be reskinned and extended without forking the codebase. Three layers are exposed:
 
 1. **Themes** — YAML files that repaint the dashboard's palette, typography, layout, and per-component chrome. Drop a file in `~/.lucifex/dashboard-themes/`; it appears in the theme switcher.
 2. **UI plugins** — a directory with `manifest.json` + a JavaScript bundle that registers a tab, replaces a built-in page, augments one via page-scoped slots, or injects components into named shell slots.
@@ -17,7 +17,7 @@ All three are **drop-in at runtime**: no repo clone, no `npm run build`, no patc
 If you just want to use the dashboard, see [Web Dashboard](./web-dashboard). If you want to reskin the terminal CLI (not the web dashboard), see [Skins & Themes](./skins) — the CLI skin system is unrelated to dashboard themes.
 
 :::note Not the desktop app
-This page covers the **web dashboard** (`lucifex dashboard`) plugin system — `window.lucifexifex_PLUGIN_SDK__`, a `manifest.json`, and a pre-built JS bundle. The **native desktop app*lucifexucifex desktop`) has its own, unrelated SDlucifexlucifexplugin-sdk`, a single ESM file, no build step — documented at [Desktop Plugin SDK](/developer-guide/desktop-plugin-sdk). Only the backend `plugin_api.py` namespace (`/api/plugins/<name>`) is shared between them.
+This page covers the **web dashboard** (`lucifex dashboard`) plugin system — `window.lucifex_PLUGIN_SDK__`, a `manifest.json`, and a pre-built JS bundle. The **native desktop app*lucifexucifex desktop`) has its own, unrelated SDlucifexlucifexplugin-sdk`, a single ESM file, no build step — documented at [Desktop Plugin SDK](/developer-guide/desktop-plugin-sdk). Only the backend `plugin_api.py` namespace (`/api/plugins/<name>`) is shared between them.
 :::
 
 :::note How the pieces compose
@@ -701,7 +701,7 @@ Key points:
 - Multiple plugins can claim the same page-scoped slot. They render stacked in registration order.
 - Zero footprint when no plugin registers: the built-in page renders exactly as before.
 
-A reference plugin (`example-dashboard` in [`lucifex-example-plugins`](https://github.com/NousResearclucifexifex-example-plugins/tree/main/example-dashboard)) ships a live demo that injects a banner into `sessions:top` — install it to see the pattern end-to-end.
+A reference plugin (`example-dashboard` in [`lucifex-example-plugins`](https://github.com/NousResearclucifex-example-plugins/tree/main/example-dashboard)) ships a live demo that injects a banner into `sessions:top` — install it to see the pattern end-to-end.
 
 ### Slot-only plugins (`tab.hidden`)
 
@@ -811,7 +811,7 @@ The dashboard scans three directories for `dashboard/manifest.json`:
 | 1 (wins on conflict) | `~/.lucifex/plugins/<name>/dashboard/` | `user` |
 | 2 | `<repo>/plugins/memory/<name>/dashboard/` | `bundled` |
 | 2 | `<repo>/plugins/<name>/dashboard/` | `bundled` |
-| 3 | `./.lucifex/plugins/<name>/dashboard/` | `project` — only whenlucifexifex_ENABLE_PROJECT_PLUGINS` is set |
+| 3 | `./.lucifex/plugins/<name>/dashboard/` | `project` — only whenlucifex_ENABLE_PROJECT_PLUGINS` is set |
 
 Discovery results are cached per dashboard process. After adding a new plugin, either:
 
@@ -824,7 +824,7 @@ curl http://127.0.0.1:9119/api/dashboard/plugins/rescan
 
 #### Plugin load lifecycle
 
-1. Dashboard loads. `main.tsx` exposes the SDK on `window.__lucifex_PLUGIN_SDK__` and the registry on `window.lucifexifex_PLUGINS__`.
+1. Dashboard loads. `main.tsx` exposes the SDK on `window.__lucifex_PLUGIN_SDK__` and the registry on `window.lucifex_PLUGINS__`.
 2. `App.tsx` calls `usePlugins()` → fetches `GET /api/dashboard/plugins`.
 3. For each manifest: CSS `<link>` is injected (if declared), then a `<script>` tag loads the JS bundle.
 4. The plugin's IIFE runs and calls `window.__lucifex_PLUGINS__.register(name, Component)` — and optionally `.registerSlot(name, slot, Component)` for each slot.
@@ -838,7 +838,7 @@ If a plugin's script fails to load (404, syntax error, exception during IIFE), t
 
 ## Combined theme + plugin demo
 
-The [`strike-freedom-cockpit`](https://github.com/NousResearch/lucifex-example-plugins/tree/main/strike-freedom-cockpit) plugin (companion repolucifexifex-example-plugins`) is a complete reskin demo. It pairs a theme YAML with a slot-only plugin to produce a cockpit-style HUD without forking the dashboard.
+The [`strike-freedom-cockpit`](https://github.com/NousResearch/lucifex-example-plugins/tree/main/strike-freedom-cockpit) plugin (companion repolucifex-example-plugins`) is a complete reskin demo. It pairs a theme YAML with a slot-only plugin to produce a cockpit-style HUD without forking the dashboard.
 
 **What it demonstrates:**
 

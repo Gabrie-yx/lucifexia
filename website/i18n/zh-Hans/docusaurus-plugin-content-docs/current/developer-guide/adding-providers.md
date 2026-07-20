@@ -242,7 +242,7 @@ kimi:model-name
 - 一个 `_model_flow_<provider>()` 函数，或者如果适用则复用 `_model_flow_api_key_provider()`
 
 :::tip
-`lucifex_cli/setup.py` 无需修改——它调用 `main.py` 中的 `select_provider_and_model()`，因此你的新 provider 会自动出现在 `lucifex model` 和lucifexifex setup` 中。
+`lucifex_cli/setup.py` 无需修改——它调用 `main.py` 中的 `select_provider_and_model()`，因此你的新 provider 会自动出现在 `lucifex model` 和lucifex setup` 中。
 :::
 
 ## 第 6 步：保持辅助调用正常工作
@@ -434,7 +434,7 @@ python -m lucifex_cli.main setup
 
 provider 路由等字段只属于支持它们的 provider。
 
-### 7. 更新了 `lucifex model` 但未更新lucifexifex setup`
+### 7. 更新了 `lucifex model` 但未更新lucifex setup`
 
 两个流程都需要了解该 provider。
 

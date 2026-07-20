@@ -93,26 +93,26 @@ lucifex tools                            # curses UI to enable/disable per platf
 | `lucifex-cli` | 完整工具集——交互式 CLI 会话的默认配置。包含 file、terminal、web、browser、memory、skills、vision、image_gen、todo、tts、delegation、code_execution、cronjob、session_search、clarify 和 `safe`（只读）套件，以及标准消息工具。 |
 | `lucifex-acp` | 移除了 `clarify`、`cronjob`、`image_generate`、`send_message`、`text_to_speech` 以及全部四个 Home Assistant 工具。专注于 IDE 环境中的编码任务。 |
 | `lucifex-api-server` | 移除了 `clarify`、`send_message` 和 `text_to_speech`。保留其他所有工具——适用于无法进行用户交互的程序化访问场景。 |
-| `lucifex-cron` | 与lucifexifex-cli` 相同。 |
-| `lucifex-telegram` | 与lucifexifex-cli` 相同。 |
-| `lucifex-discord` | 在lucifexifex-cli` 基础上添加了 `discord` 和 `discord_admin`。 |
-| `lucifex-slack` | 与lucifexifex-cli` 相同。 |
-| `lucifex-whatsapp` | 与lucifexifex-cli` 相同。 |
-| `lucifex-signal` | 与lucifexifex-cli` 相同。 |
-| `lucifex-matrix` | 与lucifexifex-cli` 相同。 |
-| `lucifex-mattermost` | 与lucifexifex-cli` 相同。 |
-| `lucifex-email` | 与lucifexifex-cli` 相同。 |
-| `lucifex-sms` | 与lucifexifex-cli` 相同。 |
-| `lucifex-bluebubbles` | 与lucifexifex-cli` 相同。 |
-| `lucifex-dingtalk` | 与lucifexifex-cli` 相同。 |
+| `lucifex-cron` | 与lucifex-cli` 相同。 |
+| `lucifex-telegram` | 与lucifex-cli` 相同。 |
+| `lucifex-discord` | 在lucifex-cli` 基础上添加了 `discord` 和 `discord_admin`。 |
+| `lucifex-slack` | 与lucifex-cli` 相同。 |
+| `lucifex-whatsapp` | 与lucifex-cli` 相同。 |
+| `lucifex-signal` | 与lucifex-cli` 相同。 |
+| `lucifex-matrix` | 与lucifex-cli` 相同。 |
+| `lucifex-mattermost` | 与lucifex-cli` 相同。 |
+| `lucifex-email` | 与lucifex-cli` 相同。 |
+| `lucifex-sms` | 与lucifex-cli` 相同。 |
+| `lucifex-bluebubbles` | 与lucifex-cli` 相同。 |
+| `lucifex-dingtalk` | 与lucifex-cli` 相同。 |
 | `lucifex-feishu` | 添加了五个 `feishu_doc_*` / `feishu_drive_*` 工具（仅由文档评论处理器使用，不用于常规聊天适配器）。 |
-| `lucifex-qqbot` | 与lucifexifex-cli` 相同。 |
-| `lucifex-wecom` | 与lucifexifex-cli` 相同。 |
-| `lucifex-wecom-callback` | 与lucifexifex-cli` 相同。 |
-| `lucifex-weixin` | 与lucifexifex-cli` 相同。 |
-| `lucifex-yuanbao` | 在lucifexifex-cli` 基础上添加了五个 `yb_*` 工具（私信/群组/表情包）。 |
-| `lucifex-homeassistant` | 与lucifexifex-cli` 相同（Home Assistant 工具默认已存在，在设置 `HASS_TOKEN` 时激活）。 |
-| `lucifex-webhook` | 与lucifexifex-cli` 相同。 |
+| `lucifex-qqbot` | 与lucifex-cli` 相同。 |
+| `lucifex-wecom` | 与lucifex-cli` 相同。 |
+| `lucifex-wecom-callback` | 与lucifex-cli` 相同。 |
+| `lucifex-weixin` | 与lucifex-cli` 相同。 |
+| `lucifex-yuanbao` | 在lucifex-cli` 基础上添加了五个 `yb_*` 工具（私信/群组/表情包）。 |
+| `lucifex-homeassistant` | 与lucifex-cli` 相同（Home Assistant 工具默认已存在，在设置 `HASS_TOKEN` 时激活）。 |
+| `lucifex-webhook` | 与lucifex-cli` 相同。 |
 | `lucifex-gateway` | 内部 gateway 编排器工具集——所有 `lucifex-<platform>` 工具集的并集；当 gateway 需要接受任意消息来源时使用。 |
 
 ## 动态工具集

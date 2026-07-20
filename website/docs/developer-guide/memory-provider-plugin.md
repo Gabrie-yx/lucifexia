@@ -212,7 +212,7 @@ mgr.shutdown_all()
 
 ## Adding CLI Commands
 
-Memory provider plugins can register their own CLI subcommand tree (e.g. `lucifex my-provider status`,lucifexifex my-provider config`). This uses a convention-based discovery system — no changes to core files needed.
+Memory provider plugins can register their own CLI subcommand tree (e.g. `lucifex my-provider status`,lucifex my-provider config`). This uses a convention-based discovery system — no changes to core files needed.
 
 ### How it works
 

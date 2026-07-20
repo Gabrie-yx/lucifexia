@@ -192,7 +192,7 @@ Opt-in toolset (not loaded in the default `lucifex-cli` set). Add via `--toolset
 
 ## `video_gen` toolset
 
-Opt-in toolset (not loaded in the default `lucifex-cli` set). Add via `--toolsets video_gen` or enable it inlucifexifex tools` → Video Generation, which also walks you through picking a backend.
+Opt-in toolset (not loaded in the default `lucifex-cli` set). Add via `--toolsets video_gen` or enable it inlucifex tools` → Video Generation, which also walks you through picking a backend.
 
 Backends ship as plugins under `plugins/video_gen/<name>/`:
 

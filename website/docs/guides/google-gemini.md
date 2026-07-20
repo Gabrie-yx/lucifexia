@@ -6,7 +6,7 @@ description: "Use lucifex Agent with Google Gemini — native AI Studio API, API
 
 # Google Gemini
 
-lucifex Agent supports Google Gemini as a native provider using the **Google AI Studio / Gemini API** — not the OpenAI-compatible endpoint. This letlucifexifex translate its internal OpenAI-shaped message and tool loop into Gemini's native `generateContent` API while preserving tool calling, streaming, multimodal inputs, and Gemini-specific response metadata.
+lucifex Agent supports Google Gemini as a native provider using the **Google AI Studio / Gemini API** — not the OpenAI-compatible endpoint. This letlucifex translate its internal OpenAI-shaped message and tool loop into Gemini's native `generateContent` API while preserving tool calling, streaming, multimodal inputs, and Gemini-specific response metadata.
 
 ## Prerequisites
 
@@ -68,7 +68,7 @@ The recommended endpoint is:
 https://generativelanguage.googleapis.com/v1beta
 ```
 
-lucifex detects this endpoint and creates its native Gemini adapter. Internallylucifexifex still keeps the agent loop in OpenAI-shaped messages, then translates each request to Gemini's native schema:
+lucifex detects this endpoint and creates its native Gemini adapter. Internallylucifex still keeps the agent loop in OpenAI-shaped messages, then translates each request to Gemini's native schema:
 
 - `messages[]` → Gemini `contents[]`
 - system prompts → Gemini `systemInstruction`
@@ -90,7 +90,7 @@ Google also exposes an OpenAI-compatible endpoint:
 https://generativelanguage.googleapis.com/v1beta/openai/
 ```
 
-For lucifex agent sessions, prefer the native Gemini endpoint abovelucifexifex includes a native Gemini adapter so it can map multi-turn tool use, tool-call results, streaming, multimodal inputs, and Gemini response metadata directly onto Gemini's `generateContent` API. The OpenAI-compatible endpoint is still useful when you specifically need OpenAI API compatibility.
+For lucifex agent sessions, prefer the native Gemini endpoint abovelucifex includes a native Gemini adapter so it can map multi-turn tool use, tool-call results, streaming, multimodal inputs, and Gemini response metadata directly onto Gemini's `generateContent` API. The OpenAI-compatible endpoint is still useful when you specifically need OpenAI API compatibility.
 
 If you previously set `GEMINI_BASE_URL` to the `/openai` URL, remove it or change it:
 
@@ -100,7 +100,7 @@ GEMINI_BASE_URL=https://generativelanguage.googleapis.com/v1beta
 
 ## Available Models
 
-The `lucifex model` picker shows Gemini models maintained ilucifexifex' provider registry. Common choices include:
+The `lucifex model` picker shows Gemini models maintained ilucifex' provider registry. Common choices include:
 
 | Model | ID | Notes |
 |-------|----|-------|
@@ -244,7 +244,7 @@ GEMINI_BASE_URL=https://generativelanguage.googleapis.com/v1beta
 
 ### Tool calling fails with schema errors
 
-Upgrade lucifex and rerunlucifexifex model`. The native Gemini adapter sanitizes tool schemas for Gemini's stricter function-declaration format; older builds or custom endpoints may not.
+Upgrade lucifex and rerunlucifex model`. The native Gemini adapter sanitizes tool schemas for Gemini's stricter function-declaration format; older builds or custom endpoints may not.
 
 ## Related
 

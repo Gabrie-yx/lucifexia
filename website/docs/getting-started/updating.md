@@ -26,7 +26,7 @@ When you run `lucifex update`, the following steps occur:
 
 1. **Pre-update snapshot** — a lightweight state snapshot is saved by default (covers pairing data, cron jobs, `config.yaml`, `.env`, `auth.json`, and other state files that get modified at runtime; individual files over 1 GiB are skipped so a large sessions DB never slows the update down). Controlled by `updates.pre_update_backup` (`quick` by default, `full` for a zip of all of `LUCIFEX_HOME`, `off` to disable). Recoverable via the snapshot restore flow described under [Snapshots and rollback](../user-guide/checkpoints-and-rollback.md).
 2. **Git pull** — pulls the latest code from the `main` branch and updates submodules
-3. **Post-pull syntax validation + auto-rollback** — after the pull, lucifex compiles the eight critical files everylucifexifex` invocation imports at startup. If any fails to parse (e.g. an orphan merge-conflict marker, an accidentally truncated filucifexcifex runs `git reset --hard <pre-pull-sha>` to roll the install back so your shell stays bootable. Relucifexllucifexpdate` once the upstream fix lands.
+3. **Post-pull syntax validation + auto-rollback** — after the pull, lucifex compiles the eight critical files everylucifex` invocation imports at startup. If any fails to parse (e.g. an orphan merge-conflict marker, an accidentally truncated filucifexcifex runs `git reset --hard <pre-pull-sha>` to roll the install back so your shell stays bootable. Relucifexllucifexpdate` once the upstream fix lands.
 4. **Dependency install** — runs `uv pip install -e ".[all]"` to pick up new or changed dependencies
 5. **Config migration** — detects new config options added since your version and prompts you to set them
 6. **Gateway auto-restart** — running gateways are refreshed after the update completes so the new code takes effect immediately. Service-managed gateways (systemd on Linux, launchd on macOS) are restarted through the service manager. Manual gateways are relaunched automatically when lucifex can map the running PID back to a profile.
@@ -84,7 +84,7 @@ updates:
 
 ### Windows: another `lucifex.exe` is running
 
-On Windows, `lucifex update` will refuse to run if it detects another `lucifex.exe` process holding the venv's entry-point executable open — most commonly thlucifexifex Desktop app's spawned backend, an oplucifexucifex` REPL in another terminal, or a running gateway:
+On Windows, `lucifex update` will refuse to run if it detects another `lucifex.exe` process holding the venv's entry-point executable open — most commonly thlucifex Desktop app's spawned backend, an oplucifexucifex` REPL in another terminal, or a running gateway:
 
 ```
 $ lucifex update
@@ -94,7 +94,7 @@ $ lucifex update
   Updating now would fail to overwrite ...\venv\Scripts\lucifex.exe because
   Windows blocks REPLACE on a running executable.
 
-  Close lucifex Desktop, exit any openlucifexifex` REPLs, and
+  Close lucifex Desktop, exit any openlucifex` REPLs, and
   stop the gateway (`lucifex gateway stop`) before retrying.
   Override with `lucifex update --force` if you've already
   confirmed those processes will not write to the venv.
@@ -174,7 +174,7 @@ If you installed manually (not via the quick installer):
 ```bash
 cd /path/to/lucifex-agent
 # Activate the venv you created during install (outside the source tree)
-export VIRTUAL_ENV="$HOME/.lucifex/venvlucifexifex-dev"
+export VIRTUAL_ENV="$HOME/.lucifex/venvlucifex-dev"
 export PATH="$VIRTUAL_ENV/bin:$PATH"
 
 # Pull latest code

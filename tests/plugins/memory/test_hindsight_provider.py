@@ -553,7 +553,7 @@ class TestPostSetup:
         provider.post_setup(str(LUCIFEX_HOME), {"memory": {}})
 
         coder_env = user_home / ".hindsight" / "profiles" / "coder.env"
-        lucifex_env = user_home / ".hindsight" / "profiles" /lucifexifex.env"
+        lucifex_env = user_home / ".hindsight" / "profiles" /lucifex.env"
         assert coder_env.exists()
         assert not lucifex_env.exists()
 
@@ -1492,7 +1492,7 @@ class TestConfigSchema:
 
 class TestBankIdTemplate:
     def test_sanitize_bank_segment_passthrough(self):
-        assert _sanitize_bank_segment("lucifex") ==lucifexifex"
+        assert _sanitize_bank_segment("lucifex") ==lucifex"
         assert _sanitize_bank_segment("my-agent_1") == "my-agent_1"
 
     def test_sanitize_bank_segment_strips_unsafe(self):
@@ -1512,7 +1512,7 @@ class TestBankIdTemplate:
 
     def test_resolve_with_profile(self):
         result = _resolve_bank_id_template(
-            "lucifex-{profile}", fallbacklucifexifex",
+            "lucifex-{profile}", fallbacklucifex",
             profile="coder", workspace="", platform="", user="", session="",
         )
         assert result == "lucifex-coder"
@@ -1527,7 +1527,7 @@ class TestBankIdTemplate:
         assert result == "myorg-coder-cli"
 
     def test_resolve_collapses_empty_placeholders(self):
-        # When user is empty, "lucifex-{user}" becomeslucifexifex-" -> trimmed lucifexucifex"
+        # When user is empty, "lucifex-{user}" becomeslucifex-" -> trimmed lucifexucifex"
         result = _resolve_bank_id_template(
             "lucifex-{user}", fallback="default",
             profile="", workspace="", platform="", user="", session="",
@@ -1560,7 +1560,7 @@ class TestBankIdTemplate:
     def test_resolve_invalid_template_returns_fallback(self):
         # Unknown placeholder should fall back without raising
         result = _resolve_bank_id_template(
-            "lucifex-{unknown}", fallbacklucifexifex",
+            "lucifex-{unknown}", fallbacklucifex",
             profile="", workspace="", platform="", user="", session="",
         )
         assert result == "lucifex"
@@ -1624,7 +1624,7 @@ class TestBankIdTemplate:
         monkeypatch.setattr("plugins.memory.hindsight.get_lucifex_home", lambda: tmp_path)
 
         p = HindsightMemoryProvider()
-        # No agent_identity passed — template renders to "lucifex-" which collapses tolucifexifex"
+        # No agent_identity passed — template renders to "lucifex-" which collapses tolucifex"
         p.initialize(session_id="s1", LUCIFEX_HOME=str(tmp_path), platform="cli")
         assert p._bank_id == "lucifex"
 

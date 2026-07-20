@@ -95,26 +95,26 @@ Platform toolsets define the complete tool configuration for a deployment target
 | `lucifex-cli` | Full toolset — the default for interactive CLI sessions. Includes file, terminal, web, browser, memory, skills, vision, image_gen, todo, tts, delegation, code_execution, cronjob, session_search, and clarify, plus the `safe` (read-only) bundle. |
 | `lucifex-acp` | Drops `clarify`, `cronjob`, `image_generate`, `text_to_speech`, and all four Home Assistant tools. Focused on coding tasks in IDE context. |
 | `lucifex-api-server` | Drops `clarify` and `text_to_speech`. Keeps everything else — suitable for programmatic access where user interaction isn't possible. |
-| `lucifex-cron` | Same aslucifexifex-cli`. |
-| `lucifex-telegram` | Same aslucifexifex-cli`. |
-| `lucifex-discord` | Adds `discord` and `discord_admin` on top oflucifexifex-cli`. |
-| `lucifex-slack` | Same aslucifexifex-cli`. |
-| `lucifex-whatsapp` | Same aslucifexifex-cli`. |
-| `lucifex-signal` | Same aslucifexifex-cli`. |
-| `lucifex-matrix` | Same aslucifexifex-cli`. |
-| `lucifex-mattermost` | Same aslucifexifex-cli`. |
-| `lucifex-email` | Same aslucifexifex-cli`. |
-| `lucifex-sms` | Same aslucifexifex-cli`. |
-| `lucifex-bluebubbles` | Same aslucifexifex-cli`. |
-| `lucifex-dingtalk` | Same aslucifexifex-cli`. |
+| `lucifex-cron` | Same aslucifex-cli`. |
+| `lucifex-telegram` | Same aslucifex-cli`. |
+| `lucifex-discord` | Adds `discord` and `discord_admin` on top oflucifex-cli`. |
+| `lucifex-slack` | Same aslucifex-cli`. |
+| `lucifex-whatsapp` | Same aslucifex-cli`. |
+| `lucifex-signal` | Same aslucifex-cli`. |
+| `lucifex-matrix` | Same aslucifex-cli`. |
+| `lucifex-mattermost` | Same aslucifex-cli`. |
+| `lucifex-email` | Same aslucifex-cli`. |
+| `lucifex-sms` | Same aslucifex-cli`. |
+| `lucifex-bluebubbles` | Same aslucifex-cli`. |
+| `lucifex-dingtalk` | Same aslucifex-cli`. |
 | `lucifex-feishu` | Adds the five `feishu_doc_*` / `feishu_drive_*` tools (only used by the document-comment handler, not the regular chat adapter). |
-| `lucifex-qqbot` | Same aslucifexifex-cli`. |
-| `lucifex-wecom` | Same aslucifexifex-cli`. |
-| `lucifex-wecom-callback` | Same aslucifexifex-cli`. |
-| `lucifex-weixin` | Same aslucifexifex-cli`. |
-| `lucifex-yuanbao` | Adds the five `yb_*` tools (DM/group/sticker) on top oflucifexifex-cli`. |
-| `lucifex-homeassistant` | Same aslucifexifex-cli` (the Home Assistant tools are already present by default and activate when `HASS_TOKEN` is set). |
-| `lucifex-webhook` | Same aslucifexifex-cli`. |
+| `lucifex-qqbot` | Same aslucifex-cli`. |
+| `lucifex-wecom` | Same aslucifex-cli`. |
+| `lucifex-wecom-callback` | Same aslucifex-cli`. |
+| `lucifex-weixin` | Same aslucifex-cli`. |
+| `lucifex-yuanbao` | Adds the five `yb_*` tools (DM/group/sticker) on top oflucifex-cli`. |
+| `lucifex-homeassistant` | Same aslucifex-cli` (the Home Assistant tools are already present by default and activate when `HASS_TOKEN` is set). |
+| `lucifex-webhook` | Same aslucifex-cli`. |
 | `lucifex-gateway` | Internal gateway orchestrator toolset — union of every `lucifex-<platform>` toolset; used when the gateway needs to accept any message source. |
 
 ## Dynamic Toolsets

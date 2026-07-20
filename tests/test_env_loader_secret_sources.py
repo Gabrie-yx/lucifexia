@@ -1,6 +1,6 @@
 """Tests for the secret-source tracking in ``lucifex_cli.env_loader``.
 
-These cover the small public surface that lets `lucifex model` /lucifexifex setup`
+These cover the small public surface that lets `lucifex model` /lucifex setup`
 label detected credentials with their origin ("from Bitwarden") so users
 don't see an unexplained "credentials ✓" line when their .env is empty.
 """

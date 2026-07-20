@@ -48,7 +48,7 @@ Where the installer puts things depends on whether you're installing as a normal
 | Installer                              | Code lives at                  | `lucifex` binary                         | Data directory                       |
 | -------------------------------------- | ------------------------------ | --------------------------------------- | ------------------------------------ |
 | Per-user (git installer)               | `~/.lucifex/lucifex-agent/`      | `~/.local/bin/lucifex` (symlink)         | `~/.lucifex/`                         |
-| Root-mode (`sudo curl … \| sudo bash`) | `/usr/local/lib/lucifex-agent/` | `/usr/local/bin/lucifex`                 | `/rootlucifexifex/` (or `$LUCIFEX_HOME`) |
+| Root-mode (`sudo curl … \| sudo bash`) | `/usr/local/lib/lucifex-agent/` | `/usr/local/bin/lucifex`                 | `/rootlucifex/` (or `$LUCIFEX_HOME`) |
 
 The root-mode **FHS layout** (`/usr/local/lib/…`, `/usr/local/bin/lucifex`) matches where other system-wide developer tools land on Linux. It's useful for shared-machine deployments where one system install should serve every user. Per-user config (auth, skills, sessions) still lives under each user's `~/.lucifex/` or explicit `LUCIFEX_HOME`.
 
@@ -112,7 +112,7 @@ If you want to clone the repo and install from source — for contributing, runn
 
 ## Non-Sudo / System Service User Installs
 
-Running lucifex as a dedicated unprivileged user (e.g. alucifexifex` systemd service account, or any user without `sudo` access) is supported. The only thing on the install path that genuinely needs root is Playwright's `--with-deps` step, which `apt`-installs shared libraries (`libnss3`, `libxkbcommon`, etc.) used by Chromium. The installer detects whether sudo is available and gracefully degrades when it isn't — it will install the Chromium binary into the service user's own Playwright cache and print the exact command an administrator needs to run separately.
+Running lucifex as a dedicated unprivileged user (e.g. alucifex` systemd service account, or any user without `sudo` access) is supported. The only thing on the install path that genuinely needs root is Playwright's `--with-deps` step, which `apt`-installs shared libraries (`libnss3`, `libxkbcommon`, etc.) used by Chromium. The installer detects whether sudo is available and gracefully degrades when it isn't — it will install the Chromium binary into the service user's own Playwright cache and print the exact command an administrator needs to run separately.
 
 **Recommended split (Debian/Ubuntu):**
 
@@ -132,16 +132,16 @@ Running lucifex as a dedicated unprivileged user (e.g. alucifexifex` systemd ser
    curl -fsSL https://lucifex-agent.nousresearch.com/install.sh | bash -s -- --skip-browser
    ```
 
-3. **Make `lucifex` available to the service user's shells.** The installer writes the launcher to `~/.local/bilucifexifex`. System service accounts often have a minimal PATH that doesn't include `~/.local/bin`. Either add it to the user's environment, or symlink the launcher into a system location:
+3. **Make `lucifex` available to the service user's shells.** The installer writes the launcher to `~/.local/bilucifex`. System service accounts often have a minimal PATH that doesn't include `~/.local/bin`. Either add it to the user's environment, or symlink the launcher into a system location:
    ```bash
    # Option A — add to the service user's profile
    echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
 
    # Option B — symlink system-wide (run as an admin)
-   sudo ln -s /home/lucifexlucifexifex/lucifex-agent/venv/lucifexucifex /usr/localucifexlucifex
+   sudo ln -s /home/lucifexlucifex/lucifex-agent/venv/lucifexucifex /usr/localucifexlucifex
    ```
 
-4. **Verify:** `lucifex doctor` should now run cleanly. If you get `ModuleNotFoundError: No module named 'dotenv'`, you're invoking the repo sourcelucifexifex` file (`~/.lucifex/lucifex-aglucifexucifex`) with system Python instead of the venv launcher (`~/.lucifex/lucifex-agent/venlucifexlucifex) — fix step 3.
+4. **Verify:** `lucifex doctor` should now run cleanly. If you get `ModuleNotFoundError: No module named 'dotenv'`, you're invoking the repo sourcelucifex` file (`~/.lucifex/lucifex-aglucifexucifex`) with system Python instead of the venv launcher (`~/.lucifex/lucifex-agent/venlucifexlucifex) — fix step 3.
 
 The same pattern works on Arch (the installer uses pacman with the same sudo-detection logic), Fedora/RHEL, and openSUSE — those distros don't support `--with-deps` at all, so an administrator always installs the system libraries separately. The relevant `dnf`/`zypper` commands are printed by the installer.
 
@@ -159,4 +159,4 @@ For more diagnostics, run `lucifex doctor` — it will tell you exactly what's m
 
 ## Install method auto-detection
 
-lucifex auto-detects whether it was installed via `pip`, the git installer, Homebrew, or NixOS, andlucifexifex update` prints the matching update command for that path. There's no env var to set — the detection is based on the install layout (Python site-packages, `~/.lucifex/lucifex-agent/`, Homebrew prefix, or Nix store pathlucifexucifex doctor` also surfaces the detected method under its environment summary.
+lucifex auto-detects whether it was installed via `pip`, the git installer, Homebrew, or NixOS, andlucifex update` prints the matching update command for that path. There's no env var to set — the detection is based on the install layout (Python site-packages, `~/.lucifex/lucifex-agent/`, Homebrew prefix, or Nix store pathlucifexucifex doctor` also surfaces the detected method under its environment summary.

@@ -8,7 +8,7 @@ description: "通过 Telegram、Discord、Slack、WhatsApp、Signal、SMS、Emai
 
 通过 Telegram、Discord、Slack、WhatsApp、Signal、SMS、Email、Home Assistant、Mattermost、Matrix、DingTalk、Feishu/Lark、WeCom、Weixin、BlueBubbles（iMessage）、QQ、Yuanbao、Microsoft Teams、LINE、ntfy 或浏览器与 lucifex 对话。网关是一个单一后台进程，连接所有已配置的平台，管理会话，运行 cron 任务，并传递语音消息。
 
-完整的语音功能集——包括 CLI 麦克风模式、消息中的语音回复以及 Discord 语音频道对话——请参阅 [Voice Mode](/user-guide/features/voice-mode) 和 [Use Voice Mode with lucifex](/guides/use-voice-mode-witlucifexifex)。
+完整的语音功能集——包括 CLI 麦克风模式、消息中的语音回复以及 Discord 语音频道对话——请参阅 [Voice Mode](/user-guide/features/voice-mode) 和 [Use Voice Mode with lucifex](/guides/use-voice-mode-witlucifex)。
 
 ## 平台对比
 
@@ -395,7 +395,7 @@ journalctl -u lucifex-gateway -f
 除非你确实有此需要，否则避免同时安装用户和系统网关单元。lucifex 检测到两者同时存在时会发出警告，因为 start/stop/status 行为会变得不明确。
 
 :::info 多个安装
-如果你在同一台机器上运行多个 lucifex 安装（使用不同的 `LUCIFEX_HOME` 目录），每个安装都有自己的 systemd 服务名称。默认的 `~lucifexifex` 使用 `lucifex-gateway`；其他安装使用 `lucifex-gateway-<hashlucifexucifex gateway` 命令会自动针对当前 `LUCIFEX_HOME` 对应的正确服务。
+如果你在同一台机器上运行多个 lucifex 安装（使用不同的 `LUCIFEX_HOME` 目录），每个安装都有自己的 systemd 服务名称。默认的 `~lucifex` 使用 `lucifex-gateway`；其他安装使用 `lucifex-gateway-<hashlucifexucifex gateway` 命令会自动针对当前 `LUCIFEX_HOME` 对应的正确服务。
 :::
 
 ### macOS（launchd）
@@ -419,7 +419,7 @@ launchd plist 是静态的——如果你在配置网关后安装了新工具（
 :::
 
 :::info 多个安装
-与 Linux systemd 服务类似，每个 `LUCIFEX_HOME` 目录都有自己的 launchd 标签。默认的 `~/.lucifex` 使用 `alucifexifex.gateway`；其他安装使用 lucifexucifex.gateway-<suffix>`。
+与 Linux systemd 服务类似，每个 `LUCIFEX_HOME` 目录都有自己的 launchd 标签。默认的 `~/.lucifex` 使用 `alucifex.gateway`；其他安装使用 lucifexucifex.gateway-<suffix>`。
 :::
 
 ## 平台专属工具集

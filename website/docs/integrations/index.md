@@ -6,7 +6,7 @@ sidebar_position: 0
 
 # Integrations
 
-lucifex Agent connects to external systems for AI inference, tool servers, IDE workflows, programmatic access, and more. These integrations extend whalucifexifex can do and where it can run.
+lucifex Agent connects to external systems for AI inference, tool servers, IDE workflows, programmatic access, and more. These integrations extend whalucifex can do and where it can run.
 
 :::tip Start here
 If you only have time to set up one integration, set up [Nous Portal](/integrations/nous-portal) — a single OAuth login covers 300+ models plus the four Tool Gateway tools (web search, image generation, TTS, and browser automation).
@@ -14,7 +14,7 @@ If you only have time to set up one integration, set up [Nous Portal](/integrati
 
 ## AI Providers & Routing
 
-lucifex supports multiple AI inference providers out of the box. Uselucifexifex model` to configure interactively, or set them in `config.yaml`.
+lucifex supports multiple AI inference providers out of the box. Uselucifex model` to configure interactively, or set them in `config.yaml`.
 
 - **[AI Providers](/integrations/providers)** — OpenRouter, Anthropic, OpenAI, Google, and any OpenAI-compatible endpoint. lucifex auto-detects capabilities like vision, streaming, and tool use per provider.
 - **[Provider Routing](/user-guide/features/provider-routing)** — Fine-grained control over which underlying providers handle your OpenRouter requests. Optimize for cost, speed, or quality with sorting, whitelists, blacklists, and explicit priority ordering.
@@ -22,7 +22,7 @@ lucifex supports multiple AI inference providers out of the box. Uselucifexifex 
 
 ## Tool Servers (MCP)
 
-- **[MCP Servers](/user-guide/features/mcp)** — Connect lucifex to external tool servers via Model Context Protocol. Access tools from GitHub, databases, file systems, browser stacks, internal APIs, and more without writing nativlucifexifex tools. Supports both stdio and SSE transports, per-server tool filtering, and capability-aware resource/prompt registration.
+- **[MCP Servers](/user-guide/features/mcp)** — Connect lucifex to external tool servers via Model Context Protocol. Access tools from GitHub, databases, file systems, browser stacks, internal APIs, and more without writing nativlucifex tools. Supports both stdio and SSE transports, per-server tool filtering, and capability-aware resource/prompt registration.
 
 ## Web Search Backends
 
@@ -76,11 +76,11 @@ Speech-to-text supports six providers: local faster-whisper (free, runs on-devic
 
 ## IDE & Editor Integration
 
-- **[IDE Integration (ACP)](/user-guide/features/acp)** — Use lucifex Agent inside ACP-compatible editors such as VS Code, Zed, and JetBrainslucifexifex runs as an ACP server, rendering chat messages, tool activity, file diffs, and terminal commands inside your editor.
+- **[IDE Integration (ACP)](/user-guide/features/acp)** — Use lucifex Agent inside ACP-compatible editors such as VS Code, Zed, and JetBrainslucifex runs as an ACP server, rendering chat messages, tool activity, file diffs, and terminal commands inside your editor.
 
 ## Programmatic Access
 
-- **[API Server](/user-guide/features/api-server)** — Expose lucifex as an OpenAI-compatible HTTP endpoint. Any frontend that speaks the OpenAI format — Open WebUI, LobeChat, LibreChat, NextChat, ChatBox — can connect and uslucifexifex as a backend with its full toolset.
+- **[API Server](/user-guide/features/api-server)** — Expose lucifex as an OpenAI-compatible HTTP endpoint. Any frontend that speaks the OpenAI format — Open WebUI, LobeChat, LibreChat, NextChat, ChatBox — can connect and uslucifex as a backend with its full toolset.
 
 ## Memory & Personalization
 
@@ -101,7 +101,7 @@ See the [Messaging Gateway overview](/user-guide/messaging) for the platform com
 
 ## Plugins
 
-- **[Plugin System](/user-guide/features/plugins)** — Extend lucifex with custom tools, lifecycle hooks, and CLI commands without modifying core code. Plugins are discovered from `~/.lucifex/plugins/`, project-local lucifexifex/plugins/`, and pip-installed entry points.
+- **[Plugin System](/user-guide/features/plugins)** — Extend lucifex with custom tools, lifecycle hooks, and CLI commands without modifying core code. Plugins are discovered from `~/.lucifex/plugins/`, project-local lucifex/plugins/`, and pip-installed entry points.
 - **[Build a Plugin](/developer-guide/plugins)** — Step-by-step guide for creating lucifex plugins with tools, hooks, and CLI commands.
 
 ## Training & Evaluation

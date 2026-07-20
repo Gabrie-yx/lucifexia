@@ -1,8 +1,8 @@
 ﻿# Spotify
 
-lucifex can control Spotify directly — playback, queue, search, playlists, saved tracks/albums, and listening history — using Spotify's official Web API with PKCE OAuth. Tokens are stored in `~/.lucifex/auth.json` and refreshed automatically on 401; you only log in once per machine (refresh tokens expire after ~6 months; re-runlucifexifex auth spotify` when they do).
+lucifex can control Spotify directly — playback, queue, search, playlists, saved tracks/albums, and listening history — using Spotify's official Web API with PKCE OAuth. Tokens are stored in `~/.lucifex/auth.json` and refreshed automatically on 401; you only log in once per machine (refresh tokens expire after ~6 months; re-runlucifex auth spotify` when they do).
 
-Unlike lucifex' built-in OAuth integrations (Google, GitHub Copilot, Codex), Spotify requires every user to register their own lightweight developer app. Spotify does not let third parties ship a public OAuth app that anyone can use. It takes about two minutes andlucifexifex auth spotify` walks you through it.
+Unlike lucifex' built-in OAuth integrations (Google, GitHub Copilot, Codex), Spotify requires every user to register their own lightweight developer app. Spotify does not let third parties ship a public OAuth app that anyone can use. It takes about two minutes andlucifex auth spotify` walks you through it.
 
 ## Prerequisites
 
@@ -20,7 +20,7 @@ The fastest path. Run:
 lucifex tools
 ```
 
-Scroll to `🎵 Spotify`, press space to toggle it on, then `s` to save. The same toggle is also available during the first-run `lucifex setup` /lucifexifex setup tools` flow. Spotify stays opt-in, so enabling it there runs the same provider-aware configuration lucifexucifex tools`.
+Scroll to `🎵 Spotify`, press space to toggle it on, then `s` to save. The same toggle is also available during the first-run `lucifex setup` /lucifex setup tools` flow. Spotify stays opt-in, so enabling it there runs the same provider-aware configuration lucifexucifex tools`.
 
 lucifex drops you straight into the OAuth flow — if you don't have a Spotify app yet, it walks you through creating one inline. Once you finish, the toolset is enabled AND authenticated in one pass.
 
@@ -44,7 +44,7 @@ lucifex auth spotify
 
 The 7 Spotify tools only appear in the agent's toolset after step 1 — they're off by default so users who don't want them don't ship extra tool schemas on every API call.
 
-If no `lucifex_SPOTIFY_CLIENT_ID` is setlucifexifex walks you through the app registration inline:
+If no `lucifex_SPOTIFY_CLIENT_ID` is setlucifex walks you through the app registration inline:
 
 1. Opens `https://developer.spotify.com/dashboard` in your browser
 2. Prints the exact values to paste into Spotify's "Create app" form
@@ -66,11 +66,11 @@ When the dashboard opens, click **Create app** and fill in:
 | Redirect URI | `http://127.0.0.1:43827/spotify/callback` |
 | Which API/SDKs? | check **Web API** |
 
-Agree to the terms and click **Save**. On the next page click **Settings** → copy the **Client ID** and paste it into the lucifex prompt. That's the only valulucifexifex needs — PKCE doesn't use a client secret.
+Agree to the terms and click **Save**. On the next page click **Settings** → copy the **Client ID** and paste it into the lucifex prompt. That's the only valulucifex needs — PKCE doesn't use a client secret.
 
 ### Running over SSH / in a headless environment
 
-If `SSH_CLIENT` or `SSH_TTY` is set, lucifex skips the automatic browser open during both the wizard and the OAuth step. Copy the dashboard URL and the authorization URlucifexifex prints, open them in a browser on your local machine, and proceed normally — the local HTTP listener still runs on the remote host on port `43827`. Your laptop's browser can't reach the remote loopback without an SSH local-forward:
+If `SSH_CLIENT` or `SSH_TTY` is set, lucifex skips the automatic browser open during both the wizard and the OAuth step. Copy the dashboard URL and the authorization URlucifex prints, open them in a browser on your local machine, and proceed normally — the local HTTP listener still runs on the remote host on port `43827`. Your laptop's browser can't reach the remote loopback without an SSH local-forward:
 
 ```bash
 ssh -N -L 43827:127.0.0.1:43827 user@remote-host
@@ -84,7 +84,7 @@ For jump-box / bastion setups and other gotchas (mosh, tmux, port conflicts), se
 lucifex auth status spotify
 ```
 
-Shows whether tokens are present and when the access token expires. Refresh is automatic: when any Spotify API call returns 401, the client exchanges the refresh token and retries once. Refresh tokens persist across lucifex restarts, so you only re-auth if you revoke the app in your Spotify account settings or runlucifexifex auth logout spotify`.
+Shows whether tokens are present and when the access token expires. Refresh is automatic: when any Spotify API call returns 401, the client exchanges the refresh token and retries once. Refresh tokens persist across lucifex restarts, so you only re-auth if you revoke the app in your Spotify account settings or runlucifex auth logout spotify`.
 
 ## Using it
 
@@ -185,7 +185,7 @@ Read-only tools work on Free accounts. Anything that mutates playback or the que
 
 ## Scheduling: Spotify + cron
 
-Because Spotify tools are regular lucifex tools, a cron job running in lucifexifex session can trigger playback on any schedule. No new code needed.
+Because Spotify tools are regular lucifex tools, a cron job running in lucifex session can trigger playback on any schedule. No new code needed.
 
 ### Morning wake-up playlist
 
@@ -225,7 +225,7 @@ Full cron reference: [Cron Jobs](./cron).
 lucifex auth logout spotify
 ```
 
-Removes tokens from `~/.lucifex/auth.json`. To also clear the app config, delete `lucifex_SPOTIFY_CLIENT_ID` (andlucifexifex_SPOTIFY_REDIRECT_URI` if you set it) from `~/.lucifex/.env`, or run the wizard again.
+Removes tokens from `~/.lucifex/auth.json`. To also clear the app config, delete `lucifex_SPOTIFY_CLIENT_ID` (andlucifex_SPOTIFY_REDIRECT_URI` if you set it) from `~/.lucifex/.env`, or run the wizard again.
 
 To revoke the app on Spotify's side, visit [Apps connected to your account](https://www.spotify.com/account/apps/) and click **REMOVE ACCESS**.
 
@@ -237,7 +237,7 @@ To revoke the app on Spotify's side, visit [Apps connected to your account](http
 
 **`204 No Content` on `get_currently_playing`** — nothing is currently playing on any device. This is Spotify's normal response, not an error; lucifex surfaces it as an explanatory empty result (`is_playing: false`).
 
-**`INVALID_CLIENT: Invalid redirect URI`** — the redirect URI in your Spotify app settings doesn't match what lucifex is using. The default is `http://127.0.0.1:43827/spotify/callback`. Either add that to your app's allowed redirect URIs, or setlucifexifex_SPOTIFY_REDIRECT_URI` in `~/.lucifex/.env` to whatever you registered.
+**`INVALID_CLIENT: Invalid redirect URI`** — the redirect URI in your Spotify app settings doesn't match what lucifex is using. The default is `http://127.0.0.1:43827/spotify/callback`. Either add that to your app's allowed redirect URIs, or setlucifex_SPOTIFY_REDIRECT_URI` in `~/.lucifex/.env` to whatever you registered.
 
 **`429 Too Many Requests`** — Spotify's rate limit. lucifex returns a friendly error; wait a minute and retry. If this persists, you're probably running a tight loop in a script — Spotify's quota resets roughly every 30 seconds.
 

@@ -320,7 +320,7 @@ export const af: Translations = {
     enableRuntime: "Aktiveer",
     forceReinstall: "Forseer herinstallasie (skrap eers bestaande gids)",
     headline:
-      "Ontdek, installeer, aktiveer en werk lucifex-inproppe op lucifexifex plugins` ekwivalent).",
+      "Ontdek, installeer, aktiveer en werk lucifex-inproppe op lucifex plugins` ekwivalent).",
     identifierLabel: "Git-URL of owner/repo",
     inactive: "onaktief",
     installBtn: "Installeer",

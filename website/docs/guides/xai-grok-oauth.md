@@ -6,7 +6,7 @@ description: "Sign in with your SuperGrok or X Premium+ subscription to use Grok
 
 # xAI Grok OAuth (SuperGrok / X Premium+)
 
-lucifex Agent supports xAI Grok through a browser-based OAuth device-code login flow against [accounts.x.ai](https://accounts.x.ai), using either a **SuperGrok subscription** ([grok.com](https://x.ai/grok)) or an **X Premium+ subscription** (linked X account). No `XAI_API_KEY` is required — log in once anlucifexifex automatically refreshes your session in the background.
+lucifex Agent supports xAI Grok through a browser-based OAuth device-code login flow against [accounts.x.ai](https://accounts.x.ai), using either a **SuperGrok subscription** ([grok.com](https://x.ai/grok)) or an **X Premium+ subscription** (linked X account). No `XAI_API_KEY` is required — log in once anlucifex automatically refreshes your session in the background.
 
 When you sign in with an X account that has Premium+, xAI automatically links the subscription status to your xAI session, so the OAuth flow works the same as it does for direct SuperGrok subscribers.
 
@@ -65,7 +65,7 @@ lucifex auth add xai-oauth
 
 ### Remote / headless sessions
 
-On servers, containers, browser-only consoles (Cloud Shell, Codespaces, EC2 Instance Connect), or SSH sessions where lucifex cannot open a browser locallylucifexifex prints the xAI verification URL and user code. Open the URL in any browser on your laptop or in the cloud console, enter the code if prompted, lucifexucifex will keep polling until xAI approves the login. No SSH tunnel or local callback listener is required.
+On servers, containers, browser-only consoles (Cloud Shell, Codespaces, EC2 Instance Connect), or SSH sessions where lucifex cannot open a browser locallylucifex prints the xAI verification URL and user code. Open the URL in any browser on your laptop or in the cloud console, enter the code if prompted, lucifexucifex will keep polling until xAI approves the login. No SSH tunnel or local callback listener is required.
 
 ```bash
 lucifex auth add xai-oauth --no-browser
@@ -79,7 +79,7 @@ The same device-code flow applies when you sign in from the web dashboard or the
 1. lucifex requests a device code from `auth.x.ai`.
 2. You open the verification URL, sign in, enter the displayed code if prompted, and approve access.
 3. lucifex polls xAI until approval, then saves tokens to `~/.lucifex/auth.json`.
-4. From then on, lucifex refreshes the access token in the background — you stay signed in until youlucifexifex auth logout xai-oauth` or revoke access from your xAI account settings.
+4. From then on, lucifex refreshes the access token in the background — you stay signed in until youlucifex auth logout xai-oauth` or revoke access from your xAI account settings.
 
 ## Checking Login Status
 
@@ -179,7 +179,7 @@ To select xAI as the active provider, set `model.provider: xai-oauth` in `config
 
 ### Token expired — not re-logging in automatically
 
-lucifex refreshes the token before each session and again reactively on a 401. If refresh fails with `invalid_grant` (the refresh token was revoked, or the account was rotated)lucifexifex surfaces a typed re-auth message instead of crashing.
+lucifex refreshes the token before each session and again reactively on a 401. If refresh fails with `invalid_grant` (the refresh token was revoked, or the account was rotated)lucifex surfaces a typed re-auth message instead of crashing.
 
 When the refresh failure is terminal (HTTP 4xx, `invalid_grant`, revoked grant, etc.), lucifex marks the refresh token as dead and quarantines it locally — subsequent calls skip the doomed refresh attempt instead of replaying the same 401 over and over. The agent surfaces a single "re-authentication required" message and stays out of the way until you log in again.
 
@@ -189,7 +189,7 @@ When the refresh failure is terminal (HTTP 4xx, `invalid_grant`, revoked grant, 
 
 Device-code approval has a finite expiry window (xAI sets `expires_in` on the device-code response, typically on the order of tens of minutes). If you do not approve the login in time, lucifex raises a timeout error.
 
-**Fix:** re-run `lucifex auth add xai-oauth` (orlucifexifex model`). The flow starts fresh.
+**Fix:** re-run `lucifex auth add xai-oauth` (orlucifex model`). The flow starts fresh.
 
 ### Logging in from a remote server
 
@@ -220,7 +220,7 @@ Or upgrade your subscription at [x.ai/grok](https://x.ai/grok) if the OAuth rout
 
 The auth store has no `xai-oauth` entry and no `XAI_API_KEY` is set. You haven't logged in yet, or the credential file was deleted.
 
-**Fix:** run `lucifex model` and pick the xAI Grok OAuth provider, or runlucifexifex auth add xai-oauth`.
+**Fix:** run `lucifex model` and pick the xAI Grok OAuth provider, or runlucifex auth add xai-oauth`.
 
 ## Logging Out
 
@@ -230,7 +230,7 @@ To remove all stored xAI Grok OAuth credentials:
 lucifex auth logout xai-oauth
 ```
 
-This clears both the singleton OAuth entry in `auth.json` and any credential-pool rows for `xai-oauth`. Use `lucifex auth remove xai-oauth <index|id|label>` if you only want to drop a single pool entry (runlucifexifex auth list xai-oauth` to see them).
+This clears both the singleton OAuth entry in `auth.json` and any credential-pool rows for `xai-oauth`. Use `lucifex auth remove xai-oauth <index|id|label>` if you only want to drop a single pool entry (runlucifex auth list xai-oauth` to see them).
 
 ## See Also
 

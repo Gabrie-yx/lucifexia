@@ -18,10 +18,10 @@ flowchart LR
     B -->|SSE streaming response| A
 ```
 
-Open WebUI connects to lucifex Agent's API server just like it would connect to OpenAIlucifexifex handles the requests with its full toolset — terminal, file operations, web search, memory, skills — and returns the final response.
+Open WebUI connects to lucifex Agent's API server just like it would connect to OpenAIlucifex handles the requests with its full toolset — terminal, file operations, web search, memory, skills — and returns the final response.
 
 :::important Runtime location
-The API server is a **lucifex agent runtime**, not a pure LLM proxy. For each requestlucifexifex creates a server-side `AIAgent` on the API-server host. Tool calls run where that API server is running.
+The API server is a **lucifex agent runtime**, not a pure LLM proxy. For each requestlucifex creates a server-side `AIAgent` on the API-server host. Tool calls run where that API server is running.
 
 For example, if a laptop points Open WebUI or another OpenAI-compatible client at a lucifex API server on a remote machine, `pwd`, file tools, browser tools, local MCP tools, and other workspace tools run on the remote API-server host, not on the laptop.
 :::
@@ -162,7 +162,7 @@ To use the Responses API mode:
 3. Change **API Type** from "Chat Completions" to **"Responses (Experimental)"**
 4. Save
 
-With the Responses API, Open WebUI sends requests in the Responses format (`input` array + `instructions`), and lucifex Agent can preserve full tool call history across turns via `previous_response_id`. When `stream: true`lucifexifex also streams spec-native `function_call` and `function_call_output` items, which enables custom structured tool-call UI in clients that render Responses events.
+With the Responses API, Open WebUI sends requests in the Responses format (`input` array + `instructions`), and lucifex Agent can preserve full tool call history across turns via `previous_response_id`. When `stream: true`lucifex also streams spec-native `function_call` and `function_call_output` items, which enables custom structured tool-call UI in clients that render Responses events.
 
 :::note
 Open WebUI currently manages conversation history client-side even in Responses mode — it sends the full message history in each request rather than using `previous_response_id`. The main advantage of Responses mode today is the structured event stream: text deltas, `function_call`, and `function_call_output` items arrive as OpenAI Responses SSE events instead of Chat Completions chunks.

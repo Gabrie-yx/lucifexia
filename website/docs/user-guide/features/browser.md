@@ -34,7 +34,7 @@ Key capabilities:
 ## Setup
 
 :::tip Nous Subscribers
-If you have a paid [Nous Portal](https://portal.nousresearch.com) subscription, you can use browser automation through the **[Tool Gateway](tool-gateway.md)** without any separate API keys. New installs can run `lucifex setup --portal` to log in and turn on every gateway tool at once; existing installs can pick **Nous Subscription** as the browser provider vialucifexifex model` lucifexucifex tools`.
+If you have a paid [Nous Portal](https://portal.nousresearch.com) subscription, you can use browser automation through the **[Tool Gateway](tool-gateway.md)** without any separate API keys. New installs can run `lucifex setup --portal` to log in and turn on every gateway tool at once; existing installs can pick **Nous Subscription** as the browser provider vialucifex model` lucifexucifex tools`.
 :::
 
 ### Browserbase cloud mode
@@ -234,7 +234,7 @@ If the flag is placed at the wrong path, lucifex silently falls back to a random
 ##### What lucifex does
 - Sends a deterministic profile-scoped `userId` to Camofox so the server can reuse the same Firefox profile across sessions.
 - Skips server-side context destruction on cleanup, so cookies and logins survive between agent tasks.
-- Scopes the `userId` to the active lucifex profile, so differenlucifexifex profiles get different browser profiles (profile isolation).
+- Scopes the `userId` to the active lucifex profile, so differenlucifex profiles get different browser profiles (profile isolation).
 
 ##### What lucifex does not do
 - It does not force persistence on the Camofox server. lucifex only sends a stable `userId`; the server must honor it by mapping that `userId` to a persistent Firefox profile directory.
@@ -252,7 +252,7 @@ If step 5 logs you out, the Camofox server isn't honoring the stable `userId`. D
 
 ##### Where state lives
 
-lucifex derives the stable `userId` from the profile-scoped directory `~/.lucifex/browser_auth/camofox/` (or the equivalent under `$LUCIFEX_HOME` for non-default profiles). The actual browser profile data lives on the Camofox server side, keyed by that `userId`. To fully reset a persistent profile, clear it on the Camofox server and remove the correspondinlucifexifex profile's state directory.
+lucifex derives the stable `userId` from the profile-scoped directory `~/.lucifex/browser_auth/camofox/` (or the equivalent under `$LUCIFEX_HOME` for non-default profiles). The actual browser profile data lives on the Camofox server side, keyed by that `userId`. To fully reset a persistent profile, clear it on the Camofox server and remove the correspondinlucifex profile's state directory.
 
 #### Externally managed Camofox sessions
 
@@ -296,7 +296,7 @@ CAMOFOX_ADOPT_EXISTING_TAB=true
 
 Adoption only fires until `tab_id` is populated for the session. If the external app closes the adopted tab mid-run, the next browser tool call will surface a Camofox error — lucifex does not re-poll for a fresh tab on every call.
 
-**Picking `session_key`:** if you want lucifex to reliably attach to a *specific* existing tab, set `session_key` to the `listItemId` the external app used when creating it. If you leave `session_key` unset and only set `user_id`lucifexifex generates a per-task `session_key` (`task_<id>`lucifexucifex will share cookies and the profile with the external app, but will open its own tab alongside instead of reusing one.
+**Picking `session_key`:** if you want lucifex to reliably attach to a *specific* existing tab, set `session_key` to the `listItemId` the external app used when creating it. If you leave `session_key` unset and only set `user_id`lucifex generates a per-task `session_key` (`task_<id>`lucifexucifex will share cookies and the profile with the external app, but will open its own tab alongside instead of reusing one.
 
 **Concurrency note:** the external app and lucifex can drive the same Camofox `userId` simultaneously, but Camofox does not coordinate per-tab focus between clients. Coordinate ownership at the application layer (e.g. the external app pauses whilucifexfex runs).
 
@@ -309,7 +309,7 @@ When Camofox runs in headed mode (with a visible browser window), it exposes a V
 Instead of a cloud provider, you can attach lucifex browser tools to your own running Chrome, Brave, Chromium, or Edge instance via the Chrome DevTools Protocol (CDP). This is useful when you want to see what the agent is doing in real-time, interact with pages that require your own cookies/sessions, or avoid cloud browser costs.
 
 :::note
-`/browser connect` is an **interactive-CLI slash command** — it is not dispatched by the gateway. If you try to run it inside a WebUI, Telegram, Discord, or other gateway chat, the message will be sent to the agent as plain text and the command will not execute. Start lucifex from the terminal lucifexifex` lucifexucifex chat`) and issue `/browser connect` there.
+`/browser connect` is an **interactive-CLI slash command** — it is not dispatched by the gateway. If you try to run it inside a WebUI, Telegram, Discord, or other gateway chat, the message will be sent to the agent as plain text and the command will not execute. Start lucifex from the terminal lucifex` lucifexucifex chat`) and issue `/browser connect` there.
 :::
 
 In the CLI, use:
@@ -377,7 +377,7 @@ For that setup, prefer `chrome-devtools-mcp` through lucifex MCP support.
 
 See the MCP guide for the practical setup:
 
-- [Use MCP with lucifex](../../guides/use-mcp-witlucifexifex.md#wsl2-brilucifexucifex-in-wsl-to-windows-chrome)
+- [Use MCP with lucifex](../../guides/use-mcp-witlucifex.md#wsl2-brilucifexucifex-in-wsl-to-windows-chrome)
 
 ### Local browser mode
 

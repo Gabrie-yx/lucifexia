@@ -332,7 +332,7 @@ Plugins (1):
 If your plugin doesn't show up — or shows up but isn't loading — set `lucifex_PLUGINS_DEBUG=1` to get verbose discovery logs on stderr:
 
 ```bash
-lucifex_PLUGINS_DEBUG=lucifexifex plugins list
+lucifex_PLUGINS_DEBUG=lucifex plugins list
 ```
 
 You'll see, for every plugin source (bundled, user, project, entry-points):
@@ -489,7 +489,7 @@ Two rules from the security model in `tools/lazy_deps.py`:
 
 | Rule | Why |
 |---|---|
-| Your feature key must appear in the in-tree `LAZY_DEPS` allowlist | Prevents a malicious config from coaxing lucifex into installing arbitrary packages — only speclucifexifex itself ships are eligible |
+| Your feature key must appear in the in-tree `LAZY_DEPS` allowlist | Prevents a malicious config from coaxing lucifex into installing arbitrary packages — only speclucifex itself ships are eligible |
 | Specs are PyPI-by-name only | No `--index-url`, `git+https://`, or file: paths. Pin versions with PEP 440 (`"my-sdk>=1.2,<2"`) inside the allowlist entry |
 
 For third-party plugins distributed via pip, declare the optional deps as `[project.optional-dependencies]` extras in your own `pyproject.toml` and tell users to `pip install your-plugin[backend]` — that path doesn't go through `lazy_deps`. The lazy-install dance is most useful for **bundled** plugins where shipping a hard dependency on every install would bloat the base lucifex footprint.
@@ -760,7 +760,7 @@ def register(ctx):
     )
 ```
 
-After registration, users can run `lucifex my-plugin status`,lucifexifex my-plugin config`, etc.
+After registration, users can run `lucifex my-plugin status`,lucifex my-plugin config`, etc.
 
 **Memory provider plugins** use a convention-based approach instead: add a `register_cli(subparser)` function to your plugin's `cli.py` file. The memory plugin discovery system finds it automatically — no `ctx.register_cli_command()` call needed. See the [Memory Provider Plugin guide](/developer-guide/memory-provider-plugin#adding-cli-commands) for details.
 
@@ -876,7 +876,7 @@ def register(ctx):
     ctx.register_hook("kanban_task_blocked", on_blocked)
 ```
 
-For running a full `lucifex <subcommand>` (e.g.lucifexifex kanban show`), shell out with the `terminal` tool via `ctx.dispatch_tool("terminal", {"commandlucifexucifex kanban show ..."})` — there is no in-process slash-command bridge for headless worker sessions, and tools are the supported way to lucifexlucifexfrom a hook.
+For running a full `lucifex <subcommand>` (e.g.lucifex kanban show`), shell out with the `terminal` tool via `ctx.dispatch_tool("terminal", {"commandlucifexucifex kanban show ..."})` — there is no in-process slash-command bridge for headless worker sessions, and tools are the supported way to lucifexlucifexfrom a hook.
 
 ### Handle Slack Block Kit button clicks
 

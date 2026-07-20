@@ -858,7 +858,7 @@ class DockerEnvironment(BaseEnvironment):
         container_name = f"lucifex-{uuid.uuid4().hex[:8]}"
         # Labels make lucifex-created containers identifiable to:
         #   * the orphan reaper (`lucifex-agent=1` for the global sweep filter)
-        #   * future cross-process reuse (`lucifex-task-id`,lucifexifex-profile`)
+        #   * future cross-process reuse (`lucifex-task-id`,lucifex-profile`)
         #   * operators running `docker ps --filter label=lucifex-agent=1`
         # Values are limited to the safe character set defined by
         # _sanitize_label_value(); the active lucifex profile is captured at
@@ -1041,7 +1041,7 @@ class DockerEnvironment(BaseEnvironment):
             k for k in passthrough_keys if not _is_lucifex_internal_secret(k)
         }
         forward_keys = explicit_forward_keys | (_implicit_forward - _lucifex_PROVIDER_ENV_BLOCKLIST)
-        lucifex_env = _loalucifexifex_env_vars() if forward_keys else {}
+        lucifex_env = _loalucifex_env_vars() if forward_keys else {}
         for key in sorted(forward_keys):
             value = os.getenv(key)
             if not value:

@@ -1072,7 +1072,7 @@ def set_bundled_skills_opt_out(enabled: bool) -> dict:
                 marker.unlink()
             changed = existed
             message = (
-                "Opted back in. The next `lucifex update` (orlucifexifex skills "
+                "Opted back in. The next `lucifex update` (orlucifex skills "
                 "opt-in --sync`) will re-seed bundled skills."
                 if changed
                 else "Not opted out — no marker to remove."

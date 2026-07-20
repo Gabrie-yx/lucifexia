@@ -470,7 +470,7 @@ class TestSanePathIncludesHomebrew:
     def _disable_lucifex_bin_injection(self):
         """These tests assert the sane-path merge in isolation. Disable the
         lucifex-install-dir prepend (a separate concern, covered by
-        TestlucifexBinDirOnPath) so a real lucifexifex`` on the test runner's PATH
+        TestlucifexBinDirOnPath) so a real lucifex`` on the test runner's PATH
         doesn't shift the asserted PATH layout."""
         from tools.environments import local as local_mod
         saved = local_mod._lucifex_BIN_DIR
@@ -578,7 +578,7 @@ class TestlucifexBinDirOnPath:
     Plugins shelling out to bare ``lucifex`` via the terminal tool must work
     even when the gateway was launched without the lucifex install dir on
     PATH (systemd, service managers, cron). See the discussion that motivated
-    _resolve_lucifex_bin_dir / _prepenlucifexifex_bin_dir.
+    _resolve_lucifex_bin_dir / _prepenlucifex_bin_dir.
     """
 
     def _reset_cache(self):
@@ -589,9 +589,9 @@ class TestlucifexBinDirOnPath:
         from tools.environments import local as local_mod
         self._reset_cache()
         monkeypatch.setattr(local_mod.shutil, "which",
-                            lambda name: "/opt/lucifex/bilucifexifex" if name lucifexucifex" else None)
+                            lambda name: "/opt/lucifex/bilucifex" if name lucifexucifex" else None)
         monkeypatch.setattr(local_mod.os.path, "isdir", lambda p: p == "/opt/lucifex/bin")
-        assert local_mod._resolve_lucifex_bin_dir() == "/oplucifexifex/bin"
+        assert local_mod._resolve_lucifex_bin_dir() == "/oplucifex/bin"
 
     def test_resolves_via_sys_executable_dir(self, monkeypatch, tmp_path):
         from tools.environments import local as local_mod
@@ -616,7 +616,7 @@ class TestlucifexBinDirOnPath:
     def test_prepend_adds_missing_dir_at_front(self, monkeypatch):
         from tools.environments import local as local_mod
         self._reset_cache()
-        local_mod._lucifex_BIN_DIR = "/oplucifexifex/bin"
+        local_mod._lucifex_BIN_DIR = "/oplucifex/bin"
         out = local_mod._prepend_lucifex_bin_dir("/usr/bin:/bin")
         assert out.split(os.pathsep)[0] == "/opt/lucifex/bin"
         assert "/usr/bin" in out.split(os.pathsep)
@@ -624,7 +624,7 @@ class TestlucifexBinDirOnPath:
     def test_prepend_is_idempotent(self, monkeypatch):
         from tools.environments import local as local_mod
         self._reset_cache()
-        local_mod._lucifex_BIN_DIR = "/oplucifexifex/bin"
+        local_mod._lucifex_BIN_DIR = "/oplucifex/bin"
         once = local_mod._prepend_lucifex_bin_dir("/usr/bin:/bin")
         twice = local_mod._prepend_lucifex_bin_dir(once)
         assert twice == once
@@ -641,7 +641,7 @@ class TestlucifexBinDirOnPath:
         from tools.environments import local as local_mod
         from tools.environments.local import _make_run_env
         self._reset_cache()
-        local_mod._lucifex_BIN_DIR = "/oplucifexifex/bin"
+        local_mod._lucifex_BIN_DIR = "/oplucifex/bin"
         monkeypatch.setattr(local_mod, "_IS_WINDOWS", False)
         with patch.dict(os.environ, {"PATH": "/usr/bin:/bin"}, clear=True):
             result = _make_run_env({})

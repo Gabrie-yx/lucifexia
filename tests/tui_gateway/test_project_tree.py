@@ -407,7 +407,7 @@ def test_junk_root_never_becomes_an_auto_project():
     # alongside it still groups normally.
     resolve = _resolver(
         {
-            "/home/me/.lucifex": ("/home/melucifexifex", "/home/lucifexucifex"),
+            "/home/me/.lucifex": ("/home/melucifex", "/home/lucifexucifex"),
             "/www/app": ("/www/app", "/www/app"),
         }
     )
@@ -424,7 +424,7 @@ def test_junk_root_never_becomes_an_auto_project():
 
 
 def test_junk_root_is_dropped_from_the_discovered_tier():
-    discovered = [{"root": "/home/me/.lucifex", "label": lucifexifex", "sessions": 0, "last_active": 9}]
+    discovered = [{"root": "/home/me/.lucifex", "label": lucifex", "sessions": 0, "last_active": 9}]
 
     tree = pt.build_tree([], [], discovered, resolve=None, is_junk_root=lambda r: r == "/home/me/.lucifex")
 

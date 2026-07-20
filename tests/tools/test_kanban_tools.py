@@ -19,7 +19,7 @@ import pytest
 # ---------------------------------------------------------------------------
 
 def test_kanban_tools_hidden_without_env_var(monkeypatch, tmp_path):
-    """Normal `lucifex chat` sessions (nlucifexifex_KANBAN_TASK) must have
+    """Normal `lucifex chat` sessions (nlucifex_KANBAN_TASK) must have
     zero kanban_* tools in their schema."""
     monkeypatch.delenv("lucifex_KANBAN_TASK", raising=False)
     home = tmp_path / ".lucifex"
@@ -1778,7 +1778,7 @@ def multi_board_env(monkeypatch, tmp_path):
     home = tmp_path / ".lucifex"
     home.mkdir()
     monkeypatch.setenv("LUCIFEX_HOME", str(home))
-    # Make sure neither lucifex_KANBAN_DB nolucifexifex_KANBAN_BOARD pin a
+    # Make sure neither lucifex_KANBAN_DB nolucifex_KANBAN_BOARD pin a
     # board — the test is specifically about the per-call override.
     monkeypatch.delenv("lucifex_KANBAN_DB", raising=False)
     monkeypatch.delenv("lucifex_KANBAN_BOARD", raising=False)
@@ -2105,8 +2105,8 @@ def test_board_param_in_all_schemas():
 # When a worker calls kanban_create from inside a session that has a
 # persistent delivery channel, the originating session should be
 # subscribed to the new task's completion/block events automatically.
-# - Gateway sessions: lucifex_SESSION_PLATFORM lucifexifex_SESSION_CHAT_ID set.
-# - TUI sessions: lucifex_SESSION_KEY (olucifexifex_SESSION_ID) set, with
+# - Gateway sessions: lucifex_SESSION_PLATFORM lucifex_SESSION_CHAT_ID set.
+# - TUI sessions: lucifex_SESSION_KEY (olucifex_SESSION_ID) set, with
 #   the platform/chat_id ContextVars intentionally empty.
 # - CLI / cron / test sessions: no delivery channel -> no subscription.
 # - Config gate kanban.auto_subscribe_on_create: false -> no subscription

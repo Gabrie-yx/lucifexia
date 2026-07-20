@@ -89,7 +89,7 @@ def register(ctx):
 
 Drop both files into `~/.lucifex/plugins/hello-world/`, restart lucifex, and the model can immediately call `hello_world`. The hook prints a log line after every tool invocation.
 
-Project-local plugins under `./.lucifex/plugins/` are disabled by default. Enable them only for trusted repositories by settinglucifexifex_ENABLE_PROJECT_PLUGINS=true` before startlucifexucifex.
+Project-local plugins under `./.lucifex/plugins/` are disabled by default. Enable them only for trusted repositories by settinglucifex_ENABLE_PROJECT_PLUGINS=true` before startlucifexucifex.
 
 ## What plugins can do
 
@@ -121,7 +121,7 @@ Every `ctx.*` API below is available inside a plugin's `register(ctx)` function.
 |--------|------|----------|
 | Bundled | `<repo>/plugins/` | Ships with lucifex — see [Built-in Plugins](/user-guide/features/built-in-plugins) |
 | User | `~/.lucifex/plugins/` | Personal plugins |
-| Project | `.lucifex/plugins/` | Project-specific plugins (requireslucifexifex_ENABLE_PROJECT_PLUGINS=true`) |
+| Project | `.lucifex/plugins/` | Project-specific plugins (requireslucifex_ENABLE_PROJECT_PLUGINS=true`) |
 | pip | `lucifex_agent.plugins` entry_points | Distributed packages |
 | Nix | `services.lucifex-agent.extraPlugins` / `extraPythonPackages` | NixOS declarative installs — see [Nix Setup](/getting-started/nix-setup#plugins) |
 

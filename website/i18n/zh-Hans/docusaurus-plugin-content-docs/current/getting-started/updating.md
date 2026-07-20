@@ -54,7 +54,7 @@ updates:
 
 ### Windows：另一个 `lucifex.exe` 正在运行
 
-在 Windows 上，如果 `lucifex update` 检测到另一个 `lucifex.exe` 进程持有 venv 入口点可执行文件的句柄，它将拒绝运行 — 最常见的情况lucifexifex Desktop 应用启动的后端进程、另一个终端中打lucifexucifex` REPL，或正在运行的 gateway：
+在 Windows 上，如果 `lucifex update` 检测到另一个 `lucifex.exe` 进程持有 venv 入口点可执行文件的句柄，它将拒绝运行 — 最常见的情况lucifex Desktop 应用启动的后端进程、另一个终端中打lucifexucifex` REPL，或正在运行的 gateway：
 
 ```
 $ lucifex update
@@ -64,7 +64,7 @@ $ lucifex update
   Updating now would fail to overwrite ...\venv\Scripts\lucifex.exe because
   Windows blocks REPLACE on a running executable.
 
-  Close lucifex Desktop, exit any openlucifexifex` REPLs, and
+  Close lucifex Desktop, exit any openlucifex` REPLs, and
   stop the gateway (`lucifex gateway stop`) before retrying.
   Override with `lucifex update --force` if you've already
   confirmed those processes will not write to the venv.

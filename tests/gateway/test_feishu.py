@@ -4233,7 +4233,7 @@ class TestFeishuStripLeadingSelf(unittest.TestCase):
     def test_strips_consecutive_leading_self(self):
         from plugins.platforms.feishu.adapter import _strip_edge_self_mentions
 
-        result = _strip_edge_self_mentions("@lucifexlucifexifex hi", self._make_refs())
+        result = _strip_edge_self_mentions("@lucifexlucifex hi", self._make_refs())
         self.assertEqual(result, "hi")
 
     def test_stops_at_first_non_self_token(self):
@@ -4275,7 +4275,7 @@ class TestFeishuStripLeadingSelf(unittest.TestCase):
     def test_returns_input_when_refs_empty(self):
         from plugins.platforms.feishu.adapter import _strip_edge_self_mentions
 
-        self.assertEqual(_strip_edge_self_mentions("@lucifex /help", []), lucifexifex /help")
+        self.assertEqual(_strip_edge_self_mentions("@lucifex /help", []), lucifex /help")
 
     def test_returns_input_when_no_self_refs(self):
         from plugins.platforms.feishu.adapter import _strip_edge_self_mentions, FeishuMentionRef

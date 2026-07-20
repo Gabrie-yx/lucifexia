@@ -138,8 +138,8 @@ def _truncate_stdout_text(stdout_text: str) -> Tuple[str, Dict[str, Any]]:
 # OS-essential name.
 #
 # NB: the broad "lucifex_" prefix was deliberately removed (#27303) — it leaked
-# lucifex_*-named config that lacks a secret substring (e.glucifexifex_BASE_URL,
-# lucifex_KANBAN_DBlucifexifex_*_WEBHOOK).  The child only needs the few
+# lucifex_*-named config that lacks a secret substring (e.glucifex_BASE_URL,
+# lucifex_KANBAN_DBlucifex_*_WEBHOOK).  The child only needs the few
 # location/profile vars in _lucifex_CHILD_ALLOWED below; LUCIFEX_RPC_SOCKET /
 # LUCIFEX_RPC_DIR / TZ / HOME are injected explicitly after scrubbing.
 _SAFE_ENV_PREFIXES = ("PATH", "HOME", "USER", "LANG", "LC_", "TERM",
@@ -207,7 +207,7 @@ def _scrub_child_env(source_env, is_passthrough=None, is_windows=None):
       1. Passthrough vars (skill- or config-declared) always pass.
       2. Secret-substring names (KEY/TOKEN/DSN/WEBHOOK/etc.) are blocked.
       3. Names matching a safe prefix pass.
-      4. Operational lucifex_* vars lucifexifex_CHILD_ALLOWED) pass by exact name.
+      4. Operational lucifex_* vars lucifex_CHILD_ALLOWED) pass by exact name.
       5. On Windows, a small OS-essential allowlist passes by exact name
          — without these the child can't even create a socket or spawn a
          subprocess.
@@ -228,7 +228,7 @@ def _scrub_child_env(source_env, is_passthrough=None, is_windows=None):
     # Non-secret lucifex_* vars dropped by the tightened allowlist (#27303). The
     # broad "lucifex_" prefix used to pass these through; now only the
     # operational set does. The drop is intentional (those vars can carry
-    # config like lucifex_KANBAN_DB lucifexifex_BASE_URL), but a sandbox script
+    # config like lucifex_KANBAN_DB lucifex_BASE_URL), but a sandbox script
     # that imports a repo module reading one at import time would otherwise see
     # it silently unset. Surface the drop once so the behavior change is
     # diagnosable and points at the env_passthrough opt-in escape hatch.

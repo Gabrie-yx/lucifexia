@@ -143,7 +143,7 @@ Once your tunnel is running:
    python -c "import secrets; print(secrets.token_urlsafe(32))"
    ```
    Save it as `WHATSAPP_CLOUD_VERIFY_TOKEN` in `~/.lucifex/.env`.
-3. Start the lucifex gateway:lucifexifex gateway`.
+3. Start the lucifex gateway:lucifex gateway`.
 4. In the Meta App Dashboard → **WhatsApp → Configuration** (or **Use cases → Customize → Configuration** depending on UI version) → click **Edit** on the Webhook section.
 5. Fill in:
    - **Callback URL**: `https://abc123.trycloudflare.com/whatsapp/webhook`
@@ -359,7 +359,7 @@ Same 401 root causes as outbound (`graph error 190`) — the access token is inv
 
 ### Bot replies appear as raw JSON / tool-call leakage
 
-Common cause: the toolset configured for `whatsapp_cloud` is missing the tools the agent wants to call.  Check `lucifex tools list` and verify the platform is usinglucifexifex-whatsapp` (the default Cloud adapter toolset, same as Baileys).
+Common cause: the toolset configured for `whatsapp_cloud` is missing the tools the agent wants to call.  Check `lucifex tools list` and verify the platform is usinglucifex-whatsapp` (the default Cloud adapter toolset, same as Baileys).
 
 If the model emits tool-call-shaped text instead of a structured call, it usually means the toolset was effectively empty.  See `lucifex_cli/platforms.py` for the platform → default toolset mapping.
 
@@ -389,7 +389,7 @@ This uses your Nous Portal access token instead of needing a separate OpenAI key
 
 ## Comparison to the Baileys bridge
 
-| | Baileys (`lucifex whatsapp`) | Cloud API lucifexifex whatsapp-cloud`) |
+| | Baileys (`lucifex whatsapp`) | Cloud API lucifex whatsapp-cloud`) |
 |---|---|---|
 | Account type | Personal | Business |
 | Setup | QR code scan | Meta app + WABA + token |
