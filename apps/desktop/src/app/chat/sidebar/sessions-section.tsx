@@ -5,8 +5,8 @@ import { useMemo } from 'react'
 import { SidebarPanelLabel } from '@/app/shell/sidebar-label'
 import { DisclosureCaret } from '@/components/ui/disclosure-caret'
 import { SidebarGroup, SidebarGroupContent } from '@/components/ui/sidebar'
-import type { LucifexGitWorktree } from '@/global'
-import type { SessionInfo } from '@/lucifex'
+import type { HermesGitWorktree } from '@/global'
+import type { SessionInfo } from '@/hermes'
 import { flattenSessionsWithBranches } from '@/lib/session-branch-tree'
 import { cn } from '@/lib/utils'
 import { sessionPinId } from '@/store/session'
@@ -116,7 +116,7 @@ interface SidebarSessionsSectionProps {
   projectContent?: SidebarProjectTree
   // Live git lanes (`git worktree list`) for repos in the entered project —
   // a VISUAL enhancer only (empty lanes), never session membership.
-  projectRepoWorktrees?: Record<string, LucifexGitWorktree[]>
+  projectRepoWorktrees?: Record<string, HermesGitWorktree[]>
   // Live session cache used for optimistic placement inside entered-project lanes.
   liveSessions?: SessionInfo[]
   // Client-side optimistic eviction layer (deleted/archived ids).
@@ -135,6 +135,10 @@ interface SidebarSessionsSectionProps {
   // Rendered atop the entered-project body (a "back to overview" row).
   projectBackRow?: React.ReactNode
   dndSensors?: ReturnType<typeof useSensors>
+  // Tag every row with its owning profile. Set on the flat cross-profile
+  // lists (Pinned / search results) in the All-profiles view, where no group
+  // header communicates ownership (#66003).
+  showProfileTags?: boolean
 }
 
 export function SidebarSessionsSection({
@@ -174,7 +178,8 @@ export function SidebarSessionsSection({
   onReorderSessions,
   onReorderProjects,
   projectBackRow,
-  dndSensors
+  dndSensors,
+  showProfileTags = false
 }: SidebarSessionsSectionProps) {
   const sectionOpen = collapsible ? open : true
   const hasGroupedSessions = Boolean(groups?.some(group => group.sessions.length > 0))
@@ -203,7 +208,8 @@ export function SidebarSessionsSection({
       onPin: () => onTogglePin(sessionPinId(session)),
       onResume: () => onResumeSession(session.id),
       reorderable: draggable && !branchStem,
-      session
+      session,
+      showProfile: showProfileTags
     }
 
     return draggable && !branchStem ? (
@@ -311,6 +317,7 @@ export function SidebarSessionsSection({
         onResumeSession={onResumeSession}
         onTogglePin={onTogglePin}
         pinned={pinned}
+        showProfileTags={showProfileTags}
         sortable={sessionsDraggable}
         workingSessionIdSet={workingSessionIdSet}
       />

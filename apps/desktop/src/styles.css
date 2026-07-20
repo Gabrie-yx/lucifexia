@@ -312,7 +312,7 @@
     --dt-user-bubble-border: var(--ui-stroke-tertiary);
 
     --dt-font-sans:
-      'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif,
+      'Segoe WPC', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif,
       'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji', emoji;
     /* Key caps always use the native UI face — never theme typography overrides. */
     --dt-font-kbd: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
@@ -328,7 +328,7 @@
     --dt-spacing-mul: 1;
 
     --radius: 0.75rem;
-    --radius-scalar: 1.6;
+    --radius-scalar: 0.6;
 
     /* Space under last message vs overlay composer — driven by the measured composer height (see composer/index.tsx)
        plus the out-of-flow status stack's measured height (see status-stack/index.tsx) when one is showing. */
@@ -522,6 +522,13 @@
   pointer-events: none;
 }
 
+/* A pane's self-naming label ("REVIEW" atop the review pane) is redundant
+   when its zone header is showing a tab with the same name — hide it there.
+   Headerless zones (and the pane used outside the tree) keep the label. */
+[data-tree-group][data-zone-header] [data-pane-self-label] {
+  display: none;
+}
+
 :root:not([style*='--theme-asset-bg:']) .theme-default-filler {
   display: block;
 }
@@ -554,69 +561,6 @@
   [class*=':rounded-full'] {
     border-radius: calc(var(--radius-scalar) * 9999rem);
   }
-}
-
-/* =========================================================
-   LucifexIA — Rounded Identity
-   Must be inside @layer base to win over Tailwind defaults.
-   ========================================================= */
-
-@layer base {
-  /* Inputs, textareas, selects — soft pill shape */
-  input:not([type='range']):not([type='checkbox']):not([type='radio']),
-  textarea,
-  select {
-    border-radius: calc(var(--radius-scalar) * 0.625rem);
-  }
-
-  /* Standalone buttons without explicit rounded class */
-  button {
-    border-radius: calc(var(--radius-scalar) * 0.6875rem);
-  }
-
-  /* Native code / pre blocks */
-  pre {
-    border-radius: calc(var(--radius-scalar) * 0.625rem);
-  }
-}
-
-@layer utilities {
-  /* Radix-UI popovers, menus, dropdowns, listboxes */
-  [data-radix-popper-content-wrapper] > *,
-  [role='menu'],
-  [role='listbox'],
-  [role='tooltip'],
-  [data-radix-tooltip-content] {
-    border-radius: calc(var(--radius-scalar) * 0.875rem) !important;
-    overflow: hidden;
-  }
-
-  /* Radix dialog panel */
-  [data-radix-dialog-content],
-  [data-slot='dialog-content'] {
-    border-radius: calc(var(--radius-scalar) * 1rem) !important;
-  }
-
-  /* Radix select content */
-  [data-radix-select-content] {
-    border-radius: calc(var(--radius-scalar) * 0.875rem) !important;
-    overflow: hidden;
-  }
-
-  /* Command palette wrapper */
-  [cmdk-root] {
-    border-radius: calc(var(--radius-scalar) * 0.875rem) !important;
-    overflow: hidden;
-  }
-
-  /* Rounded class overrides — boost all standard rounded utilities */
-  .rounded-sm  { border-radius: calc(var(--radius-scalar) * 0.25rem) !important; }
-  .rounded     { border-radius: calc(var(--radius-scalar) * 0.375rem) !important; }
-  .rounded-md  { border-radius: calc(var(--radius-scalar) * 0.5rem) !important; }
-  .rounded-lg  { border-radius: calc(var(--radius-scalar) * 0.75rem) !important; }
-  .rounded-xl  { border-radius: calc(var(--radius-scalar) * 1rem) !important; }
-  .rounded-2xl { border-radius: calc(var(--radius-scalar) * 1.25rem) !important; }
-  .rounded-3xl { border-radius: calc(var(--radius-scalar) * 1.75rem) !important; }
 }
 
 /* Interactive list-row hover — the sessions-list interaction, shared by every

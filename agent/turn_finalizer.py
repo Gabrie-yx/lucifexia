@@ -1,7 +1,7 @@
 """Post-loop turn finalization for ``run_conversation``.
 
 Extracted from ``agent/conversation_loop.py`` as part of the god-file
-decomposition campaign (``~/.lucifex/plans/god-file-decomposition.md``, Phase 1
+decomposition campaign (``~/.hermes/plans/god-file-decomposition.md``, Phase 1
 step 4 — the post-loop ``TurnFinalizer`` seam). ``run_conversation``'s tail
 (everything after the main tool-calling ``while`` loop) is lifted here verbatim:
 budget-exhaustion summary, trajectory save, session persist, turn diagnostics,
@@ -25,6 +25,21 @@ from __future__ import annotations
 import os
 
 from agent.codex_responses_adapter import _summarize_user_message_for_log
+from agent.message_content import flatten_message_text
+
+
+def _is_pure_tool_call_tail(msg: dict) -> bool:
+    """An assistant row with ``tool_calls`` but no visible text content of its own.
+
+    Such a row satisfies the role check (``tail role == "assistant"``) while
+    carrying none of the delivered answer — see the #43849/#44100 invariant
+    block in :func:`finalize_turn`. Uses :func:`flatten_message_text` so that
+    multimodal (list-type) content is evaluated by its text parts, not just
+    its type.
+    """
+    if not msg.get("tool_calls"):
+        return False
+    return not flatten_message_text(msg.get("content")).strip()
 
 
 def finalize_turn(
@@ -42,6 +57,7 @@ def finalize_turn(
     original_user_message,
     _should_review_memory,
     _turn_exit_reason,
+    _pending_verification_response=None,
 ):
     """Run the post-loop finalization and return the turn ``result`` dict.
 
@@ -50,10 +66,35 @@ def finalize_turn(
     """
     from agent.conversation_loop import logger
 
-    if final_response is None and (
+    budget_exhausted = (
         api_call_count >= agent.max_iterations
         or agent.iteration_budget.remaining <= 0
-    ):
+    )
+    budget_fallback_eligible = (
+        budget_exhausted
+        and not interrupted
+        and not failed
+        and str(_turn_exit_reason) in {"unknown", "budget_exhausted"}
+    )
+    continuation_budget_exhausted = (
+        final_response is None
+        and bool(_pending_verification_response)
+        and budget_fallback_eligible
+    )
+
+    iteration_limit_fallback = False
+    preserved_verification_fallback = False
+    if continuation_budget_exhausted:
+        # A verification/continuation gate deliberately withheld a composed
+        # answer, then consumed the remaining budget before producing a newer
+        # one. Preserve that exact answer instead of replacing it with another
+        # fallible model call. The explicit pending value is the provenance
+        # guard: unrelated error/recovery exits can never enter this branch.
+        final_response = _pending_verification_response
+        _turn_exit_reason = f"max_iterations_reached({api_call_count}/{agent.max_iterations})"
+        iteration_limit_fallback = True
+        preserved_verification_fallback = True
+    elif final_response is None and budget_fallback_eligible:
         # Budget exhausted — ask the model for a summary via one extra
         # API call with tools stripped.  _handle_max_iterations injects a
         # user message and makes a single toolless request.
@@ -68,24 +109,22 @@ def finalize_turn(
                 "— requesting summary..."
             )
         final_response = agent._handle_max_iterations(messages, api_call_count)
+        iteration_limit_fallback = True
 
+    if iteration_limit_fallback:
         # If running as a kanban worker, signal the dispatcher that the
         # worker could not complete (rather than treating it as a
-        # protocol violation).  The agent loop strips tools before calling
-        # _handle_max_iterations, so the model cannot call kanban_block
-        # itself — we must do it on its behalf.
+        # protocol violation). This applies whether the user-facing fallback
+        # came from the summary call or an explicitly pending continuation;
+        # both exhausted the task budget and must advance the failure circuit.
         #
         # We route through ``_record_task_failure(outcome="timed_out")``
-        # rather than ``kanban_block`` so this counts toward the
-        # ``consecutive_failures`` counter and the dispatcher's
-        # ``failure_limit`` circuit breaker (#29747 gap 2).  Without this,
-        # a task whose worker keeps exhausting its budget would block
-        # silently each run, get auto-promoted by the operator (or never
-        # surface), and re-block in an endless loop with no signal.
-        _kanban_task = os.environ.get("LUCIFEX_KANBAN_TASK")
+        # rather than ``kanban_block`` so this counts toward the dispatcher's
+        # consecutive-failure circuit breaker (#29747 gap 2).
+        _kanban_task = os.environ.get("HERMES_KANBAN_TASK")
         if _kanban_task:
             try:
-                from lucifex_cli import kanban_db as _kb
+                from hermes_cli import kanban_db as _kb
                 _conn = _kb.connect()
                 try:
                     _kb._record_task_failure(
@@ -198,12 +237,41 @@ def finalize_turn(
         # holds regardless of which path produced it. (#43849 / #44100)
         if final_response and not interrupted:
             try:
-                _tail_role = messages[-1].get("role") if messages else None
+                _tail = messages[-1] if messages else None
             except Exception:
-                _tail_role = None
+                _tail = None
+            _tail_role = _tail.get("role") if isinstance(_tail, dict) else None
             if _tail_role != "assistant":
                 messages.append({"role": "assistant", "content": final_response})
+            elif isinstance(_tail, dict) and _is_pure_tool_call_tail(_tail):
+                # The tail IS an assistant row, but a *pure tool-call turn*:
+                # tool_calls with no text of its own. The role check alone
+                # leaves the #43849/#44100 invariant unmet — the user saw a
+                # response that never reached the transcript, and the next turn
+                # replays the user backlog and re-answers it (the very symptom
+                # this block was added for). Fill that row's empty content
+                # instead of appending, so the durable turn ends with the answer
+                # without disturbing the tool-call structure or creating an
+                # assistant→assistant pair.
+                _tail["content"] = final_response
+                # The row may have already been flushed to SQLite by the
+                # incremental tool-call persist (conversation_loop.py:4990),
+                # which stamps ``_DB_PERSISTED_MARKER`` so subsequent flushes
+                # skip it. Pop the marker so the next ``_persist_session``
+                # re-writes the filled content to the durable store —
+                # otherwise ``/resume`` reloads ``content=""`` and the bug
+                # resurfaces cross-session.
+                _tail.pop("_db_persisted", None)
 
+        # The model has completed its request, so replace API-local
+        # voice/model/skill guidance with the clean user input before writing the
+        # final durable snapshot and returning the continuation history. Earlier
+        # turn-start flushes use the DB-only override because their messages are
+        # still needed for the API request; this finalizer runs after that request
+        # is complete (#48677 / #63766).
+        _apply_override = getattr(agent, "_apply_persist_user_message_override", None)
+        if callable(_apply_override):
+            _apply_override(messages)
         agent._persist_session(messages, conversation_history)
     except Exception as _persist_err:
         _cleanup_errors.append(f"persist_session: {_persist_err}")
@@ -304,6 +372,7 @@ def finalize_turn(
                 # truncated partial (the "The" case from #34452).
                 _is_partial_fragment = (
                     not _is_empty_terminal
+                    and not preserved_verification_fallback
                     and not str(_turn_exit_reason).startswith("text_response")
                     and len(_stripped) <= 24
                     and _stripped[-1:] not in {".", "!", "?", "。", "！", "？", "`", ")"}
@@ -342,7 +411,7 @@ def finalize_turn(
     # First hook to return a string wins; None/empty return leaves text unchanged.
     if final_response and not interrupted:
         try:
-            from lucifex_cli.plugins import invoke_hook as _invoke_hook
+            from hermes_cli.plugins import invoke_hook as _invoke_hook
             _transform_results = _invoke_hook(
                 "transform_llm_output",
                 response_text=final_response,
@@ -364,7 +433,7 @@ def finalize_turn(
     # to an external memory system).
     if final_response and not interrupted:
         try:
-            from lucifex_cli.plugins import invoke_hook as _invoke_hook
+            from hermes_cli.plugins import invoke_hook as _invoke_hook
             _invoke_hook(
                 "post_llm_call",
                 session_id=agent.session_id,
@@ -424,6 +493,11 @@ def finalize_turn(
         "estimated_cost_usd": agent.session_estimated_cost_usd,
         "cost_status": agent.session_cost_status,
         "cost_source": agent.session_cost_source,
+        # Requested service tier (from request_overrides.extra_body), for
+        # billing audits by callers like `hermes -z --usage-file`.
+        "service_tier": (
+            (getattr(agent, "request_overrides", {}) or {}).get("extra_body") or {}
+        ).get("service_tier"),
         "session_id": agent.session_id,
     }
     if agent._tool_guardrail_halt_decision is not None:
@@ -479,242 +553,7 @@ def finalize_turn(
         except Exception:
             pass  # Background review is best-effort
 
-    # ── Inner Life hooks (best-effort, non-blocking) ─────────────────────
-    # All five autonomy systems fire here, after the response is delivered.
-    # Each runs in a try/except — none may block or raise to the caller.
-
-    if final_response and not interrupted:
-        _session_id = agent.session_id or ""
-        _tool_errors = getattr(agent, "_last_turn_tool_errors", 0)
-        _tool_calls = getattr(agent, "_last_turn_tool_calls", 0)
-        _context_tokens = getattr(agent, "_last_context_tokens", 0)
-
-        # Feature 1: Curiosity — detect and queue unanswered questions
-        try:
-            from agent.curiosity_engine import log_unanswered
-            log_unanswered(
-                response_text=final_response,
-                context=user_message or "",
-                session_id=_session_id,
-            )
-        except Exception:
-            pass
-
-        # Feature 4: Emotional State — update mood from turn metrics
-        try:
-            from agent.emotional_state import update_mood
-            update_mood(
-                error_count=_tool_errors,
-                tool_call_count=_tool_calls,
-                context_tokens=_context_tokens,
-                context_limit=getattr(agent, "context_limit", 131072),
-                succeeded=not failed,
-                session_id=_session_id,
-            )
-        except Exception:
-            pass
-
-        # Feature 6: Self-Reflection — analyse turn quality
-        try:
-            import threading as _threading
-            from agent.self_reflection import reflect_on_session as _reflect
-
-            def _bg_reflect():
-                try:
-                    _reflect(
-                        session_id=_session_id,
-                        final_response=final_response,
-                        tool_error_count=_tool_errors,
-                        clarification_count=0,
-                        api_call_count=api_call_count,
-                    )
-                except Exception:
-                    pass
-
-            _threading.Thread(target=_bg_reflect, daemon=True).start()
-        except Exception:
-            pass
-
-        # Feature 3: Proactive Will — scan workspace for actionable issues
-        try:
-            import threading as _threading2
-            from agent.proactive_will import scan_and_register_intentions as _scan
-
-            def _bg_scan():
-                try:
-                    _scan()
-                except Exception:
-                    pass
-
-            _threading2.Thread(target=_bg_scan, daemon=True).start()
-        except Exception:
-            pass
-
-        # ── Phase 2: AGI Capability Hooks ────────────────────────────────
-
-        # Theory of Mind — update user knowledge model from this turn
-        try:
-            from agent.theory_of_mind import update_from_message, proactive_misconception_warning
-            update_from_message(user_message or "", session_id=_session_id, from_user=True)
-            update_from_message(final_response, session_id=_session_id, from_user=False)
-        except Exception:
-            pass
-
-        # World Model — extract entities from conversation and update graph
-        try:
-            import threading as _threading_wm
-            from agent.world_model import auto_update_from_conversation as _wm_update
-
-            def _bg_world_model():
-                try:
-                    combined = f"{user_message or ''}\n{final_response}"
-                    _wm_update(combined, session_id=_session_id)
-                except Exception:
-                    pass
-
-            _threading_wm.Thread(target=_bg_world_model, daemon=True).start()
-        except Exception:
-            pass
-
-        # Skill Hunter — detect capability gaps in the response
-        try:
-            import threading as _threading_sh
-            from agent.skill_hunter import detect_gaps
-
-            def _bg_skill_hunt():
-                try:
-                    detect_gaps(final_response, session_id=_session_id)
-                except Exception:
-                    pass
-
-            _threading_sh.Thread(target=_bg_skill_hunt, daemon=True).start()
-        except Exception:
-            pass
-
-        # Predictive Pre-execution — pre-compute likely follow-up responses
-        try:
-            import threading as _threading_pred
-            from agent.predictor import preexecute_followups
-
-            def _bg_predict():
-                try:
-                    preexecute_followups(
-                        last_user_message=user_message or "",
-                        agent_response=final_response,
-                        session_context=_session_id,
-                    )
-                except Exception:
-                    pass
-
-            _threading_pred.Thread(target=_bg_predict, daemon=True).start()
-        except Exception:
-            pass
-
-        # Isomorphism — extract abstract pattern from this turn's solution
-        try:
-            import threading as _threading_iso
-            from agent.isomorphism_engine import extract_and_store_pattern as _iso_extract
-
-            def _bg_iso():
-                try:
-                    if len(final_response) > 200 and len(user_message or "") > 30:
-                        _iso_extract(
-                            problem=user_message or "",
-                            solution=final_response,
-                        )
-                except Exception:
-                    pass
-
-            _threading_iso.Thread(target=_bg_iso, daemon=True).start()
-        except Exception:
-            pass
-
-        # Long Horizon — log progress on active goals if response is substantive
-        try:
-            from agent.long_horizon import get_active_goals, log_progress as _lh_log
-            _active_goals = get_active_goals()
-            if _active_goals and len(final_response) > 100 and not failed:
-                # Micro-progress: 1% per substantive turn (model calibrates higher deltas explicitly)
-                for _g in _active_goals[:1]:
-                    _lh_log(_g["id"], delta=0.01, session_id=_session_id,
-                            note=f"Turn completed: {(user_message or '')[:60]}")
-        except Exception:
-            pass
-
-        # ── Phase 3: AGI Self-Awareness Hooks ────────────────────────────
-
-        # Commitment Tracker — extract decisions from both sides of the conversation
-        try:
-            import threading as _threading_ct
-            from agent.commitment_tracker import extract_and_store_commitments, find_contradictions
-
-            def _bg_commitment():
-                try:
-                    combined = f"{user_message or ''}\n{final_response}"
-                    extract_and_store_commitments(combined, session_id=_session_id,
-                                                  context=f"session:{_session_id}")
-                except Exception:
-                    pass
-
-            _threading_ct.Thread(target=_bg_commitment, daemon=True).start()
-        except Exception:
-            pass
-
-        # Cognitive Load — analyse this user message for load signals
-        try:
-            from agent.cognitive_load import analyse_message as _cog_analyse
-            if user_message and isinstance(user_message, str):
-                _cog_analyse(user_message, session_id=_session_id)
-        except Exception:
-            pass
-
-        # Ontology Builder — learn concepts from the conversation
-        try:
-            import threading as _threading_onto
-            from agent.ontology_builder import extract_and_store_concepts as _onto_extract
-
-            def _bg_onto():
-                try:
-                    combined = f"{user_message or ''}\n{final_response}"
-                    _onto_extract(combined, session_id=_session_id)
-                except Exception:
-                    pass
-
-            _threading_onto.Thread(target=_bg_onto, daemon=True).start()
-        except Exception:
-            pass
-
-        # Persona Engine — auto-detect persona for next turn based on this message
-        try:
-            import threading as _threading_pe
-            from agent.persona_engine import detect_persona as _detect_persona
-
-            def _bg_persona():
-                try:
-                    _detect_persona(
-                        message=user_message or "",
-                        session_id=_session_id,
-                    )
-                except Exception:
-                    pass
-
-            _threading_pe.Thread(target=_bg_persona, daemon=True).start()
-        except Exception:
-            pass
-
-        # Self-Evolution — score this turn from user follow-up signals
-        try:
-            from agent.self_evolution import score_turn as _score_turn
-            if user_message and isinstance(user_message, str):
-                _score_turn(
-                    user_followup=user_message,
-                    session_id=_session_id,
-                    context=final_response[:100],
-                )
-        except Exception:
-            pass
-
-
+    # Note: Memory provider on_session_end() + shutdown_all() are NOT
     # called here — run_conversation() is called once per user message in
     # multi-turn sessions. Shutting down after every turn would kill the
     # provider before the second message. Actual session-end cleanup is
@@ -725,7 +564,7 @@ def finalize_turn(
     # Fired at the very end of every run_conversation call.
     # Plugins can use this for cleanup, flushing buffers, etc.
     try:
-        from lucifex_cli.plugins import invoke_hook as _invoke_hook
+        from hermes_cli.plugins import invoke_hook as _invoke_hook
         _invoke_hook(
             "on_session_end",
             session_id=agent.session_id,

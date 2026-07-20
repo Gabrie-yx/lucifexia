@@ -1,4 +1,4 @@
-"""ACP agent server — exposes Lucifex Agent via the Agent Client Protocol."""
+"""ACP agent server — exposes Hermes Agent via the Agent Client Protocol."""
 
 from __future__ import annotations
 
@@ -75,16 +75,16 @@ from acp_adapter.provenance import session_provenance_meta
 from acp_adapter.session import SessionManager, SessionState, _expand_acp_enabled_toolsets
 from acp_adapter.tools import build_tool_complete, build_tool_start
 from tools.approval import (
-    reset_lucifex_interactive_context,
-    set_lucifex_interactive_context,
+    reset_hermes_interactive_context,
+    set_hermes_interactive_context,
 )
 
 logger = logging.getLogger(__name__)
 
 try:
-    from lucifex_cli import __version__ as LUCIFEX_VERSION
+    from hermes_cli import __version__ as HERMES_VERSION
 except Exception:
-    LUCIFEX_VERSION = "0.0.0"
+    HERMES_VERSION = "0.0.0"
 
 # Thread pool for running AIAgent (synchronous) in parallel.
 _executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="acp-agent")
@@ -156,7 +156,7 @@ def _path_from_file_uri(uri: str) -> Path | None:
 
     Zed may send POSIX file URIs from Linux/WSL workspaces or Windows-ish paths
     when launched through wsl.exe. Translate the common Windows drive form to
-    /mnt/<drive>/... so Lucifex running in WSL can read it.
+    /mnt/<drive>/... so Hermes running in WSL can read it.
     """
     raw = (uri or "").strip()
     if not raw:
@@ -237,7 +237,7 @@ def _resource_link_to_parts(block: ResourceContentBlock) -> list[dict[str, Any]]
                 uri=uri,
                 name=name,
                 title=title,
-                body="[Resource link only; Lucifex cannot read non-file ACP resource URIs directly.]",
+                body="[Resource link only; Hermes cannot read non-file ACP resource URIs directly.]",
             ),
         }]
 
@@ -405,7 +405,7 @@ def _content_blocks_to_openai_user_content(
         | EmbeddedResourceContentBlock
     ],
 ) -> str | list[dict[str, Any]]:
-    """Convert ACP prompt blocks into a Lucifex/OpenAI-compatible user content payload."""
+    """Convert ACP prompt blocks into a Hermes/OpenAI-compatible user content payload."""
     parts: list[dict[str, Any]] = []
     text_parts: list[str] = []
 
@@ -447,8 +447,8 @@ def _content_blocks_to_openai_user_content(
     return parts
 
 
-class LucifexACPAgent(acp.Agent):
-    """ACP Agent implementation wrapping Lucifex AIAgent."""
+class HermesACPAgent(acp.Agent):
+    """ACP Agent implementation wrapping Hermes AIAgent."""
 
     _SLASH_COMMANDS = {
         "help": "Show available commands",
@@ -459,7 +459,7 @@ class LucifexACPAgent(acp.Agent):
         "compact": "Compress conversation context",
         "steer": "Inject guidance into the currently running agent turn",
         "queue": "Queue a prompt to run after the current turn finishes",
-        "version": "Show Lucifex version",
+        "version": "Show Hermes version",
     }
 
     _ADVERTISED_COMMANDS = (
@@ -500,7 +500,7 @@ class LucifexACPAgent(acp.Agent):
         },
         {
             "name": "version",
-            "description": "Show Lucifex version",
+            "description": "Show Hermes version",
         },
     )
 
@@ -536,7 +536,7 @@ class LucifexACPAgent(acp.Agent):
 
         Zed renders ``config_options`` in the prominent selector slot where the
         model picker was visible. Claude/Codex expose policy-like controls as ACP
-        modes, which coexist with the model picker, so Lucifex maps edit approval
+        modes, which coexist with the model picker, so Hermes maps edit approval
         policy onto modes instead of advertising config options.
         """
 
@@ -586,7 +586,7 @@ class LucifexACPAgent(acp.Agent):
         provider = getattr(state.agent, "provider", None) or detect_provider() or "openrouter"
 
         try:
-            from lucifex_cli.models import curated_models_for_provider, normalize_provider, provider_label
+            from hermes_cli.models import curated_models_for_provider, normalize_provider, provider_label
 
             normalized_provider = normalize_provider(provider)
             provider_name = provider_label(normalized_provider)
@@ -649,7 +649,7 @@ class LucifexACPAgent(acp.Agent):
         new_model = raw_model.strip()
 
         try:
-            from lucifex_cli.models import detect_provider_for_model, parse_model_input
+            from hermes_cli.models import detect_provider_for_model, parse_model_input
 
             target_provider, new_model = parse_model_input(new_model, current_provider)
             if target_provider == current_provider:
@@ -667,7 +667,7 @@ class LucifexACPAgent(acp.Agent):
 
         Zed's circular context indicator is driven by ACP ``usage_update``
         session updates: ``size`` is the model context window and ``used`` is
-        the current request pressure.  Lucifex estimates ``used`` from the same
+        the current request pressure.  Hermes estimates ``used`` from the same
         buckets it sends to providers: system prompt, conversation history, and
         tool schemas.
         """
@@ -717,16 +717,16 @@ class LucifexACPAgent(acp.Agent):
     def _provenance_meta(
         self,
         acp_session_id: str,
-        current_lucifex_session_id: str,
-        previous_lucifex_session_id: Optional[str] = None,
+        current_hermes_session_id: str,
+        previous_hermes_session_id: Optional[str] = None,
     ) -> Optional[dict]:
-        """Best-effort ``_meta.lucifex.sessionProvenance`` for an ACP session."""
+        """Best-effort ``_meta.hermes.sessionProvenance`` for an ACP session."""
         try:
             return session_provenance_meta(
                 self.session_manager._get_db(),
                 acp_session_id,
-                current_lucifex_session_id,
-                previous_lucifex_session_id=previous_lucifex_session_id,
+                current_hermes_session_id,
+                previous_hermes_session_id=previous_hermes_session_id,
             )
         except Exception:
             logger.debug(
@@ -738,14 +738,14 @@ class LucifexACPAgent(acp.Agent):
         self,
         session_id: str,
         *,
-        current_lucifex_session_id: Optional[str] = None,
-        previous_lucifex_session_id: Optional[str] = None,
+        current_hermes_session_id: Optional[str] = None,
+        previous_hermes_session_id: Optional[str] = None,
     ) -> None:
-        """Send ACP native session metadata after Lucifex changes it.
+        """Send ACP native session metadata after Hermes changes it.
 
-        When the internal Lucifex head rotated (e.g. compression-driven session
-        split during a turn), pass ``previous_lucifex_session_id`` so the
-        attached ``_meta.lucifex.sessionProvenance`` flags the rotation reason.
+        When the internal Hermes head rotated (e.g. compression-driven session
+        split during a turn), pass ``previous_hermes_session_id`` so the
+        attached ``_meta.hermes.sessionProvenance`` flags the rotation reason.
         """
         if not self._conn:
             return
@@ -759,14 +759,14 @@ class LucifexACPAgent(acp.Agent):
 
         title = row.get("title")
         # The `sessions` table does not have an `updated_at` column (see
-        # lucifex_state.py schema — only started_at/ended_at). Use "now" as
+        # hermes_state.py schema — only started_at/ended_at). Use "now" as
         # the updated_at since we're emitting this notification precisely
         # because the title was just refreshed.
         updated_at = datetime.now(timezone.utc).isoformat()
         meta = self._provenance_meta(
             session_id,
-            current_lucifex_session_id or session_id,
-            previous_lucifex_session_id,
+            current_hermes_session_id or session_id,
+            previous_hermes_session_id,
         )
         update = SessionInfoUpdate(
             session_update="session_info_update",
@@ -831,7 +831,7 @@ class LucifexACPAgent(acp.Agent):
             from agent.memory_manager import inject_memory_provider_tools
 
             enabled_toolsets = _expand_acp_enabled_toolsets(
-                getattr(state.agent, "enabled_toolsets", None) or ["lucifex-acp"],
+                getattr(state.agent, "enabled_toolsets", None) or ["hermes-acp"],
                 mcp_server_names=[server.name for server in mcp_servers],
             )
             state.agent.enabled_toolsets = enabled_toolsets
@@ -883,7 +883,7 @@ class LucifexACPAgent(acp.Agent):
 
         return InitializeResponse(
             protocol_version=acp.PROTOCOL_VERSION,
-            agent_info=Implementation(name="lucifex-agent", version=LUCIFEX_VERSION),
+            agent_info=Implementation(name="hermes-agent", version=HERMES_VERSION),
             agent_capabilities=AgentCapabilities(
                 load_session=True,
                 prompt_capabilities=PromptCapabilities(image=True),
@@ -901,7 +901,7 @@ class LucifexACPAgent(acp.Agent):
         # provider we advertised in initialize(). Without this check,
         # authenticate() would acknowledge any method_id as long as the
         # server has provider credentials configured — harmless under
-        # Lucifex' threat model (ACP is stdio-only, local-trust), but poor
+        # Hermes' threat model (ACP is stdio-only, local-trust), but poor
         # API hygiene and confusing if ACP ever grows multi-method auth.
         if not isinstance(method_id, str):
             return None
@@ -909,7 +909,7 @@ class LucifexACPAgent(acp.Agent):
         provider = detect_provider()
 
         if normalized_method == TERMINAL_SETUP_AUTH_METHOD_ID:
-            # Terminal auth launches Lucifex setup/model selection out-of-band.
+            # Terminal auth launches Hermes setup/model selection out-of-band.
             # Only report success once that flow has produced usable runtime
             # credentials for the normal ACP session.
             return AuthenticateResponse() if provider else None
@@ -1030,7 +1030,7 @@ class LucifexACPAgent(acp.Agent):
 
         Replays the conversation as user/assistant chunks, thinking-mode
         thought chunks, plus reconstructed tool-call start/completion
-        notifications. Merely restoring server-side state makes Lucifex
+        notifications. Merely restoring server-side state makes Hermes
         remember context, but leaves the editor looking like a clean thread.
         """
         if not self._conn or not state.history:
@@ -1305,7 +1305,7 @@ class LucifexACPAgent(acp.Agent):
         session_id: str,
         **kwargs: Any,
     ) -> PromptResponse:
-        """Run Lucifex on the user's prompt and stream events back to the editor."""
+        """Run Hermes on the user's prompt and stream events back to the editor."""
         state = self.session_manager.get_session(session_id)
         if state is None:
             logger.error("prompt: session %s not found", session_id)
@@ -1439,7 +1439,7 @@ class LucifexACPAgent(acp.Agent):
 
         agent = state.agent
         agent.tool_progress_callback = tool_progress_cb
-        # ACP thought panes should not receive Lucifex' local kawaii waiting/status
+        # ACP thought panes should not receive Hermes' local kawaii waiting/status
         # updates. Route provider/model reasoning deltas instead; if the provider
         # emits no reasoning, Zed should not get a fake "thinking" accordion.
         agent.thinking_callback = None
@@ -1451,14 +1451,14 @@ class LucifexACPAgent(acp.Agent):
         # Set it INSIDE _run_agent so the TLS write happens in the executor
         # thread — setting it here would write to the event-loop thread's TLS,
         # not the executor's. Interactive routing uses a contextvar in
-        # tools.approval (set_lucifex_interactive_context) rather than
-        # os.environ["LUCIFEX_INTERACTIVE"], so concurrent executor workers can't
+        # tools.approval (set_hermes_interactive_context) rather than
+        # os.environ["HERMES_INTERACTIVE"], so concurrent executor workers can't
         # race on a process-global flag — one session's restore can't drop
         # another onto the non-interactive auto-approve path mid-run
         # (GHSA-96vc-wcxf-jjff). The contextvar write is isolated by the
         # contextvars.copy_context() wrapper around the executor call below.
         # ACP's conn.request_permission maps cleanly to the interactive
-        # callback shape — not the gateway-queue LUCIFEX_EXEC_ASK path,
+        # callback shape — not the gateway-queue HERMES_EXEC_ASK path,
         # which requires a notify_cb registered in _gateway_notify_cbs.
         previous_approval_cb = None
         interactive_token = None
@@ -1467,7 +1467,7 @@ class LucifexACPAgent(acp.Agent):
 
         def _run_agent() -> dict:
             nonlocal previous_approval_cb, interactive_token, edit_approval_token, previous_session_id
-            # Bind LUCIFEX_SESSION_KEY for this session so per-session caches
+            # Bind HERMES_SESSION_KEY for this session so per-session caches
             # (e.g. the interactive sudo password cache in tools.terminal_tool)
             # scope to the ACP session rather than leaking across sessions
             # that land on the same reused executor thread. This call runs
@@ -1501,14 +1501,14 @@ class LucifexACPAgent(acp.Agent):
             # and the non-interactive auto-approve path must not fire. Uses a
             # contextvar (not os.environ) so concurrent executor workers don't
             # race on the flag (GHSA-96vc-wcxf-jjff).
-            interactive_token = set_lucifex_interactive_context(True)
+            interactive_token = set_hermes_interactive_context(True)
             # Propagate the originating ACP session id to tools that want to
             # tag side-effects with it (e.g. ``kanban_create`` stamps it on
             # the new task so clients can render a per-session board). Save
             # and restore around the agent call so a re-used executor thread
             # never leaks one session's id into the next session's tools.
-            previous_session_id = os.environ.get("LUCIFEX_SESSION_ID")
-            os.environ["LUCIFEX_SESSION_ID"] = session_id
+            previous_session_id = os.environ.get("HERMES_SESSION_ID")
+            os.environ["HERMES_SESSION_ID"] = session_id
             try:
                 result = agent.run_conversation(
                     user_message=user_content,
@@ -1523,12 +1523,12 @@ class LucifexACPAgent(acp.Agent):
             finally:
                 # Restore the interactive contextvar for this context.
                 if interactive_token is not None:
-                    reset_lucifex_interactive_context(interactive_token)
-                # Restore LUCIFEX_SESSION_ID symmetrically.
+                    reset_hermes_interactive_context(interactive_token)
+                # Restore HERMES_SESSION_ID symmetrically.
                 if previous_session_id is None:
-                    os.environ.pop("LUCIFEX_SESSION_ID", None)
+                    os.environ.pop("HERMES_SESSION_ID", None)
                 else:
-                    os.environ["LUCIFEX_SESSION_ID"] = previous_session_id
+                    os.environ["HERMES_SESSION_ID"] = previous_session_id
                 if approval_cb:
                     try:
                         from tools import terminal_tool as _terminal_tool
@@ -1549,14 +1549,14 @@ class LucifexACPAgent(acp.Agent):
                         logger.debug("Could not clear ACP session context", exc_info=True)
 
         try:
-            # Snapshot the internal Lucifex DB session id before the turn so we
+            # Snapshot the internal Hermes DB session id before the turn so we
             # can detect a compression-driven session rotation afterwards. The
             # ACP `session_id` stays the stable client handle; agent.session_id
             # is the live internal head that compression may rotate.
-            pre_turn_lucifex_id = getattr(state.agent, "session_id", None)
+            pre_turn_hermes_id = getattr(state.agent, "session_id", None)
             # Wrap the executor call in a fresh copy of the current context so
             # concurrent ACP sessions on the shared ThreadPoolExecutor don't
-            # stomp on each other's ContextVar writes (LUCIFEX_SESSION_KEY in
+            # stomp on each other's ContextVar writes (HERMES_SESSION_KEY in
             # particular — used by the interactive sudo password cache scope).
             ctx = contextvars.copy_context()
             result = await loop.run_in_executor(_executor, ctx.run, _run_agent)
@@ -1574,20 +1574,20 @@ class LucifexACPAgent(acp.Agent):
 
         # Detect a compression-driven internal session rotation. If the agent's
         # DB head moved during the turn, emit a session_info_update carrying
-        # _meta.lucifex.sessionProvenance so ACP clients can render the boundary
+        # _meta.hermes.sessionProvenance so ACP clients can render the boundary
         # and keep old/new ids in lineage. The ACP session_id is unchanged.
-        post_turn_lucifex_id = getattr(state.agent, "session_id", None)
+        post_turn_hermes_id = getattr(state.agent, "session_id", None)
         if (
             conn
-            and post_turn_lucifex_id
-            and pre_turn_lucifex_id
-            and post_turn_lucifex_id != pre_turn_lucifex_id
+            and post_turn_hermes_id
+            and pre_turn_hermes_id
+            and post_turn_hermes_id != pre_turn_hermes_id
         ):
             try:
                 await self._send_session_info_update(
                     session_id,
-                    current_lucifex_session_id=post_turn_lucifex_id,
-                    previous_lucifex_session_id=pre_turn_lucifex_id,
+                    current_hermes_session_id=post_turn_hermes_id,
+                    previous_hermes_session_id=pre_turn_hermes_id,
                 )
             except Exception:
                 logger.debug(
@@ -1599,7 +1599,7 @@ class LucifexACPAgent(acp.Agent):
         final_response = result.get("final_response", "")
         cancelled = bool(state.cancel_event and state.cancel_event.is_set())
         interrupted = bool(result.get("interrupted")) or cancelled
-        # Lucifex' local "waiting for model response" interrupt status is metadata,
+        # Hermes' local "waiting for model response" interrupt status is metadata,
         # not assistant prose — clients get cancellation from stop_reason instead.
         from agent.conversation_loop import INTERRUPT_WAITING_FOR_MODEL_PREFIX
 
@@ -1617,12 +1617,28 @@ class LucifexACPAgent(acp.Agent):
                             self._send_session_info_update(session_id),
                         )
 
+                # Snapshot the runtime identity; the validator lets the
+                # background titler skip its LLM call if the session's model
+                # changed before it fires (#19027).
+                _title_model = getattr(state.agent, "model", None)
+                _title_provider = getattr(state.agent, "provider", None)
                 maybe_auto_title(
                     self.session_manager._get_db(),
                     session_id,
                     user_text,
                     final_response,
                     state.history,
+                    main_runtime={
+                        "model": getattr(state.agent, "model", None),
+                        "provider": getattr(state.agent, "provider", None),
+                        "base_url": getattr(state.agent, "base_url", None),
+                        "api_key": getattr(state.agent, "api_key", None),
+                        "api_mode": getattr(state.agent, "api_mode", None),
+                    },
+                    runtime_validator=lambda: (
+                        getattr(state.agent, "model", None) == _title_model
+                        and getattr(state.agent, "provider", None) == _title_provider
+                    ),
                     title_callback=_notify_title_update,
                 )
             except Exception:
@@ -1791,7 +1807,7 @@ class LucifexACPAgent(acp.Agent):
             from agent.memory_manager import inject_memory_provider_tools
 
             toolsets = _expand_acp_enabled_toolsets(
-                getattr(state.agent, "enabled_toolsets", None) or ["lucifex-acp"]
+                getattr(state.agent, "enabled_toolsets", None) or ["hermes-acp"]
             )
             tools = get_tool_definitions(enabled_toolsets=toolsets, quiet_mode=True)
             tool_view = SimpleNamespace(
@@ -1903,7 +1919,18 @@ class LucifexACPAgent(acp.Agent):
 
     def _cmd_reset(self, args: str, state: SessionState) -> str:
         state.history.clear()
-        self.session_manager.save_session(state.session_id)
+        reset_failed = False
+        try:
+            reset_session_state = getattr(state.agent, "reset_session_state", None)
+            if callable(reset_session_state):
+                reset_session_state()
+        except Exception:
+            reset_failed = True
+            logger.warning("ACP session state reset failed for %s", state.session_id, exc_info=True)
+        finally:
+            self.session_manager.save_session(state.session_id)
+        if reset_failed:
+            return "Conversation history cleared. Agent session state reset failed; see logs."
         return "Conversation history cleared."
 
     def _cmd_compact(self, args: str, state: SessionState) -> str:
@@ -1988,7 +2015,7 @@ class LucifexACPAgent(acp.Agent):
         return f"Queued for the next turn. ({depth} queued)"
 
     def _cmd_version(self, args: str, state: SessionState) -> str:
-        return f"Lucifex Agent v{LUCIFEX_VERSION}"
+        return f"Hermes Agent v{HERMES_VERSION}"
 
     # ---- Model switching (ACP protocol method) -------------------------------
 
@@ -2045,7 +2072,7 @@ class LucifexACPAgent(acp.Agent):
     async def set_config_option(
         self, config_id: str, session_id: str, value: str, **kwargs: Any
     ) -> SetSessionConfigOptionResponse | None:
-        """Accept ACP config option updates even when Lucifex has no typed ACP config surface yet."""
+        """Accept ACP config option updates even when Hermes has no typed ACP config surface yet."""
         state = self.session_manager.get_session(session_id)
         if state is None:
             logger.warning("Session %s: config update requested for missing session", session_id)

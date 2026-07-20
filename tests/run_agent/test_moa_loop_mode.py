@@ -13,7 +13,7 @@ def _response(content="done", *, tool_calls=None):
 
 
 def test_moa_virtual_provider_aggregator_is_actor(monkeypatch, tmp_path):
-    home = tmp_path / ".lucifex"
+    home = tmp_path / ".hermes"
     home.mkdir()
     (home / "config.yaml").write_text(
         """
@@ -30,7 +30,7 @@ moa:
 """.strip(),
         encoding="utf-8",
     )
-    monkeypatch.setenv("LUCIFEX_HOME", str(home))
+    monkeypatch.setenv("HERMES_HOME", str(home))
     calls = []
 
     def fake_call_llm(**kwargs):
@@ -72,7 +72,7 @@ moa:
 
 
 def test_moa_runtime_provider_uses_virtual_endpoint():
-    from lucifex_cli.runtime_provider import resolve_runtime_provider
+    from hermes_cli.runtime_provider import resolve_runtime_provider
 
     runtime = resolve_runtime_provider(requested="moa", target_model="review")
 
@@ -89,7 +89,7 @@ def test_moa_does_not_cap_output_tokens(monkeypatch, tmp_path):
     omits the parameter and each model uses its real maximum. Regression for
     the "no limit on MoA models" fix.
     """
-    home = tmp_path / ".lucifex"
+    home = tmp_path / ".hermes"
     home.mkdir()
     (home / "config.yaml").write_text(
         """
@@ -107,7 +107,7 @@ moa:
 """.strip(),
         encoding="utf-8",
     )
-    monkeypatch.setenv("LUCIFEX_HOME", str(home))
+    monkeypatch.setenv("HERMES_HOME", str(home))
     calls = []
 
     def fake_call_llm(**kwargs):
@@ -163,7 +163,7 @@ def test_moa_slots_routed_through_resolve_runtime_provider(monkeypatch):
         }
 
     monkeypatch.setattr(
-        "lucifex_cli.runtime_provider.resolve_runtime_provider", fake_resolve
+        "hermes_cli.runtime_provider.resolve_runtime_provider", fake_resolve
     )
 
     rt = moa_loop._slot_runtime({"provider": "minimax", "model": "MiniMax-M2"})
@@ -195,7 +195,7 @@ def test_moa_codex_slot_preserves_provider_identity(monkeypatch):
         }
 
     monkeypatch.setattr(
-        "lucifex_cli.runtime_provider.resolve_runtime_provider", fake_resolve
+        "hermes_cli.runtime_provider.resolve_runtime_provider", fake_resolve
     )
 
     rt = moa_loop._slot_runtime({"provider": "openai-codex", "model": "gpt-5.5"})
@@ -244,7 +244,7 @@ def test_moa_provider_backed_slot_survives_aux_resolution(monkeypatch, provider)
         }
 
     monkeypatch.setattr(
-        "lucifex_cli.runtime_provider.resolve_runtime_provider", fake_resolve
+        "hermes_cli.runtime_provider.resolve_runtime_provider", fake_resolve
     )
 
     rt = moa_loop._slot_runtime({"provider": provider, "model": "test-model"})
@@ -270,7 +270,7 @@ def test_moa_slot_runtime_falls_back_on_resolution_error(monkeypatch):
         raise RuntimeError("unknown provider")
 
     monkeypatch.setattr(
-        "lucifex_cli.runtime_provider.resolve_runtime_provider", boom
+        "hermes_cli.runtime_provider.resolve_runtime_provider", boom
     )
 
     rt = moa_loop._slot_runtime({"provider": "mystery", "model": "x"})
@@ -291,7 +291,7 @@ def test_reference_messages_drops_system_but_renders_tools_as_text():
     from agent.moa_loop import _reference_messages
 
     messages = [
-        {"role": "system", "content": "huge lucifex system prompt"},
+        {"role": "system", "content": "huge hermes system prompt"},
         {"role": "user", "content": "do the thing"},
         {
             "role": "assistant",
@@ -308,7 +308,7 @@ def test_reference_messages_drops_system_but_renders_tools_as_text():
     assert all(m["role"] in ("user", "assistant") for m in view)
     assert all("tool_calls" not in m for m in view)
     # System prompt is gone.
-    assert all("huge lucifex system prompt" not in m["content"] for m in view)
+    assert all("huge hermes system prompt" not in m["content"] for m in view)
     # The agent's action and the tool result are PRESERVED as text.
     joined = "\n".join(m["content"] for m in view)
     assert "[called tool: f(" in joined
@@ -392,6 +392,44 @@ def test_reference_messages_fresh_user_turn_ends_on_that_user():
     assert view[-1] == {"role": "user", "content": "q2 current"}
 
 
+def test_reference_messages_drops_empty_user_turns():
+    """Empty user turns must not leak into the advisory view.
+
+    A user message whose content is "" or a non-string/multimodal payload
+    (flattened to "" by the text-extraction step) carries nothing advisory.
+    Strict providers (Kimi/Moonshot and others that enforce non-empty user
+    content) reject such a message with
+    400 "message ... with role 'user' must not be empty", while lenient
+    providers (DeepSeek) accept it — so a fan-out over the identical rendered
+    view fails on one reference and passes on another. The renderer must emit
+    NO empty user turn, mirroring how empty assistant turns are dropped.
+    """
+    from agent.moa_loop import _reference_messages
+
+    messages = [
+        {"role": "system", "content": "sys"},
+        {"role": "user", "content": "real question"},
+        {"role": "assistant", "content": "", "tool_calls": [
+            {"function": {"name": "read_file", "arguments": '{"path":"c.yaml"}'}}
+        ]},
+        {"role": "tool", "content": "some result"},
+        {"role": "user", "content": ""},  # empty string user turn
+        {"role": "user", "content": [{"type": "text", "text": "multimodal"}]},  # non-string -> ""
+    ]
+
+    view = _reference_messages(messages)
+
+    # No user turn in the view may be empty/whitespace-only.
+    empty_users = [
+        m for m in view
+        if m.get("role") == "user" and not str(m.get("content", "")).strip()
+    ]
+    assert empty_users == [], f"empty user turn leaked into advisory view: {empty_users}"
+    # The real user prompt survives and the view still ends on a user turn.
+    assert view[0] == {"role": "user", "content": "real question"}
+    assert view[-1]["role"] == "user"
+
+
 def test_run_reference_prepends_advisory_system_prompt(monkeypatch):
     """Each reference call gets the advisory-role system prompt first.
 
@@ -422,7 +460,7 @@ def test_run_reference_prepends_advisory_system_prompt(monkeypatch):
 
 
 def test_moa_facade_references_get_trimmed_messages(monkeypatch, tmp_path):
-    home = tmp_path / ".lucifex"
+    home = tmp_path / ".hermes"
     home.mkdir()
     (home / "config.yaml").write_text(
         """
@@ -439,7 +477,7 @@ moa:
 """.strip(),
         encoding="utf-8",
     )
-    monkeypatch.setenv("LUCIFEX_HOME", str(home))
+    monkeypatch.setenv("HERMES_HOME", str(home))
     calls = []
 
     def fake_call_llm(**kwargs):
@@ -487,7 +525,7 @@ moa:
 
 
 def test_moa_disabled_preset_skips_references(monkeypatch, tmp_path):
-    home = tmp_path / ".lucifex"
+    home = tmp_path / ".hermes"
     home.mkdir()
     (home / "config.yaml").write_text(
         """
@@ -505,7 +543,7 @@ moa:
 """.strip(),
         encoding="utf-8",
     )
-    monkeypatch.setenv("LUCIFEX_HOME", str(home))
+    monkeypatch.setenv("HERMES_HOME", str(home))
     calls = []
 
     def fake_call_llm(**kwargs):
@@ -601,9 +639,9 @@ moa:
 def test_moa_facade_emits_reference_then_aggregating(monkeypatch, tmp_path):
     """The facade reports each reference's output, then an aggregating signal,
     so frontends can render reference blocks before the aggregator acts."""
-    home = tmp_path / ".lucifex"
+    home = tmp_path / ".hermes"
     _ref_config(home)
-    monkeypatch.setenv("LUCIFEX_HOME", str(home))
+    monkeypatch.setenv("HERMES_HOME", str(home))
 
     def fake_call_llm(**kwargs):
         if kwargs["task"] == "moa_reference":
@@ -639,9 +677,9 @@ def test_moa_facade_reruns_references_on_new_tool_result(monkeypatch, tmp_path):
     references — but a redundant create() call with the SAME state is a cache
     HIT (no re-run, no re-emit), so we don't fire on a pure no-op re-call.
     """
-    home = tmp_path / ".lucifex"
+    home = tmp_path / ".hermes"
     _ref_config(home)
-    monkeypatch.setenv("LUCIFEX_HOME", str(home))
+    monkeypatch.setenv("HERMES_HOME", str(home))
 
     ref_runs = []
 
@@ -679,9 +717,9 @@ def test_moa_facade_reruns_references_on_new_tool_result(monkeypatch, tmp_path):
 
 def test_moa_facade_reruns_references_on_new_turn(monkeypatch, tmp_path):
     """A genuinely new user message invalidates the cache and re-runs refs."""
-    home = tmp_path / ".lucifex"
+    home = tmp_path / ".hermes"
     _ref_config(home)
-    monkeypatch.setenv("LUCIFEX_HOME", str(home))
+    monkeypatch.setenv("HERMES_HOME", str(home))
 
     ref_runs = []
 
@@ -724,7 +762,7 @@ def test_slot_runtime_anthropic_oauth_routes_through_provider_branch(monkeypatch
         }
 
     monkeypatch.setattr(
-        "lucifex_cli.runtime_provider.resolve_runtime_provider", fake_resolve
+        "hermes_cli.runtime_provider.resolve_runtime_provider", fake_resolve
     )
 
     # _slot_runtime forwards the resolved endpoint for anthropic like any slot.
@@ -814,7 +852,7 @@ def test_references_parallel_sum_and_consume(monkeypatch, tmp_path):
     additional advisor spend (otherwise advisor cost multiplies by iteration
     count).
     """
-    home = tmp_path / ".lucifex"
+    home = tmp_path / ".hermes"
     home.mkdir()
     (home / "config.yaml").write_text(
         """
@@ -833,7 +871,7 @@ moa:
 """.strip(),
         encoding="utf-8",
     )
-    monkeypatch.setenv("LUCIFEX_HOME", str(home))
+    monkeypatch.setenv("HERMES_HOME", str(home))
 
     def fake_call_llm(**kwargs):
         if kwargs["task"] == "moa_reference":
@@ -898,7 +936,7 @@ def test_moa_full_trace_written_when_enabled(monkeypatch, tmp_path):
     """
     import json
 
-    home = tmp_path / ".lucifex"
+    home = tmp_path / ".hermes"
     home.mkdir()
     (home / "config.yaml").write_text(
         """
@@ -918,7 +956,7 @@ moa:
 """.strip(),
         encoding="utf-8",
     )
-    monkeypatch.setenv("LUCIFEX_HOME", str(home))
+    monkeypatch.setenv("HERMES_HOME", str(home))
 
     def fake_call_llm(**kwargs):
         if kwargs["task"] == "moa_reference":
@@ -979,7 +1017,7 @@ moa:
 
 def test_moa_trace_not_written_when_disabled(monkeypatch, tmp_path):
     """Default (save_traces off) writes nothing."""
-    home = tmp_path / ".lucifex"
+    home = tmp_path / ".hermes"
     home.mkdir()
     (home / "config.yaml").write_text(
         """
@@ -996,7 +1034,7 @@ moa:
 """.strip(),
         encoding="utf-8",
     )
-    monkeypatch.setenv("LUCIFEX_HOME", str(home))
+    monkeypatch.setenv("HERMES_HOME", str(home))
 
     def fake_call_llm(**kwargs):
         if kwargs["task"] == "moa_reference":
@@ -1059,3 +1097,171 @@ def test_reference_guidance_merges_into_trailing_user_in_plain_chat():
     assert len(messages) == 2
     assert messages[-1]["role"] == "user"
     assert messages[-1]["content"] == "hello\n\nREFERENCE BLOCK"
+
+
+def test_reference_messages_flattens_cache_decorated_content():
+    """Cache-decorated turns (content-part lists) must not blind the references.
+
+    conversation_loop runs apply_anthropic_cache_control BEFORE the MoA facade
+    when the preset's aggregator is a cache-honoring Claude route (post-#57675).
+    That converts string content into [{"type": "text", "text": ...,
+    "cache_control": ...}] lists. The advisory view previously read only string
+    content, so the user's ENTIRE prompt flattened to "" — Claude references
+    then 400'd ("messages: at least one message is required") while tolerant
+    models answered "no user request is present" (live incident, Jul 14 2026,
+    preset "closed", session 20260714_001520_28157b).
+    """
+    from agent.moa_loop import _reference_messages
+    from agent.prompt_caching import apply_anthropic_cache_control
+
+    plain = [
+        {"role": "system", "content": "hermes system prompt"},
+        {"role": "user", "content": "Can we get codex usage resets into hermes?"},
+    ]
+    decorated = apply_anthropic_cache_control(plain, native_anthropic=False)
+    # Premise: decoration really converts the user turn to a content-part list.
+    assert isinstance(decorated[1]["content"], list)
+
+    view = _reference_messages(decorated)
+
+    assert view == [
+        {"role": "user", "content": "Can we get codex usage resets into hermes?"}
+    ]
+    # Invariant: decorated and undecorated transcripts produce the SAME
+    # advisory view — so decoration can never change what references see,
+    # and the advisory prefix stays byte-stable for advisor prompt caching.
+    assert view == _reference_messages(plain)
+
+
+def test_reference_messages_flattens_multimodal_user_turn():
+    """Multimodal user turns (text + image parts) keep their text in the view.
+
+    Image parts carry no advisory text and are skipped; the text part must
+    survive. Previously the whole turn flattened to "".
+    """
+    from agent.moa_loop import _reference_messages
+
+    messages = [
+        {"role": "user", "content": [
+            {"type": "text", "text": "what is in this screenshot?"},
+            {"type": "image_url", "image_url": {"url": "data:image/png;base64,AAAA"}},
+        ]},
+    ]
+
+    view = _reference_messages(messages)
+
+    assert view == [{"role": "user", "content": "what is in this screenshot?"}]
+    # No base64 payload leaks into the advisory view.
+    assert all("base64" not in m["content"] for m in view)
+
+
+def test_reference_messages_image_only_user_turn_gets_placeholder():
+    """An image-only user turn must not become an empty user message.
+
+    Anthropic rejects empty text blocks (the original 400 class) and silently
+    skipping the turn would misalign user/assistant alternation in the view —
+    so a placeholder stands in for the non-text content.
+    """
+    from agent.moa_loop import _reference_messages
+
+    messages = [
+        {"role": "user", "content": [
+            {"type": "image_url", "image_url": {"url": "data:image/png;base64,AAAA"}},
+        ]},
+        {"role": "assistant", "content": "I see a diagram."},
+        {"role": "user", "content": "now explain it"},
+    ]
+
+    view = _reference_messages(messages)
+
+    assert view[0]["role"] == "user"
+    assert view[0]["content"].strip(), "image-only turn must not be empty"
+    assert "non-text" in view[0]["content"]
+    assert view[-1] == {"role": "user", "content": "now explain it"}
+
+
+def test_reference_messages_flattens_structured_assistant_and_tool_content():
+    """Assistant and tool turns with content-part lists are flattened too.
+
+    Multimodal tool results (e.g. computer_use screenshots) and adapter-shaped
+    assistant turns arrive as lists; their text must reach the references and
+    their image parts must not leak.
+    """
+    from agent.moa_loop import _reference_messages
+
+    messages = [
+        {"role": "user", "content": "check the screen"},
+        {
+            "role": "assistant",
+            "content": [{"type": "text", "text": "taking a screenshot"}],
+            "tool_calls": [{"id": "c1", "function": {"name": "capture", "arguments": "{}"}}],
+        },
+        {"role": "tool", "tool_call_id": "c1", "content": [
+            {"type": "text", "text": "screenshot captured: login page visible"},
+            {"type": "image_url", "image_url": {"url": "data:image/png;base64,BBBB"}},
+        ]},
+    ]
+
+    view = _reference_messages(messages)
+
+    joined = "\n".join(m["content"] for m in view)
+    assert "taking a screenshot" in joined
+    assert "[called tool: capture(" in joined
+    assert "[tool result: screenshot captured: login page visible]" in joined
+    assert "BBBB" not in joined
+    assert view[-1]["role"] == "user"
+
+
+def test_reference_guidance_appends_text_part_to_decorated_trailing_user():
+    """A cache-decorated trailing user turn still receives the guidance block.
+
+    Decoration converts the trailing user turn to a content-part list; the
+    guidance must be appended as a NEW text part AFTER the cache_control-marked
+    part (cached prefix stays byte-stable, no consecutive-user-turn 400s), not
+    silently dropped and not added as a second user message.
+    """
+    from agent.moa_loop import _attach_reference_guidance
+
+    marked_part = {
+        "type": "text",
+        "text": "hello",
+        "cache_control": {"type": "ephemeral"},
+    }
+    messages = [
+        {"role": "system", "content": "system prompt"},
+        {"role": "user", "content": [dict(marked_part)]},
+    ]
+    _attach_reference_guidance(messages, "REFERENCE BLOCK")
+
+    # No extra message (would break user/user alternation).
+    assert len(messages) == 2
+    content = messages[-1]["content"]
+    assert isinstance(content, list) and len(content) == 2
+    # The cache-marked part is byte-identical (prefix stability).
+    assert content[0] == marked_part
+    # The guidance rides as a trailing text part outside the cached span.
+    assert content[1] == {"type": "text", "text": "\n\nREFERENCE BLOCK"}
+
+
+def test_reference_messages_drops_whitespace_only_string_user_turn():
+    """A whitespace-only STRING user turn is dropped, not placeholdered.
+
+    The non-text placeholder exists for structured content (image-only turns)
+    where a real turn happened that the reference should know about. A bare
+    whitespace string carries nothing — emitting it would 400 strict
+    providers (Kimi/Moonshot 'role user must not be empty'), and
+    placeholdering it would fabricate an attachment that never existed.
+    """
+    from agent.moa_loop import _reference_messages
+
+    messages = [
+        {"role": "user", "content": "   "},
+        {"role": "assistant", "content": "a"},
+        {"role": "user", "content": "real"},
+    ]
+
+    view = _reference_messages(messages)
+
+    assert view[0] == {"role": "assistant", "content": "a"}
+    assert view[-1] == {"role": "user", "content": "real"}
+    assert all(str(m["content"]).strip() for m in view)

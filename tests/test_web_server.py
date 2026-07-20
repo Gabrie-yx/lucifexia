@@ -9,7 +9,7 @@ import contextlib
 
 import uvicorn
 
-from lucifex_cli import web_server
+from hermes_cli import web_server
 
 
 def _stub_uvicorn(monkeypatch):

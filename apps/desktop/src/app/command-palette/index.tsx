@@ -8,7 +8,7 @@ import { HUD_HEADING, HUD_ITEM, HUD_POSITION, HUD_SURFACE, HUD_TEXT } from '@/ap
 import { setTerminalTakeover } from '@/app/right-sidebar/store'
 import { Command, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { KbdCombo } from '@/components/ui/kbd'
-import { getLucifexConfigRecord, listAllProfileSessions } from '@/lucifex'
+import { getHermesConfigRecord, listAllProfileSessions } from '@/hermes'
 import { useI18n } from '@/i18n'
 import { sessionTitle } from '@/lib/chat-runtime'
 import {
@@ -80,6 +80,7 @@ import { FIELD_LABELS, SECTIONS } from '../settings/constants'
 import { fieldCopyForSchemaKey } from '../settings/field-copy'
 import { prettyName } from '../settings/helpers'
 
+import { usePaletteContributions } from './contrib'
 import { MarketplaceThemePage } from './marketplace-theme-page'
 import { PetInlineToggle, PetPalettePage } from './pet-palette-page'
 
@@ -117,6 +118,7 @@ interface PalettePage {
 }
 
 interface SessionEntry {
+  git_branch?: null | string
   id: string
   preview?: string
   title: string
@@ -204,13 +206,14 @@ const rankGroups = (groups: PaletteGroup[], search: string): PaletteGroup[] => {
 // theme lists under both Light and Dark). The id suffix disambiguates.
 const paletteValue = (item: PaletteItem): string => `${item.label}\u0001${item.id}`
 
-// Lucifex session ids: <YYYYMMDD>_<HHMMSS>_<6 hex>. Used to offer a direct
+// Hermes session ids: <YYYYMMDD>_<HHMMSS>_<6 hex>. Used to offer a direct
 // "Go to session ‹id›" jump for ids that aren't in the recent-200 list.
 const SESSION_ID_RE = /^\d{8}_\d{6}_[a-f0-9]{6}$/
 
 type SessionRow = Awaited<ReturnType<typeof listAllProfileSessions>>['sessions'][number]
 
 const toSessionEntry = (session: SessionRow): SessionEntry => ({
+  git_branch: session.git_branch ?? null,
   id: session.id,
   preview: session.preview ?? undefined,
   title: sessionTitle(session)
@@ -303,7 +306,7 @@ export function CommandPalette() {
   // the palette is open. react-query handles caching/dedup/staleness.
   const configQuery = useQuery({
     queryKey: ['command-palette', 'config'],
-    queryFn: getLucifexConfigRecord,
+    queryFn: getHermesConfigRecord,
     enabled: open
   })
 
@@ -367,6 +370,8 @@ export function CommandPalette() {
       prettyName(key.split('.').pop() ?? key),
     [t.settings.fieldLabels]
   )
+
+  const contributedItems = usePaletteContributions()
 
   const baseGroups = useMemo<PaletteGroup[]>(() => {
     const settingsTab = (tab: string) => `${SETTINGS_ROUTE}?tab=${tab}`
@@ -498,9 +503,9 @@ export function CommandPalette() {
           },
           {
             icon: Download,
-            id: 'cc-update-lucifex',
-            keywords: ['update', 'upgrade', 'lucifex', 'version', 'system', 'restart'],
-            label: cc.updateLucifex,
+            id: 'cc-update-hermes',
+            keywords: ['update', 'upgrade', 'hermes', 'version', 'system', 'restart'],
+            label: cc.updateHermes,
             run: () => void applyBackendUpdate()
           }
         ]
@@ -559,9 +564,26 @@ export function CommandPalette() {
             run: go(settingsTab(entry.tab))
           }))
         ]
-      }
+      },
+      // Registry-contributed rows (core features + plugins) — one group,
+      // omitted while nothing contributes.
+      ...(contributedItems.length > 0
+        ? [
+            {
+              heading: cc.commands,
+              items: contributedItems.map(item => ({
+                action: item.action,
+                icon: item.icon ?? Zap,
+                id: item.key,
+                keywords: item.keywords,
+                label: item.label,
+                run: item.run
+              }))
+            }
+          ]
+        : [])
     ]
-  }, [go, settingsSectionLabel, t, worktrees])
+  }, [contributedItems, go, settingsSectionLabel, t, worktrees])
 
   // The long, granular lists (settings fields, API keys, MCP servers, archived
   // chats) only surface once the user types — otherwise they'd bury the
@@ -664,7 +686,12 @@ export function CommandPalette() {
         items: sessions.map(session => ({
           icon: MessageCircle,
           id: `session-${session.id}`,
-          keywords: ['chat', 'session', ...(session.preview ? [session.preview] : [])],
+          keywords: [
+            'chat',
+            'session',
+            ...(session.preview ? [session.preview] : []),
+            ...(session.git_branch ? [session.git_branch] : [])
+          ],
           label: session.title,
           run: go(sessionRoute(session.id))
         }))
@@ -702,7 +729,13 @@ export function CommandPalette() {
         items: archivedSessions.map(session => ({
           icon: Archive,
           id: `archived-${session.id}`,
-          keywords: ['archived', 'chat', 'session', ...(session.preview ? [session.preview] : [])],
+          keywords: [
+            'archived',
+            'chat',
+            'session',
+            ...(session.preview ? [session.preview] : []),
+            ...(session.git_branch ? [session.git_branch] : [])
+          ],
           label: session.title,
           run: go(`${SETTINGS_ROUTE}?tab=sessions&session=${encodeURIComponent(session.id)}`)
         }))

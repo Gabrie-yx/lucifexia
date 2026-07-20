@@ -8,12 +8,13 @@ import { DisclosureCaret } from '@/components/ui/disclosure-caret'
 import { ErrorBanner } from '@/components/ui/error-state'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
+import { Tip } from '@/components/ui/tooltip'
 import {
   getMessagingPlatforms,
   type MessagingEnvVarInfo,
   type MessagingPlatformInfo,
   updateMessagingPlatform
-} from '@/lucifex'
+} from '@/hermes'
 import { type Translations, useI18n } from '@/i18n'
 import { openExternalLink } from '@/lib/external-link'
 import { ExternalLink, Save, Trash2 } from '@/lib/icons'
@@ -549,11 +550,11 @@ const PLATFORM_INTRO: Record<string, string> = {
     'On your Mattermost server, create a bot account or personal access token, then paste the server URL and token here.',
   matrix: 'Sign in to your homeserver with the bot account, then copy the access token, user ID, and homeserver URL.',
   signal:
-    'Run a signal-cli REST bridge somewhere reachable, then point Lucifex at the URL and the registered phone number.',
+    'Run a signal-cli REST bridge somewhere reachable, then point Hermes at the URL and the registered phone number.',
   whatsapp:
-    'Start the WhatsApp bridge that ships with Lucifex, scan the QR code on first run, then enable the platform.',
+    'Start the WhatsApp bridge that ships with Hermes, scan the QR code on first run, then enable the platform.',
   bluebubbles:
-    'Run BlueBubbles Server on a Mac with iMessage, expose its API, then point Lucifex at the URL with the server password.',
+    'Run BlueBubbles Server on a Mac with iMessage, expose its API, then point Hermes at the URL with the server password.',
   homeassistant:
     'In Home Assistant, open your profile and create a long-lived access token. Paste it here along with your HA URL.',
   email:
@@ -567,10 +568,10 @@ const PLATFORM_INTRO: Record<string, string> = {
   wecom_callback:
     'Set up a WeCom self-built app, expose its callback URL, and provide the corp ID, secret, agent ID, and AES key.',
   weixin:
-    "Run `lucifex gateway setup`, select Weixin, then scan and confirm the QR code with a personal WeChat account. Lucifex connects through Tencent's iLink Bot API and saves the credentials.",
+    "Run `hermes gateway setup`, select Weixin, then scan and confirm the QR code with a personal WeChat account. Hermes connects through Tencent's iLink Bot API and saves the credentials.",
   qqbot: 'Register an app on the QQ Open Platform (q.qq.com) and copy the App ID and Client Secret.',
   api_server:
-    'Expose Lucifex as an OpenAI-compatible API. Set an auth key, then point Open WebUI / LobeChat / etc. at the host:port.',
+    'Expose Hermes as an OpenAI-compatible API. Set an auth key, then point Open WebUI / LobeChat / etc. at the host:port.',
   webhook:
     'Run an HTTP server that other tools (GitHub, GitLab, custom apps) can POST to. Use the secret to verify signatures.'
 }
@@ -609,22 +610,25 @@ function MessagingField({
             value={edits[field.key] || ''}
           />
           {field.url && (
-            <Button asChild className="size-8 shrink-0" title={m.openDocs} variant="ghost">
-              <a href={field.url} rel="noreferrer" target="_blank">
-                <ExternalLink className="size-3.5" />
-              </a>
-            </Button>
+            <Tip label={m.openDocs}>
+              <Button asChild className="size-8 shrink-0" variant="ghost">
+                <a href={field.url} rel="noreferrer" target="_blank">
+                  <ExternalLink className="size-3.5" />
+                </a>
+              </Button>
+            </Tip>
           )}
           {field.is_set && (
-            <Button
-              className="size-8 shrink-0"
-              disabled={saving === `clear:${field.key}`}
-              onClick={() => onClear(field.key)}
-              title={m.clearField(field.key)}
-              variant="ghost"
-            >
-              <Trash2 className="size-3.5" />
-            </Button>
+            <Tip label={m.clearField(field.key)}>
+              <Button
+                className="size-8 shrink-0"
+                disabled={saving === `clear:${field.key}`}
+                onClick={() => onClear(field.key)}
+                variant="ghost"
+              >
+                <Trash2 className="size-3.5" />
+              </Button>
+            </Tip>
           )}
         </div>
       }

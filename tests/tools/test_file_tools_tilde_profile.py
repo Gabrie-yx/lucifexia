@@ -8,10 +8,10 @@ gateway process's ``HOME``.  In profile mode (Docker, systemd, s6) the gateway
 "no such file or directory".
 
 The fix adds ``_expand_tilde()`` which delegates to
-``lucifex_constants.get_subprocess_home()`` — the same policy the terminal tool
+``hermes_constants.get_subprocess_home()`` — the same policy the terminal tool
 uses for subprocess environments.
 
-See: https://github.com/NousResearch/lucifex-agent/issues/48552
+See: https://github.com/NousResearch/hermes-agent/issues/48552
 """
 
 import os
@@ -21,6 +21,7 @@ from unittest.mock import patch
 import pytest
 
 import tools.file_tools as ft
+import tools.terminal_tool as terminal_tool
 
 
 # ---------------------------------------------------------------------------
@@ -32,38 +33,38 @@ class TestExpandTilde:
 
     def test_tilde_expands_to_profile_home(self):
         """When get_subprocess_home returns a value, ~/path uses it."""
-        with patch("lucifex_constants.get_subprocess_home", return_value="/opt/data/profiles/coder/home"):
+        with patch("hermes_constants.get_subprocess_home", return_value="/opt/data/profiles/coder/home"):
             result = ft._expand_tilde("~/scratch/file.txt")
         assert result == "/opt/data/profiles/coder/home/scratch/file.txt"
 
     def test_bare_tilde_expands_to_profile_home(self):
         """Bare ~ expands to the profile home."""
-        with patch("lucifex_constants.get_subprocess_home", return_value="/opt/data/profiles/coder/home"):
+        with patch("hermes_constants.get_subprocess_home", return_value="/opt/data/profiles/coder/home"):
             result = ft._expand_tilde("~")
         assert result == "/opt/data/profiles/coder/home"
 
     def test_falls_back_when_no_profile_home(self):
         """When get_subprocess_home returns None, use os.path.expanduser."""
-        with patch("lucifex_constants.get_subprocess_home", return_value=None):
+        with patch("hermes_constants.get_subprocess_home", return_value=None):
             result = ft._expand_tilde("~/Documents")
         assert result == os.path.expanduser("~/Documents")
 
     def test_other_user_tilde_not_overridden(self):
         """~user/path must NOT use the profile home — it's a different user."""
-        with patch("lucifex_constants.get_subprocess_home", return_value="/opt/data/profiles/coder/home"):
+        with patch("hermes_constants.get_subprocess_home", return_value="/opt/data/profiles/coder/home"):
             result = ft._expand_tilde("~root/file.txt")
         # Should use os.path.expanduser, not the profile home
         assert "/opt/data/profiles/coder/home" not in result
 
     def test_no_tilde_unchanged(self):
         """Paths without ~ are returned unchanged (modulo expanduser)."""
-        with patch("lucifex_constants.get_subprocess_home", return_value="/opt/data/profiles/coder/home"):
+        with patch("hermes_constants.get_subprocess_home", return_value="/opt/data/profiles/coder/home"):
             result = ft._expand_tilde("/etc/passwd")
         assert result == "/etc/passwd"
 
     def test_empty_path_unchanged(self):
         """Empty string returns empty."""
-        with patch("lucifex_constants.get_subprocess_home", return_value="/opt/data/profiles/coder/home"):
+        with patch("hermes_constants.get_subprocess_home", return_value="/opt/data/profiles/coder/home"):
             assert ft._expand_tilde("") == ""
 
 
@@ -82,9 +83,9 @@ class TestResolvePathUsesProfileHome:
         process_home.mkdir()
 
         monkeypatch.setenv("HOME", str(process_home))
-        monkeypatch.setattr(ft, "_get_live_tracking_cwd", lambda task_id="default": None)
+        monkeypatch.setattr(terminal_tool, "_session_cwd", {})
 
-        with patch("lucifex_constants.get_subprocess_home", return_value=str(profile_home)):
+        with patch("hermes_constants.get_subprocess_home", return_value=str(profile_home)):
             resolved = ft._resolve_path_for_task("~/test_file.txt", task_id="test")
 
         assert str(resolved).startswith(str(profile_home))
@@ -98,9 +99,9 @@ class TestResolvePathUsesProfileHome:
         process_home.mkdir()
 
         monkeypatch.setenv("HOME", str(process_home))
-        monkeypatch.setattr(ft, "_get_live_tracking_cwd", lambda task_id="default": None)
+        monkeypatch.setattr(terminal_tool, "_session_cwd", {})
 
-        with patch("lucifex_constants.get_subprocess_home", return_value=str(profile_home)):
+        with patch("hermes_constants.get_subprocess_home", return_value=str(profile_home)):
             # _resolve_base_dir uses the workspace root from config; if it contains ~,
             # it should resolve to profile home
             resolved = ft._resolve_path_for_task("~/data/config.json", task_id="test")

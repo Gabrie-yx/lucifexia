@@ -14,14 +14,14 @@ npm install -g byterover-cli
 ## Setup
 
 ```bash
-lucifex memory setup    # select "byterover"
+hermes memory setup    # select "byterover"
 ```
 
 Or manually:
 ```bash
-lucifex config set memory.provider byterover
+hermes config set memory.provider byterover
 # Optional cloud sync:
-echo "BRV_API_KEY=your-key" >> ~/.lucifex/.env
+echo "BRV_API_KEY=your-key" >> ~/.hermes/.env
 ```
 
 ## Config
@@ -30,7 +30,7 @@ echo "BRV_API_KEY=your-key" >> ~/.lucifex/.env
 |---------|----------|-------------|
 | `BRV_API_KEY` | No | Cloud sync key (optional, local-first by default) |
 
-Working directory: `$LUCIFEX_HOME/byterover/` (profile-scoped).
+Working directory: `$HERMES_HOME/byterover/` (profile-scoped).
 
 ## Tools
 

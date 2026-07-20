@@ -324,6 +324,61 @@ class TestDenyCommand:
         result = await runner._handle_deny_command(_make_event("/deny"))
         assert "No pending command" in result
 
+    @pytest.mark.asyncio
+    async def test_deny_with_reason_attaches_reason(self):
+        """/deny <reason> attaches the reason to the resolved entry."""
+        from tools.approval import _ApprovalEntry, _gateway_queues
+
+        runner = _make_runner()
+        source = _make_source()
+        session_key = runner._session_key_for_source(source)
+
+        entry = _ApprovalEntry({"command": "test"})
+        _gateway_queues[session_key] = [entry]
+
+        result = await runner._handle_deny_command(
+            _make_event("/deny that path is still in use")
+        )
+        assert entry.result == "deny"
+        assert entry.reason == "that path is still in use"
+        assert "that path is still in use" in result
+
+    @pytest.mark.asyncio
+    async def test_deny_all_with_reason(self):
+        """/deny all <reason> denies everything and relays one reason."""
+        from tools.approval import _ApprovalEntry, _gateway_queues
+
+        runner = _make_runner()
+        source = _make_source()
+        session_key = runner._session_key_for_source(source)
+
+        e1 = _ApprovalEntry({"command": "cmd1"})
+        e2 = _ApprovalEntry({"command": "cmd2"})
+        _gateway_queues[session_key] = [e1, e2]
+
+        result = await runner._handle_deny_command(
+            _make_event("/deny all wrong directory")
+        )
+        assert "2 commands" in result
+        assert all(e.result == "deny" for e in [e1, e2])
+        assert all(e.reason == "wrong directory" for e in [e1, e2])
+
+    @pytest.mark.asyncio
+    async def test_deny_plain_has_no_reason(self):
+        """A bare /deny leaves the reason unset (regression guard)."""
+        from tools.approval import _ApprovalEntry, _gateway_queues
+
+        runner = _make_runner()
+        source = _make_source()
+        session_key = runner._session_key_for_source(source)
+
+        entry = _ApprovalEntry({"command": "test"})
+        _gateway_queues[session_key] = [entry]
+
+        await runner._handle_deny_command(_make_event("/deny"))
+        assert entry.result == "deny"
+        assert entry.reason is None
+
 
 # ------------------------------------------------------------------
 # Bare "yes" must NOT trigger approval
@@ -359,13 +414,27 @@ class TestBareTextNoLongerApproves:
 class TestBlockingApprovalE2E:
     """Test the full blocking flow: agent thread blocks → user approves → agent resumes."""
 
+    @pytest.fixture(autouse=True)
+    def _manual_approval_mode(self, monkeypatch):
+        monkeypatch.setattr("tools.approval._get_approval_mode", lambda: "manual")
+
     def setup_method(self):
         _clear_approval_state()
-        os.environ.pop("LUCIFEX_YOLO_MODE", None)
-        os.environ.pop("LUCIFEX_INTERACTIVE", None)
-        os.environ.pop("LUCIFEX_GATEWAY_SESSION", None)
-        os.environ.pop("LUCIFEX_EXEC_ASK", None)
-        os.environ.pop("LUCIFEX_SESSION_KEY", None)
+        os.environ.pop("HERMES_YOLO_MODE", None)
+        os.environ.pop("HERMES_INTERACTIVE", None)
+        os.environ.pop("HERMES_GATEWAY_SESSION", None)
+        os.environ.pop("HERMES_EXEC_ASK", None)
+        os.environ.pop("HERMES_SESSION_KEY", None)
+        # These E2E tests exercise manual gateway blocking; default config is
+        # approvals.mode=smart which may auto-approve/deny via aux LLM before
+        # notify_cb runs (flaky on CI when the LLM is slow or unavailable).
+        self._approval_mode_patch = patch(
+            "tools.approval._get_approval_mode", return_value="manual"
+        )
+        self._approval_mode_patch.start()
+
+    def teardown_method(self):
+        self._approval_mode_patch.stop()
 
     def test_blocking_approval_approve_once(self):
         """check_all_command_guards blocks until resolve_gateway_approval is called."""
@@ -385,17 +454,17 @@ class TestBlockingApprovalE2E:
             from tools.approval import reset_current_session_key, set_current_session_key
 
             token = set_current_session_key(session_key)
-            os.environ["LUCIFEX_GATEWAY_SESSION"] = "1"
-            os.environ["LUCIFEX_EXEC_ASK"] = "1"
-            os.environ["LUCIFEX_SESSION_KEY"] = session_key
+            os.environ["HERMES_GATEWAY_SESSION"] = "1"
+            os.environ["HERMES_EXEC_ASK"] = "1"
+            os.environ["HERMES_SESSION_KEY"] = session_key
             try:
                 result_holder[0] = check_all_command_guards(
                     "rm -rf /important", "local"
                 )
             finally:
-                os.environ.pop("LUCIFEX_GATEWAY_SESSION", None)
-                os.environ.pop("LUCIFEX_EXEC_ASK", None)
-                os.environ.pop("LUCIFEX_SESSION_KEY", None)
+                os.environ.pop("HERMES_GATEWAY_SESSION", None)
+                os.environ.pop("HERMES_EXEC_ASK", None)
+                os.environ.pop("HERMES_SESSION_KEY", None)
                 reset_current_session_key(token)
 
         t = threading.Thread(target=agent_thread)
@@ -433,17 +502,17 @@ class TestBlockingApprovalE2E:
             from tools.approval import reset_current_session_key, set_current_session_key
 
             token = set_current_session_key(session_key)
-            os.environ["LUCIFEX_GATEWAY_SESSION"] = "1"
-            os.environ["LUCIFEX_EXEC_ASK"] = "1"
-            os.environ["LUCIFEX_SESSION_KEY"] = session_key
+            os.environ["HERMES_GATEWAY_SESSION"] = "1"
+            os.environ["HERMES_EXEC_ASK"] = "1"
+            os.environ["HERMES_SESSION_KEY"] = session_key
             try:
                 result_holder[0] = check_all_command_guards(
                     "rm -rf /important", "local"
                 )
             finally:
-                os.environ.pop("LUCIFEX_GATEWAY_SESSION", None)
-                os.environ.pop("LUCIFEX_EXEC_ASK", None)
-                os.environ.pop("LUCIFEX_SESSION_KEY", None)
+                os.environ.pop("HERMES_GATEWAY_SESSION", None)
+                os.environ.pop("HERMES_EXEC_ASK", None)
+                os.environ.pop("HERMES_SESSION_KEY", None)
                 reset_current_session_key(token)
 
         t = threading.Thread(target=agent_thread)
@@ -460,42 +529,60 @@ class TestBlockingApprovalE2E:
         assert "BLOCKED" in result_holder[0]["message"]
         unregister_gateway_notify(session_key)
 
-    def test_blocking_approval_timeout(self):
-        """check_all_command_guards returns BLOCKED on timeout."""
+    @pytest.mark.parametrize(
+        "approval_config",
+        [
+            {"mode": "manual", "timeout": 0},
+            {"mode": "manual", "timeout": 0, "gateway_timeout": 300},
+        ],
+        ids=["shared-timeout-only", "shared-timeout-is-canonical"],
+    )
+    def test_blocking_approval_uses_canonical_timeout(self, approval_config, monkeypatch):
+        """Gateway waits use approvals.timeout, without a second timeout knob."""
+        from tools import approval as approval_module
         from tools.approval import (
-            register_gateway_notify, unregister_gateway_notify,
             check_all_command_guards,
+            register_gateway_notify,
+            reset_current_session_key,
+            resolve_gateway_approval,
+            set_current_session_key,
+            unregister_gateway_notify,
         )
 
+        monkeypatch.setattr(approval_module, "_YOLO_MODE_FROZEN", False)
         session_key = "e2e-timeout"
         register_gateway_notify(session_key, lambda d: None)
 
         result_holder = [None]
 
         def agent_thread():
-            from tools.approval import reset_current_session_key, set_current_session_key
-
             token = set_current_session_key(session_key)
-            os.environ["LUCIFEX_GATEWAY_SESSION"] = "1"
-            os.environ["LUCIFEX_EXEC_ASK"] = "1"
-            os.environ["LUCIFEX_SESSION_KEY"] = session_key
+            os.environ["HERMES_GATEWAY_SESSION"] = "1"
+            os.environ["HERMES_EXEC_ASK"] = "1"
+            os.environ["HERMES_SESSION_KEY"] = session_key
             try:
-                with patch("tools.approval._get_approval_config",
-                           return_value={"gateway_timeout": 1}):
+                with patch(
+                    "tools.approval._get_approval_config",
+                    return_value=approval_config,
+                ):
                     result_holder[0] = check_all_command_guards(
                         "rm -rf /important", "local"
                     )
             finally:
-                os.environ.pop("LUCIFEX_GATEWAY_SESSION", None)
-                os.environ.pop("LUCIFEX_EXEC_ASK", None)
-                os.environ.pop("LUCIFEX_SESSION_KEY", None)
+                os.environ.pop("HERMES_GATEWAY_SESSION", None)
+                os.environ.pop("HERMES_EXEC_ASK", None)
+                os.environ.pop("HERMES_SESSION_KEY", None)
                 reset_current_session_key(token)
 
         t = threading.Thread(target=agent_thread)
         t.start()
-        t.join(timeout=10)
+        t.join(timeout=1)
+        if t.is_alive():
+            resolve_gateway_approval(session_key, "deny")
+            t.join(timeout=5)
 
         assert result_holder[0]["approved"] is False
+        assert result_holder[0]["outcome"] == "timeout"
         assert "timed out" in result_holder[0]["message"]
         unregister_gateway_notify(session_key)
 
@@ -518,15 +605,15 @@ class TestBlockingApprovalE2E:
                 from tools.approval import reset_current_session_key, set_current_session_key
 
                 token = set_current_session_key(session_key)
-                os.environ["LUCIFEX_GATEWAY_SESSION"] = "1"
-                os.environ["LUCIFEX_EXEC_ASK"] = "1"
-                os.environ["LUCIFEX_SESSION_KEY"] = session_key
+                os.environ["HERMES_GATEWAY_SESSION"] = "1"
+                os.environ["HERMES_EXEC_ASK"] = "1"
+                os.environ["HERMES_SESSION_KEY"] = session_key
                 try:
                     results[idx] = check_all_command_guards(cmd, "local")
                 finally:
-                    os.environ.pop("LUCIFEX_GATEWAY_SESSION", None)
-                    os.environ.pop("LUCIFEX_EXEC_ASK", None)
-                    os.environ.pop("LUCIFEX_SESSION_KEY", None)
+                    os.environ.pop("HERMES_GATEWAY_SESSION", None)
+                    os.environ.pop("HERMES_EXEC_ASK", None)
+                    os.environ.pop("HERMES_SESSION_KEY", None)
                     reset_current_session_key(token)
             return run
 
@@ -575,15 +662,15 @@ class TestBlockingApprovalE2E:
                 from tools.approval import reset_current_session_key, set_current_session_key
 
                 token = set_current_session_key(session_key)
-                os.environ["LUCIFEX_GATEWAY_SESSION"] = "1"
-                os.environ["LUCIFEX_EXEC_ASK"] = "1"
-                os.environ["LUCIFEX_SESSION_KEY"] = session_key
+                os.environ["HERMES_GATEWAY_SESSION"] = "1"
+                os.environ["HERMES_EXEC_ASK"] = "1"
+                os.environ["HERMES_SESSION_KEY"] = session_key
                 try:
                     results[idx] = check_all_command_guards(cmd, "local")
                 finally:
-                    os.environ.pop("LUCIFEX_GATEWAY_SESSION", None)
-                    os.environ.pop("LUCIFEX_EXEC_ASK", None)
-                    os.environ.pop("LUCIFEX_SESSION_KEY", None)
+                    os.environ.pop("HERMES_GATEWAY_SESSION", None)
+                    os.environ.pop("HERMES_EXEC_ASK", None)
+                    os.environ.pop("HERMES_SESSION_KEY", None)
                     reset_current_session_key(token)
             return run
 
@@ -636,13 +723,13 @@ class TestFallbackNoCallback:
         """
         from tools.approval import check_all_command_guards
 
-        os.environ["LUCIFEX_EXEC_ASK"] = "1"
-        os.environ["LUCIFEX_SESSION_KEY"] = "no-callback-test"
+        os.environ["HERMES_EXEC_ASK"] = "1"
+        os.environ["HERMES_SESSION_KEY"] = "no-callback-test"
         try:
             result = check_all_command_guards("rm -rf /important", "local")
         finally:
-            os.environ.pop("LUCIFEX_EXEC_ASK", None)
-            os.environ.pop("LUCIFEX_SESSION_KEY", None)
+            os.environ.pop("HERMES_EXEC_ASK", None)
+            os.environ.pop("HERMES_SESSION_KEY", None)
 
         assert result["approved"] is False
         assert result.get("status") == "pending_approval"
@@ -658,7 +745,7 @@ class TestCrossSessionApprovalIsolation:
     """Regression for #24100.
 
     The gateway used to write the per-turn session key to the
-    process-global ``os.environ["LUCIFEX_SESSION_KEY"]`` inside
+    process-global ``os.environ["HERMES_SESSION_KEY"]`` inside
     ``GatewayRunner._run_agent``. Because ``os.environ`` is process-global,
     a concurrent gateway session (e.g. a second Discord thread) clobbered
     the value, and a tool worker thread whose approval contextvar was unset
@@ -671,12 +758,16 @@ class TestCrossSessionApprovalIsolation:
     even when ``os.environ`` has been clobbered to session B.
     """
 
+    @pytest.fixture(autouse=True)
+    def _manual_approval_mode(self, monkeypatch):
+        monkeypatch.setattr("tools.approval._get_approval_mode", lambda: "manual")
+
     def setup_method(self):
         _clear_approval_state()
-        os.environ.pop("LUCIFEX_SESSION_KEY", None)
+        os.environ.pop("HERMES_SESSION_KEY", None)
 
     def teardown_method(self):
-        os.environ.pop("LUCIFEX_SESSION_KEY", None)
+        os.environ.pop("HERMES_SESSION_KEY", None)
 
     def test_contextvar_wins_over_clobbered_environ(self):
         """get_current_session_key honors the contextvar, not stale env."""
@@ -688,7 +779,7 @@ class TestCrossSessionApprovalIsolation:
 
         # Simulate a concurrent session B having written process-global env
         # last (the "last writer wins" clobber that caused #24100).
-        os.environ["LUCIFEX_SESSION_KEY"] = "session-B"
+        os.environ["HERMES_SESSION_KEY"] = "session-B"
 
         token = set_current_session_key("session-A")
         try:
@@ -718,7 +809,7 @@ class TestCrossSessionApprovalIsolation:
         # but we set it here to prove the resolver no longer trusts it once
         # the session-context contextvars are explicitly cleared (as the
         # gateway does in its finally block via clear_session_vars()).
-        os.environ["LUCIFEX_SESSION_KEY"] = "session-B-stale"
+        os.environ["HERMES_SESSION_KEY"] = "session-B-stale"
 
         # The gateway explicitly clears its session contextvars at turn end;
         # clear_session_vars sets them to "" to *suppress* the os.environ
@@ -753,16 +844,16 @@ class TestCrossSessionApprovalIsolation:
         register_gateway_notify("session-B", lambda d: notified_b.append(d))
 
         # Concurrent session B clobbered the process-global env var last.
-        os.environ["LUCIFEX_SESSION_KEY"] = "session-B"
-        os.environ["LUCIFEX_GATEWAY_SESSION"] = "1"
-        os.environ["LUCIFEX_EXEC_ASK"] = "1"
+        os.environ["HERMES_SESSION_KEY"] = "session-B"
+        os.environ["HERMES_GATEWAY_SESSION"] = "1"
+        os.environ["HERMES_EXEC_ASK"] = "1"
 
         result_holder = [None]
 
         def worker_a():
             # This worker belongs to session A — only its contextvar is set;
             # it deliberately does NOT touch os.environ (mirroring the fixed
-            # gateway, which no longer writes LUCIFEX_SESSION_KEY).
+            # gateway, which no longer writes HERMES_SESSION_KEY).
             token = set_current_session_key("session-A")
             try:
                 result_holder[0] = check_all_command_guards(
@@ -789,8 +880,8 @@ class TestCrossSessionApprovalIsolation:
             assert result_holder[0] is not None
             assert result_holder[0]["approved"] is True
         finally:
-            os.environ.pop("LUCIFEX_GATEWAY_SESSION", None)
-            os.environ.pop("LUCIFEX_EXEC_ASK", None)
+            os.environ.pop("HERMES_GATEWAY_SESSION", None)
+            os.environ.pop("HERMES_EXEC_ASK", None)
             unregister_gateway_notify("session-A")
             unregister_gateway_notify("session-B")
 
@@ -799,7 +890,7 @@ class TestCrossSessionApprovalIsolation:
 
         Two concurrent worker threads with DISTINCT session keys each set
         only ``set_current_session_key()`` — they deliberately never write
-        ``os.environ["LUCIFEX_SESSION_KEY"]``. This proves the contextvar is
+        ``os.environ["HERMES_SESSION_KEY"]``. This proves the contextvar is
         sufficient post-fix, and would FAIL if contextvar routing regressed
         (the prior 'parallel' tests share one key and dual-set env+contextvar,
         so they cannot guard this invariant). Each session's dangerous command
@@ -816,10 +907,10 @@ class TestCrossSessionApprovalIsolation:
             unregister_gateway_notify,
         )
 
-        # No LUCIFEX_SESSION_KEY in os.environ at all — pure contextvar routing.
-        os.environ.pop("LUCIFEX_SESSION_KEY", None)
-        os.environ["LUCIFEX_GATEWAY_SESSION"] = "1"
-        os.environ["LUCIFEX_EXEC_ASK"] = "1"
+        # No HERMES_SESSION_KEY in os.environ at all — pure contextvar routing.
+        os.environ.pop("HERMES_SESSION_KEY", None)
+        os.environ["HERMES_GATEWAY_SESSION"] = "1"
+        os.environ["HERMES_EXEC_ASK"] = "1"
 
         register_gateway_notify("sess-A", lambda d: None)
         register_gateway_notify("sess-B", lambda d: None)
@@ -869,7 +960,7 @@ class TestCrossSessionApprovalIsolation:
             resolve_gateway_approval("sess-B", "deny")
             ta.join(timeout=2)
             tb.join(timeout=2)
-            os.environ.pop("LUCIFEX_GATEWAY_SESSION", None)
-            os.environ.pop("LUCIFEX_EXEC_ASK", None)
+            os.environ.pop("HERMES_GATEWAY_SESSION", None)
+            os.environ.pop("HERMES_EXEC_ASK", None)
             unregister_gateway_notify("sess-A")
             unregister_gateway_notify("sess-B")

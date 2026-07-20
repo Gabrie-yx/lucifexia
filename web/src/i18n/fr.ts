@@ -50,7 +50,7 @@ export const fr: Translations = {
   },
 
   app: {
-    brand: "Lucifex Agent",
+    brand: "Hermes Agent",
     brandShort: "HA",
     closeNavigation: "Fermer la navigation",
     closeModelTools: "Fermer modèle et outils",
@@ -120,8 +120,8 @@ export const fr: Translations = {
     starting: "Démarrage",
     startedInBackground: "Démarré en arrière-plan — consultez les journaux pour la progression",
     stopped: "Arrêté",
-    updateLucifex: "Mettre à jour Lucifex",
-    updatingLucifex: "Mise à jour de Lucifex…",
+    updateHermes: "Mettre à jour Hermes",
+    updatingHermes: "Mise à jour de Hermes…",
     waitingForOutput: "En attente de la sortie…",
   },
 
@@ -321,7 +321,7 @@ export const fr: Translations = {
     enableRuntime: "Activer",
     forceReinstall: "Forcer la réinstallation (supprimer d'abord le dossier existant)",
     headline:
-      "Découvrez, installez, activez et mettez à jour les plugins Lucifex (parité avec `lucifex plugins`).",
+      "Découvrez, installez, activez et mettez à jour les plugins Hermes (parité avec `hermes plugins`).",
     identifierLabel: "URL Git ou owner/repo",
     inactive: "inactif",
     installBtn: "Installer",
@@ -338,8 +338,8 @@ export const fr: Translations = {
     providersHint:
       "Écrit memory.provider (vide = intégré) et context.engine dans config.yaml. Prend effet à la prochaine session.",
     refreshDashboard: "Re-scanner les extensions du tableau de bord",
-    removeConfirm: "Retirer ce plugin de ~/.lucifex/plugins/ ?",
-    removeHint: "Seuls les plugins installés par l'utilisateur sous ~/.lucifex/plugins peuvent être supprimés.",
+    removeConfirm: "Retirer ce plugin de ~/.hermes/plugins/ ?",
+    removeHint: "Seuls les plugins installés par l'utilisateur sous ~/.hermes/plugins peuvent être supprimés.",
     rescanHeading: "Registre des plugins SPA",
     rescanHint: "Re-scannez après avoir ajouté des fichiers sur le disque pour que la barre latérale prenne en compte les nouveaux manifestes.",
     runtimeHeading: "Exécution de la passerelle (plugins YAML)",
@@ -361,7 +361,7 @@ export const fr: Translations = {
     all: "Toutes",
     categories: "Catégories",
     filters: "Filtres",
-    noSkills: "Aucune compétence trouvée. Les compétences sont chargées depuis ~/.lucifex/skills/",
+    noSkills: "Aucune compétence trouvée. Les compétences sont chargées depuis ~/.hermes/skills/",
     noSkillsMatch: "Aucune compétence ne correspond à votre recherche ou filtre.",
     skillCount: "{count} compétence{s}",
     resultCount: "{count} résultat{s}",
@@ -375,7 +375,7 @@ export const fr: Translations = {
   },
 
   config: {
-    configPath: "~/.lucifex/config.yaml",
+    configPath: "~/.hermes/config.yaml",
     filters: "Filtres",
     sections: "Sections",
     exportConfig: "Exporter la configuration en JSON",
@@ -435,7 +435,7 @@ export const fr: Translations = {
     showValue: "Afficher la valeur réelle",
     hideValue: "Masquer la valeur",
     customTitle: "Clés personnalisées",
-    customHint: "Variables d'environnement arbitraires stockées dans votre .env que Lucifex ne reconnaît pas. Utilisez-les pour injecter des variables d'environnement pour des compétences, des serveurs MCP ou vos propres outils.",
+    customHint: "Variables d'environnement arbitraires stockées dans votre .env que Hermes ne reconnaît pas. Utilisez-les pour injecter des variables d'environnement pour des compétences, des serveurs MCP ou vos propres outils.",
     customConfigured: "{count} clé(s) personnalisée(s) définie(s)",
     addCustomKey: "Ajouter une clé personnalisée",
     customKeyName: "Nom de la variable",
@@ -447,16 +447,19 @@ export const fr: Translations = {
   oauth: {
     title: "Connexions fournisseurs (OAuth)",
     providerLogins: "Connexions fournisseurs (OAuth)",
-    description: "{connected} sur {total} fournisseurs OAuth connectés. Les flux de connexion s'exécutent actuellement via le CLI ; cliquez sur Copier la commande et collez-la dans un terminal pour configurer.",
+    description:
+      "{connected} sur {total} fournisseurs OAuth connectés. Utilisez Connexion pour les flux pris en charge par le tableau de bord ; les commandes CLI restent disponibles pour une configuration externe ou de secours.",
     connected: "Connecté",
     expired: "Expiré",
-    notConnected: "Non connecté. Exécutez {command} dans un terminal.",
+    notConnected: "Non connecté. Utilisez Connexion si disponible, ou exécutez {command} dans un terminal.",
     runInTerminal: "dans un terminal.",
     noProviders: "Aucun fournisseur compatible OAuth détecté.",
     login: "Connexion",
     disconnect: "Déconnecter",
     managedExternally: "Géré en externe",
     copied: "Copié ✓",
+    copyCode: "Copier le code",
+    copyFailed: "Copie automatique impossible. Sélectionnez le code et copiez-le manuellement.",
     cli: "Copier",
     copyCliCommand: "Copier la commande CLI (pour externe / repli)",
     connect: "Connecter",
@@ -494,11 +497,11 @@ export const fr: Translations = {
   achievements: {
     hero: {
       kicker: "Agentic Gamerscore",
-      title: "Lucifex Achievements",
+      title: "Hermes Achievements",
       subtitle:
-        "Badges Lucifex à collectionner, gagnés à partir de l'historique réel des sessions. Les succès connus non terminés sont affichés comme Découverts ; les succès secrets restent cachés jusqu'à l'apparition du premier comportement correspondant.",
+        "Badges Hermes à collectionner, gagnés à partir de l'historique réel des sessions. Les succès connus non terminés sont affichés comme Découverts ; les succès secrets restent cachés jusqu'à l'apparition du premier comportement correspondant.",
       scan_subtitle:
-        "Analyse de l'historique des sessions Lucifex en cours. Le premier scan peut prendre 5 à 10 secondes sur les historiques volumineux.",
+        "Analyse de l'historique des sessions Hermes en cours. Le premier scan peut prendre 5 à 10 secondes sur les historiques volumineux.",
     },
     actions: {
       rescan: "Relancer le scan",
@@ -513,7 +516,7 @@ export const fr: Translations = {
       highest_tier: "Niveau le plus élevé",
       highest_tier_hint: "Copper → Silver → Gold → Diamond → Olympian",
       latest: "Dernier",
-      latest_hint_empty: "utilisez Lucifex davantage",
+      latest_hint_empty: "utilisez Hermes davantage",
       none_yet: "Aucun pour l'instant",
     },
     state: {
@@ -544,10 +547,10 @@ export const fr: Translations = {
       tiers_header: "Niveaux",
       secret_header: "Succès secrets",
       secret_body:
-        "Les secrets cachent leur déclencheur exact. Dès qu'Lucifex détecte un signal lié, la carte passe à Découvert et affiche son exigence.",
+        "Les secrets cachent leur déclencheur exact. Dès qu'Hermes détecte un signal lié, la carte passe à Découvert et affiche son exigence.",
       scan_status_header: "État du scan",
       scan_status_body:
-        "Lucifex analyse l'historique local une seule fois, puis les cartes apparaîtront automatiquement. Rien n'est bloqué si cela prend quelques secondes.",
+        "Hermes analyse l'historique local une seule fois, puis les cartes apparaîtront automatiquement. Rien n'est bloqué si cela prend quelques secondes.",
       what_scanned_header: "Ce qui est analysé",
       what_scanned_body:
         "Sessions, appels d'outils, métadonnées du modèle, erreurs, succès et état de déblocage local.",
@@ -594,7 +597,7 @@ export const fr: Translations = {
         "Partager sur X ouvre une publication préremplie dans un nouvel onglet. Cliquez d'abord sur Copier l'image si vous voulez joindre le badge 1200×630 — X vous laisse le coller directement dans l'éditeur de tweet. Télécharger le PNG enregistre le fichier pour l'utiliser n'importe où.",
       clipboard_unsupported:
         "La copie d'image dans le presse-papiers n'est pas prise en charge par ce navigateur — utilisez Télécharger à la place.",
-      tweet_text: "Just unlocked {tier_part}\"{name}\" in Lucifex Agent ☤",
+      tweet_text: "Just unlocked {tier_part}\"{name}\" in Hermes Agent ☤",
     },
   },
   kanban: {

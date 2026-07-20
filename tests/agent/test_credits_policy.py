@@ -343,17 +343,17 @@ class TestIsFreeTierModel:
         from agent.credits_tracker import is_free_tier_model
 
         assert is_free_tier_model("nvidia/nemotron-3-ultra:free") is True
-        assert is_free_tier_model("Lucifex-4-70B:free", "https://inference-api.nousresearch.com") is True
+        assert is_free_tier_model("Hermes-4-70B:free", "https://inference-api.nousresearch.com") is True
 
     def test_empty_or_paid_model_is_not_free(self):
         from agent.credits_tracker import is_free_tier_model
 
         assert is_free_tier_model("") is False
-        assert is_free_tier_model("Lucifex-4-405B") is False
+        assert is_free_tier_model("Hermes-4-405B") is False
 
     def test_pricing_cache_peek_zero_priced_model(self, monkeypatch):
         from agent.credits_tracker import is_free_tier_model
-        import lucifex_cli.models as models_mod
+        import hermes_cli.models as models_mod
 
         # The picker keys the cache on the pre-/v1 root (get_pricing_for_provider
         # strips a trailing /v1 before fetch_models_with_pricing).
@@ -378,7 +378,7 @@ class TestIsFreeTierModel:
 
     def test_cache_miss_is_not_free_and_no_fetch(self, monkeypatch):
         from agent.credits_tracker import is_free_tier_model
-        import lucifex_cli.models as models_mod
+        import hermes_cli.models as models_mod
 
         monkeypatch.setattr(models_mod, "_pricing_cache", {})
 
@@ -392,7 +392,7 @@ class TestIsFreeTierModel:
 
     def test_exception_fails_open_to_false(self, monkeypatch):
         from agent.credits_tracker import is_free_tier_model
-        import lucifex_cli.models as models_mod
+        import hermes_cli.models as models_mod
 
         class _Exploding:
             def get(self, *_a, **_kw):
@@ -469,7 +469,7 @@ class TestNoticeCopy:
         s = CreditsState(paid_access=False)
         to_show, _ = evaluate_credits_notices(s, latch)
         depleted_notice = next(n for n in to_show if n.key == "credits.depleted")
-        assert "/credits" in depleted_notice.text
+        assert "/topup" in depleted_notice.text
 
 
 # ── Scenario 8: severity order in a single call ──────────────────────────────

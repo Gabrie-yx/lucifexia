@@ -3,8 +3,8 @@ Feishu document comment access-control rules.
 
 3-tier rule resolution: exact doc > wildcard "*" > top-level > code defaults.
 Each field (enabled/policy/allow_from) falls back independently.
-Config: ~/.lucifex/feishu_comment_rules.json (mtime-cached, hot-reload).
-Pairing store: ~/.lucifex/feishu_comment_pairing.json.
+Config: ~/.hermes/feishu_comment_rules.json (mtime-cached, hot-reload).
+Pairing store: ~/.hermes/feishu_comment_pairing.json.
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from lucifex_constants import get_lucifex_home
+from hermes_constants import get_hermes_home
 
 logger = logging.getLogger(__name__)
 
@@ -24,13 +24,13 @@ logger = logging.getLogger(__name__)
 # Paths
 # ---------------------------------------------------------------------------
 #
-# Uses the canonical ``get_lucifex_home()`` helper (LUCIFEX_HOME-aware and
+# Uses the canonical ``get_hermes_home()`` helper (HERMES_HOME-aware and
 # profile-safe). Resolved at import time; this module is lazy-imported by
 # the Feishu comment event handler, which runs long after profile overrides
 # have been applied, so freezing paths here is safe.
 
-RULES_FILE = get_lucifex_home() / "feishu_comment_rules.json"
-PAIRING_FILE = get_lucifex_home() / "feishu_comment_pairing.json"
+RULES_FILE = get_hermes_home() / "feishu_comment_rules.json"
+PAIRING_FILE = get_hermes_home() / "feishu_comment_pairing.json"
 
 # ---------------------------------------------------------------------------
 # Data models
@@ -302,7 +302,7 @@ def _print_status() -> None:
     print(f"Pairing file: {PAIRING_FILE}")
     print(f"  exists: {PAIRING_FILE.exists()}")
     print()
-    print(f"Top-level:")
+    print("Top-level:")
     print(f"  enabled:    {cfg.enabled}")
     print(f"  policy:     {cfg.policy}")
     print(f"  allow_from: {sorted(cfg.allow_from) if cfg.allow_from else '[]'}")
@@ -339,7 +339,7 @@ def _do_check(doc_key: str, user_open_id: str) -> None:
     allowed = is_user_allowed(rule, user_open_id)
     print(f"Document:     {doc_key}")
     print(f"User:         {user_open_id}")
-    print(f"Resolved rule:")
+    print("Resolved rule:")
     print(f"  enabled:      {rule.enabled}")
     print(f"  policy:       {rule.policy}")
     print(f"  allow_from:   {sorted(rule.allow_from) if rule.allow_from else '[]'}")
@@ -351,8 +351,8 @@ def _main() -> int:
     import sys
 
     try:
-        from lucifex_cli.env_loader import load_lucifex_dotenv
-        load_lucifex_dotenv()
+        from hermes_cli.env_loader import load_hermes_dotenv
+        load_hermes_dotenv()
     except Exception:
         pass
 

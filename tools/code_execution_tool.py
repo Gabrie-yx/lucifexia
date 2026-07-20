@@ -2,19 +2,19 @@
 """
 Code Execution Tool -- Programmatic Tool Calling (PTC)
 
-Lets the LLM write a Python script that calls Lucifex tools via RPC,
+Lets the LLM write a Python script that calls Hermes tools via RPC,
 collapsing multi-step tool chains into a single inference turn.
 
 Architecture (two transports):
 
   **Local backend (UDS):**
-  1. Parent generates a `lucifex_tools.py` stub module with UDS RPC functions
+  1. Parent generates a `hermes_tools.py` stub module with UDS RPC functions
   2. Parent opens a Unix domain socket and starts an RPC listener thread
   3. Parent spawns a child process that runs the LLM's script
   4. Tool calls travel over the UDS back to the parent for dispatch
 
   **Remote backends (file-based RPC):**
-  1. Parent generates `lucifex_tools.py` with file-based RPC stubs
+  1. Parent generates `hermes_tools.py` with file-based RPC stubs
   2. Parent ships both files to the remote environment
   3. Script runs inside the terminal backend (Docker/SSH/Modal/Daytona/etc.)
   4. Tool calls are written as request files; a polling thread on the parent
@@ -45,14 +45,14 @@ import time
 import uuid
 
 _IS_WINDOWS = platform.system() == "Windows"
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from tools.thread_context import propagate_context_to_thread
 
 # Availability gate.  On Windows we fall back to loopback TCP for the
 # sandbox RPC transport (AF_UNIX is unreliable on Windows Python) — see
 # ``_use_tcp_rpc`` in ``_execute_local`` below.  That makes execute_code
-# available on every platform Lucifex itself runs on.
+# available on every platform Hermes itself runs on.
 logger = logging.getLogger(__name__)
 
 SANDBOX_AVAILABLE = True
@@ -75,16 +75,73 @@ DEFAULT_MAX_TOOL_CALLS = 50
 MAX_STDOUT_BYTES = 50_000    # 50 KB
 MAX_STDERR_BYTES = 10_000    # 10 KB
 
+
+def _assemble_stdout_result(
+    head: bytes,
+    tail: bytes = b"",
+    *,
+    total_bytes: Optional[int] = None,
+) -> Tuple[str, Dict[str, Any]]:
+    """Build display stdout plus explicit truncation metadata.
+
+    The agent receives execute_code results as JSON. A textual truncation
+    marker can be missed or later re-truncated by a client layer, so keep the
+    marker for humans and also expose byte counts for deterministic handling.
+    """
+    captured = head + tail
+    total = len(captured) if total_bytes is None else max(total_bytes, len(captured))
+    truncated = total > len(captured)
+    omitted = max(0, total - len(captured))
+
+    if truncated:
+        stdout_text = (
+            head.decode("utf-8", errors="replace")
+            + f"\n\n... [OUTPUT TRUNCATED - {omitted:,} bytes omitted "
+            f"out of {total:,} total] ...\n\n"
+            + tail.decode("utf-8", errors="replace")
+        )
+    else:
+        stdout_text = captured.decode("utf-8", errors="replace")
+
+    metadata: Dict[str, Any] = {
+        "stdout_truncated": truncated,
+        "stdout_bytes_captured": len(captured),
+        "stdout_bytes_total": total,
+        "stdout_bytes_omitted": omitted,
+    }
+    if truncated:
+        metadata["warning"] = (
+            "execute_code stdout was truncated; the script did run, but only "
+            "the captured head/tail output is included. Re-run only with "
+            "narrower output if the omitted data is required."
+        )
+    return stdout_text, metadata
+
+
+def _truncate_stdout_text(stdout_text: str) -> Tuple[str, Dict[str, Any]]:
+    """Cap a complete stdout string by bytes using the same head/tail policy."""
+    stdout_bytes = stdout_text.encode("utf-8", errors="replace")
+    if len(stdout_bytes) <= MAX_STDOUT_BYTES:
+        return _assemble_stdout_result(stdout_bytes)
+
+    head_bytes = int(MAX_STDOUT_BYTES * 0.4)
+    tail_bytes = MAX_STDOUT_BYTES - head_bytes
+    return _assemble_stdout_result(
+        stdout_bytes[:head_bytes],
+        stdout_bytes[-tail_bytes:],
+        total_bytes=len(stdout_bytes),
+    )
+
 # Environment variable scrubbing rules (shared between the local + remote
 # backends).  Secret-substring block is applied first; anything left must
-# match a safe prefix, the operational LUCIFEX_ allowlist, or (on Windows) an
+# match a safe prefix, the operational HERMES_ allowlist, or (on Windows) an
 # OS-essential name.
 #
-# NB: the broad "LUCIFEX_" prefix was deliberately removed (#27303) — it leaked
-# LUCIFEX_*-named config that lacks a secret substring (e.g. LUCIFEX_BASE_URL,
-# LUCIFEX_KANBAN_DB, LUCIFEX_*_WEBHOOK).  The child only needs the few
-# location/profile vars in _LUCIFEX_CHILD_ALLOWED below; LUCIFEX_RPC_SOCKET /
-# LUCIFEX_RPC_DIR / TZ / HOME are injected explicitly after scrubbing.
+# NB: the broad "HERMES_" prefix was deliberately removed (#27303) — it leaked
+# HERMES_*-named config that lacks a secret substring (e.g. HERMES_BASE_URL,
+# HERMES_KANBAN_DB, HERMES_*_WEBHOOK).  The child only needs the few
+# location/profile vars in _HERMES_CHILD_ALLOWED below; HERMES_RPC_SOCKET /
+# HERMES_RPC_DIR / TZ / HOME are injected explicitly after scrubbing.
 _SAFE_ENV_PREFIXES = ("PATH", "HOME", "USER", "LANG", "LC_", "TERM",
                       "TMPDIR", "TMP", "TEMP", "SHELL", "LOGNAME",
                       "XDG_", "PYTHONPATH", "VIRTUAL_ENV", "CONDA")
@@ -100,15 +157,15 @@ _SECRET_SUBSTRINGS = ("KEY", "TOKEN", "SECRET", "PASSWORD", "CREDENTIAL",
                       # PASSWORD/PASSWD already cover the credential cases.
                       "CREDS", "BEARER", "APIKEY")
 
-# Operational LUCIFEX_* vars the child legitimately needs by exact name — these
-# are non-secret runtime-location flags (the same set lucifex_cli treats as the
+# Operational HERMES_* vars the child legitimately needs by exact name — these
+# are non-secret runtime-location flags (the same set hermes_cli treats as the
 # runtime location) that repo-root modules a sandbox script imports may read at
 # import time.  None match _SECRET_SUBSTRINGS.
-_LUCIFEX_CHILD_ALLOWED = frozenset({
-    "LUCIFEX_HOME",
-    "LUCIFEX_PROFILE",
-    "LUCIFEX_CONFIG",
-    "LUCIFEX_ENV",
+_HERMES_CHILD_ALLOWED = frozenset({
+    "HERMES_HOME",
+    "HERMES_PROFILE",
+    "HERMES_CONFIG",
+    "HERMES_ENV",
 })
 
 # Windows-only: a handful of variables are required by the OS/CRT itself.
@@ -150,7 +207,7 @@ def _scrub_child_env(source_env, is_passthrough=None, is_windows=None):
       1. Passthrough vars (skill- or config-declared) always pass.
       2. Secret-substring names (KEY/TOKEN/DSN/WEBHOOK/etc.) are blocked.
       3. Names matching a safe prefix pass.
-      4. Operational LUCIFEX_* vars (_LUCIFEX_CHILD_ALLOWED) pass by exact name.
+      4. Operational HERMES_* vars (_HERMES_CHILD_ALLOWED) pass by exact name.
       5. On Windows, a small OS-essential allowlist passes by exact name
          — without these the child can't even create a socket or spawn a
          subprocess.
@@ -168,14 +225,14 @@ def _scrub_child_env(source_env, is_passthrough=None, is_windows=None):
         is_windows = _IS_WINDOWS
 
     scrubbed = {}
-    # Non-secret LUCIFEX_* vars dropped by the tightened allowlist (#27303). The
-    # broad "LUCIFEX_" prefix used to pass these through; now only the
+    # Non-secret HERMES_* vars dropped by the tightened allowlist (#27303). The
+    # broad "HERMES_" prefix used to pass these through; now only the
     # operational set does. The drop is intentional (those vars can carry
-    # config like LUCIFEX_KANBAN_DB / LUCIFEX_BASE_URL), but a sandbox script
+    # config like HERMES_KANBAN_DB / HERMES_BASE_URL), but a sandbox script
     # that imports a repo module reading one at import time would otherwise see
     # it silently unset. Surface the drop once so the behavior change is
     # diagnosable and points at the env_passthrough opt-in escape hatch.
-    _dropped_lucifex = []
+    _dropped_hermes = []
     for k, v in source_env.items():
         if is_passthrough(k):
             scrubbed[k] = v
@@ -185,24 +242,24 @@ def _scrub_child_env(source_env, is_passthrough=None, is_windows=None):
         if any(k.startswith(p) for p in _SAFE_ENV_PREFIXES):
             scrubbed[k] = v
             continue
-        if k in _LUCIFEX_CHILD_ALLOWED:
+        if k in _HERMES_CHILD_ALLOWED:
             scrubbed[k] = v
             continue
         if is_windows and k.upper() in _WINDOWS_ESSENTIAL_ENV_VARS:
             scrubbed[k] = v
             continue
-        if k.startswith("LUCIFEX_"):
+        if k.startswith("HERMES_"):
             # Non-secret (secrets were already dropped above) and not in any
-            # allowlist — a deliberately-dropped LUCIFEX_* var.
-            _dropped_lucifex.append(k)
-    if _dropped_lucifex:
+            # allowlist — a deliberately-dropped HERMES_* var.
+            _dropped_hermes.append(k)
+    if _dropped_hermes:
         logger.debug(
-            "execute_code: dropped %d non-allowlisted LUCIFEX_* var(s) from the "
+            "execute_code: dropped %d non-allowlisted HERMES_* var(s) from the "
             "sandbox child env (%s). This is intentional hardening (#27303); if "
             "a sandbox script legitimately needs one, declare it via "
             "env_passthrough in the skill/config so it passes by explicit opt-in.",
-            len(_dropped_lucifex),
-            ", ".join(sorted(_dropped_lucifex)),
+            len(_dropped_hermes),
+            ", ".join(sorted(_dropped_hermes)),
         )
     return scrubbed
 
@@ -215,7 +272,7 @@ def check_sandbox_requirements() -> bool:
 
 
 # ---------------------------------------------------------------------------
-# lucifex_tools.py code generator
+# hermes_tools.py code generator
 # ---------------------------------------------------------------------------
 
 # Per-tool stub templates: (function_name, signature, docstring, args_dict_expr)
@@ -242,7 +299,7 @@ _TOOL_STUBS = {
     "write_file": (
         "write_file",
         "path: str, content: str, cross_profile: bool = False",
-        '"""Write content to a file (always overwrites). Returns dict with status. cross_profile=True opts out of the cross-Lucifex-profile soft guard."""',
+        '"""Write content to a file (always overwrites). Returns dict with status. cross_profile=True opts out of the cross-Hermes-profile soft guard."""',
         '{"path": path, "content": content, "cross_profile": cross_profile}',
     ),
     "search_files": (
@@ -254,7 +311,7 @@ _TOOL_STUBS = {
     "patch": (
         "patch",
         'path: str = None, old_string: str = None, new_string: str = None, replace_all: bool = False, mode: str = "replace", patch: str = None, cross_profile: bool = False',
-        '"""Targeted find-and-replace (mode="replace") or V4A multi-file patches (mode="patch"). Returns dict with status. cross_profile=True opts out of the cross-Lucifex-profile soft guard."""',
+        '"""Targeted find-and-replace (mode="replace") or V4A multi-file patches (mode="patch"). Returns dict with status. cross_profile=True opts out of the cross-Hermes-profile soft guard."""',
         '{"path": path, "old_string": old_string, "new_string": new_string, "replace_all": replace_all, "mode": mode, "patch": patch, "cross_profile": cross_profile}',
     ),
     "terminal": (
@@ -266,10 +323,10 @@ _TOOL_STUBS = {
 }
 
 
-def generate_lucifex_tools_module(enabled_tools: List[str],
+def generate_hermes_tools_module(enabled_tools: List[str],
                                  transport: str = "uds") -> str:
     """
-    Build the source code for the lucifex_tools.py stub module.
+    Build the source code for the hermes_tools.py stub module.
 
     Only tools in both SANDBOX_ALLOWED_TOOLS and enabled_tools get stubs.
 
@@ -344,7 +401,7 @@ def retry(fn, max_attempts=3, delay=2):
 # ---- UDS transport (local backend) ---------------------------------------
 
 _UDS_TRANSPORT_HEADER = '''\
-"""Auto-generated Lucifex tools RPC stubs."""
+"""Auto-generated Hermes tools RPC stubs."""
 import json, os, socket, shlex, threading, time
 
 _sock = None
@@ -358,7 +415,7 @@ _call_lock = threading.Lock()
 def _connect():
     """Connect to the parent's RPC server via the transport it picked.
 
-    LUCIFEX_RPC_SOCKET can be either:
+    HERMES_RPC_SOCKET can be either:
       - a filesystem path (POSIX Unix domain socket — the default on
         Linux and macOS)
       - a string of the form ``tcp://127.0.0.1:<port>`` (Windows, where
@@ -366,7 +423,7 @@ def _connect():
     """
     global _sock
     if _sock is None:
-        endpoint = os.environ["LUCIFEX_RPC_SOCKET"]
+        endpoint = os.environ["HERMES_RPC_SOCKET"]
         if endpoint.startswith("tcp://"):
             # tcp://host:port  (host is always 127.0.0.1 in practice — we
             # only bind loopback server-side)
@@ -385,7 +442,7 @@ def _call(tool_name, args):
     request = json.dumps({
         "tool": tool_name,
         "args": args,
-        "token": os.environ.get("LUCIFEX_RPC_TOKEN", ""),
+        "token": os.environ.get("HERMES_RPC_TOKEN", ""),
     }) + "\\n"
     with _call_lock:
         conn = _connect()
@@ -412,10 +469,10 @@ def _call(tool_name, args):
 # ---- File-based transport (remote backends) -------------------------------
 
 _FILE_TRANSPORT_HEADER = '''\
-"""Auto-generated Lucifex tools RPC stubs (file-based transport)."""
+"""Auto-generated Hermes tools RPC stubs (file-based transport)."""
 import json, os, shlex, tempfile, threading, time
 
-_RPC_DIR = os.environ.get("LUCIFEX_RPC_DIR") or os.path.join(tempfile.gettempdir(), "lucifex_rpc")
+_RPC_DIR = os.environ.get("HERMES_RPC_DIR") or os.path.join(tempfile.gettempdir(), "hermes_rpc")
 _seq = 0
 # `_seq += 1` is not atomic (read-modify-write), so concurrent _call()
 # invocations from multiple threads could allocate the same sequence number
@@ -443,7 +500,7 @@ def _call(tool_name, args):
             "tool": tool_name,
             "args": args,
             "seq": seq,
-            "token": os.environ.get("LUCIFEX_RPC_TOKEN", ""),
+            "token": os.environ.get("HERMES_RPC_TOKEN", ""),
         }, f)
     os.rename(tmp, req_file)
 
@@ -539,7 +596,10 @@ def _rpc_server_loop(
                     continue
 
                 if not rpc_token or not secrets.compare_digest(
-                    str(request.get("token") or ""), rpc_token
+                    # Compare as bytes: compare_digest raises TypeError on a
+                    # str with non-ASCII characters, and the token comes from
+                    # sandbox-script-supplied JSON.
+                    str(request.get("token") or "").encode(), rpc_token.encode()
                 ):
                     resp = json.dumps({"error": "Unauthorized RPC request"})
                     conn.sendall((resp + "\n").encode())
@@ -684,6 +744,7 @@ def _get_or_create_env(task_id: str):
                 "container_persistent": config.get("container_persistent", True),
                 "docker_volumes": config.get("docker_volumes", []),
                 "docker_run_as_host_user": config.get("docker_run_as_host_user", False),
+                "docker_network": config.get("docker_network", True),
             }
 
         ssh_config = None
@@ -823,7 +884,10 @@ def _rpc_poll_loop(
                     continue
 
                 if not rpc_token or not secrets.compare_digest(
-                    str(request.get("token") or ""), rpc_token
+                    # Compare as bytes: compare_digest raises TypeError on a
+                    # str with non-ASCII characters, and the token comes from
+                    # sandbox-script-supplied JSON.
+                    str(request.get("token") or "").encode(), rpc_token.encode()
                 ):
                     logger.debug("Unauthorized RPC request in %s", req_file)
                     env.execute(f"rm -f {quoted_req_file}", cwd="/", timeout=5)
@@ -916,7 +980,7 @@ def _execute_remote(
 ) -> str:
     """Run a script on the remote terminal backend via file-based RPC.
 
-    The script and the generated lucifex_tools.py module are shipped to
+    The script and the generated hermes_tools.py module are shipped to
     the remote environment, and tool calls are proxied through a polling
     thread that communicates via request/response files.
     """
@@ -935,7 +999,7 @@ def _execute_remote(
 
     sandbox_id = uuid.uuid4().hex[:12]
     temp_dir = _env_temp_dir(env)
-    sandbox_dir = f"{temp_dir}/lucifex_exec_{sandbox_id}"
+    sandbox_dir = f"{temp_dir}/hermes_exec_{sandbox_id}"
     quoted_sandbox_dir = shlex.quote(sandbox_dir)
     quoted_rpc_dir = shlex.quote(f"{sandbox_dir}/rpc")
 
@@ -971,10 +1035,10 @@ def _execute_remote(
         rpc_token = secrets.token_urlsafe(32)
 
         # Generate and ship files
-        tools_src = generate_lucifex_tools_module(
+        tools_src = generate_hermes_tools_module(
             list(sandbox_tools), transport="file",
         )
-        _ship_file_to_remote(env, f"{sandbox_dir}/lucifex_tools.py", tools_src)
+        _ship_file_to_remote(env, f"{sandbox_dir}/hermes_tools.py", tools_src)
         _ship_file_to_remote(env, f"{sandbox_dir}/script.py", code)
 
         # Wrapped so the thread inherits the turn's approval context + callbacks
@@ -993,11 +1057,11 @@ def _execute_remote(
 
         # Build environment variable prefix for the script
         env_prefix = (
-            f"LUCIFEX_RPC_DIR={shlex.quote(f'{sandbox_dir}/rpc')} "
-            f"LUCIFEX_RPC_TOKEN={shlex.quote(rpc_token)} "
+            f"HERMES_RPC_DIR={shlex.quote(f'{sandbox_dir}/rpc')} "
+            f"HERMES_RPC_TOKEN={shlex.quote(rpc_token)} "
             f"PYTHONDONTWRITEBYTECODE=1"
         )
-        tz = os.getenv("LUCIFEX_TIMEZONE", "").strip()
+        tz = os.getenv("HERMES_TIMEZONE", "").strip()
         if tz:
             env_prefix += f" TZ={shlex.quote(tz)}"
 
@@ -1009,7 +1073,7 @@ def _execute_remote(
             timeout=timeout,
         )
 
-        stdout_text = script_result.get("output", "")
+        stdout_text = script_result.get("output", "") or ""
         exit_code = script_result.get("returncode", -1)
         status = "success"
 
@@ -1051,19 +1115,7 @@ def _execute_remote(
 
     # --- Post-process output (same as local path) ---
 
-    # Truncate stdout to cap
-    if len(stdout_text) > MAX_STDOUT_BYTES:
-        head_bytes = int(MAX_STDOUT_BYTES * 0.4)
-        tail_bytes = MAX_STDOUT_BYTES - head_bytes
-        head = stdout_text[:head_bytes]
-        tail = stdout_text[-tail_bytes:]
-        omitted = len(stdout_text) - len(head) - len(tail)
-        stdout_text = (
-            head
-            + f"\n\n... [OUTPUT TRUNCATED - {omitted:,} chars omitted "
-            f"out of {len(stdout_text):,} total] ...\n\n"
-            + tail
-        )
+    stdout_text, stdout_metadata = _truncate_stdout_text(stdout_text)
 
     # Strip ANSI escape sequences
     from tools.ansi_strip import strip_ansi
@@ -1079,9 +1131,11 @@ def _execute_remote(
     result: Dict[str, Any] = {
         "status": status,
         "output": stdout_text,
+        "exit_code": exit_code,
         "tool_calls_made": tool_call_counter[0],
         "duration_seconds": duration,
     }
+    result.update(stdout_metadata)
 
     if status == "timeout":
         timeout_msg = f"Script timed out after {timeout}s and was killed."
@@ -1118,7 +1172,7 @@ def execute_code(
 ) -> str:
     """
     Run a Python script in a sandboxed child process with RPC access
-    to a subset of Lucifex tools.
+    to a subset of Hermes tools.
 
     Dispatches to the local (UDS) or remote (file-based RPC) path
     depending on the configured terminal backend.
@@ -1165,6 +1219,16 @@ def execute_code(
             "duration_seconds": 0,
         }, ensure_ascii=False)
 
+    # Clean interrupt slate for a user-approved script before EITHER dispatch
+    # path spawns it: drop a stale bit that landed on this thread during the
+    # blocking approval-wait so it can't kill the just-approved run on the first
+    # poll (local _wait_for_process loop, or remote/ssh env.execute which routes
+    # through the same poll loop).  A genuine post-clear interrupt re-sets the
+    # bit and is still caught downstream.
+    if _guard.get("user_approved"):
+        from tools.interrupt import clear_current_thread_interrupt
+        clear_current_thread_interrupt()
+
     if env_type != "local":
         return _execute_remote(code, task_id, enabled_tools)
 
@@ -1185,8 +1249,8 @@ def execute_code(
     if not sandbox_tools:
         sandbox_tools = SANDBOX_ALLOWED_TOOLS
 
-    # --- Set up temp directory with lucifex_tools.py and script.py ---
-    tmpdir = tempfile.mkdtemp(prefix="lucifex_sandbox_")
+    # --- Set up temp directory with hermes_tools.py and script.py ---
+    tmpdir = tempfile.mkdtemp(prefix="hermes_sandbox_")
     # Use /tmp on macOS to avoid the long /var/folders/... path that pushes
     # Unix domain socket paths past the 104-byte macOS AF_UNIX limit.
     # On Linux, tempfile.gettempdir() already returns /tmp.
@@ -1197,14 +1261,14 @@ def execute_code(
     # on the same temp drive as the script).  Fall back to loopback TCP —
     # same ephemeral port, same 1-connection listen queue, same serialized
     # request/response framing.  The generated client reads the transport
-    # selector from LUCIFEX_RPC_SOCKET (path vs. ``tcp://host:port``).
+    # selector from HERMES_RPC_SOCKET (path vs. ``tcp://host:port``).
     _sock_tmpdir = "/tmp" if sys.platform == "darwin" else tempfile.gettempdir()
     _use_tcp_rpc = _IS_WINDOWS
     if _use_tcp_rpc:
         sock_path = None  # not used on Windows; TCP endpoint stored below
         rpc_endpoint = None  # set after bind()
     else:
-        sock_path = os.path.join(_sock_tmpdir, f"lucifex_rpc_{uuid.uuid4().hex}.sock")
+        sock_path = os.path.join(_sock_tmpdir, f"hermes_rpc_{uuid.uuid4().hex}.sock")
         rpc_endpoint = sock_path
 
     tool_call_log: list = []
@@ -1214,7 +1278,7 @@ def execute_code(
     stop_event = threading.Event()
 
     try:
-        # Write the auto-generated lucifex_tools module.
+        # Write the auto-generated hermes_tools module.
         # encoding="utf-8" is required on Windows — the stub and user code
         # both contain non-ASCII characters (em-dashes in docstrings, plus
         # whatever the user script carries).  Python's default open() uses
@@ -1224,8 +1288,8 @@ def execute_code(
         # Python source files are decoded as UTF-8 by default (PEP 3120).
         # sandbox_tools is already the correct set (intersection with session
         # tools, or SANDBOX_ALLOWED_TOOLS as fallback — see lines above).
-        tools_src = generate_lucifex_tools_module(list(sandbox_tools))
-        with open(os.path.join(tmpdir, "lucifex_tools.py"), "w", encoding="utf-8") as f:
+        tools_src = generate_hermes_tools_module(list(sandbox_tools))
+        with open(os.path.join(tmpdir, "hermes_tools.py"), "w", encoding="utf-8") as f:
             f.write(tools_src)
 
         # Write the user's script
@@ -1240,7 +1304,7 @@ def execute_code(
         #   Windows: AF_INET stream socket on 127.0.0.1 with an ephemeral
         #   port.  No filesystem permission story, but loopback-only bind
         #   means only the current user's processes (not remote) can
-        #   connect.  LUCIFEX_RPC_SOCKET is set to ``tcp://127.0.0.1:<port>``
+        #   connect.  HERMES_RPC_SOCKET is set to ``tcp://127.0.0.1:<port>``
         #   which the generated client parses to pick AF_INET.
         if _use_tcp_rpc:
             server_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -1277,8 +1341,8 @@ def execute_code(
         # passed through — without those, the child can't create a socket
         # or spawn a subprocess.  See ``_scrub_child_env`` for the rules.
         child_env = _scrub_child_env(os.environ)
-        child_env["LUCIFEX_RPC_SOCKET"] = rpc_endpoint
-        child_env["LUCIFEX_RPC_TOKEN"] = rpc_token
+        child_env["HERMES_RPC_SOCKET"] = rpc_endpoint
+        child_env["HERMES_RPC_TOKEN"] = rpc_token
         child_env["PYTHONDONTWRITEBYTECODE"] = "1"
         # Force UTF-8 for the child's stdio and default file encoding.
         #
@@ -1299,26 +1363,26 @@ def execute_code(
         # with a C/POSIX locale (containers, minimal base images).
         child_env["PYTHONIOENCODING"] = "utf-8"
         child_env["PYTHONUTF8"] = "1"
-        # Ensure the lucifex-agent root is importable in the sandbox so
+        # Ensure the hermes-agent root is importable in the sandbox so
         # repo-root modules are available to child scripts.  We also prepend
-        # the staging tmpdir so ``from lucifex_tools import ...`` resolves even
+        # the staging tmpdir so ``from hermes_tools import ...`` resolves even
         # when the subprocess CWD is not tmpdir (project mode).
-        _lucifex_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        _hermes_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         _existing_pp = child_env.get("PYTHONPATH", "")
-        _pp_parts = [tmpdir, _lucifex_root]
+        _pp_parts = [tmpdir, _hermes_root]
         if _existing_pp:
             _pp_parts.append(_existing_pp)
         child_env["PYTHONPATH"] = os.pathsep.join(_pp_parts)
         # Inject user's configured timezone so datetime.now() in sandboxed
         # code reflects the correct wall-clock time.  Only TZ is set —
-        # LUCIFEX_TIMEZONE is an internal Lucifex setting and must not leak
+        # HERMES_TIMEZONE is an internal Hermes setting and must not leak
         # into child processes.
-        _tz_name = os.getenv("LUCIFEX_TIMEZONE", "").strip()
+        _tz_name = os.getenv("HERMES_TIMEZONE", "").strip()
         if _tz_name:
             child_env["TZ"] = _tz_name
-        child_env.pop("LUCIFEX_TIMEZONE", None)
+        child_env.pop("HERMES_TIMEZONE", None)
 
-        from lucifex_constants import apply_subprocess_home_env
+        from hermes_constants import apply_subprocess_home_env
         apply_subprocess_home_env(child_env)
 
         # Resolve interpreter + CWD based on execute_code mode.
@@ -1328,7 +1392,7 @@ def execute_code(
         # Env scrubbing and tool whitelist apply identically in both modes.
         _mode = _get_execution_mode()
         _child_python = _resolve_child_python(_mode)
-        _child_cwd = _resolve_child_cwd(_mode, tmpdir)
+        _child_cwd = _resolve_child_cwd(_mode, tmpdir, task_id=task_id or "")
         _script_path = os.path.join(tmpdir, "script.py")
 
         proc = subprocess.Popen(
@@ -1454,21 +1518,13 @@ def execute_code(
         stdout_reader.join(timeout=3)
         stderr_reader.join(timeout=3)
 
-        stdout_head = b"".join(stdout_head_chunks).decode("utf-8", errors="replace")
-        stdout_tail = b"".join(stdout_tail_chunks).decode("utf-8", errors="replace")
         stderr_text = b"".join(stderr_chunks).decode("utf-8", errors="replace")
 
-        # Assemble stdout with head+tail truncation
-        total_stdout = stdout_total_bytes[0]
-        if total_stdout > MAX_STDOUT_BYTES and stdout_tail:
-            omitted = total_stdout - len(stdout_head) - len(stdout_tail)
-            truncated_notice = (
-                f"\n\n... [OUTPUT TRUNCATED - {omitted:,} chars omitted "
-                f"out of {total_stdout:,} total] ...\n\n"
-            )
-            stdout_text = stdout_head + truncated_notice + stdout_tail
-        else:
-            stdout_text = stdout_head + stdout_tail
+        stdout_text, stdout_metadata = _assemble_stdout_result(
+            b"".join(stdout_head_chunks),
+            b"".join(stdout_tail_chunks),
+            total_bytes=stdout_total_bytes[0],
+        )
 
         exit_code = proc.returncode if proc.returncode is not None else -1
         duration = round(time.monotonic() - exec_start, 2)
@@ -1487,7 +1543,7 @@ def execute_code(
 
         # Redact secrets (API keys, tokens, etc.) from sandbox output.
         # The sandbox env-var filter (lines 434-454) blocks os.environ access,
-        # but scripts can still read secrets from disk (e.g. open('~/.lucifex/.env')).
+        # but scripts can still read secrets from disk (e.g. open('~/.hermes/.env')).
         # This ensures leaked secrets never enter the model context.
         # code_file=True: this is code-execution output — skip false-positive
         # ENV/JSON/f-string-template redaction; real credentials still masked.
@@ -1499,9 +1555,11 @@ def execute_code(
         result: Dict[str, Any] = {
             "status": status,
             "output": stdout_text,
+            "exit_code": exit_code,
             "tool_calls_made": tool_call_counter[0],
             "duration_seconds": duration,
         }
+        result.update(stdout_metadata)
 
         if status == "timeout":
             timeout_msg = f"Script timed out after {timeout}s and was killed."
@@ -1620,12 +1678,12 @@ def _load_config() -> dict:
     This helper is called while building the module-level execute_code schema
     during tool discovery.  Importing ``cli`` here pulls prompt_toolkit/Rich and
     a large chunk of the classic REPL onto every agent startup path, including
-    ``lucifex --tui`` where it is never used.  Read the lightweight raw config
+    ``hermes --tui`` where it is never used.  Read the lightweight raw config
     instead; the config layer already caches by (mtime, size), and an absent
     key cleanly falls back to DEFAULT_EXECUTION_MODE.
     """
     try:
-        from lucifex_cli.config import read_raw_config
+        from hermes_cli.config import read_raw_config
 
         cfg = read_raw_config().get("code_execution", {})
         return cfg if isinstance(cfg, dict) else {}
@@ -1654,7 +1712,7 @@ def _get_execution_mode() -> str:
         with the active virtual environment's python, so project dependencies
         (pandas, torch, project packages) and files resolve naturally.
       - ``strict``: scripts run in an isolated temp directory with
-        ``sys.executable`` (lucifex-agent's python). Reproducible and the
+        ``sys.executable`` (hermes-agent's python). Reproducible and the
         interpreter is guaranteed to work, but project deps and relative paths
         won't resolve.
 
@@ -1734,17 +1792,43 @@ def _resolve_child_python(mode: str) -> str:
     return sys.executable
 
 
-def _resolve_child_cwd(mode: str, staging_dir: str) -> str:
+def _resolve_child_cwd(mode: str, staging_dir: str, task_id: str = "") -> str:
     """Resolve the working directory for the execute_code subprocess.
 
     - ``strict``: the staging tmpdir (today's behavior).
-    - ``project``: the session's TERMINAL_CWD (same as the terminal tool), or
-      ``os.getcwd()`` if TERMINAL_CWD is unset or doesn't point at a real dir.
-      Falls back to the staging tmpdir as a last resort so we never invoke
-      Popen with a nonexistent cwd.
+    - ``project``: the session's own cwd — its per-session cwd record
+      (written after every completed terminal command), then the raw
+      per-session cwd override registered via ``session.cwd.set`` /
+      ``register_task_env_overrides``, then the session's TERMINAL_CWD
+      (same as the terminal tool), or ``os.getcwd()`` if none points at a
+      real dir. Falls back to the staging tmpdir as a last resort so we
+      never invoke Popen with a nonexistent cwd.
+
+    This mirrors the resolution ladder file tools and the terminal use
+    (record → registered override → TERMINAL_CWD), so all file-writing
+    paths within a session agree on the working directory. (#56047)
     """
     if mode != "project":
         return staging_dir
+    if task_id:
+        # 1. The session's cwd record — IS the session's `cd` state.
+        try:
+            from tools.terminal_tool import get_session_cwd
+
+            recorded = get_session_cwd(task_id)
+        except Exception:
+            recorded = None
+        if recorded and os.path.isdir(recorded):
+            return recorded
+        # 2. Registered workspace override (session.cwd.set → gateway/TUI/ACP).
+        try:
+            from tools.file_tools import _registered_task_cwd_override
+
+            session_cwd = _registered_task_cwd_override(task_id)
+        except Exception:
+            session_cwd = None
+        if session_cwd and os.path.isdir(session_cwd):
+            return session_cwd
     raw = os.environ.get("TERMINAL_CWD", "").strip()
     if raw:
         expanded = os.path.expanduser(raw)
@@ -1792,7 +1876,7 @@ def build_execute_code_schema(enabled_sandbox_tools: set = None,
                               mode: str = None) -> dict:
     """Build the execute_code schema with description listing only enabled tools.
 
-    When tools are disabled via ``lucifex tools`` (e.g. web is turned off),
+    When tools are disabled via ``hermes tools`` (e.g. web is turned off),
     the schema description should NOT mention web_search / web_extract —
     otherwise the model thinks they are available and keeps trying to use them.
 
@@ -1823,11 +1907,11 @@ def build_execute_code_schema(enabled_sandbox_tools: set = None,
 
     # Mode-specific CWD guidance. Project mode is the default and matches
     # terminal()'s filesystem/interpreter; strict mode retains the isolated
-    # temp-dir staging and lucifex-agent's own python.
+    # temp-dir staging and hermes-agent's own python.
     if mode == "strict":
         cwd_note = (
             "Scripts run in their own temp dir, not the session's CWD — use absolute paths "
-            "(os.path.expanduser('~/.lucifex/.env')) or terminal()/read_file() for user files."
+            "(os.path.expanduser('~/.hermes/.env')) or terminal()/read_file() for user files."
         )
     else:
         cwd_note = (
@@ -1836,7 +1920,7 @@ def build_execute_code_schema(enabled_sandbox_tools: set = None,
         )
 
     description = (
-        "Run a Python script that can call Lucifex tools programmatically. "
+        "Run a Python script that can call Hermes tools programmatically. "
         "Use this when you need 3+ tool calls with processing logic between them, "
         "need to filter/reduce large tool outputs before they enter your context, "
         "need conditional branching (if X then Y else Z), or need to loop "
@@ -1844,14 +1928,14 @@ def build_execute_code_schema(enabled_sandbox_tools: set = None,
         "Use normal tool calls instead when: single tool call with no processing, "
         "you need to see the full result and apply complex reasoning, "
         "or the task requires interactive user input.\n\n"
-        f"Available via `from lucifex_tools import ...`:\n\n"
+        f"Available via `from hermes_tools import ...`:\n\n"
         f"{tool_lines}\n\n"
         "Limits: 5-minute timeout, 50KB stdout cap, max 50 tool calls per script. "
         "terminal() is foreground-only (no background or pty).\n\n"
         f"{cwd_note}\n\n"
         "Print your final result to stdout. Use Python stdlib (json, re, math, csv, "
         "datetime, collections, etc.) for processing between tool calls.\n\n"
-        "Also available (no import needed — built into lucifex_tools):\n"
+        "Also available (no import needed — built into hermes_tools):\n"
         "  json_parse(text: str) — json.loads with strict=False; use for terminal() output with control chars\n"
         "  shell_quote(s: str) — shlex.quote(); use when interpolating dynamic strings into shell commands\n"
         "  retry(fn, max_attempts=3, delay=2) — retry with exponential backoff for transient failures"
@@ -1867,7 +1951,7 @@ def build_execute_code_schema(enabled_sandbox_tools: set = None,
                     "type": "string",
                     "description": (
                         "Python code to execute. Import tools with "
-                        f"`from lucifex_tools import {import_str}` "
+                        f"`from hermes_tools import {import_str}` "
                         "and print your final result to stdout."
                     ),
                 },

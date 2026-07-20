@@ -2,7 +2,7 @@
 
 Connects to a self-hosted (or cloud) Mattermost instance via its REST API
 (v4) and WebSocket for real-time events.  No external Mattermost library
-required — uses aiohttp which is already a Lucifex dependency.
+required — uses aiohttp which is already a Hermes dependency.
 
 Environment variables:
     MATTERMOST_URL              Server URL (e.g. https://mm.example.com)
@@ -51,21 +51,27 @@ _RECONNECT_JITTER = 0.2
 
 
 def check_mattermost_requirements() -> bool:
-    """Return True if the Mattermost adapter can be used."""
-    token = os.getenv("MATTERMOST_TOKEN", "")
-    url = os.getenv("MATTERMOST_URL", "")
-    if not token:
-        logger.debug("Mattermost: MATTERMOST_TOKEN not set")
-        return False
-    if not url:
-        logger.warning("Mattermost: MATTERMOST_URL not set")
-        return False
+    """Return True if the Mattermost adapter runtime dependency is available."""
     try:
         import aiohttp  # noqa: F401
         return True
     except ImportError:
         logger.warning("Mattermost: aiohttp not installed")
         return False
+
+
+def validate_mattermost_config(config: PlatformConfig) -> bool:
+    """Return True when Mattermost has enough config to connect."""
+    extra = getattr(config, "extra", {}) or {}
+    token = (getattr(config, "token", None) or os.getenv("MATTERMOST_TOKEN", "")).strip()
+    url = (extra.get("url", "") or os.getenv("MATTERMOST_URL", "")).strip()
+    if not token:
+        logger.debug("Mattermost: MATTERMOST_TOKEN not set")
+        return False
+    if not url:
+        logger.warning("Mattermost: MATTERMOST_URL not set")
+        return False
+    return True
 
 
 class MattermostAdapter(BasePlatformAdapter):
@@ -878,6 +884,8 @@ class MattermostAdapter(BasePlatformAdapter):
         # Determine message type.
         file_ids = post.get("file_ids") or []
         msg_type = MessageType.TEXT
+        if message_text[:1].isspace() and message_text.lstrip().startswith("/"):
+            message_text = message_text.lstrip()
         if message_text.startswith("/"):
             msg_type = MessageType.COMMAND
 
@@ -1113,11 +1121,11 @@ def interactive_setup() -> None:
     helpers so the plugin's import surface stays small, prompts for the
     server URL + bot token, captures an allowlist, and offers to set a
     home channel.  Replaces the central
-    ``lucifex_cli/setup.py::_setup_mattermost`` function this migration
+    ``hermes_cli/setup.py::_setup_mattermost`` function this migration
     removes.
     """
-    from lucifex_cli.config import get_env_value, save_env_value
-    from lucifex_cli.cli_output import (
+    from hermes_cli.config import get_env_value, save_env_value
+    from hermes_cli.cli_output import (
         prompt,
         prompt_yes_no,
         print_header,
@@ -1158,13 +1166,13 @@ def interactive_setup() -> None:
         print_info("⚠️  No allowlist set - anyone who can message the bot can use it!")
 
     print()
-    print_info("📬 Home Channel: where Lucifex delivers cron job results and notifications.")
+    print_info("📬 Home Channel: where Hermes delivers cron job results and notifications.")
     print_info("   To get a channel ID: click channel name → View Info → copy the ID")
     print_info("   You can also set this later by typing /set-home in a Mattermost channel.")
     home_channel = prompt("Home channel ID (leave empty to set later with /set-home)")
     if home_channel:
         save_env_value("MATTERMOST_HOME_CHANNEL", home_channel)
-    print_info("   Open config in your editor:  lucifex config edit")
+    print_info("   Open config in your editor:  hermes config edit")
 
 
 # ---------------------------------------------------------------------------
@@ -1217,12 +1225,12 @@ def _is_connected(config) -> bool:
     """Mattermost is considered connected when BOTH MATTERMOST_TOKEN and
     MATTERMOST_URL are set.
 
-    Looks up via ``lucifex_cli.gateway.get_env_value`` at call time (not via
+    Looks up via ``hermes_cli.gateway.get_env_value`` at call time (not via
     the plugin's own bound import) so tests that patch
     ``gateway_mod.get_env_value`` can suppress ambient env vars.  Matches
     what the legacy connected-platforms check did before this migration.
     """
-    import lucifex_cli.gateway as gateway_mod
+    import hermes_cli.gateway as gateway_mod
     return bool(
         (gateway_mod.get_env_value("MATTERMOST_TOKEN") or "").strip()
         and (gateway_mod.get_env_value("MATTERMOST_URL") or "").strip()
@@ -1240,17 +1248,18 @@ def _build_adapter(config):
 
 
 def register(ctx) -> None:
-    """Plugin entry point — called by the Lucifex plugin system."""
+    """Plugin entry point — called by the Hermes plugin system."""
     ctx.register_platform(
         name="mattermost",
         label="Mattermost",
         adapter_factory=_build_adapter,
         check_fn=check_mattermost_requirements,
+        validate_config=validate_mattermost_config,
         is_connected=_is_connected,
         required_env=["MATTERMOST_URL", "MATTERMOST_TOKEN"],
         install_hint="pip install aiohttp",
         # Interactive setup wizard — replaces the central
-        # lucifex_cli/setup.py::_setup_mattermost function.
+        # hermes_cli/setup.py::_setup_mattermost function.
         setup_fn=interactive_setup,
         # YAML→env config bridge — owns the translation of
         # ``config.yaml`` ``mattermost:`` keys (require_mention,

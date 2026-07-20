@@ -1,16 +1,16 @@
 ---
 sidebar_position: 3
 title: "Android / Termux"
-description: "Run Lucifex Agent directly on an Android phone with Termux"
+description: "Run Hermes Agent directly on an Android phone with Termux"
 ---
 
-# Lucifex on Android with Termux
+# Hermes on Android with Termux
 
 :::warning Tier 2 platform
 Termux (Android) is a [Tier 2 platform](./platform-support.md#tier-2). The installer script and documentation here are maintained on a best-effort basis only. Commits to `main` may break these packages at any point in time.
 :::
 
-Lucifex Agent can run directly on an Android phone through [Termux](https://termux.dev/).
+Hermes Agent can run directly on an Android phone through [Termux](https://termux.dev/).
 
 It gives you a working local CLI on the phone, plus the core extras that are currently known to install cleanly on Android.
 
@@ -18,7 +18,7 @@ It gives you a working local CLI on the phone, plus the core extras that are cur
 
 The tested Termux bundle installs:
 
-- the Lucifex CLI
+- the Hermes CLI
 - cron support
 - PTY/background terminal support
 - Telegram gateway support (manual / best-effort background runs)
@@ -42,16 +42,16 @@ A few features still need desktop/server-style dependencies that are not publish
 - Docker-based terminal isolation is not available inside Termux
 - Android may still suspend Termux background jobs, so gateway persistence is best-effort rather than a normal managed service
 
-That does not stop Lucifex from working well as a phone-native CLI agent — it just means the recommended mobile install is intentionally narrower than the desktop/server install.
+That does not stop Hermes from working well as a phone-native CLI agent — it just means the recommended mobile install is intentionally narrower than the desktop/server install.
 
 ---
 
 ## Option 1: One-line installer
 
-Lucifex now ships a Termux-aware installer path:
+Hermes now ships a Termux-aware installer path:
 
 ```bash
-curl -fsSL https://lucifex-agent.nousresearch.com/install.sh | bash
+curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
 ```
 
 On Termux, the installer automatically:
@@ -59,7 +59,7 @@ On Termux, the installer automatically:
 - uses `pkg` for system packages
 - creates the venv with `python -m venv`
 - attempts the broad `.[termux-all]` extra first and falls back to the smaller `.[termux]` extra (then a base install) — the curl installer matches this order automatically
-- links `lucifex` into `$PREFIX/bin` so it stays on your Termux PATH
+- links `hermes` into `$PREFIX/bin` so it stays on your Termux PATH
 - skips the untested browser / WhatsApp bootstrap
 
 If you want the explicit commands or need to debug a failed install, use the manual path below.
@@ -84,11 +84,11 @@ Why these packages?
 - `ripgrep` — fast file search
 - `ffmpeg` — media / TTS conversions
 
-### 2. Clone Lucifex
+### 2. Clone Hermes
 
 ```bash
-git clone https://github.com/NousResearch/lucifex-agent.git
-cd lucifex-agent
+git clone https://github.com/NousResearch/hermes-agent.git
+cd hermes-agent
 ```
 
 ### 3. Create a virtual environment
@@ -114,25 +114,25 @@ If you only want the minimal core agent, this also works:
 python -m pip install -e '.' -c constraints-termux.txt
 ```
 
-### 5. Put `lucifex` on your Termux PATH
+### 5. Put `hermes` on your Termux PATH
 
 ```bash
-ln -sf "$PWD/venv/bin/lucifex" "$PREFIX/bin/lucifex"
+ln -sf "$PWD/venv/bin/hermes" "$PREFIX/bin/hermes"
 ```
 
-`$PREFIX/bin` is already on PATH in Termux, so this makes the `lucifex` command persist across new shells without re-activating the venv every time.
+`$PREFIX/bin` is already on PATH in Termux, so this makes the `hermes` command persist across new shells without re-activating the venv every time.
 
 ### 6. Verify the install
 
 ```bash
-lucifex version
-lucifex doctor
+hermes version
+hermes doctor
 ```
 
-### 7. Start Lucifex
+### 7. Start Hermes
 
 ```bash
-lucifex
+hermes
 ```
 
 ---
@@ -142,15 +142,15 @@ lucifex
 ### Configure a model
 
 ```bash
-lucifex model
+hermes model
 ```
 
-Or set keys directly in `~/.lucifex/.env`.
+Or set keys directly in `~/.hermes/.env`.
 
 ### Re-run the full interactive setup wizard later
 
 ```bash
-lucifex setup
+hermes setup
 ```
 
 ### Install optional Node dependencies manually
@@ -205,7 +205,7 @@ export ANDROID_API_LEVEL="$(getprop ro.build.version.sdk)"
 python -m pip install -e '.[termux]' -c constraints-termux.txt
 ```
 
-### `lucifex doctor` says ripgrep or Node is missing
+### `hermes doctor` says ripgrep or Node is missing
 
 Install them with Termux packages:
 
@@ -241,5 +241,5 @@ If you hit a new Android-specific issue, please open a GitHub issue with:
 - your Android version
 - `termux-info`
 - `python --version`
-- `lucifex doctor`
+- `hermes doctor`
 - the exact install command and full error output

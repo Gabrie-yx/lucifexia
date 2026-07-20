@@ -23,7 +23,7 @@ def tmp_files(tmp_path):
     return files
 
 
-def _make_get_files(tmp_files, remote_base="/root/.lucifex"):
+def _make_get_files(tmp_files, remote_base="/root/.hermes"):
     """Return a get_files_fn that maps local files to remote paths."""
     mapping = [(hp, f"{remote_base}/{name}") for name, hp in tmp_files.items()]
 
@@ -33,7 +33,7 @@ def _make_get_files(tmp_files, remote_base="/root/.lucifex"):
     return get_files
 
 
-def _make_manager(tmp_files, remote_base="/root/.lucifex", upload=None, delete=None):
+def _make_manager(tmp_files, remote_base="/root/.hermes", upload=None, delete=None):
     """Create a FileSyncManager with test callbacks."""
     return FileSyncManager(
         get_files_fn=_make_get_files(tmp_files, remote_base),
@@ -225,6 +225,42 @@ class TestRateLimiting:
             mgr.sync()
         assert upload.call_count == 1
 
+    def test_failed_sync_does_not_suppress_next_retry(self, tmp_files, monkeypatch):
+        """A failed sync must not advance the rate-limit clock.
+
+        Regression: the failure path used to set ``_last_sync_time`` on
+        rollback, so the next non-forced ``sync()`` within ``sync_interval``
+        hit the rate-limit guard and returned early — silently suppressing the
+        retry the rollback had just prepared and leaving the remote stale.
+        """
+        from tools.environments import file_sync
+
+        clock = {"t": 1000.0}
+        monkeypatch.setattr(file_sync, "_monotonic", lambda: clock["t"])
+
+        upload = MagicMock(side_effect=RuntimeError("transport down"))
+        mgr = FileSyncManager(
+            get_files_fn=_make_get_files(tmp_files),
+            upload_fn=upload,
+            delete_fn=MagicMock(),
+            sync_interval=10.0,
+        )
+
+        # First sync fails (forced bypasses the guard); state rolls back.
+        mgr.sync(force=True)
+        assert upload.call_count >= 1
+
+        # Transport recovers; advance the clock by LESS than the interval.
+        upload.reset_mock()
+        upload.side_effect = None
+        clock["t"] = 1002.0  # 2s later, < 10s interval
+
+        # The next non-forced cycle must retry, not be rate-limited away.
+        mgr.sync()
+        assert upload.call_count == 3, (
+            "a failed sync must not rate-limit the next retry"
+        )
+
 
 class TestEdgeCases:
     def test_empty_file_list(self):
@@ -247,7 +283,7 @@ class TestEdgeCases:
 
         upload = MagicMock()
         mgr = FileSyncManager(
-            get_files_fn=lambda: [(str(f), "/root/.lucifex/ephemeral.txt")],
+            get_files_fn=lambda: [(str(f), "/root/.hermes/ephemeral.txt")],
             upload_fn=upload,
             delete_fn=MagicMock(),
         )
@@ -271,13 +307,13 @@ class TestSyncBackSecurity:
             lambda: [
                 {
                     "host_path": str(credential),
-                    "container_path": "/root/.lucifex/credentials/token.json",
+                    "container_path": "/root/.hermes/credentials/token.json",
                 }
             ],
         )
         monkeypatch.setattr(
             "tools.credential_files.iter_skills_files",
-            lambda container_base="/root/.lucifex": [
+            lambda container_base="/root/.hermes": [
                 {
                     "host_path": str(skill),
                     "container_path": f"{container_base}/skills/skill.py",
@@ -286,28 +322,28 @@ class TestSyncBackSecurity:
         )
         monkeypatch.setattr(
             "tools.credential_files.iter_cache_files",
-            lambda container_base="/root/.lucifex": [],
+            lambda container_base="/root/.hermes": [],
         )
 
         def bulk_download(dest: Path) -> None:
             with tarfile.open(dest, "w") as tar:
                 for name, data in {
-                    "root/.lucifex/credentials/token.json": b"remote-token",
-                    "root/.lucifex/skills/skill.py": b"remote-skill",
+                    "root/.hermes/credentials/token.json": b"remote-token",
+                    "root/.hermes/skills/skill.py": b"remote-skill",
                 }.items():
                     info = tarfile.TarInfo(name)
                     info.size = len(data)
                     tar.addfile(info, io.BytesIO(data))
 
         mgr = FileSyncManager(
-            get_files_fn=lambda: iter_sync_files("/root/.lucifex"),
+            get_files_fn=lambda: iter_sync_files("/root/.hermes"),
             upload_fn=MagicMock(),
             delete_fn=MagicMock(),
             bulk_download_fn=bulk_download,
         )
 
         mgr.sync(force=True)
-        mgr.sync_back(lucifex_home=tmp_path)
+        mgr.sync_back(hermes_home=tmp_path)
 
         assert credential.read_text(encoding="utf-8") == "host-token"
         assert skill.read_text(encoding="utf-8") == "remote-skill"

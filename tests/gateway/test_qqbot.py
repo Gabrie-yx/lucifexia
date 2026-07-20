@@ -190,6 +190,21 @@ class TestVoiceAttachmentSSRFProtection:
         assert kwargs.get("follow_redirects") is True
         assert kwargs.get("event_hooks", {}).get("response") == [_ssrf_redirect_guard]
 
+    def test_connect_accepts_is_reconnect_param(self):
+        """connect() must accept is_reconnect for interface conformance with
+        the base adapter, which the reconnect watcher calls with
+        is_reconnect=True."""
+        from gateway.platforms.qqbot import QQAdapter
+
+        adapter = QQAdapter(_make_config(app_id="a", client_secret="b"))
+        adapter._ensure_token = mock.AsyncMock(side_effect=RuntimeError("stop after client init"))
+
+        # Both forms must not raise TypeError.
+        connected_default = asyncio.run(adapter.connect())
+        connected_explicit = asyncio.run(adapter.connect(is_reconnect=True))
+        assert connected_default is False
+        assert connected_explicit is False
+
 
 # ---------------------------------------------------------------------------
 # WebSocket proxy handling
@@ -1672,13 +1687,13 @@ class TestDefaultInteractionDispatch:
 
     @pytest.mark.asyncio
     async def test_update_prompt_click_writes_response_file(self, tmp_path, monkeypatch):
-        """update_prompt:y click writes 'y' to ~/.lucifex/.update_response."""
+        """update_prompt:y click writes 'y' to ~/.hermes/.update_response."""
         adapter = self._make_adapter()
-        lucifex_home = tmp_path / "lucifex_home"
-        lucifex_home.mkdir()
+        hermes_home = tmp_path / "hermes_home"
+        hermes_home.mkdir()
         monkeypatch.setattr(
-            "lucifex_constants.get_lucifex_home",
-            lambda: lucifex_home,
+            "hermes_constants.get_hermes_home",
+            lambda: hermes_home,
         )
 
         from gateway.platforms.qqbot.keyboards import parse_interaction_event
@@ -1688,18 +1703,18 @@ class TestDefaultInteractionDispatch:
         })
         await adapter._default_interaction_dispatch(event)
 
-        response = lucifex_home / ".update_response"
+        response = hermes_home / ".update_response"
         assert response.exists()
         assert response.read_text() == "y"
 
     @pytest.mark.asyncio
     async def test_update_prompt_click_no_writes_n(self, tmp_path, monkeypatch):
         adapter = self._make_adapter()
-        lucifex_home = tmp_path / "lucifex_home"
-        lucifex_home.mkdir()
+        hermes_home = tmp_path / "hermes_home"
+        hermes_home.mkdir()
         monkeypatch.setattr(
-            "lucifex_constants.get_lucifex_home",
-            lambda: lucifex_home,
+            "hermes_constants.get_hermes_home",
+            lambda: hermes_home,
         )
         from gateway.platforms.qqbot.keyboards import parse_interaction_event
         event = parse_interaction_event({
@@ -1707,7 +1722,7 @@ class TestDefaultInteractionDispatch:
             "data": {"resolved": {"button_data": "update_prompt:n"}},
         })
         await adapter._default_interaction_dispatch(event)
-        response = lucifex_home / ".update_response"
+        response = hermes_home / ".update_response"
         assert response.read_text() == "n"
 
     @pytest.mark.asyncio

@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import type { LucifexReviewFile } from '@/global'
+import type { HermesReviewFile } from '@/global'
 
 import { buildReviewTree } from './tree-data'
 
-const file = (path: string, added = 1, removed = 0): LucifexReviewFile => ({
+const file = (path: string, added = 1, removed = 0): HermesReviewFile => ({
   path,
   added,
   removed,

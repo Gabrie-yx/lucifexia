@@ -1,18 +1,18 @@
 """Kanban tools — structured tool-call surface for worker + orchestrator agents.
 
 These tools are registered into the model's schema when the agent is
-running under the dispatcher (env var ``LUCIFEX_KANBAN_TASK`` set) or when
+running under the dispatcher (env var ``HERMES_KANBAN_TASK`` set) or when
 the active profile explicitly enables the ``kanban`` toolset for
-orchestrator work. A normal ``lucifex chat`` session still sees **zero**
+orchestrator work. A normal ``hermes chat`` session still sees **zero**
 kanban tools in its schema unless configured.
 
-Why tools instead of just shelling out to ``lucifex kanban``?
+Why tools instead of just shelling out to ``hermes kanban``?
 
 1. **Backend portability.** A worker whose terminal tool points at Docker
-   / Modal / Singularity / SSH would run ``lucifex kanban complete …``
-   inside the container, where ``lucifex`` isn't installed and the DB
+   / Modal / Singularity / SSH would run ``hermes kanban complete …``
+   inside the container, where ``hermes`` isn't installed and the DB
    isn't mounted. Tools run in the agent's Python process, so they
-   always reach ``~/.lucifex/kanban.db`` regardless of terminal backend.
+   always reach ``~/.hermes/kanban.db`` regardless of terminal backend.
 
 2. **No shell-quoting footguns.** Passing ``--metadata '{"x": [...]}'``
    through shlex+argparse is fragile. Structured tool args skip it.
@@ -20,8 +20,8 @@ Why tools instead of just shelling out to ``lucifex kanban``?
 3. **Better errors.** Tool-call failures return structured JSON the
    model can reason about, not stderr strings it has to parse.
 
-Humans continue to use the CLI (``lucifex kanban …``), the dashboard
-(``lucifex dashboard``), and the slash command (``/kanban …``) — all
+Humans continue to use the CLI (``hermes kanban …``), the dashboard
+(``hermes dashboard``), and the slash command (``/kanban …``) — all
 three bypass the agent entirely. The tools are for dispatcher-spawned
 worker handoffs and for configured orchestrator profiles that route work
 through the board.
@@ -34,9 +34,9 @@ import os
 from typing import Any, Optional
 
 from agent.redact import redact_sensitive_text
-from lucifex_cli.goals import judge_goal
+from hermes_cli.goals import judge_goal
 from tools.registry import registry, tool_error
-from lucifex_cli.config import cfg_get, load_config
+from hermes_cli.config import cfg_get, load_config
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +54,7 @@ def _profile_has_kanban_toolset() -> bool:
     # negligible overhead. The check_fn results are further TTL-cached
     # (~30s) by the tool registry.
     try:
-        from lucifex_cli.config import load_config
+        from hermes_cli.config import load_config
         cfg = load_config()
         toolsets = cfg.get("toolsets", [])
         return "kanban" in toolsets
@@ -65,16 +65,16 @@ def _profile_has_kanban_toolset() -> bool:
 def _check_kanban_mode() -> bool:
     """Task-lifecycle tools are available when:
 
-    1. ``LUCIFEX_KANBAN_TASK`` is set (dispatcher-spawned worker), OR
+    1. ``HERMES_KANBAN_TASK`` is set (dispatcher-spawned worker), OR
     2. The current profile has ``kanban`` in its toolsets config
        (orchestrator profiles like techlead that route work via Kanban).
 
-    Humans running ``lucifex chat`` without the kanban toolset see zero
+    Humans running ``hermes chat`` without the kanban toolset see zero
     kanban tools. Workers spawned by the kanban dispatcher (gateway-
     embedded by default) and orchestrator profiles with the kanban
     toolset enabled see the Kanban lifecycle tool surface.
     """
-    if os.environ.get("LUCIFEX_KANBAN_TASK"):
+    if os.environ.get("HERMES_KANBAN_TASK"):
         return True
     return _profile_has_kanban_toolset()
 
@@ -88,7 +88,7 @@ def _check_kanban_orchestrator_mode() -> bool:
     board state. Profiles that explicitly opt into the kanban toolset
     and are NOT scoped to a single task are the orchestrator surface.
     """
-    if os.environ.get("LUCIFEX_KANBAN_TASK"):
+    if os.environ.get("HERMES_KANBAN_TASK"):
         return False
     return _profile_has_kanban_toolset()
 
@@ -101,15 +101,15 @@ def _default_task_id(arg: Optional[str]) -> Optional[str]:
     """Resolve ``task_id`` arg or fall back to the env var the dispatcher set."""
     if arg:
         return arg
-    env_tid = os.environ.get("LUCIFEX_KANBAN_TASK")
+    env_tid = os.environ.get("HERMES_KANBAN_TASK")
     return env_tid or None
 
 
 def _worker_run_id(task_id: str) -> Optional[int]:
     """Return this worker's dispatcher run id when it is scoped to task_id."""
-    if os.environ.get("LUCIFEX_KANBAN_TASK") != task_id:
+    if os.environ.get("HERMES_KANBAN_TASK") != task_id:
         return None
-    raw = os.environ.get("LUCIFEX_KANBAN_RUN_ID")
+    raw = os.environ.get("HERMES_KANBAN_RUN_ID")
     if not raw:
         return None
     try:
@@ -122,9 +122,9 @@ def _stamp_worker_session_metadata(
     task_id: str, metadata: Optional[dict]
 ) -> Optional[dict]:
     """Add trusted worker session id metadata for this worker's own task."""
-    if os.environ.get("LUCIFEX_KANBAN_TASK") != task_id:
+    if os.environ.get("HERMES_KANBAN_TASK") != task_id:
         return metadata
-    session_id = os.environ.get("LUCIFEX_SESSION_ID")
+    session_id = os.environ.get("HERMES_SESSION_ID")
     if not session_id:
         return metadata
     stamped = dict(metadata or {})
@@ -135,14 +135,14 @@ def _stamp_worker_session_metadata(
 def _enforce_worker_task_ownership(tid: str) -> Optional[str]:
     """Reject worker-driven destructive calls on foreign task IDs.
 
-    A process spawned by the dispatcher has ``LUCIFEX_KANBAN_TASK`` set
+    A process spawned by the dispatcher has ``HERMES_KANBAN_TASK`` set
     to its own task id. Tools like ``kanban_complete`` / ``kanban_block``
     / ``kanban_heartbeat`` mutate run-lifecycle state, so a buggy or
     prompt-injected worker that passed an explicit ``task_id`` for some
     other task could corrupt sibling or cross-tenant runs (see #19534).
 
     Orchestrator profiles (kanban toolset enabled but **no**
-    ``LUCIFEX_KANBAN_TASK`` in env) aren't subject to this check — their
+    ``HERMES_KANBAN_TASK`` in env) aren't subject to this check — their
     job is routing, and they sometimes legitimately close out child
     tasks or reopen blocked ones. Workers are narrowly scoped to their
     one task.
@@ -151,7 +151,7 @@ def _enforce_worker_task_ownership(tid: str) -> Optional[str]:
     when it must be rejected. Callers should ``return`` the error
     verbatim.
     """
-    env_tid = os.environ.get("LUCIFEX_KANBAN_TASK")
+    env_tid = os.environ.get("HERMES_KANBAN_TASK")
     if not env_tid:
         # Orchestrator or CLI context — no task-scope restriction.
         return None
@@ -171,11 +171,11 @@ def _connect(board: Optional[str] = None):
     When ``board`` is provided it's forwarded to :func:`kb.connect`, which
     routes the connection to that board's sqlite file. ``None`` (the
     default) preserves the legacy resolution chain
-    (``LUCIFEX_KANBAN_DB`` → ``LUCIFEX_KANBAN_BOARD`` env → current symlink
+    (``HERMES_KANBAN_DB`` → ``HERMES_KANBAN_BOARD`` env → current symlink
     → ``default``). Per-tool ``board`` lets a Telegram-side agent override
-    the env-pinned active board without restarting Lucifex.
+    the env-pinned active board without restarting Hermes.
     """
-    from lucifex_cli import kanban_db as kb
+    from hermes_cli import kanban_db as kb
     return kb, kb.connect(board=board)
 
 
@@ -220,7 +220,7 @@ def _goal_judge_available() -> bool:
 #     fails (board missing, DB locked, etc.).
 #   - Rate-limited to one DB write per 60s per-process; runtime activity
 #     can tick on every chunk/tool result and we don't need that resolution.
-#   - No-op outside dispatcher-spawned worker context (no ``LUCIFEX_KANBAN_TASK``).
+#   - No-op outside dispatcher-spawned worker context (no ``HERMES_KANBAN_TASK``).
 #   - No durable note on these auto-heartbeats; that's reserved for the
 #     explicit tool which carries a model-supplied note.
 
@@ -238,10 +238,10 @@ def heartbeat_current_worker_from_env() -> bool:
     not branch on it.
 
     Identity comes from:
-      * ``LUCIFEX_KANBAN_TASK`` — task id (required; absence means no-op)
-      * ``LUCIFEX_KANBAN_RUN_ID`` — pins the run row so we don't heartbeat
+      * ``HERMES_KANBAN_TASK`` — task id (required; absence means no-op)
+      * ``HERMES_KANBAN_RUN_ID`` — pins the run row so we don't heartbeat
         a stale run that may have already been reclaimed
-      * ``LUCIFEX_KANBAN_CLAIM_LOCK`` — claim lock for ``heartbeat_claim``;
+      * ``HERMES_KANBAN_CLAIM_LOCK`` — claim lock for ``heartbeat_claim``;
         falls back to the default ``_claimer_id()`` for locally-driven
         workers that never went through the dispatcher path
 
@@ -250,7 +250,7 @@ def heartbeat_current_worker_from_env() -> bool:
     the worst case is one extra DB write per race, which is harmless.
     """
     global _auto_heartbeat_last_attempt
-    tid = os.environ.get("LUCIFEX_KANBAN_TASK")
+    tid = os.environ.get("HERMES_KANBAN_TASK")
     if not tid:
         return False
     import time as _time
@@ -261,12 +261,12 @@ def heartbeat_current_worker_from_env() -> bool:
     try:
         kb, conn = _connect()
         try:
-            claim_lock = os.environ.get("LUCIFEX_KANBAN_CLAIM_LOCK")
+            claim_lock = os.environ.get("HERMES_KANBAN_CLAIM_LOCK")
             try:
                 kb.heartbeat_claim(conn, tid, claimer=claim_lock)
             except Exception:
                 logger.debug("auto-heartbeat: heartbeat_claim failed", exc_info=True)
-            run_id_raw = os.environ.get("LUCIFEX_KANBAN_RUN_ID")
+            run_id_raw = os.environ.get("HERMES_KANBAN_RUN_ID")
             run_id: Optional[int]
             try:
                 run_id = int(run_id_raw) if run_id_raw else None
@@ -324,7 +324,7 @@ def _require_orchestrator_tool(tool_name: str) -> Optional[str]:
     structured tool_error so the model gets a clear refusal instead of
     silently mutating board state from a worker context.
     """
-    if os.environ.get("LUCIFEX_KANBAN_TASK"):
+    if os.environ.get("HERMES_KANBAN_TASK"):
         return tool_error(
             f"{tool_name} is orchestrator-only; dispatcher-spawned workers "
             "must use kanban_complete, kanban_block, kanban_heartbeat, or "
@@ -370,7 +370,7 @@ def _handle_show(args: dict, **kw) -> str:
     tid = _default_task_id(args.get("task_id"))
     if not tid:
         return tool_error(
-            "task_id is required (or set LUCIFEX_KANBAN_TASK in the env)"
+            "task_id is required (or set HERMES_KANBAN_TASK in the env)"
         )
     board = args.get("board")
     try:
@@ -506,7 +506,7 @@ def _handle_complete(args: dict, **kw) -> str:
     tid = _default_task_id(args.get("task_id"))
     if not tid:
         return tool_error(
-            "task_id is required (or set LUCIFEX_KANBAN_TASK in the env)"
+            "task_id is required (or set HERMES_KANBAN_TASK in the env)"
         )
     ownership_err = _enforce_worker_task_ownership(tid)
     if ownership_err:
@@ -602,7 +602,12 @@ def _handle_complete(args: dict, **kw) -> str:
                 verdict = "done"
                 reason = ""
                 try:
-                    verdict, reason, _ = judge_goal(
+                    # judge_goal returns (verdict, reason, parse_failed,
+                    # wait_directive, transport_failed) — see
+                    # hermes_cli/goals.py. Unpacking fewer raises ValueError,
+                    # which the defensive handler below swallows, leaving
+                    # verdict="done" and silently disabling the gate.
+                    verdict, reason, _, _, _ = judge_goal(
                         goal=f"{task.title}\n\n{task.body or ''}".strip(),
                         last_response=(summary or result or "").strip(),
                     )
@@ -629,6 +634,13 @@ def _handle_complete(args: dict, **kw) -> str:
                     result=result, summary=summary, metadata=metadata,
                     created_cards=created_cards,
                     expected_run_id=_worker_run_id(tid),
+                )
+            except kb.ArtifactPreservationError as artifact_err:
+                return tool_error(
+                    f"kanban_complete could not preserve the declared artifacts: "
+                    f"{artifact_err}. Your task is still in-flight and its "
+                    f"scratch workspace was kept. Fix the artifact path or "
+                    f"storage error, then retry kanban_complete with the same handoff."
                 )
             except kb.HallucinatedCardsError as hall_err:
                 # Structured rejection — surface the phantom ids so the
@@ -670,7 +682,7 @@ def _handle_block(args: dict, **kw) -> str:
     tid = _default_task_id(args.get("task_id"))
     if not tid:
         return tool_error(
-            "task_id is required (or set LUCIFEX_KANBAN_TASK in the env)"
+            "task_id is required (or set HERMES_KANBAN_TASK in the env)"
         )
     ownership_err = _enforce_worker_task_ownership(tid)
     if ownership_err:
@@ -756,7 +768,7 @@ def _handle_heartbeat(args: dict, **kw) -> str:
     tid = _default_task_id(args.get("task_id"))
     if not tid:
         return tool_error(
-            "task_id is required (or set LUCIFEX_KANBAN_TASK in the env)"
+            "task_id is required (or set HERMES_KANBAN_TASK in the env)"
         )
     ownership_err = _enforce_worker_task_ownership(tid)
     if ownership_err:
@@ -767,11 +779,11 @@ def _handle_heartbeat(args: dict, **kw) -> str:
         kb, conn = _connect(board=board)
         try:
             # Extend the claim TTL first. The dispatcher pins
-            # LUCIFEX_KANBAN_CLAIM_LOCK in the worker env at spawn time
+            # HERMES_KANBAN_CLAIM_LOCK in the worker env at spawn time
             # (see _default_spawn in kanban_db.py); falling back to the
             # default _claimer_id() covers locally-driven workers that
             # never went through the dispatcher path.
-            claim_lock = os.environ.get("LUCIFEX_KANBAN_CLAIM_LOCK")
+            claim_lock = os.environ.get("HERMES_KANBAN_CLAIM_LOCK")
             kb.heartbeat_claim(conn, tid, claimer=claim_lock)
 
             ok = kb.heartbeat_worker(
@@ -811,11 +823,11 @@ def _handle_comment(args: dict, **kw) -> str:
     # into the next worker's system prompt by ``build_worker_context``
     # as ``**{author}** (timestamp): {body}`` — accepting an
     # ``args["author"]`` override let a worker forge a comment from
-    # an authoritative-looking name like ``lucifex-system`` and poison
+    # an authoritative-looking name like ``hermes-system`` and poison
     # the future-worker context with what reads as a system directive.
     # Cross-task commenting itself remains unrestricted (see #19713) —
     # comments are the deliberate handoff channel between tasks.
-    author = os.environ.get("LUCIFEX_PROFILE") or "worker"
+    author = os.environ.get("HERMES_PROFILE") or "worker"
     board = args.get("board")
     try:
         kb, conn = _connect(board=board)
@@ -829,6 +841,225 @@ def _handle_comment(args: dict, **kw) -> str:
     except Exception as e:
         logger.exception("kanban_comment failed")
         return tool_error(f"kanban_comment: {e}")
+
+
+def _handle_attach(args: dict, **kw) -> str:
+    """Attach an inline (base64) file to a task.
+
+    Mirrors the dashboard's upload endpoint for the agent surface: decode
+    the payload, enforce the shared size cap, write it under the per-task
+    attachments dir, and record the metadata row — all via
+    ``kanban_db.store_attachment_bytes`` so the three surfaces stay in lockstep.
+    """
+    from hermes_cli import kanban_db as kb
+
+    tid = _default_task_id(args.get("task_id"))
+    if not tid:
+        return tool_error(
+            "task_id is required (or set HERMES_KANBAN_TASK in the env)"
+        )
+    ownership_err = _enforce_worker_task_ownership(tid)
+    if ownership_err:
+        return ownership_err
+    filename = args.get("filename")
+    if not filename or not str(filename).strip():
+        return tool_error("filename is required")
+    content_b64 = args.get("content_base64")
+    if not content_b64 or not str(content_b64).strip():
+        return tool_error("content_base64 is required")
+    import base64
+    import binascii
+    try:
+        data = base64.b64decode(str(content_b64), validate=True)
+    except (binascii.Error, ValueError) as e:
+        return tool_error(f"content_base64 is not valid base64: {e}")
+    content_type = args.get("content_type")
+    board = args.get("board")
+    try:
+        _, conn = _connect(board=board)
+        try:
+            att_id = kb.store_attachment_bytes(
+                conn,
+                tid,
+                str(filename),
+                data,
+                content_type=content_type,
+                uploaded_by="agent",
+                board=board,
+            )
+            return _ok(task_id=tid, attachment_id=att_id, size=len(data))
+        finally:
+            conn.close()
+    except kb.AttachmentTooLarge as e:
+        return tool_error(f"kanban_attach: {e}")
+    except ValueError as e:
+        return tool_error(f"kanban_attach: {e}")
+    except Exception as e:
+        logger.exception("kanban_attach failed")
+        return tool_error(f"kanban_attach: {e}")
+
+
+_MAX_ATTACH_URL_REDIRECTS = 5
+
+
+def _download_url_with_cap(url: str, max_bytes: int) -> tuple[bytes, Optional[str]]:
+    """Fetch ``url`` over http(s) with SSRF guarding, capped at ``max_bytes``.
+
+    Every hop — the initial URL and each redirect target — is validated with
+    ``tools.url_safety.is_safe_url`` before it is fetched, so a
+    model-controlled URL (or a public host 302ing to one) cannot reach
+    loopback, private/CGNAT ranges, or cloud metadata endpoints. Redirects
+    are followed manually (``follow_redirects=False``) so each Location is
+    re-checked, mirroring ``tools.skills_hub._guarded_http_get``.
+
+    Returns ``(data, content_type)``. Raises ``ValueError`` for a non-http(s)
+    scheme, an SSRF-blocked target, too many redirects, or a body that
+    overruns the cap (the caller maps it to a clean tool error). Reads in
+    chunks so an oversize response is rejected without buffering the whole
+    thing.
+    """
+    from urllib.parse import urljoin, urlparse
+
+    import httpx
+
+    from tools.url_safety import is_safe_url
+
+    current_url = url
+    for _ in range(_MAX_ATTACH_URL_REDIRECTS + 1):
+        scheme = (urlparse(current_url).scheme or "").lower()
+        if scheme not in ("http", "https"):
+            raise ValueError(
+                f"unsupported URL scheme {scheme!r}; only http/https are allowed"
+            )
+        if not is_safe_url(current_url):
+            raise ValueError(
+                f"URL blocked by SSRF protection (private/internal address): {current_url}"
+            )
+        chunks: list[bytes] = []
+        total = 0
+        with httpx.stream(
+            "GET",
+            current_url,
+            headers={"User-Agent": "hermes-kanban/attach"},
+            timeout=30,
+            follow_redirects=False,
+        ) as resp:
+            if resp.is_redirect:
+                location = resp.headers.get("location")
+                if not location:
+                    raise ValueError(f"redirect without Location header from {current_url}")
+                current_url = urljoin(current_url, location)
+                continue
+            resp.raise_for_status()
+            content_type = (resp.headers.get("content-type") or "").split(";")[0].strip() or None
+            for chunk in resp.iter_bytes(1024 * 1024):
+                total += len(chunk)
+                if total > max_bytes:
+                    raise ValueError(
+                        f"attachment exceeds {max_bytes // (1024 * 1024)} MB limit"
+                    )
+                chunks.append(chunk)
+        return b"".join(chunks), content_type
+    raise ValueError(f"too many redirects fetching {url}")
+
+
+def _handle_attach_url(args: dict, **kw) -> str:
+    """Attach a file fetched server-side from a URL.
+
+    The agent passes a URL; Hermes downloads it (with the shared size cap)
+    and stores it as a real attachment. Useful when the agent has a link
+    rather than the bytes. Only http/https URLs are accepted.
+    """
+    from hermes_cli import kanban_db as kb
+
+    tid = _default_task_id(args.get("task_id"))
+    if not tid:
+        return tool_error(
+            "task_id is required (or set HERMES_KANBAN_TASK in the env)"
+        )
+    ownership_err = _enforce_worker_task_ownership(tid)
+    if ownership_err:
+        return ownership_err
+    url = args.get("url")
+    if not url or not str(url).strip():
+        return tool_error("url is required")
+    url = str(url).strip()
+    filename = args.get("filename") or args.get("title")
+    if not filename or not str(filename).strip():
+        # Derive a name from the URL path's leaf component.
+        from urllib.parse import unquote, urlparse
+        leaf = unquote(urlparse(url).path.rsplit("/", 1)[-1]).strip()
+        filename = leaf or "download"
+    content_type = args.get("content_type")
+    board = args.get("board")
+    try:
+        data, fetched_ct = _download_url_with_cap(url, kb.KANBAN_ATTACHMENT_MAX_BYTES)
+    except ValueError as e:
+        return tool_error(f"kanban_attach_url: {e}")
+    except Exception as e:
+        logger.exception("kanban_attach_url download failed")
+        return tool_error(f"kanban_attach_url: failed to fetch {url}: {e}")
+    try:
+        _, conn = _connect(board=board)
+        try:
+            att_id = kb.store_attachment_bytes(
+                conn,
+                tid,
+                str(filename),
+                data,
+                content_type=content_type or fetched_ct,
+                uploaded_by="agent",
+                board=board,
+            )
+            return _ok(task_id=tid, attachment_id=att_id, size=len(data))
+        finally:
+            conn.close()
+    except kb.AttachmentTooLarge as e:
+        return tool_error(f"kanban_attach_url: {e}")
+    except ValueError as e:
+        return tool_error(f"kanban_attach_url: {e}")
+    except Exception as e:
+        logger.exception("kanban_attach_url failed")
+        return tool_error(f"kanban_attach_url: {e}")
+
+
+def _handle_attachments(args: dict, **kw) -> str:
+    """List a task's attachments (read-only; no ownership restriction)."""
+    tid = _default_task_id(args.get("task_id"))
+    if not tid:
+        return tool_error(
+            "task_id is required (or set HERMES_KANBAN_TASK in the env)"
+        )
+    board = args.get("board")
+    try:
+        kb, conn = _connect(board=board)
+        try:
+            if kb.get_task(conn, tid) is None:
+                return tool_error(f"task {tid} not found")
+            atts = kb.list_attachments(conn, tid)
+            return json.dumps({
+                "ok": True,
+                "task_id": tid,
+                "attachments": [
+                    {
+                        "id": a.id,
+                        "filename": a.filename,
+                        "content_type": a.content_type,
+                        "size": a.size,
+                        "uploaded_by": a.uploaded_by,
+                        "stored_path": a.stored_path,
+                        "created_at": a.created_at,
+                    }
+                    for a in atts
+                ],
+            })
+        finally:
+            conn.close()
+    except ValueError as e:
+        return tool_error(f"kanban_attachments: {e}")
+    except Exception as e:
+        logger.exception("kanban_attachments failed")
+        return tool_error(f"kanban_attachments: {e}")
 
 
 def _handle_create(args: dict, **kw) -> str:
@@ -848,18 +1079,18 @@ def _handle_create(args: dict, **kw) -> str:
         )
     body = args.get("body")
     parents = args.get("parents") or []
-    tenant = args.get("tenant") or os.environ.get("LUCIFEX_TENANT")
+    tenant = args.get("tenant") or os.environ.get("HERMES_TENANT")
     # Stamp the originating session id when the agent loop runs under
-    # ACP (which sets LUCIFEX_SESSION_ID before invoking tools). NULL on
+    # ACP (which sets HERMES_SESSION_ID before invoking tools). NULL on
     # CLI / dashboard paths and on legacy hosts that don't set the env.
-    session_id = args.get("session_id") or os.environ.get("LUCIFEX_SESSION_ID")
+    session_id = args.get("session_id") or os.environ.get("HERMES_SESSION_ID")
     priority = args.get("priority")
     # Resolve workspace. If the caller passed one explicitly, honor it.
-    # Otherwise, a dispatcher-spawned worker (LUCIFEX_KANBAN_TASK set)
+    # Otherwise, a dispatcher-spawned worker (HERMES_KANBAN_TASK set)
     # inherits its own running task's workspace, so a worker editing a
     # dir:/worktree project that spawns a follow-up child keeps the child
     # in that project instead of a throwaway scratch dir. Orchestrators
-    # (kanban toolset, no LUCIFEX_KANBAN_TASK) and CLI/dashboard callers
+    # (kanban toolset, no HERMES_KANBAN_TASK) and CLI/dashboard callers
     # fall back to scratch as before. Explicit None path stays None.
     workspace_kind = args.get("workspace_kind")
     workspace_path = args.get("workspace_path")
@@ -898,7 +1129,7 @@ def _handle_create(args: dict, **kw) -> str:
             # Inherit the spawning worker's own task workspace when the
             # caller didn't specify one (see resolution note above).
             if _inherit_workspace:
-                _self_tid = os.environ.get("LUCIFEX_KANBAN_TASK")
+                _self_tid = os.environ.get("HERMES_KANBAN_TASK")
                 if _self_tid:
                     _self_task = kb.get_task(conn, _self_tid)
                     if _self_task is not None and _self_task.workspace_kind:
@@ -931,7 +1162,7 @@ def _handle_create(args: dict, **kw) -> str:
                     int(goal_max_turns) if goal_max_turns is not None else None
                 ),
                 initial_status=str(initial_status),
-                created_by=os.environ.get("LUCIFEX_PROFILE") or "worker",
+                created_by=os.environ.get("HERMES_PROFILE") or "worker",
                 session_id=session_id,
             )
             new_task = kb.get_task(conn, new_tid)
@@ -962,19 +1193,19 @@ def _maybe_auto_subscribe(conn: Any, task_id: str) -> bool:
     Gated by ``kanban.auto_subscribe_on_create`` in config.yaml (default
     True). Disable to mirror pre-feature behaviour, e.g. when the
     originating user/chat opted out via the per-platform notification
-    toggle (see ``lucifex dashboard``).
+    toggle (see ``hermes dashboard``).
 
     Subscription paths:
 
-    - **Gateway** (telegram/discord/slack/etc): ``LUCIFEX_SESSION_PLATFORM``
-      and ``LUCIFEX_SESSION_CHAT_ID`` are set in ContextVars by the
+    - **Gateway** (telegram/discord/slack/etc): ``HERMES_SESSION_PLATFORM``
+      and ``HERMES_SESSION_CHAT_ID`` are set in ContextVars by the
       messaging gateway before agent dispatch. The notification poller
       already keys off these, so we just register a row.
 
     - **TUI** (herm desktop / herm TUI): the platform/chat_id ContextVars
       are intentionally cleared (TUI is a single-channel local UI, not
       a multi-tenant chat surface), but the agent subprocess inherits
-      ``LUCIFEX_SESSION_KEY`` from the parent session. We subscribe with
+      ``HERMES_SESSION_KEY`` from the parent session. We subscribe with
       ``platform="tui"`` and ``chat_id=<key>``; the TUI notification
       poller (``tui_gateway/server.py``) reads ``kanban_notify_subs``
       for these rows and posts the completion message into the running
@@ -1001,39 +1232,39 @@ def _maybe_auto_subscribe(conn: Any, task_id: str) -> bool:
     chat_id = ""
     try:
         from gateway.session_context import get_session_env
-        platform = get_session_env("LUCIFEX_SESSION_PLATFORM", "")
-        chat_id = get_session_env("LUCIFEX_SESSION_CHAT_ID", "")
+        platform = get_session_env("HERMES_SESSION_PLATFORM", "")
+        chat_id = get_session_env("HERMES_SESSION_CHAT_ID", "")
         if not platform or not chat_id:
             # TUI / desktop fallback: platform/chat_id ContextVars are
             # cleared for TUI sessions, but the parent process exports
-            # LUCIFEX_SESSION_KEY into the subprocess env. Treat that
+            # HERMES_SESSION_KEY into the subprocess env. Treat that
             # as a "tui" subscription so the TUI notification poller
             # (tui_gateway/server.py) can pick it up.
             #
-            # LUCIFEX_SESSION_ID is intentionally NOT a fallback here:
+            # HERMES_SESSION_ID is intentionally NOT a fallback here:
             # it is set by ACP / the agent subprocess for telemetry
             # regardless of whether the parent is a TUI or a CLI, so
             # treating it as a notification target would auto-subscribe
             # every CLI invocation, which is exactly the over-eager
             # behaviour that got #19718 reverted upstream. The TUI
-            # poller keys on LUCIFEX_SESSION_KEY.
+            # poller keys on HERMES_SESSION_KEY.
             session_key = (
-                get_session_env("LUCIFEX_SESSION_KEY", "")
-                or os.environ.get("LUCIFEX_SESSION_KEY", "")
+                get_session_env("HERMES_SESSION_KEY", "")
+                or os.environ.get("HERMES_SESSION_KEY", "")
             )
             if not session_key:
                 return False  # CLI / cron / test — no persistent channel
             platform = "tui"
             chat_id = session_key
-        thread_id = get_session_env("LUCIFEX_SESSION_THREAD_ID", "") or None
-        user_id = get_session_env("LUCIFEX_SESSION_USER_ID", "") or None
+        thread_id = get_session_env("HERMES_SESSION_THREAD_ID", "") or None
+        user_id = get_session_env("HERMES_SESSION_USER_ID", "") or None
         notifier_profile = (
-            get_session_env("LUCIFEX_SESSION_PROFILE", "")
-            or os.environ.get("LUCIFEX_PROFILE")
+            get_session_env("HERMES_SESSION_PROFILE", "")
+            or os.environ.get("HERMES_PROFILE")
         )
 
         # Lazy-import to keep the module-level dependency light
-        from lucifex_cli import kanban_db as _kb
+        from hermes_cli import kanban_db as _kb
         _kb.add_notify_sub(
             conn, task_id=task_id,
             platform=platform, chat_id=chat_id,
@@ -1050,7 +1281,7 @@ def _maybe_auto_subscribe(conn: Any, task_id: str) -> bool:
 
 
 def _handle_unblock(args: dict, **kw) -> str:
-    """Transition a blocked task back to ready."""
+    """Transition a blocked task to ready, or todo while parents remain open."""
     guard = _require_orchestrator_tool("kanban_unblock")
     if guard:
         return guard
@@ -1067,7 +1298,8 @@ def _handle_unblock(args: dict, **kw) -> str:
             ok = kb.unblock_task(conn, str(tid))
             if not ok:
                 return tool_error(f"could not unblock {tid} (not blocked or unknown)")
-            return _ok(task_id=str(tid), status="ready")
+            task = kb.get_task(conn, str(tid))
+            return _ok(task_id=str(tid), status=task.status if task else None)
         finally:
             conn.close()
     except ValueError as e:
@@ -1104,14 +1336,14 @@ def _handle_link(args: dict, **kw) -> str:
 # ---------------------------------------------------------------------------
 
 _DESC_TASK_ID_DEFAULT = (
-    "Task id. If omitted, defaults to LUCIFEX_KANBAN_TASK from the env "
+    "Task id. If omitted, defaults to HERMES_KANBAN_TASK from the env "
     "(the task the dispatcher spawned you to work on)."
 )
 
 _DESC_BOARD = (
     "Kanban board slug to target. When omitted, the call resolves the "
-    "active board the usual way: LUCIFEX_KANBAN_DB env → "
-    "LUCIFEX_KANBAN_BOARD env → the 'current' symlink under the kanban "
+    "active board the usual way: HERMES_KANBAN_DB env → "
+    "HERMES_KANBAN_BOARD env → the 'current' symlink under the kanban "
     "home → 'default'. Pass an explicit slug only when the caller (e.g. "
     "a Telegram routing layer) needs to override the env-pinned active "
     "board for this one call."
@@ -1277,8 +1509,10 @@ KANBAN_COMPLETE_SCHEMA = {
                     "lands with the completion notification. Skip "
                     "intermediate scratch files and references that "
                     "are not the deliverable. The path must exist "
-                    "on disk when the notifier runs; missing files "
-                    "are silently skipped."
+                    "on disk at completion. Files inside a managed scratch "
+                    "workspace are copied to durable task attachments before "
+                    "cleanup; a missing declared scratch artifact keeps the "
+                    "task in-flight so you can fix the path and retry."
                 ),
             },
             "board": _board_schema_prop(),
@@ -1387,6 +1621,102 @@ KANBAN_COMMENT_SCHEMA = {
     },
 }
 
+KANBAN_ATTACH_SCHEMA = {
+    "name": "kanban_attach",
+    "description": (
+        "Attach a file to a task by passing its bytes inline (base64). "
+        "Use for genuine file artifacts the next worker or a human should "
+        "be able to download — generated reports, images, exports. The "
+        "file is stored as a real attachment (not a comment link) under "
+        "the task's attachments dir, capped at 25 MB. Prefer "
+        "kanban_attach_url when you only have a URL."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "task_id": {
+                "type": "string",
+                "description": _DESC_TASK_ID_DEFAULT,
+            },
+            "filename": {
+                "type": "string",
+                "description": (
+                    "File name to store it under (e.g. 'report.pdf'). "
+                    "Directory components are stripped; only the leaf is kept."
+                ),
+            },
+            "content_base64": {
+                "type": "string",
+                "description": "The file contents, base64-encoded. Max 25 MB decoded.",
+            },
+            "content_type": {
+                "type": "string",
+                "description": "Optional MIME type (e.g. 'application/pdf').",
+            },
+            "board": _board_schema_prop(),
+        },
+        "required": ["filename", "content_base64"],
+    },
+}
+
+KANBAN_ATTACH_URL_SCHEMA = {
+    "name": "kanban_attach_url",
+    "description": (
+        "Attach a file to a task by URL — Hermes downloads it server-side "
+        "and stores it as a real attachment (capped at 25 MB). Use when "
+        "you have a link rather than the bytes. Only http/https URLs are "
+        "accepted."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "task_id": {
+                "type": "string",
+                "description": _DESC_TASK_ID_DEFAULT,
+            },
+            "url": {
+                "type": "string",
+                "description": "http(s) URL to fetch and store.",
+            },
+            "filename": {
+                "type": "string",
+                "description": (
+                    "Optional name to store it under. Defaults to the URL "
+                    "path's leaf component."
+                ),
+            },
+            "content_type": {
+                "type": "string",
+                "description": (
+                    "Optional MIME type override. Defaults to the "
+                    "Content-Type the server returns."
+                ),
+            },
+            "board": _board_schema_prop(),
+        },
+        "required": ["url"],
+    },
+}
+
+KANBAN_ATTACHMENTS_SCHEMA = {
+    "name": "kanban_attachments",
+    "description": (
+        "List the files attached to a task: id, filename, content_type, "
+        "size, who uploaded it, and the absolute on-disk path you can read."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "task_id": {
+                "type": "string",
+                "description": _DESC_TASK_ID_DEFAULT,
+            },
+            "board": _board_schema_prop(),
+        },
+        "required": [],
+    },
+}
+
 KANBAN_CREATE_SCHEMA = {
     "name": "kanban_create",
     "description": (
@@ -1436,7 +1766,7 @@ KANBAN_CREATE_SCHEMA = {
                 "type": "string",
                 "description": (
                     "Optional namespace for multi-project isolation. "
-                    "Defaults to LUCIFEX_TENANT env if set."
+                    "Defaults to HERMES_TENANT env if set."
                 ),
             },
             "priority": {
@@ -1550,7 +1880,8 @@ KANBAN_CREATE_SCHEMA = {
 KANBAN_UNBLOCK_SCHEMA = {
     "name": "kanban_unblock",
     "description": (
-        "Move a blocked Kanban task back to ready. Orchestrator-only — only "
+        "Unblock a Kanban task. It moves to ready when all parents are done, "
+        "or todo while any parent remains open. Orchestrator-only — only "
         "profiles with the kanban toolset can unblock routed work; "
         "dispatcher-spawned task workers never see this tool."
     ),
@@ -1559,7 +1890,7 @@ KANBAN_UNBLOCK_SCHEMA = {
         "properties": {
             "task_id": {
                 "type": "string",
-                "description": "Blocked task id to return to ready.",
+                "description": "Blocked task id to move to ready or parent-gated todo.",
             },
             "board": _board_schema_prop(),
         },
@@ -1642,6 +1973,33 @@ registry.register(
     handler=_handle_comment,
     check_fn=_check_kanban_mode,
     emoji="💬",
+)
+
+registry.register(
+    name="kanban_attach",
+    toolset="kanban",
+    schema=KANBAN_ATTACH_SCHEMA,
+    handler=_handle_attach,
+    check_fn=_check_kanban_mode,
+    emoji="📎",
+)
+
+registry.register(
+    name="kanban_attach_url",
+    toolset="kanban",
+    schema=KANBAN_ATTACH_URL_SCHEMA,
+    handler=_handle_attach_url,
+    check_fn=_check_kanban_mode,
+    emoji="📎",
+)
+
+registry.register(
+    name="kanban_attachments",
+    toolset="kanban",
+    schema=KANBAN_ATTACHMENTS_SCHEMA,
+    handler=_handle_attachments,
+    check_fn=_check_kanban_mode,
+    emoji="📎",
 )
 
 registry.register(

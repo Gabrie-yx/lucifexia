@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { ErrorIcon } from '@/components/ui/error-state'
 import { Input } from '@/components/ui/input'
 import { Loader } from '@/components/ui/loader'
-import { getGlobalModelOptions } from '@/lucifex'
+import { getGlobalModelOptions } from '@/hermes'
 import { useI18n } from '@/i18n'
 import { ExternalLink, Loader2 } from '@/lib/icons'
 import { cn } from '@/lib/utils'
@@ -237,7 +237,7 @@ function ConfirmingModelPanel({
   // shows the same $/Mtok + Free/Pro info the picker and CLI do.
   const options = useQuery({
     queryKey: ['onboarding-model-options', flow.providerSlug],
-    queryFn: () => getGlobalModelOptions()
+    queryFn: () => getGlobalModelOptions({ includeUnconfigured: true, explicitOnly: false })
   })
 
   const providerRow = options.data?.providers?.find(

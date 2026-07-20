@@ -1,21 +1,24 @@
 import type { Dispatch, SetStateAction } from 'react'
 
-import type { LucifexGateway } from '@/lucifex'
+import type { HermesGateway } from '@/hermes'
 import type { IconComponent } from '@/lib/icons'
-import type { EnvVarInfo } from '@/types/lucifex'
+import type { EnvVarInfo } from '@/types/hermes'
 
 export type SettingsView =
   | 'about'
+  | 'billing'
   | 'gateway'
+  | 'keybinds'
   | 'keys'
   | 'notifications'
+  | 'plugins'
   | 'providers'
   | 'sessions'
   | `config:${string}`
 export type EnvPatch = Partial<Pick<EnvVarInfo, 'is_set' | 'redacted_value'>>
 
 export interface SettingsPageProps {
-  gateway?: LucifexGateway | null
+  gateway?: HermesGateway | null
   onClose: () => void
   onConfigSaved?: () => void
   onMainModelChanged?: (provider: string, model: string) => void

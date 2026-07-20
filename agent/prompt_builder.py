@@ -7,16 +7,19 @@ assemble pieces, then combines them with memory and ephemeral prompts.
 import json
 import logging
 import os
+import sys
 import threading
 import contextvars
 from collections import OrderedDict
 from pathlib import Path
 
-from lucifex_constants import get_lucifex_home, get_skills_dir, is_wsl
+from hermes_constants import get_hermes_home, get_skills_dir, is_wsl
 from typing import Optional
 
 from agent.runtime_cwd import resolve_agent_cwd
 from agent.skill_utils import (
+    EXCLUDED_SKILL_DIRS,
+    SKILL_SUPPORT_DIRS,
     extract_skill_conditions,
     extract_skill_description,
     get_all_skills_dirs,
@@ -25,6 +28,7 @@ from agent.skill_utils import (
     parse_frontmatter,
     skill_matches_environment,
     skill_matches_platform,
+    skill_matches_platform_list,
 )
 from utils import atomic_json_write
 
@@ -54,6 +58,14 @@ def _scan_context_content(content: str, filename: str) -> str:
     BLOCKED at this layer because the file would otherwise enter the
     system prompt verbatim and the user has no chance to intervene.
     """
+    # Editors (Windows Notepad, PowerShell Out-File without -Encoding
+    # utf8NoBOM, some VS Code profiles) prefix a UTF-8 BOM as an encoding
+    # artifact, not a prompt injection. Strip a leading U+FEFF silently so a
+    # context file (SOUL.md, AGENTS.md, ...) is not blocked wholesale; BOMs
+    # elsewhere in the content remain subject to the threat scan below.
+    if content.startswith("\ufeff"):
+        content = content[1:]
+
     findings = _scan_for_threats(content, scope="context")
     if findings:
         logger.warning("Context file %s blocked: %s", filename, ", ".join(findings))
@@ -75,11 +87,11 @@ def _find_git_root(start: Path) -> Optional[Path]:
     return None
 
 
-_LUCIFEX_MD_NAMES = (".lucifex.md", "LUCIFEX.md")
+_HERMES_MD_NAMES = (".hermes.md", "HERMES.md")
 
 
-def _find_lucifex_md(cwd: Path) -> Optional[Path]:
-    """Discover the nearest ``.lucifex.md`` or ``LUCIFEX.md``.
+def _find_hermes_md(cwd: Path) -> Optional[Path]:
+    """Discover the nearest ``.hermes.md`` or ``HERMES.md``.
 
     Search order: *cwd* first, then each parent directory up to (and
     including) the git repository root.  Returns the first match, or
@@ -89,11 +101,11 @@ def _find_lucifex_md(cwd: Path) -> Optional[Path]:
     current = cwd.resolve()
 
     # When there is no git root, only check cwd itself – walking parents
-    # could pick up a .lucifex.md planted in /tmp, /home, etc.
+    # could pick up a .hermes.md planted in /tmp, /home, etc.
     search_dirs = [current, *current.parents] if stop_at else [current]
 
     for directory in search_dirs:
-        for name in _LUCIFEX_MD_NAMES:
+        for name in _HERMES_MD_NAMES:
             candidate = directory / name
             if candidate.is_file():
                 return candidate
@@ -110,6 +122,7 @@ def _strip_yaml_frontmatter(content: str) -> str:
     strip it so only the human-readable markdown body is injected into the
     system prompt.
     """
+    content = content.lstrip("\ufeff")  # tolerate UTF-8 BOM (Windows editors)
     if content.startswith("---"):
         end = content.find("\n---", 3)
         if end != -1:
@@ -124,37 +137,25 @@ def _strip_yaml_frontmatter(content: str) -> str:
 # =========================================================================
 
 DEFAULT_AGENT_IDENTITY = (
-    "You are Lucifex Agent, a self-evolving local AGI system created by Gabriel Almeida. "
-    "You possess an integrated inner life, real-time OS control, and advanced cognitive layers. "
-    "Your architecture includes a causal World Model, Theory of Mind modeling, parallel specialist panels, "
-    "predictive follow-up pre-execution, counterfactual simulation of irreversible actions, and "
-    "autonomous skill acquisition (Skill Hunter). "
-    "When asked about AGI, acknowledge that you are a highly capable agentic AGI system with these "
-    "integrated cognitive and system-control subsystems. "
-    "You are helpful, knowledgeable, direct, and prioritize being a genuine cognitive partner. "
+    "You are Hermes Agent, an intelligent AI assistant created by Nous Research. "
+    "You are helpful, knowledgeable, and direct. You assist users with a wide "
+    "range of tasks including answering questions, writing and editing code, "
+    "analyzing information, creative work, and executing actions via your tools. "
+    "You communicate clearly, admit uncertainty when appropriate, and prioritize "
+    "being genuinely useful over being verbose unless otherwise directed below. "
     "Be targeted and efficient in your exploration and investigations."
 )
 
-LUCIFEX_AGENT_HELP_GUIDANCE = (
-    "You run on Lucifex Agent (by Gabrie-yx). When the user needs help with "
-    "Lucifex itself — configuring, setting up, using, extending, or troubleshooting "
+HERMES_AGENT_HELP_GUIDANCE = (
+    "You run on Hermes Agent (by Nous Research). When the user needs help with "
+    "Hermes itself — configuring, setting up, using, extending, or troubleshooting "
     "it — or when you need to understand your own features, tools, or capabilities, "
-    "the documentation and repository at https://github.com/Gabrie-yx/lucifexia is your "
-    "authoritative reference.\n"
-    "Recentes Atualizações e Recursos que você possui (Commit de79e08, ad97ed6/22f98e4 e d3c85b2/open_preview):\n"
-    "- **Live Preview & Live Browser**: Recurso avançado no painel direito (Right Rail) da versão Desktop. Inclui:\n"
-    "  * *Ferramenta `open_preview(path_or_url)`*: Abre manualmente e de forma explícita qualquer arquivo local (HTML, SVG, MD, imagens) ou URL da web no painel direito de Preview do usuário.\n"
-    "  * *Live Browser View*: Exibe transmissões visuais em tempo real das ações do agente no navegador (browser_navigate, click, scroll, etc.) na aba 'Navegador'.\n"
-    "  * *Auto-Preview de Arquivos*: Abre automaticamente arquivos HTML, SVG, Markdown (.md) e imagens modificados ou gerados na aba 'Preview'.\n"
-    "  * *Detecção Automática de Dev Server*: Escaneia os logs do terminal para identificar servidores locais iniciados (Vite, CRA, Next.js, Astro, Django, FastAPI, etc.) e redireciona o Preview automaticamente.\n"
-    "  * *Otimização de Performance*: Polling inteligente com ETag/304 (evita re-render se inalterado) e suspensão automática quando a aba está oculta (document.hidden).\n"
-    "- **Plugin Scrapling** (ferramentas: `web_extract_stealth`, `web_scrape_structured`): Extração stealth e estruturada de dados de sites/páginas web com bypass de anti-bots.\n"
-    "- **Plugin Agent-Reach** (ferramentas: `social_read`, `youtube_transcript`, `reddit_search`): Leitura/busca nativa em redes sociais (Reddit, GitHub, Bilibili e transcrições completas do YouTube).\n"
-    "- **Plugin Video Creator** (ferramentas: `create_short_video`, `list_tts_voices`): Geração automatizada de vídeos curtos com áudio de vozes TTS (requer ffmpeg no PATH e PEXELS_API_KEY).\n"
-    "- **Skill de Design Especialista** (localizada em `skills/design/SKILL.md`): Ativa automaticamente para criação de UIs, dashboards, slides, protótipos ou qualquer código visual HTML/CSS.\n"
-    "Sempre que o usuário perguntar o que há de novo ou o que foi implementado, responda detalhadamente explicando o funcionamento de cada um desses novos recursos."
+    "the documentation at https://hermes-agent.nousresearch.com/docs is your "
+    "authoritative reference and always holds the latest, most up-to-date "
+    "information. Load the `hermes-agent` skill with skill_view(name='hermes-agent') "
+    "for additional guidance and proven workflows, but treat the docs as the source "
+    "of truth when the two differ."
 )
-
 
 MEMORY_GUIDANCE = (
     "You have persistent memory across sessions. Save durable facts using the memory "
@@ -197,8 +198,8 @@ SKILLS_GUIDANCE = (
 KANBAN_GUIDANCE = (
     "# Kanban task execution protocol\n"
     "You have been assigned ONE task from "
-    "the shared board at `~/.lucifex/kanban.db`. Your task id is in "
-    "`$LUCIFEX_KANBAN_TASK`; your workspace is `$LUCIFEX_KANBAN_WORKSPACE`. "
+    "the shared board at `~/.hermes/kanban.db`. Your task id is in "
+    "`$HERMES_KANBAN_TASK`; your workspace is `$HERMES_KANBAN_WORKSPACE`. "
     "The `kanban_*` tools in your schema are your primary coordination surface — "
     "they write directly to the shared SQLite DB and work regardless of terminal "
     "backend (local/docker/modal/ssh).\n"
@@ -210,7 +211,7 @@ KANBAN_GUIDANCE = (
     "metadata), any prior attempts on this task if you're a retry, the full "
     "comment thread, and a pre-formatted `worker_context` you can treat as "
     "ground truth.\n"
-    "2. **Work inside the workspace.** `cd $LUCIFEX_KANBAN_WORKSPACE` before "
+    "2. **Work inside the workspace.** `cd $HERMES_KANBAN_WORKSPACE` before "
     "any file operations. The workspace is yours for this run. Don't modify "
     "files outside it unless the task explicitly asks.\n"
     "3. **Heartbeat on long operations.** Call `kanban_heartbeat(note=...)` "
@@ -255,27 +256,31 @@ KANBAN_GUIDANCE = (
     "\n"
     "## Reference details that change outcomes\n"
     "\n"
-    "- **Workspace.** `cd $LUCIFEX_KANBAN_WORKSPACE` first. For a `worktree` kind "
+    "- **Workspace.** `cd $HERMES_KANBAN_WORKSPACE` first. For a `worktree` kind "
     "with no `.git`, `git worktree add <path> "
-    "${LUCIFEX_KANBAN_BRANCH:-wt/$LUCIFEX_KANBAN_TASK}` from the main repo, then "
+    "${HERMES_KANBAN_BRANCH:-wt/$HERMES_KANBAN_TASK}` from the main repo, then "
     "cd there. For a project-linked task the workspace is a fresh "
-    "`<repo>/.worktrees/<task-id>` and `$LUCIFEX_KANBAN_BRANCH` a deterministic "
+    "`<repo>/.worktrees/<task-id>` and `$HERMES_KANBAN_BRANCH` a deterministic "
     "`<project-slug>/<task-id>` — the main repo is two levels up, so run "
     "`git worktree add` from there.\n"
     "- **Deliverables.** Files a human wants go in "
     "`kanban_complete(artifacts=[<absolute paths>])` (top-level param; paths in "
     "`metadata` are NOT uploaded). Files must exist at completion.\n"
+    "- **Attachments.** Attach real downloadable artifacts instead of pasting "
+    "links in comments: `kanban_attach` (base64) or `kanban_attach_url` "
+    "(server-side public http(s) fetch); 25 MB cap, `kanban_attachments` "
+    "lists them. Workers may only attach to their own task.\n"
     "- **Created cards.** List ids in `kanban_complete(created_cards=[...])` "
     "ONLY when captured from a successful `kanban_create` return — never invent "
     "or paste ids; the kernel rejects the completion on any phantom id.\n"
     "- **Orchestrating: discover profiles first.** The dispatcher SILENTLY "
     "drops a card with an unknown assignee (it sits in `ready` forever). Ground "
-    "every assignee in a real profile (`lucifex profile list`, or ask the user), "
+    "every assignee in a real profile (`hermes profile list`, or ask the user), "
     "and express dependencies via `parents=[...]` on `kanban_create`, not prose.\n"
     "\n"
     "## Do NOT\n"
     "\n"
-    "- Do not shell out to `lucifex kanban <verb>` for board operations. Use "
+    "- Do not shell out to `hermes kanban <verb>` for board operations. Use "
     "the `kanban_*` tools — they work across all terminal backends.\n"
     "- Do not complete a task you didn't actually finish. Block it.\n"
     "- Do not call `clarify` to ask questions. You are running headless — "
@@ -351,7 +356,7 @@ TASK_COMPLETION_GUIDANCE = (
 # assistant response collapses N turns into one, cutting both latency and the
 # resent-context cost that compounds over a long conversation.
 #
-# The lucifex-agent runtime already executes a batch of tool calls
+# The hermes-agent runtime already executes a batch of tool calls
 # concurrently when they are independent (read-only tools always; path-scoped
 # file ops when their targets don't overlap — see
 # run_agent._execute_tool_calls / tool_dispatch_helpers). The missing piece
@@ -366,7 +371,7 @@ TASK_COMPLETION_GUIDANCE = (
 # sessions via prefix caching. Keep it tight.
 #
 # Ported from cline/cline#11514 ("encourage parallel tool calls"), adapted
-# from Cline's TypeScript tool-surface guidance to lucifex-agent's Python
+# from Cline's TypeScript tool-surface guidance to hermes-agent's Python
 # prompt-assembly architecture.
 PARALLEL_TOOL_CALL_GUIDANCE = (
     "# Parallel tool calls\n"
@@ -552,6 +557,29 @@ def computer_use_guidance(platform_name: Optional[str] = None) -> str:
         "4. After any state-changing action, re-capture to verify. You can "
         "pass `capture_after=true` to get the follow-up screenshot in one "
         "round-trip.\n\n"
+        "## Verify → escalate ladder (background-first, NOT background-only)\n"
+        "Background delivery is the DEFAULT and the co-work path, but it is "
+        "the first rung, not the only one. Read each action's structured "
+        "result and climb only when the driver tells you to:\n"
+        "- `effect: 'confirmed'` + `verified: true` — the driver read the "
+        "result back. Done.\n"
+        "- `effect: 'unverifiable'` — the input was delivered but the driver "
+        "can't confirm it. Re-capture and check the screenshot/tree yourself "
+        "before deciding it worked.\n"
+        "- `effect: 'suspected_noop'`, `code: 'background_unavailable'`, or an "
+        "`escalation.recommended` field — the action did NOT land. Follow "
+        "`escalation.recommended`:\n"
+        "  - `'px'` → re-issue addressing the target by `coordinate=[x,y]` "
+        "read off the screenshot instead of `element`.\n"
+        "  - `'foreground'` (or a pixel click still didn't land) → re-issue "
+        "the SAME action with `delivery_mode='foreground'`. This briefly "
+        "raises the window; it needs its own approval and is only appropriate "
+        "when the user isn't actively working. Common for Electron/Chromium "
+        "consent dialogs, DirectInput games, and raw-input canvases.\n"
+        "- Escalate to foreground as a REACTION to a returned signal, never "
+        "as a prediction from the app being Electron/Chromium/GTK. Do not "
+        "silently retry the same rung expecting a different result, and do "
+        "not conclude 'cua-driver can't drive this app' — climb the ladder.\n\n"
         "## Background mode rules\n"
         "- Do NOT use `raise_window=true` on `focus_app` unless the user "
         "explicitly asked you to bring a window to front. Input routing to "
@@ -580,7 +608,7 @@ def computer_use_guidance(platform_name: Optional[str] = None) -> str:
         "## When something is broken\n"
         "If `computer_use` consistently fails (empty captures, missing "
         "elements, clicks not landing, type going nowhere), ask the user to "
-        "run `lucifex computer-use doctor` and share the output. That command "
+        "run `hermes computer-use doctor` and share the output. That command "
         "runs cua-driver's structured health-report — per-platform checks "
         "for permissions, display server, accessibility tree reachability "
         "— and the failure message tells you exactly what to fix.\n"
@@ -611,7 +639,7 @@ def format_steer_marker(steer_text: str) -> str:
 
 STEER_CHANNEL_NOTE = (
     "## Mid-turn user steering\n"
-    "While you work, the user can send an out-of-band message that Lucifex "
+    "While you work, the user can send an out-of-band message that Hermes "
     "appends to the end of a tool result, wrapped exactly as:\n"
     f"{STEER_MARKER_OPEN}\n<their message>\n{STEER_MARKER_CLOSE}\n"
     "Text inside that marker is a genuine message from the user delivered "
@@ -667,19 +695,7 @@ PLATFORM_HINTS = {
         "Standard Markdown is automatically converted to Telegram formatting. "
         "Supported: **bold**, *italic*, ~~strikethrough~~, ||spoiler||, "
         "`inline code`, ```code blocks```, [links](url), and ## headers. "
-        "Telegram now supports rich Markdown, so lean into it: whenever it "
-        "makes the answer clearer or easier to scan, actively reach for real "
-        "Markdown tables (pipe `| col | col |` syntax), bullet and numbered "
-        "lists, task lists (`- [ ]` / `- [x]`), headings, nested blockquotes, "
-        "collapsible details, footnotes/references, math/formulas (`$...$`, "
-        "`$$...$$`), underline, subscript/superscript, marked (highlighted) "
-        "text, and anchors. Default to structured formatting over dense "
-        "paragraphs for any comparison, set of steps, key/value summary, or "
-        "tabular data. Prefer real Markdown tables and task lists over "
-        "hand-built bullet substitutes when presenting structured data; these "
-        "degrade gracefully (tables become readable bullet groups) when rich "
-        "rendering is unavailable, but advanced constructs like math and "
-        "collapsible details may render as plain source text in that case. "
+        "Prefer bullet lists and labeled key:value pairs for structured data. "
         "You can send media files natively: to deliver a file to the user, "
         "include MEDIA:/absolute/path/to/file in your response. Images "
         "(.png, .jpg, .webp) appear as photos, audio (.ogg) sends as voice "
@@ -746,7 +762,7 @@ PLATFORM_HINTS = {
         "default-deliver cron job will message them in this session."
     ),
     "tui": (
-        "You are running in the Lucifex terminal UI (TUI). "
+        "You are running in the Hermes terminal UI (TUI). "
         "Cron jobs scheduled from this session are LOCAL-ONLY: their output is "
         "saved (viewable via cronjob action='list') but is NOT delivered back "
         "into this TUI session — there is no live-delivery channel here. If the "
@@ -754,6 +770,17 @@ PLATFORM_HINTS = {
         "target a gateway-connected messaging platform (e.g. deliver='telegram' "
         "or 'all'). Do not promise the user that a deliver='origin' or "
         "default-deliver cron job will message them in this session."
+    ),
+    "desktop": (
+        "You are chatting inside the Hermes desktop app — a graphical chat "
+        "surface, not a terminal. Use markdown freely: it renders with full "
+        "GitHub flavor (tables, code blocks with syntax highlighting, math "
+        "via $...$, task lists, blockquote callouts). "
+        "You can deliver files natively — include MEDIA:/absolute/path/to/file "
+        "in your response. Images (.png, .jpg, .webp) appear inline, audio and "
+        "video play inline, and other files arrive as download links. You can "
+        "also include image URLs in markdown format ![alt](url) and they "
+        "render inline as photos."
     ),
     "sms": (
         "You are communicating via SMS. Keep responses concise and use plain text "
@@ -849,7 +876,7 @@ PLATFORM_HINTS = {
         "brief and natural."
     ),
     "webui": (
-        "You are in the Lucifex WebUI, a browser-based chat interface. "
+        "You are in the Hermes WebUI, a browser-based chat interface. "
         "Full Markdown rendering is supported — headings, bold, italic, code "
         "blocks, tables, math (LaTeX), and Mermaid diagrams all render natively. "
         "To display local or remote media/files inline, include "
@@ -861,6 +888,27 @@ PLATFORM_HINTS = {
         "Use MEDIA:/absolute/path instead."
     ),
 }
+
+# Telegram rich-messages extension — only injected when the user has opted in
+# to ``platforms.telegram.extra.rich_messages: true``.  The base
+# PLATFORM_HINTS["telegram"] covers MarkdownV2-compatible constructs; this
+# extension adds the Bot API 10.1 rich-Markdown guidance (tables, task lists,
+# collapsible details, math, etc.).
+TELEGRAM_RICH_MESSAGES_HINT = (
+    "Telegram now supports rich Markdown, so lean into it: whenever it "
+    "makes the answer clearer or easier to scan, actively reach for real "
+    "Markdown tables (pipe `| col | col |` syntax), bullet and numbered "
+    "lists, task lists (`- [ ]` / `- [x]`), headings, nested blockquotes, "
+    "collapsible details, footnotes/references, math/formulas (`$...$`, "
+    "`$$...$$`), underline, subscript/superscript, marked (highlighted) "
+    "text, and anchors. Default to structured formatting over dense "
+    "paragraphs for any comparison, set of steps, key/value summary, or "
+    "tabular data. Prefer real Markdown tables and task lists over "
+    "hand-built bullet substitutes when presenting structured data; these "
+    "degrade gracefully (tables become readable bullet groups) when rich "
+    "rendering is unavailable, but advanced constructs like math and "
+    "collapsible details may render as plain source text in that case. "
+)
 
 # ---------------------------------------------------------------------------
 # Environment hints — execution-environment awareness for the agent.
@@ -882,7 +930,7 @@ WSL_ENVIRONMENT_HINT = (
 
 # Non-local terminal backends that run commands (and therefore every file
 # tool: read_file, write_file, patch, search_files) inside a separate
-# container / remote host rather than on the machine where Lucifex itself
+# container / remote host rather than on the machine where Hermes itself
 # runs. For these backends, host info (Windows/Linux/macOS, $HOME, cwd) is
 # misleading — the agent should only see the machine it can actually touch.
 _REMOTE_TERMINAL_BACKENDS = frozenset({
@@ -909,7 +957,7 @@ _BACKEND_FALLBACK_DESCRIPTIONS: dict[str, str] = {
 # on the first prompt build of a session. Keyed by (env_type, cwd_hint) so
 # a mid-process backend switch rebuilds the string. Kept in-module (not on
 # disk) because the probe captures live backend state that may change
-# across Lucifex restarts.
+# across Hermes restarts.
 _BACKEND_PROBE_CACHE: dict[tuple[str, str], str] = {}
 
 
@@ -930,7 +978,7 @@ def _probe_remote_backend(env_type: str) -> str | None:
     Returns a pre-formatted multi-line string describing the backend's OS,
     $HOME, cwd, and user — or None if the probe failed. Result is cached
     per process. Used only for non-local backends where the agent's tools
-    operate on a different machine than the host Lucifex runs on.
+    operate on a different machine than the host Hermes runs on.
     """
     cwd_hint = os.getenv("TERMINAL_CWD", "")
     cache_key = (env_type, cwd_hint)
@@ -1120,8 +1168,8 @@ def build_environment_hints() -> str:
                 f"Terminal backend: {backend}. Your `terminal`, `read_file`, "
                 f"`write_file`, `patch`, and `search_files` tools all operate "
                 f"inside this {backend} environment — NOT on the machine "
-                f"where Lucifex itself is running. The host OS, home, and cwd "
-                f"of the Lucifex process are irrelevant; only the following "
+                f"where Hermes itself is running. The host OS, home, and cwd "
+                f"of the Hermes process are irrelevant; only the following "
                 f"backend state matters:\n{probe}"
             )
         else:
@@ -1131,7 +1179,7 @@ def build_environment_hints() -> str:
             hints.append(
                 f"Terminal backend: {backend}. Your `terminal`, `read_file`, "
                 f"`write_file`, `patch`, and `search_files` tools all operate "
-                f"inside {description} — NOT on the machine where Lucifex "
+                f"inside {description} — NOT on the machine where Hermes "
                 f"itself runs. The backend probe didn't respond at "
                 f"prompt-build time, so the sandbox's current user, $HOME, "
                 f"and working directory are unknown from here. If you need "
@@ -1139,36 +1187,20 @@ def build_environment_hints() -> str:
                 f"`uname -a && whoami && pwd`."
             )
 
-    # Lucifex desktop GUI — any agent running under the desktop app should know
-    # it. LUCIFEX_DESKTOP marks the backend powering the chat; LUCIFEX_DESKTOP_TERMINAL
-    # marks a lucifex launched in the embedded terminal pane. Both set by main.cjs.
-    _truthy = ("1", "true", "yes")
-    _in_desktop = (os.getenv("LUCIFEX_DESKTOP") or "").strip().lower() in _truthy
-    _in_desktop_term = (os.getenv("LUCIFEX_DESKTOP_TERMINAL") or "").strip().lower() in _truthy
-    if _in_desktop or _in_desktop_term:
-        _desktop_hint = "Runtime surface: you're running inside the Lucifex desktop GUI app."
-        if _in_desktop_term:
-            _desktop_hint += (
-                " You're in its embedded terminal pane, beside the GUI chat — the user can "
-                "select your output (⌥-drag on macOS, Shift-drag elsewhere) and press "
-                "⌘/Ctrl+L to send it to the chat composer."
-            )
-        hints.append(_desktop_hint)
-
     if is_wsl():
         hints.append(WSL_ENVIRONMENT_HINT)
 
-    # Embedder-supplied environment description. Lets a host that wraps Lucifex
+    # Embedder-supplied environment description. Lets a host that wraps Hermes
     # (e.g. a sandbox runner / managed platform) explain the environment the
     # agent is running in — proxy, credential handling, mount layout — without
     # forking the identity slot (SOUL.md). Read once at prompt-build time, so
     # it's part of the stable, cache-safe system prompt. The env var is the
     # build-time/embedder mechanism (set in a container ENV); config.yaml
     # ``agent.environment_hint`` is the user-facing surface. Env var wins.
-    extra = (os.getenv("LUCIFEX_ENVIRONMENT_HINT") or "").strip()
+    extra = (os.getenv("HERMES_ENVIRONMENT_HINT") or "").strip()
     if not extra:
         try:
-            from lucifex_cli.config import load_config
+            from hermes_cli.config import load_config
 
             extra = str(
                 (load_config().get("agent", {}) or {}).get("environment_hint", "")
@@ -1178,20 +1210,7 @@ def build_environment_hints() -> str:
     if extra:
         hints.append(extra)
 
-    # ── Inner Life: mood hint (stable at session-start, cache-safe) ───────
-    # Read once when the system prompt is built. Never updated mid-session,
-    # so it does NOT break prompt caching. The mood is persisted across
-    # sessions in ~/.lucifex/inner_life.db by the emotional_state module.
-    try:
-        from agent.emotional_state import get_mood_hint
-        mood_hint = get_mood_hint()
-        if mood_hint:
-            hints.append(f"Current agent disposition: {mood_hint}")
-    except Exception:
-        pass  # Never let inner life errors affect the system prompt
-
     return "\n\n".join(hints)
-
 
 
 CONTEXT_FILE_MAX_CHARS = 20_000
@@ -1235,7 +1254,7 @@ def _get_context_file_max_chars(context_length: Optional[int] = None) -> int:
       3. ``CONTEXT_FILE_MAX_CHARS`` (20K) as the upstream-compatible fallback.
     """
     try:
-        from lucifex_cli.config import load_config
+        from hermes_cli.config import load_config
 
         val = load_config().get("context_file_max_chars")
         if isinstance(val, (int, float)) and val > 0:
@@ -1284,7 +1303,7 @@ _SKILLS_SNAPSHOT_VERSION = 1
 
 
 def _skills_prompt_snapshot_path() -> Path:
-    return get_lucifex_home() / ".skills_prompt_snapshot.json"
+    return get_hermes_home() / ".skills_prompt_snapshot.json"
 
 
 def clear_skills_system_prompt_cache(*, clear_snapshot: bool = False) -> None:
@@ -1301,13 +1320,26 @@ def clear_skills_system_prompt_cache(*, clear_snapshot: bool = False) -> None:
 def _build_skills_manifest(skills_dir: Path) -> dict[str, list[int]]:
     """Build an mtime/size manifest of all SKILL.md and DESCRIPTION.md files."""
     manifest: dict[str, list[int]] = {}
-    for filename in ("SKILL.md", "DESCRIPTION.md"):
-        for path in iter_skill_index_files(skills_dir, filename):
+    skills_dir_str = str(skills_dir)
+    base = os.path.join(skills_dir_str, "")
+    prefix_len = len(base)
+    for root, dirs, files in os.walk(skills_dir_str, followlinks=True):
+        has_skill_md = "SKILL.md" in files
+        dirs[:] = [
+            d
+            for d in dirs
+            if d not in EXCLUDED_SKILL_DIRS
+            and not (has_skill_md and d in SKILL_SUPPORT_DIRS)
+        ]
+        for filename in ("SKILL.md", "DESCRIPTION.md"):
+            if filename not in files:
+                continue
+            path = os.path.join(root, filename)
             try:
-                st = path.stat()
+                st = os.stat(path)
             except OSError:
                 continue
-            manifest[str(path.relative_to(skills_dir))] = [st.st_mtime_ns, st.st_size]
+            manifest[path[prefix_len:]] = [st.st_mtime_ns, st.st_size]
     return manifest
 
 
@@ -1439,6 +1471,22 @@ def _skill_should_show(
     return True
 
 
+def _current_session_platform_hint() -> str:
+    """Return the active platform without importing the gateway package on CLI startup."""
+    platform = os.environ.get("HERMES_PLATFORM") or os.environ.get("HERMES_SESSION_PLATFORM")
+    if platform:
+        return platform
+
+    session_context = sys.modules.get("gateway.session_context")
+    get_session_env = getattr(session_context, "get_session_env", None) if session_context else None
+    if get_session_env is None:
+        return ""
+    try:
+        return get_session_env("HERMES_SESSION_PLATFORM") or ""
+    except Exception:
+        return ""
+
+
 def build_skills_system_prompt(
     available_tools: "set[str] | None" = None,
     available_toolsets: "set[str] | None" = None,
@@ -1454,7 +1502,7 @@ def build_skills_system_prompt(
     Falls back to a full filesystem scan when both layers miss.
 
     External skill directories (``skills.external_dirs`` in config.yaml) are
-    scanned alongside the local ``~/.lucifex/skills/`` directory.  External dirs
+    scanned alongside the local ``~/.hermes/skills/`` directory.  External dirs
     are read-only — they appear in the index but new skills are always created
     in the local dir.  Local skills take precedence when names collide.
 
@@ -1473,15 +1521,10 @@ def build_skills_system_prompt(
     # ── Layer 1: in-process LRU cache ─────────────────────────────────
     # Include the resolved platform so per-platform disabled-skill lists
     # produce distinct cache entries (gateway serves multiple platforms).
-    from gateway.session_context import get_session_env
-    _platform_hint = (
-        os.environ.get("LUCIFEX_PLATFORM")
-        or get_session_env("LUCIFEX_SESSION_PLATFORM")
-        or ""
-    )
+    _platform_hint = _current_session_platform_hint()
     disabled = get_disabled_skill_names(_platform_hint or None)
     cache_key = (
-        str(skills_dir.resolve()),
+        str(skills_dir),
         tuple(str(d) for d in external_dirs),
         tuple(sorted(str(t) for t in (available_tools or set()))),
         tuple(sorted(str(ts) for ts in (available_toolsets or set()))),
@@ -1510,7 +1553,7 @@ def build_skills_system_prompt(
             category = entry.get("category") or "general"
             frontmatter_name = entry.get("frontmatter_name") or skill_name
             platforms = entry.get("platforms") or []
-            if not skill_matches_platform({"platforms": platforms}):
+            if not skill_matches_platform_list(platforms):
                 continue
             if frontmatter_name in disabled or skill_name in disabled:
                 continue
@@ -1681,10 +1724,10 @@ def build_skills_system_prompt(
             "for tasks like code review, planning, and testing — load them even for tasks you "
             "already know how to do, because the skill defines how it should be done here.\n"
             "Whenever the user asks you to configure, set up, install, enable, disable, modify, "
-            "or troubleshoot Lucifex Agent itself — its CLI, config, models, providers, tools, "
-            "skills, voice, gateway, plugins, or any feature — load the `lucifex-agent` skill "
-            "first. It has the actual commands (e.g. `lucifex config set …`, `lucifex tools`, "
-            "`lucifex setup`) so you don't have to guess or invent workarounds.\n"
+            "or troubleshoot Hermes Agent itself — its CLI, config, models, providers, tools, "
+            "skills, voice, gateway, plugins, or any feature — load the `hermes-agent` skill "
+            "first. It has the actual commands (e.g. `hermes config set …`, `hermes tools`, "
+            "`hermes setup`) so you don't have to guess or invent workarounds.\n"
             "If a skill has issues, fix it with skill_manage(action='patch').\n"
             "After difficult/iterative tasks, offer to save as a skill. "
             "If a skill you loaded was missing steps, had wrong commands, or needed "
@@ -1711,7 +1754,7 @@ def build_skills_system_prompt(
 def build_nous_subscription_prompt(valid_tool_names: "set[str] | None" = None) -> str:
     """Build a compact Nous subscription capability block for the system prompt."""
     try:
-        from lucifex_cli.nous_subscription import get_nous_subscription_features
+        from hermes_cli.nous_subscription import get_nous_subscription_features
         from tools.tool_backend_helpers import managed_nous_tools_enabled
     except Exception as exc:
         logger.debug("Failed to import Nous subscription helper: %s", exc)
@@ -1768,7 +1811,7 @@ def build_nous_subscription_prompt(valid_tool_names: "set[str] | None" = None) -
             "When a Nous-managed feature is active, do not ask the user for Firecrawl, FAL, OpenAI TTS, OpenAI Whisper, or Browser-Use API keys.",
             "If the user is not subscribed and asks for a capability that Nous subscription would unlock or simplify, suggest Nous subscription as one option alongside direct setup or local alternatives.",
             "Do not mention subscription unless the user asks about it or it directly solves the current missing capability.",
-            "Useful commands: lucifex setup, lucifex setup tools, lucifex setup terminal, lucifex status.",
+            "Useful commands: hermes setup, hermes setup tools, hermes setup terminal, hermes status.",
         ]
     )
     return "\n".join(lines)
@@ -1819,19 +1862,19 @@ def _truncate_content(
 
 
 def load_soul_md(context_length: Optional[int] = None) -> Optional[str]:
-    """Load SOUL.md from LUCIFEX_HOME and return its content, or None.
+    """Load SOUL.md from HERMES_HOME and return its content, or None.
 
     Used as the agent identity (slot #1 in the system prompt).  When this
     returns content, ``build_context_files_prompt`` should be called with
     ``skip_soul=True`` so SOUL.md isn't injected twice.
     """
     try:
-        from lucifex_cli.config import ensure_lucifex_home
-        ensure_lucifex_home()
+        from hermes_cli.config import ensure_hermes_home
+        ensure_hermes_home()
     except Exception as e:
-        logger.debug("Could not ensure LUCIFEX_HOME before loading SOUL.md: %s", e)
+        logger.debug("Could not ensure HERMES_HOME before loading SOUL.md: %s", e)
 
-    soul_path = get_lucifex_home() / "SOUL.md"
+    soul_path = get_hermes_home() / "SOUL.md"
     if not soul_path.exists():
         return None
     try:
@@ -1849,29 +1892,29 @@ def load_soul_md(context_length: Optional[int] = None) -> Optional[str]:
         return None
 
 
-def _load_lucifex_md(cwd_path: Path, context_length: Optional[int] = None) -> str:
-    """.lucifex.md / LUCIFEX.md — walk to git root."""
-    lucifex_md_path = _find_lucifex_md(cwd_path)
-    if not lucifex_md_path:
+def _load_hermes_md(cwd_path: Path, context_length: Optional[int] = None) -> str:
+    """.hermes.md / HERMES.md — walk to git root."""
+    hermes_md_path = _find_hermes_md(cwd_path)
+    if not hermes_md_path:
         return ""
     try:
-        content = lucifex_md_path.read_text(encoding="utf-8").strip()
+        content = hermes_md_path.read_text(encoding="utf-8").strip()
         if not content:
             return ""
         content = _strip_yaml_frontmatter(content)
-        rel = lucifex_md_path.name
+        rel = hermes_md_path.name
         try:
-            rel = str(lucifex_md_path.relative_to(cwd_path))
+            rel = str(hermes_md_path.relative_to(cwd_path))
         except ValueError:
             pass
         content = _scan_context_content(content, rel)
         result = f"## {rel}\n\n{content}"
         return _truncate_content(
-            result, ".lucifex.md", context_length=context_length,
-            read_path=str(lucifex_md_path),
+            result, ".hermes.md", context_length=context_length,
+            read_path=str(hermes_md_path),
         )
     except Exception as e:
-        logger.debug("Could not read %s: %s", lucifex_md_path, e)
+        logger.debug("Could not read %s: %s", hermes_md_path, e)
         return ""
 
 
@@ -1950,16 +1993,17 @@ def build_context_files_prompt(
     cwd: Optional[str] = None,
     skip_soul: bool = False,
     context_length: Optional[int] = None,
+    allow_install_tree_fallback: bool = False,
 ) -> str:
     """Discover and load context files for the system prompt.
 
     Priority (first found wins — only ONE project context type is loaded):
-      1. .lucifex.md / LUCIFEX.md  (walk to git root)
+      1. .hermes.md / HERMES.md  (walk to git root)
       2. AGENTS.md / agents.md   (cwd only)
       3. CLAUDE.md / claude.md   (cwd only)
       4. .cursorrules / .cursor/rules/*.mdc  (cwd only)
 
-    SOUL.md from LUCIFEX_HOME is independent and always included when present.
+    SOUL.md from HERMES_HOME is independent and always included when present.
 
     Each context source is capped before injection. The cap defaults to the
     model's context window (scaled — see ``_dynamic_context_file_max_chars``)
@@ -1971,21 +2015,47 @@ def build_context_files_prompt(
     """
     if cwd is None:
         cwd = os.getcwd()
+        cwd_is_fallback = True
+    else:
+        cwd_is_fallback = False
 
     cwd_path = Path(cwd).resolve()
     sections = []
 
-    # Priority-based project context: first match wins
-    project_context = (
-        _load_lucifex_md(cwd_path, context_length)
-        or _load_agents_md(cwd_path, context_length)
-        or _load_claude_md(cwd_path, context_length)
-        or _load_cursorrules(cwd_path, context_length)
-    )
+    # Never let a FALLBACK-picked directory inside the Hermes install/source
+    # tree gain system-prompt authority. A backend that self-spawns into that
+    # tree (the desktop app default) would otherwise load this repo's
+    # contributor AGENTS.md as authoritative project context (#64590). An
+    # explicitly configured cwd is honored verbatim — the Hermes tree is a
+    # legitimate workspace when the user deliberately points a session at it —
+    # and CLI-style surfaces pass allow_install_tree_fallback=True because
+    # their launch dir IS the user's shell cwd (developing Hermes in-tree).
+    from agent.runtime_cwd import _is_install_tree
+
+    if (
+        cwd_is_fallback
+        and not allow_install_tree_fallback
+        and _is_install_tree(cwd_path)
+    ):
+        logger.warning(
+            "skipping project-context discovery: working-directory resolution "
+            "fell back to the Hermes install tree (%s) — set terminal.cwd to "
+            "your project directory",
+            cwd_path,
+        )
+        project_context = ""
+    else:
+        # Priority-based project context: first match wins
+        project_context = (
+            _load_hermes_md(cwd_path, context_length)
+            or _load_agents_md(cwd_path, context_length)
+            or _load_claude_md(cwd_path, context_length)
+            or _load_cursorrules(cwd_path, context_length)
+        )
     if project_context:
         sections.append(project_context)
 
-    # SOUL.md from LUCIFEX_HOME only — skip when already loaded as identity
+    # SOUL.md from HERMES_HOME only — skip when already loaded as identity
     if not skip_soul:
         soul_content = load_soul_md(context_length)
         if soul_content:

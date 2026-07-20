@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { SessionInfo } from '@/types/lucifex'
+import type { SessionInfo } from '@/types/hermes'
 
 import { flattenSessionsWithBranches } from './session-branch-tree'
 

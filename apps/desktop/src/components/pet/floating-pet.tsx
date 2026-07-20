@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useGatewayRequest } from '@/app/gateway/hooks/use-gateway-request'
 import { useOnProfileSwitch } from '@/app/hooks/use-on-profile-switch'
 import { useRouteOverlayActive } from '@/app/hooks/use-route-overlay-active'
+import { PetHeartField } from '@/components/chat/vibe-hearts'
 import { persistString, storedString } from '@/lib/storage'
 import {
   $petAtRest,
@@ -27,7 +28,7 @@ import { type PetZoomAnchor, usePetZoomGesture } from './use-pet-zoom-gesture'
 
 // v2: positions are now top/left anchored (v1 stored bottom-anchored values,
 // which dragged inverted). Bumping the key discards stale v1 coordinates.
-const POSITION_KEY = 'lucifex.desktop.pet-position.v2'
+const POSITION_KEY = 'hermes.desktop.pet-position.v2'
 
 // Stand-in pet size for the pre-load clamp (real size flows in with `info`).
 const NOMINAL_PET_PX = 96
@@ -220,7 +221,7 @@ export function FloatingPet() {
   })
 
   // Wire the overlay control channel once, only in the primary window — the
-  // pop-out overlay belongs to it (main.cjs positions it against the main
+  // pop-out overlay belongs to it (main.ts positions it against the main
   // window and routes control messages back to it).
   useEffect(() => {
     if (isSecondaryWindow()) {
@@ -288,7 +289,7 @@ export function FloatingPet() {
     const rect = el.getBoundingClientRect()
 
     // Shift-click pops the pet out into a free-floating desktop overlay (it can
-    // leave the window and stays visible while Lucifex is minimized) instead of
+    // leave the window and stays visible while Hermes is minimized) instead of
     // starting an in-window drag. Primary window only — the overlay is anchored
     // to it.
     if (e.shiftKey && !isSecondaryWindow()) {
@@ -447,6 +448,9 @@ export function FloatingPet() {
       >
         <PetSprite info={info} rowOverride={walk.row} />
       </div>
+      {/* Hearts puff off the pet; its celebrate ("yay"/jump) pose is driven by
+          burstVibeHearts's router. */}
+      <PetHeartField petH={petH} petW={petW} />
     </div>
   )
 }

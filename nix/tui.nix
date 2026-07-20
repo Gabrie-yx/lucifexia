@@ -1,13 +1,13 @@
-# nix/tui.nix — Lucifex TUI (Ink/React) compiled with tsc and bundled
-{ pkgs, lucifexNpmLib, ... }:
+# nix/tui.nix — Hermes TUI (Ink/React) compiled with tsc and bundled
+{ pkgs, hermesNpmLib, ... }:
 let
-  npm = lucifexNpmLib.mkNpmPassthru { folder = "ui-tui"; attr = "tui"; pname = "lucifex-tui"; };
+  npm = hermesNpmLib.mkNpmPassthru { dirs = [ "ui-tui" ]; };
 
   packageJson = builtins.fromJSON (builtins.readFile (npm.src + "/ui-tui/package.json"));
   version = packageJson.version;
 in
 pkgs.buildNpmPackage (npm // {
-  pname = "lucifex-tui";
+  pname = "hermes-tui";
   inherit version;
 
   doCheck = false;
@@ -21,12 +21,12 @@ pkgs.buildNpmPackage (npm // {
   installPhase = ''
     runHook preInstall
 
-    mkdir -p $out/lib/lucifex-tui
+    mkdir -p $out/lib/hermes-tui
     # esbuild writes to ui-tui/dist/ from the source root (no cd).
-    cp -r ui-tui/dist $out/lib/lucifex-tui/dist
+    cp -r ui-tui/dist $out/lib/hermes-tui/dist
 
     # package.json kept for "type": "module" resolution on `node dist/entry.js`.
-    cp ui-tui/package.json $out/lib/lucifex-tui/
+    cp ui-tui/package.json $out/lib/hermes-tui/
 
     runHook postInstall
   '';

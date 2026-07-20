@@ -905,7 +905,7 @@ class DingTalkAdapter(BasePlatformAdapter):
 
         payload = {
             "msgtype": "markdown",
-            "markdown": {"title": "Lucifex", "text": normalized},
+            "markdown": {"title": "Hermes", "text": normalized},
         }
 
         try:
@@ -1042,7 +1042,7 @@ class DingTalkAdapter(BasePlatformAdapter):
             if not token:
                 return None
 
-            out_track_id = f"lucifex_{uuid.uuid4().hex[:12]}"
+            out_track_id = f"hermes_{uuid.uuid4().hex[:12]}"
 
             conversation_id = getattr(message, "conversation_id", "") or ""
             conversation_type = getattr(message, "conversation_type", "1")
@@ -1519,7 +1519,7 @@ class _IncomingHandler(
 # per-platform core touchpoints (the Platform.DINGTALK elif in gateway/run.py,
 # the dingtalk_cfg YAML→env block + _PLATFORM_CONNECTED_CHECKERS entry in
 # gateway/config.py, the _setup_dingtalk wizard + _PLATFORMS["dingtalk"] static
-# dict in lucifex_cli/gateway.py, and the _send_dingtalk dispatch in
+# dict in hermes_cli/gateway.py, and the _send_dingtalk dispatch in
 # tools/send_message_tool.py).
 # ──────────────────────────────────────────────────────────────────────────
 
@@ -1575,13 +1575,13 @@ async def _standalone_send(
 def interactive_setup() -> None:
     """Configure DingTalk — QR scan (recommended) or manual credential entry.
 
-    Replaces lucifex_cli/setup.py-era _setup_dingtalk + the static
-    _PLATFORMS["dingtalk"] dict in lucifex_cli/gateway.py. CLI helpers are
+    Replaces hermes_cli/setup.py-era _setup_dingtalk + the static
+    _PLATFORMS["dingtalk"] dict in hermes_cli/gateway.py. CLI helpers are
     lazy-imported so the plugin's module-load surface stays minimal.
     """
-    from lucifex_cli.config import get_env_value, save_env_value
-    from lucifex_cli.setup import prompt_choice
-    from lucifex_cli.cli_output import (
+    from hermes_cli.config import get_env_value, save_env_value
+    from hermes_cli.setup import prompt_choice
+    from hermes_cli.cli_output import (
         prompt,
         prompt_yes_no,
         print_header,
@@ -1607,7 +1607,7 @@ def interactive_setup() -> None:
 
     if method == 0:
         try:
-            from lucifex_cli.dingtalk_auth import dingtalk_qr_auth
+            from hermes_cli.dingtalk_auth import dingtalk_qr_auth
         except ImportError as exc:
             print_warning(f"QR auth module failed to load ({exc}), falling back to manual input.")
             _manual_credential_entry(prompt, save_env_value, print_success)
@@ -1660,6 +1660,31 @@ def _apply_yaml_config(yaml_cfg: dict, dingtalk_cfg: dict) -> dict | None:
             ac = ",".join(str(v) for v in ac)
         os.environ["DINGTALK_ALLOWED_CHATS"] = str(ac)
     allowed = dingtalk_cfg.get("allowed_users")
+    if allowed is None:
+        # Fall back to the documented nested paths (#44928). The docs
+        # (website/docs/user-guide/messaging/dingtalk.md) configure the
+        # allowlist at gateway.platforms.dingtalk.extra.allowed_users; the
+        # adapter reads it from PlatformConfig.extra, but gateway
+        # authorization (_is_user_authorized in gateway/authz_mixin.py)
+        # only consults DINGTALK_ALLOWED_USERS — without this bridge a
+        # nested-only allowlist passes the adapter and is then denied at
+        # the gateway. Check this block's own extra first (the dispatch
+        # loop passes the platforms block here when no top-level
+        # ``dingtalk:`` section exists), then both nested containers.
+        _extra = dingtalk_cfg.get("extra")
+        if isinstance(_extra, dict):
+            allowed = _extra.get("allowed_users")
+        if allowed is None:
+            _gw = yaml_cfg.get("gateway")
+            _gw_platforms = _gw.get("platforms") if isinstance(_gw, dict) else None
+            for _container in (_gw_platforms, yaml_cfg.get("platforms")):
+                if not isinstance(_container, dict):
+                    continue
+                _dt = _container.get("dingtalk")
+                _dt_extra = _dt.get("extra") if isinstance(_dt, dict) else None
+                if isinstance(_dt_extra, dict) and _dt_extra.get("allowed_users") is not None:
+                    allowed = _dt_extra.get("allowed_users")
+                    break
     if allowed is not None and not os.getenv("DINGTALK_ALLOWED_USERS"):
         if isinstance(allowed, list):
             allowed = ",".join(str(v) for v in allowed)
@@ -1686,7 +1711,7 @@ def _build_adapter(config):
 
 
 def register(ctx) -> None:
-    """Plugin entry point — called by the Lucifex plugin system."""
+    """Plugin entry point — called by the Hermes plugin system."""
     ctx.register_platform(
         name="dingtalk",
         label="DingTalk",

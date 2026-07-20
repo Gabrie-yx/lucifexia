@@ -145,7 +145,7 @@ def _run_async(coro):
 
         pool = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         # Carry the active profile + approval/sudo callbacks into the worker so
-        # async tools resolve get_lucifex_home() under the active profile.
+        # async tools resolve get_hermes_home() under the active profile.
         from tools.thread_context import propagate_context_to_thread
 
         future = pool.submit(propagate_context_to_thread(_run_in_worker))
@@ -196,13 +196,13 @@ discover_builtin_tools()
 #
 # Each entry point now runs discovery explicitly at its own startup:
 #   - gateway/run.py            -> start_gateway() uses run_in_executor
-#   - cli.py, lucifex_cli/*      -> inline on startup (no event loop)
+#   - cli.py, hermes_cli/*      -> inline on startup (no event loop)
 #   - tui_gateway/server.py     -> inline on startup (no event loop)
 #   - acp_adapter/server.py     -> asyncio.to_thread on session init
 
 # Plugin tool discovery (user/project/pip plugins)
 try:
-    from lucifex_cli.plugins import discover_plugins
+    from hermes_cli.plugins import discover_plugins
     discover_plugins()
 except Exception as e:
     logger.debug("Plugin discovery failed: %s", e)
@@ -310,7 +310,7 @@ def get_tool_definitions(
     # invalidate hook on every config-writer.
     if quiet_mode:
         try:
-            from lucifex_cli.config import get_config_path
+            from hermes_cli.config import get_config_path
             cfg_path = get_config_path()
             cfg_stat = cfg_path.stat()
             cfg_fp = (cfg_stat.st_mtime_ns, cfg_stat.st_size)
@@ -321,7 +321,7 @@ def get_tool_definitions(
             frozenset(disabled_toolsets) if disabled_toolsets else None,
             registry._generation,
             cfg_fp,
-            bool(os.environ.get("LUCIFEX_KANBAN_TASK")),
+            bool(os.environ.get("HERMES_KANBAN_TASK")),
             bool(skip_tool_search_assembly),
         )
         cached = _tool_defs_cache.get(cache_key)
@@ -366,8 +366,8 @@ def _compute_tool_definitions(
 
     if enabled_toolsets is not None:
         effective_enabled_toolsets = list(enabled_toolsets)
-        if os.environ.get("LUCIFEX_KANBAN_TASK") and "kanban" not in effective_enabled_toolsets:
-            # Dispatcher-spawned workers are scoped by LUCIFEX_KANBAN_TASK and
+        if os.environ.get("HERMES_KANBAN_TASK") and "kanban" not in effective_enabled_toolsets:
+            # Dispatcher-spawned workers are scoped by HERMES_KANBAN_TASK and
             # must always receive the lifecycle handoff tools. Assignee
             # profiles may intentionally restrict their normal chat toolsets
             # (for token/cost reasons), but that should not strip the kanban
@@ -393,22 +393,25 @@ def _compute_tool_definitions(
             tools_to_include.update(resolve_toolset(ts_name))
 
     # Always apply disabled toolsets as a subtraction step at the end.
-    # This ensures that even if a composite toolset (like lucifex-cli)
+    # This ensures that even if a composite toolset (like hermes-cli)
     # is enabled, any tools belonging to a disabled toolset are strictly
     # stripped out. See issue #17309.
     if disabled_toolsets:
         for toolset_name in disabled_toolsets:
             if validate_toolset(toolset_name):
-                if toolset_name.startswith("lucifex-"):
-                    # Platform bundles (lucifex-*) include _LUCIFEX_CORE_TOOLS, so
-                    # subtracting the whole bundle would strip core tools shared
-                    # by other enabled toolsets and empty the tool list (#33924).
-                    # Subtract only the bundle's non-core delta; keep core.
-                    from toolsets import bundle_non_core_tools
+                from toolsets import bundle_non_core_tools, get_toolset
+                if toolset_name.startswith("hermes-") or (get_toolset(toolset_name) or {}).get("posture"):
+                    # Platform bundles (hermes-*) include _HERMES_CORE_TOOLS, and
+                    # posture toolsets (`posture: True`, e.g. `coding`) re-list
+                    # those same core tools without owning them, so subtracting
+                    # the whole toolset would strip core tools shared by other
+                    # enabled toolsets and empty the tool list (#33924, #57315).
+                    # Subtract only the non-core delta; keep core.
                     to_remove = bundle_non_core_tools(toolset_name)
                     tools_to_include.difference_update(to_remove)
                     resolved = sorted(to_remove)
-                    if not quiet_mode and toolset_name not in _WARNED_DISABLED_BUNDLES:
+                    if (not quiet_mode and toolset_name.startswith("hermes-")
+                            and toolset_name not in _WARNED_DISABLED_BUNDLES):
                         _WARNED_DISABLED_BUNDLES.add(toolset_name)
                         logger.info(
                             "agent.disabled_toolsets contains platform-bundle "
@@ -535,7 +538,7 @@ def _compute_tool_definitions(
     # Conditionally replace MCP + plugin (non-core) tools with three bridge
     # tools (tool_search / tool_describe / tool_call) when the deferrable
     # surface exceeds the configured threshold (default 10% of context
-    # window). Core Lucifex tools (toolsets._LUCIFEX_CORE_TOOLS) are NEVER
+    # window). Core Hermes tools (toolsets._HERMES_CORE_TOOLS) are NEVER
     # deferred. See tools/tool_search.py for full design notes.
     #
     # This is deliberately the last step before returning — sanitization
@@ -571,7 +574,7 @@ def _resolve_active_context_length() -> int:
     back to a fixed token cutoff in that case.
     """
     try:
-        from lucifex_cli.config import load_config as _load
+        from hermes_cli.config import load_config as _load
         cfg = _load() or {}
         model_cfg = cfg.get("model") if isinstance(cfg.get("model"), dict) else {}
         if not isinstance(model_cfg, dict):
@@ -580,7 +583,13 @@ def _resolve_active_context_length() -> int:
         if not model_id:
             return 0
         from agent.model_metadata import get_model_context_length
-        return int(get_model_context_length(model_id) or 0)
+        # Honor explicit `model.context_length` in config.yaml — short-circuits
+        # the OpenRouter /models probe at get_model_context_length step 0, so
+        # non-OpenRouter providers don't pay the ~2-3s OpenRouter fetch at every
+        # CLI startup.  See issue #46620.
+        raw_ctx = model_cfg.get("context_length")
+        config_ctx = raw_ctx if isinstance(raw_ctx, int) and raw_ctx > 0 else None
+        return int(get_model_context_length(model_id, config_context_length=config_ctx) or 0)
     except Exception as e:
         logger.debug("Could not resolve active context length: %s", e)
         return 0
@@ -718,14 +727,126 @@ def coerce_tool_args(tool_name: str, args: Dict[str, Any]) -> Dict[str, Any]:
             continue
 
         if not isinstance(value, str):
+            # Recurse into already-native containers so JSON-encoded
+            # *elements* (array items) and *sub-fields* (nested object
+            # properties) get normalized too — e.g. ``todos: ['{"id":...}']``
+            # or ``tasks: [{"goal": "..."}]`` where an element was emitted as
+            # a JSON string. The top-level coercion above only repairs the
+            # outermost value.
+            if expected == "array" and isinstance(value, (list, tuple)):
+                args[key] = _normalize_json_strings_for_schema(value, prop_schema)
+            elif expected == "object" and isinstance(value, dict):
+                args[key] = _normalize_json_strings_for_schema(value, prop_schema)
             continue
         if not expected and not _schema_allows_null(prop_schema):
             continue
         coerced = _coerce_value(value, expected, schema=prop_schema)
         if coerced is not value:
             args[key] = coerced
+            # If we just JSON-parsed a string into a container, recurse so
+            # nested JSON-encoded elements/fields get normalized as well.
+            if isinstance(coerced, (list, tuple, dict)):
+                args[key] = _normalize_json_strings_for_schema(coerced, prop_schema)
 
     return args
+
+
+def _schema_accepts_kind(schema: Any, kind: str) -> bool:
+    """Return True when *schema* permits a value of JSON type *kind*.
+
+    Looks at ``type`` (string or list) and recurses through
+    ``anyOf``/``oneOf``/``allOf`` branches — matching the JSON-Schema shapes
+    open-weight models emit against. ``kind`` is ``"array"`` or ``"object"``.
+    """
+    if not isinstance(schema, dict):
+        return False
+    t = schema.get("type")
+    if t == kind or (isinstance(t, list) and kind in t):
+        return True
+    for union_key in ("anyOf", "oneOf", "allOf"):
+        branches = schema.get(union_key)
+        if isinstance(branches, list) and any(
+            _schema_accepts_kind(b, kind) for b in branches
+        ):
+            return True
+    return False
+
+
+def _normalize_json_strings_for_schema(value: Any, schema: Any) -> Any:
+    """Recursively parse JSON-encoded string values that a schema expects to
+    be arrays or objects, including nested array items and object properties.
+
+    Open-weight models (DeepSeek, Qwen, GLM, and others) sometimes emit a
+    structured field — or an *element* of a structured field — as a
+    JSON-encoded string instead of a native value. The top-level
+    :func:`coerce_tool_args` pass repairs the outermost value; this helper
+    walks the rest of the tree so cases like::
+
+        {"todos": ["{\\"id\\": \\"1\\", \\"content\\": \\"x\\"}"]}
+
+    (a list whose elements are JSON strings) and nested object sub-fields are
+    repaired too. Parsing is schema-guided: a string is only parsed when the
+    matching schema position actually expects an array or object, so
+    legitimate JSON-looking string fields (``type: string``) are preserved.
+
+    Ported from cline/cline#11803, adapted to hermes-agent's coercion layer.
+    Returns the original value object when nothing changed (identity preserved
+    so callers can cheaply detect no-ops).
+    """
+    if not isinstance(schema, dict):
+        return value
+
+    # Parse a JSON-encoded string into the container the schema expects.
+    if isinstance(value, str):
+        trimmed = value.strip()
+        expects_array = _schema_accepts_kind(schema, "array")
+        expects_object = _schema_accepts_kind(schema, "object")
+        if (expects_array and trimmed.startswith("[")) or (
+            expects_object and trimmed.startswith("{")
+        ):
+            try:
+                parsed = json.loads(trimmed)
+            except (ValueError, TypeError):
+                return value
+            if isinstance(parsed, list) and expects_array:
+                value = parsed
+            elif isinstance(parsed, dict) and expects_object:
+                value = parsed
+            else:
+                return value
+        else:
+            return value
+
+    # Recurse into list items using the ``items`` schema.
+    if isinstance(value, list):
+        items_schema = schema.get("items")
+        if not isinstance(items_schema, dict):
+            return value
+        changed = False
+        out = []
+        for item in value:
+            nxt = _normalize_json_strings_for_schema(item, items_schema)
+            changed = changed or (nxt is not item)
+            out.append(nxt)
+        return out if changed else value
+
+    # Recurse into object properties using each property's schema.
+    if isinstance(value, dict):
+        props = schema.get("properties")
+        if not isinstance(props, dict):
+            return value
+        changed = False
+        out = dict(value)
+        for k, prop_schema in props.items():
+            if k not in value or not isinstance(prop_schema, dict):
+                continue
+            nxt = _normalize_json_strings_for_schema(value[k], prop_schema)
+            if nxt is not value[k]:
+                out[k] = nxt
+                changed = True
+        return out if changed else value
+
+    return value
 
 
 def _coerce_value(value: str, expected_type, schema: dict | None = None):
@@ -876,7 +997,7 @@ def _emit_post_tool_call_hook(
     listener will actually consume it).
     """
     try:
-        from lucifex_cli.plugins import has_hook, invoke_hook
+        from hermes_cli.plugins import has_hook, invoke_hook
         if not has_hook("post_tool_call"):
             return
         if status is None:
@@ -1025,7 +1146,7 @@ def handle_function_call(
     _tool_original_args = dict(function_args)
     if not skip_tool_request_middleware:
         try:
-            from lucifex_cli.middleware import apply_tool_request_middleware
+            from hermes_cli.middleware import apply_tool_request_middleware
 
             _tool_request_mw = apply_tool_request_middleware(
                 function_name,
@@ -1046,21 +1167,22 @@ def handle_function_call(
         if function_name in _AGENT_LOOP_TOOLS:
             return json.dumps({"error": f"{function_name} must be handled by the agent loop"})
 
-        # Check plugin hooks for a block directive (unless caller already
-        # checked — e.g. run_agent._invoke_tool passes skip=True to
+        # Check plugin hooks for a block/approve directive (unless caller
+        # already checked — e.g. run_agent._invoke_tool passes skip=True to
         # avoid double-firing the hook).
         #
         # Single-fire contract: pre_tool_call fires exactly once per tool
-        # execution. get_pre_tool_call_block_message() internally calls
-        # invoke_hook("pre_tool_call", ...) and returns the first block
-        # directive (if any), so observer plugins see the hook on that same
-        # pass. When skip=True, the caller already fired it — do nothing
-        # here.
+        # execution. resolve_pre_tool_block() internally calls
+        # invoke_hook("pre_tool_call", ...) once and returns the block message
+        # for a `block` directive OR for an `approve` directive whose human
+        # gate denied/timed-out/errored (fail-closed). Observer plugins see
+        # the hook on that same pass. When skip=True, the caller already
+        # fired it — do nothing here.
         if not skip_pre_tool_call_hook:
             block_message: Optional[str] = None
             try:
-                from lucifex_cli.plugins import get_pre_tool_call_block_message
-                block_message = get_pre_tool_call_block_message(
+                from hermes_cli.plugins import resolve_pre_tool_block
+                block_message = resolve_pre_tool_block(
                     function_name,
                     function_args,
                     task_id=task_id or "",
@@ -1154,7 +1276,7 @@ def handle_function_call(
                         session_id=session_id,
                         user_task=user_task,
                     )
-            from lucifex_cli.middleware import run_tool_execution_middleware
+            from hermes_cli.middleware import run_tool_execution_middleware
 
             result = run_tool_execution_middleware(
                 function_name,
@@ -1197,7 +1319,7 @@ def handle_function_call(
         # Gated on has_hook so the no-listener path skips both the result
         # field derivation and the payload dispatch.
         try:
-            from lucifex_cli.plugins import has_hook, invoke_hook
+            from hermes_cli.plugins import has_hook, invoke_hook
             if has_hook("transform_tool_result"):
                 status, error_type, error_message = _tool_result_observer_fields(result)
                 hook_results = invoke_hook(

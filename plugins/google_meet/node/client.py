@@ -73,7 +73,7 @@ class NodeClient:
     def start_bot(
         self,
         url: str,
-        guest_name: str = "Lucifex Agent",
+        guest_name: str = "Hermes Agent",
         duration: Optional[str] = None,
         headed: bool = False,
         mode: str = "transcribe",

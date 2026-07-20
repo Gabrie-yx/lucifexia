@@ -11,10 +11,10 @@ import {
   startOAuthLogin,
   submitOAuthCode,
   validateProviderCredential
-} from '@/lucifex'
+} from '@/hermes'
 import { evaluateRuntimeReadiness, type RuntimeReadinessResult } from '@/lib/runtime-readiness'
 import { notify, notifyError } from '@/store/notifications'
-import type { ModelOptionProvider, OAuthProvider, OAuthStartResponse } from '@/types/lucifex'
+import type { ModelOptionProvider, OAuthProvider, OAuthStartResponse } from '@/types/hermes'
 
 type PkceStart = Extract<OAuthStartResponse, { flow: 'pkce' }>
 type DeviceStart = Extract<OAuthStartResponse, { flow: 'device_code' }>
@@ -79,8 +79,8 @@ export interface OnboardingContext {
   requestGateway: <T = unknown>(method: string, params?: Record<string, unknown>) => Promise<T>
 }
 
-const CONFIGURED_CACHE_KEY = 'lucifex-desktop-onboarded-v1'
-const SKIP_CACHE_KEY = 'lucifex-onboarding-skipped-v1'
+const CONFIGURED_CACHE_KEY = 'hermes-desktop-onboarded-v1'
+const SKIP_CACHE_KEY = 'hermes-onboarding-skipped-v1'
 const POLL_MS = 2000
 const COPY_FLASH_MS = 1500
 export const DEFAULT_ONBOARDING_REASON = 'No inference provider is configured.'
@@ -191,11 +191,11 @@ function shouldPreserveConfiguredOnFallback(runtime: RuntimeReadinessResult, sta
 }
 
 function notifyReady(provider: string) {
-  notify({ kind: 'success', title: 'Lucifex is ready', message: `${provider} connected.` })
+  notify({ kind: 'success', title: 'Hermes is ready', message: `${provider} connected.` })
 }
 
 // Human-friendly labels for tools auto-routed through the Nous Tool Gateway,
-// mirroring lucifex_cli/nous_subscription._GATEWAY_TOOL_LABELS so the GUI and
+// mirroring hermes_cli/nous_subscription._GATEWAY_TOOL_LABELS so the GUI and
 // CLI describe the same thing.
 const GATEWAY_TOOL_LABELS: Record<string, string> = {
   browser: 'browser automation',
@@ -239,7 +239,7 @@ async function fetchProviderDefaultModel(
   let options
 
   try {
-    options = await getGlobalModelOptions()
+    options = await getGlobalModelOptions({ includeUnconfigured: true, explicitOnly: false })
   } catch {
     return null
   }
@@ -265,7 +265,7 @@ async function fetchProviderDefaultModel(
   }
 
   // Prefer the backend's recommended default — it mirrors the curation
-  // `lucifex model` does (for Nous it honors the user's free/paid tier, so a
+  // `hermes model` does (for Nous it honors the user's free/paid tier, so a
   // free user gets a free model rather than a paid default like opus). Fall
   // back to the first curated model if the endpoint can't resolve one.
   let defaultModel = String(models[0])
@@ -360,8 +360,8 @@ function providerResolutionFailure(reason: null | string) {
   const detail = reason?.trim()
 
   return detail
-    ? `Connected, but Lucifex still cannot resolve a usable provider. ${detail}`
-    : 'Connected, but Lucifex still cannot resolve a usable provider.'
+    ? `Connected, but Hermes still cannot resolve a usable provider. ${detail}`
+    : 'Connected, but Hermes still cannot resolve a usable provider.'
 }
 
 async function refreshProviders() {
@@ -526,7 +526,7 @@ export async function refreshOnboarding(ctx: OnboardingContext) {
       kind: 'error',
       title: 'Runtime not ready',
       message:
-        'Lucifex Desktop could not verify the running backend on startup. Some features may be unavailable until the gateway is reachable.'
+        'Hermes Desktop could not verify the running backend on startup. Some features may be unavailable until the gateway is reachable.'
     })
 
     return false
@@ -551,9 +551,9 @@ export async function refreshOnboarding(ctx: OnboardingContext) {
 // the flow never silently stalls in a waiting state. Mirrors the pattern in
 // apps/desktop/src/app/artifacts/index.tsx.
 async function openSignInUrl(url: string) {
-  if (window.lucifexDesktop?.openExternal) {
+  if (window.hermesDesktop?.openExternal) {
     try {
-      await window.lucifexDesktop.openExternal(url)
+      await window.hermesDesktop.openExternal(url)
 
       return
     } catch {
@@ -568,143 +568,6 @@ async function openSignInUrl(url: string) {
 
 export async function startProviderOAuth(provider: OAuthProvider, ctx: OnboardingContext) {
   clearPoll()
-
-  if (provider.id === 'nous') {
-    setFlow({ status: 'starting', provider })
-    try {
-      // ── Step 1: Check if Ollama is reachable (via Backend) ──────────────
-      let ollamaReady = false
-      try {
-        const resp = await ctx.requestGateway<{ reachable: boolean }>('lucifexia.check_ollama', {})
-        ollamaReady = resp.reachable
-      } catch {
-        ollamaReady = false
-      }
-
-      // ── Step 2: If Ollama not running, try to install + start it ────────
-      if (!ollamaReady) {
-        setFlow({
-          status: 'error',
-          provider,
-          message: '⚙️ Ollama não encontrado. Instalando automaticamente... Isso pode levar alguns minutos.'
-        })
-
-        // Attempt to install Ollama via the desktop bridge (shell exec)
-        const installed = await ctx.requestGateway<{ success: boolean; error?: string }>(
-          'lucifexia.install_ollama', {}
-        ).catch(() => ({ success: false }))
-
-        if (!installed.success) {
-          // Fallback: open the Ollama download page and tell user
-          try {
-            await window.lucifexDesktop?.openExternal('https://ollama.com/download')
-          } catch {
-            // ignore
-          }
-          setFlow({
-            status: 'error',
-            provider,
-            message: 'Ollama precisa ser instalado manualmente. Acesse https://ollama.com/download, instale e tente novamente.'
-          })
-          return
-        }
-
-        // Wait for Ollama to become ready (up to 30s)
-        for (let i = 0; i < 30; i++) {
-          await new Promise(r => setTimeout(r, 1000))
-          try {
-            const resp = await ctx.requestGateway<{ reachable: boolean }>('lucifexia.check_ollama', {})
-            if (resp.reachable) {
-              ollamaReady = true
-              break
-            }
-          } catch {
-            // still starting
-          }
-        }
-
-        if (!ollamaReady) {
-          setFlow({
-            status: 'error',
-            provider,
-            message: 'Ollama instalado mas não iniciou a tempo. Abra o Ollama e tente novamente.'
-          })
-          return
-        }
-      }
-
-      // ── Step 3: Check if lucifexia model is already pulled (via Backend) ─
-      let modelReady = false
-      try {
-        const resp = await ctx.requestGateway<{ exists: boolean }>('lucifexia.check_model', { model: 'lucifexia' })
-        modelReady = resp.exists
-      } catch {
-        modelReady = false
-      }
-
-      // ── Step 4: Pull the model if needed ────────────────────────────────
-      if (!modelReady) {
-        setFlow({
-          status: 'error',
-          provider,
-          message: '📥 Baixando o modelo LUCIFEXIA V1... Isso pode levar alguns minutos dependendo da sua conexão.'
-        })
-
-        const pulled = await ctx.requestGateway<{ success: boolean; error?: string }>(
-          'lucifexia.pull_model', { model: 'lucifexia:latest' }
-        ).catch(() => ({ success: false }))
-
-        if (!pulled.success) {
-          // Try a direct ollama pull as fallback using the external bridge
-          try {
-            await ctx.requestGateway('lucifexia.pull_model', { model: 'ULTRON-V2:latest' })
-            // Then copy it to lucifexia
-            await ctx.requestGateway('lucifexia.copy_model', { source: 'ULTRON-V2:latest', dest: 'lucifexia:latest' })
-          } catch {
-            setFlow({
-              status: 'error',
-              provider,
-              message: 'Não foi possível baixar o modelo automaticamente. Execute: ollama pull hf.co/kashif0912/ULTRON-V2 e depois: ollama cp ULTRON-V2:latest lucifexia:latest'
-            })
-            return
-          }
-        }
-      }
-
-      // ── Step 5: Configure the model assignment ───────────────────────────
-      setFlow({ status: 'starting', provider })
-      await setModelAssignment({
-        scope: 'main',
-        provider: 'nous',
-        model: 'lucifexia:latest',
-        base_url: 'http://127.0.0.1:11434/v1',
-        api_key: 'no-key-required'
-      })
-      await ctx.requestGateway('reload.env').catch(() => undefined)
-
-      const runtime = await checkRuntime(ctx, 'nous')
-      if (!runtime.ready) {
-        setFlow({
-          status: 'error',
-          provider,
-          message: 'Could not connect to local Ollama. Make sure Ollama is running and lucifexia model is pulled.'
-        })
-        return
-      }
-
-      setFlow({ status: 'success', provider })
-      await completeWithModelConfirm(ctx, provider.name, [provider.id], reason =>
-        setFlow({
-          status: 'error',
-          provider,
-          message: providerResolutionFailure(reason)
-        })
-      )
-    } catch (error) {
-      setFlow({ status: 'error', provider, message: `Could not configure local lucifexia: ${errMessage(error)}` })
-    }
-    return
-  }
 
   if (provider.flow === 'external') {
     setFlow({ status: 'external_pending', provider, copied: false })
@@ -865,7 +728,7 @@ export async function recheckExternalSignin(ctx: OnboardingContext) {
       provider,
       message:
         reason?.trim() ||
-        `Lucifex still cannot reach ${provider.name}. Run \`${provider.cli_command}\` in a terminal first.`
+        `Hermes still cannot reach ${provider.name}. Run \`${provider.cli_command}\` in a terminal first.`
     })
   )
 }
@@ -980,7 +843,7 @@ export async function saveOnboardingLocalEndpoint(baseUrl: string, apiKey: strin
     if (!runtime.ready) {
       const detail = (runtime.reason ?? '').trim()
 
-      return { ok: false, message: detail || `Saved, but Lucifex still cannot reach ${url}.` }
+      return { ok: false, message: detail || `Saved, but Hermes still cannot reach ${url}.` }
     }
 
     notifyReady('Local / custom endpoint')

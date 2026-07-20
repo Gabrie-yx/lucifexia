@@ -40,7 +40,7 @@ SKILL.md Format (YAML Frontmatter, agentskills.io compatible):
       commands: [curl, jq]        #   Command checks remain advisory only.
     compatibility: Requires X     # Optional (agentskills.io)
     metadata:                     # Optional, arbitrary key-value (agentskills.io)
-      lucifex:
+      hermes:
         tags: [fine-tuning, llm]
         related_skills: [peft, lora]
     ---
@@ -68,8 +68,9 @@ Usage:
 
 import json
 import logging
+import time
 
-from lucifex_constants import get_lucifex_home, display_lucifex_home
+from hermes_constants import get_hermes_home, display_hermes_home
 import os
 import re
 from enum import Enum
@@ -77,7 +78,7 @@ from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Dict, Any, List, Optional, Set, Tuple
 
 from tools.registry import registry, tool_error
-from lucifex_cli.config import cfg_get
+from hermes_cli.config import cfg_get
 from utils import env_var_enabled
 from agent.skill_utils import (
     EXCLUDED_SKILL_DIRS as _EXCLUDED_SKILL_DIRS,
@@ -86,12 +87,76 @@ from agent.skill_utils import (
 
 logger = logging.getLogger(__name__)
 
+# Per-session skill discovery cache.  _find_all_skills() re-reads every
+# SKILL.md on every call; with hundreds of skills this is wasteful.
+# Cache validation (mirrors hermes_cli/profiles.py::_count_skills, d5eee133e):
+#   - signature = per-dir max mtime of the dir AND its immediate children
+#     (one scandir per dir; catches skill add/remove inside categories,
+#     which does NOT bump the root dir's mtime), plus the disabled-set
+#     (config-driven — changes with no filesystem mtime bump at all)
+#   - a short TTL bounds staleness from in-place SKILL.md edits, which
+#     bump only the file's mtime, invisible to any directory signature.
+# skip_disabled True/False are cached separately.
+_SKILLS_CACHE: dict = {}          # {cache_key: (signature, timestamp, skills_list)}
+_SKILLS_CACHE_TTL_SECONDS = 30.0
+_SKILLS_CACHE_KEY_DISABLED = "with_disabled"
+_SKILLS_CACHE_KEY_FILTERED = "filtered"
 
-# All skills live in ~/.lucifex/skills/ (seeded from bundled skills/ on install).
+
+def _skills_scan_signature(dirs_to_scan, disabled) -> tuple:
+    """Cheap change-signature for the skill scan inputs.
+
+    O(#dirs + #categories) stat calls, not a recursive walk. Includes the
+    platform the scan's ``skill_matches_platform`` filter will use (read
+    from ``agent.skill_utils``'s ``sys`` so test patches of that module
+    are honored) — the scan result is platform-dependent.
+    """
+    from agent import skill_utils as _skill_utils
+
+    platform = getattr(getattr(_skill_utils, "sys", None), "platform", "")
+    sig = []
+    for d in dirs_to_scan:
+        try:
+            m = d.stat().st_mtime
+        except OSError:
+            continue
+        try:
+            with os.scandir(d) as it:
+                for entry in it:
+                    try:
+                        if entry.is_dir(follow_symlinks=False):
+                            em = entry.stat(follow_symlinks=False).st_mtime
+                            if em > m:
+                                m = em
+                    except OSError:
+                        continue
+        except OSError:
+            pass
+        sig.append((str(d), m))
+    return (tuple(sig), frozenset(disabled), platform)
+
+
+# All skills live in ~/.hermes/skills/ (seeded from bundled skills/ on install).
 # This is the single source of truth -- agent edits, hub installs, and bundled
 # skills all coexist here without polluting the git repo.
-LUCIFEX_HOME = get_lucifex_home()
-SKILLS_DIR = LUCIFEX_HOME / "skills"
+HERMES_HOME = get_hermes_home()
+SKILLS_DIR = HERMES_HOME / "skills"
+_SKILLS_DIR_AT_IMPORT = SKILLS_DIR
+
+
+def _skills_dir() -> Path:
+    """Return the active profile's skills directory at call time.
+
+    Some long-lived runtimes import this module before the active profile has
+    set HERMES_HOME. Keep the legacy SKILLS_DIR module attribute for tests and
+    external patchers, but when it has not been patched, resolve from the live
+    profile-scoped HERMES_HOME on every call.
+    """
+    configured = Path(SKILLS_DIR)
+    if configured != _SKILLS_DIR_AT_IMPORT:
+        return configured
+    return get_hermes_home() / "skills"
+
 
 # Anthropic-recommended limits for progressive disclosure efficiency
 MAX_NAME_LENGTH = 64
@@ -139,8 +204,8 @@ def _skill_lookup_path_error(name: str) -> Optional[str]:
 
 
 def load_env() -> Dict[str, str]:
-    """Load profile-scoped environment variables from LUCIFEX_HOME/.env."""
-    env_path = get_lucifex_home() / ".env"
+    """Load profile-scoped environment variables from HERMES_HOME/.env."""
+    env_path = get_hermes_home() / ".env"
     env_vars: Dict[str, str] = {}
     if not env_path.exists():
         return env_vars
@@ -351,11 +416,11 @@ def _capture_required_environment_variables(
     missing_names = [entry["name"] for entry in missing_entries]
     # Most gateway surfaces (messaging platforms) can't prompt for a secret, so
     # they short-circuit to the "unsupported" hint. Interactive gateway surfaces
-    # — the desktop app / TUI — set LUCIFEX_INTERACTIVE and register a
+    # — the desktop app / TUI — set HERMES_INTERACTIVE and register a
     # secret-capture callback that routes to a secure secret.request overlay, so
-    # they fall through and actually prompt. (LUCIFEX_INTERACTIVE is the same flag
+    # they fall through and actually prompt. (HERMES_INTERACTIVE is the same flag
     # tools/approval.py uses to tell an interactive surface from a messaging one.)
-    if _is_gateway_surface() and not env_var_enabled("LUCIFEX_INTERACTIVE"):
+    if _is_gateway_surface() and not env_var_enabled("HERMES_INTERACTIVE"):
         return {
             "missing_names": missing_names,
             "setup_skipped": False,
@@ -416,10 +481,10 @@ def _capture_required_environment_variables(
 
 
 def _is_gateway_surface() -> bool:
-    if env_var_enabled("LUCIFEX_GATEWAY_SESSION"):
+    if env_var_enabled("HERMES_GATEWAY_SESSION"):
         return True
     from gateway.session_context import get_session_env
-    return bool(get_session_env("LUCIFEX_SESSION_PLATFORM"))
+    return bool(get_session_env("HERMES_SESSION_PLATFORM"))
 
 
 def _get_terminal_backend_name() -> str:
@@ -462,7 +527,7 @@ def _gateway_setup_hint() -> str:
 
         return GATEWAY_SECRET_CAPTURE_UNSUPPORTED_MESSAGE
     except Exception:
-        return f"Secure secret entry is not available. Load this skill in the local CLI to be prompted, or add the key to {display_lucifex_home()}/.env manually."
+        return f"Secure secret entry is not available. Load this skill in the local CLI to be prompted, or add the key to {display_hermes_home()}/.env manually."
 
 
 def _build_setup_note(
@@ -498,12 +563,12 @@ def _get_category_from_path(skill_path: Path) -> Optional[str]:
     """
     Extract category from skill path based on directory structure.
 
-    For paths like: ~/.lucifex/skills/mlops/axolotl/SKILL.md -> "mlops"
+    For paths like: ~/.hermes/skills/mlops/axolotl/SKILL.md -> "mlops"
     Also works for external skill dirs configured via skills.external_dirs.
     """
-    # Try the module-level SKILLS_DIR first (respects monkeypatching in tests),
+    # Try the active profile skills dir first (respects monkeypatching in tests),
     # then fall back to external dirs from config.
-    dirs_to_check = [SKILLS_DIR]
+    dirs_to_check = [_skills_dir()]
     try:
         from agent.skill_utils import get_external_skills_dirs
         dirs_to_check.extend(get_external_skills_dirs())
@@ -566,11 +631,11 @@ def _get_session_platform() -> str:
 
     Mirrors the platform-resolution logic in
     ``agent.skill_utils.get_disabled_skill_names`` so that
-    ``_is_skill_disabled`` respects ``LUCIFEX_SESSION_PLATFORM``.
+    ``_is_skill_disabled`` respects ``HERMES_SESSION_PLATFORM``.
     """
     try:
         from gateway.session_context import get_session_env
-        return get_session_env("LUCIFEX_SESSION_PLATFORM") or ""
+        return get_session_env("HERMES_SESSION_PLATFORM") or ""
     except Exception:
         return ""
 
@@ -580,14 +645,14 @@ def _is_skill_disabled(name: str, platform: str = None) -> bool:
 
     Resolves the active platform from (in order of precedence):
     1. Explicit ``platform`` argument
-    2. ``LUCIFEX_PLATFORM`` environment variable
-    3. ``LUCIFEX_SESSION_PLATFORM`` from gateway session context
+    2. ``HERMES_PLATFORM`` environment variable
+    3. ``HERMES_SESSION_PLATFORM`` from gateway session context
     """
     try:
-        from lucifex_cli.config import load_config
+        from hermes_cli.config import load_config
         config = load_config()
         skills_cfg = config.get("skills", {})
-        resolved_platform = platform or os.getenv("LUCIFEX_PLATFORM") or _get_session_platform()
+        resolved_platform = platform or os.getenv("HERMES_PLATFORM") or _get_session_platform()
         global_disabled = skills_cfg.get("disabled", [])
         if resolved_platform:
             platform_disabled = cfg_get(skills_cfg, "platform_disabled", resolved_platform)
@@ -602,30 +667,56 @@ def _is_skill_disabled(name: str, platform: str = None) -> bool:
 
 
 def _find_all_skills(*, skip_disabled: bool = False) -> List[Dict[str, Any]]:
-    """Recursively find all skills in ~/.lucifex/skills/ and external dirs.
+    """Recursively find all skills in ~/.hermes/skills/ and external dirs.
 
     Args:
         skip_disabled: If True, return ALL skills regardless of disabled
-            state (used by ``lucifex skills`` config UI). Default False
+            state (used by ``hermes skills`` config UI). Default False
             filters out disabled skills.
 
     Returns:
         List of skill metadata dicts (name, description, category).
+
+    Results are cached per-session; the cache is invalidated when the scan
+    signature changes (dir/category mtimes or the disabled-set) and expires
+    after a short TTL to bound staleness from in-place SKILL.md edits.
     """
     from agent.skill_utils import get_external_skills_dirs, iter_skill_index_files
+
+    cache_key = _SKILLS_CACHE_KEY_DISABLED if skip_disabled else _SKILLS_CACHE_KEY_FILTERED
+
+    # Load disabled set once (not per-skill). Part of the cache signature:
+    # disabling a skill is a config change with no filesystem mtime bump.
+    disabled = set() if skip_disabled else _get_disabled_skill_names()
+
+    # Collect directories to scan — same resolution as the scan loop below
+    # (_skills_dir() resolves the LIVE profile HERMES_HOME; the module-level
+    # SKILLS_DIR can be stale in long-lived runtimes).
+    dirs_to_scan: list = []
+    active_skills_dir = _skills_dir()
+    if active_skills_dir.exists():
+        dirs_to_scan.append(active_skills_dir)
+    dirs_to_scan.extend(get_external_skills_dirs())
+
+    signature = _skills_scan_signature(dirs_to_scan, disabled)
+    now = time.monotonic()
+
+    cached = _SKILLS_CACHE.get(cache_key)
+    if (
+        cached is not None
+        and cached[0] == signature
+        and (now - cached[1]) < _SKILLS_CACHE_TTL_SECONDS
+    ):
+        # Per-call shallow copies: callers mutate the returned dicts
+        # (e.g. web_server annotates s["enabled"]/s["usage"]) — handing
+        # out the cached objects would poison the cache for everyone else.
+        return [dict(s) for s in cached[2]]
 
     skills = []
     seen_names: set = set()
 
-    # Load disabled set once (not per-skill)
-    disabled = set() if skip_disabled else _get_disabled_skill_names()
-
-    # Scan local dir first, then external dirs (local takes precedence)
-    dirs_to_scan = []
-    if SKILLS_DIR.exists():
-        dirs_to_scan.append(SKILLS_DIR)
-    dirs_to_scan.extend(get_external_skills_dirs())
-
+    # Scan local dir first, then external dirs (local takes precedence) —
+    # dirs_to_scan already resolved above for the signature.
     for scan_dir in dirs_to_scan:
         for skill_md in iter_skill_index_files(scan_dir, "SKILL.md"):
             if any(part in _EXCLUDED_SKILL_DIRS for part in skill_md.parts):
@@ -678,7 +769,12 @@ def _find_all_skills(*, skip_disabled: bool = False) -> List[Dict[str, Any]]:
                 )
                 continue
 
-    return skills
+    # Store in cache keyed by the scan signature computed BEFORE the scan
+    # (a write racing the scan changes the signature, so the next call
+    # re-scans rather than serving the torn result past the TTL). Same
+    # shallow-copy contract as the hit path — the caller may mutate.
+    _SKILLS_CACHE[cache_key] = (signature, now, skills)
+    return [dict(s) for s in skills]
 
 
 def _sort_skills(skills: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -701,14 +797,15 @@ def skills_list(category: str = None, task_id: str = None) -> str:
         JSON string with minimal skill info: name, description, category
     """
     try:
-        if not SKILLS_DIR.exists():
-            SKILLS_DIR.mkdir(parents=True, exist_ok=True)
+        active_skills_dir = _skills_dir()
+        if not active_skills_dir.exists():
+            active_skills_dir.mkdir(parents=True, exist_ok=True)
             return json.dumps(
                 {
                     "success": True,
                     "skills": [],
                     "categories": [],
-                    "message": f"No skills found. Skills directory created at {display_lucifex_home()}/skills/",
+                    "message": f"No skills found. Skills directory created at {display_hermes_home()}/skills/",
                 },
                 ensure_ascii=False,
             )
@@ -766,7 +863,7 @@ def _serve_plugin_skill(
     session_id: str | None = None,
 ) -> str:
     """Read a plugin-provided skill, apply guards, return JSON."""
-    from lucifex_cli.plugins import _get_disabled_plugins, get_plugin_manager
+    from hermes_cli.plugins import _get_disabled_plugins, get_plugin_manager
 
     if namespace in _get_disabled_plugins():
         return json.dumps(
@@ -774,7 +871,7 @@ def _serve_plugin_skill(
                 "success": False,
                 "error": (
                     f"Plugin '{namespace}' is disabled. "
-                    f"Re-enable with: lucifex plugins enable {namespace}"
+                    f"Re-enable with: hermes plugins enable {namespace}"
                 ),
             },
             ensure_ascii=False,
@@ -904,7 +1001,7 @@ def skill_view(
         # Bare names fall through to the existing flat-tree scan below.
         if ":" in name:
             from agent.skill_utils import is_valid_namespace, parse_qualified_name
-            from lucifex_cli.plugins import discover_plugins, get_plugin_manager
+            from hermes_cli.plugins import discover_plugins, get_plugin_manager
 
             namespace, bare = parse_qualified_name(name)
             if not is_valid_namespace(namespace):
@@ -984,8 +1081,9 @@ def skill_view(
 
         # Build list of all skill directories to search
         all_dirs = []
-        if SKILLS_DIR.exists():
-            all_dirs.append(SKILLS_DIR)
+        active_skills_dir = _skills_dir()
+        if active_skills_dir.exists():
+            all_dirs.append(active_skills_dir)
         all_dirs.extend(get_external_skills_dirs())
 
         if not all_dirs:
@@ -1135,7 +1233,7 @@ def skill_view(
         # Security: warn if skill is loaded from outside trusted directories
         # (local skills dir + configured external_dirs are all trusted)
         _outside_skills_dir = True
-        _trusted_dirs = [SKILLS_DIR.resolve()]
+        _trusted_dirs = [active_skills_dir.resolve()]
         try:
             _trusted_dirs.extend(d.resolve() for d in all_dirs[1:])
         except Exception:
@@ -1156,7 +1254,7 @@ def skill_view(
         if _outside_skills_dir or _injection_detected:
             _warnings = []
             if _outside_skills_dir:
-                _warnings.append(f"skill file is outside the trusted skills directory (~/.lucifex/skills/): {skill_md}")
+                _warnings.append(f"skill file is outside the trusted skills directory (~/.hermes/skills/): {skill_md}")
             if _injection_detected:
                 _warnings.append("skill content contains patterns that may indicate prompt injection")
             logging.getLogger(__name__).warning("Skill security warning for '%s': %s", name, "; ".join(_warnings))
@@ -1185,7 +1283,7 @@ def skill_view(
                     "success": False,
                     "error": (
                         f"Skill '{resolved_name}' is disabled. "
-                        "Enable it with `lucifex skills` or inspect the files directly on disk."
+                        "Enable it with `hermes skills` or inspect the files directly on disk."
                     ),
                 },
                 ensure_ascii=False,
@@ -1352,15 +1450,15 @@ def skill_view(
                     )
 
         # Read tags/related_skills with backward compat:
-        # Check metadata.lucifex.* first (agentskills.io convention), fall back to top-level
-        lucifex_meta = {}
+        # Check metadata.hermes.* first (agentskills.io convention), fall back to top-level
+        hermes_meta = {}
         metadata = frontmatter.get("metadata")
         if isinstance(metadata, dict):
-            lucifex_meta = metadata.get("lucifex", {}) or {}
+            hermes_meta = metadata.get("hermes", {}) or {}
 
-        tags = _parse_tags(lucifex_meta.get("tags") or frontmatter.get("tags", ""))
+        tags = _parse_tags(hermes_meta.get("tags") or frontmatter.get("tags", ""))
         related_skills = _parse_tags(
-            lucifex_meta.get("related_skills") or frontmatter.get("related_skills", "")
+            hermes_meta.get("related_skills") or frontmatter.get("related_skills", "")
         )
 
         # Build linked files structure for clear discovery
@@ -1375,7 +1473,7 @@ def skill_view(
             linked_files["scripts"] = script_files
 
         try:
-            rel_path = str(skill_md.relative_to(SKILLS_DIR))
+            rel_path = str(skill_md.relative_to(active_skills_dir))
         except ValueError:
             # External skill — use path relative to the skill's own parent dir
             rel_path = str(skill_md.relative_to(skill_md.parent.parent)) if skill_md.parent.parent else skill_md.name

@@ -4,13 +4,13 @@ import { StatusDot, type StatusTone } from '@/components/status-dot'
 import { Button } from '@/components/ui/button'
 import { LogView } from '@/components/ui/log-view'
 import { Tip } from '@/components/ui/tooltip'
-import { getLogs } from '@/lucifex'
+import { getLogs } from '@/hermes'
 import { useI18n } from '@/i18n'
 import { LayoutDashboard, RefreshCw } from '@/lib/icons'
 import type { RuntimeReadinessResult } from '@/lib/runtime-readiness'
 import { cn } from '@/lib/utils'
 import { runGatewayRestart } from '@/store/system-actions'
-import type { StatusResponse } from '@/types/lucifex'
+import type { StatusResponse } from '@/types/hermes'
 
 interface GatewayMenuPanelProps {
   gatewayState: string
@@ -36,21 +36,27 @@ function useGatewayLogTail(): string[] {
   useEffect(() => {
     let cancelled = false
 
-    const load = () =>
-      getLogs({ file: 'gui', lines: LOG_TAIL })
-        .then(res => {
-          if (cancelled) {
-            return
-          }
+    // async: getLogs THROWS (not rejects) when the desktop bridge is missing
+    // (plain-browser mode) — a sync throw here would take down the root
+    // error boundary before the .catch even attaches.
+    const load = async () => {
+      try {
+        const res = await getLogs({ file: 'gui', lines: LOG_TAIL })
 
-          setLines(
-            res.lines
-              .map(line => line.trim())
-              .filter(line => line && !LOG_NOISE_RE.test(line))
-              .slice(-LOG_VISIBLE)
-          )
-        })
-        .catch(() => {})
+        if (cancelled) {
+          return
+        }
+
+        setLines(
+          res.lines
+            .map(line => line.trim())
+            .filter(line => line && !LOG_NOISE_RE.test(line))
+            .slice(-LOG_VISIBLE)
+        )
+      } catch {
+        // Bridge/gateway unavailable — keep the last tail.
+      }
+    }
 
     void load()
     const timer = window.setInterval(load, LOG_POLL_MS)

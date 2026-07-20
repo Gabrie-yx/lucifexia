@@ -12,6 +12,7 @@ asserting the expected env var outcomes.
 import os
 import json
 
+from gateway.cwd_placeholder import CWD_PLACEHOLDERS, resolve_placeholder_terminal_cwd
 from tools.terminal_tool import _is_ssh_remote_tilde_cwd
 
 
@@ -42,6 +43,7 @@ def _simulate_config_bridge(cfg: dict, initial_env: dict | None = None):
             "container_cpu": "TERMINAL_CONTAINER_CPU",
             "container_memory": "TERMINAL_CONTAINER_MEMORY",
             "container_disk": "TERMINAL_CONTAINER_DISK",
+            "docker_mount_cwd_to_workspace": "TERMINAL_DOCKER_MOUNT_CWD_TO_WORKSPACE",
         }
         for cfg_key, env_var in terminal_env_map.items():
             if cfg_key in terminal_cfg:
@@ -75,14 +77,23 @@ def _simulate_config_bridge(cfg: dict, initial_env: dict | None = None):
                     alias_val = os.path.expanduser(alias_val)
                 env[alias_env] = alias_val.strip()
 
-    # --- Replicate lines 144-147: MESSAGING_CWD fallback ---
+    # --- Replicate gateway/run.py placeholder TERMINAL_CWD resolution ---
     configured_cwd = env.get("TERMINAL_CWD", "")
-    if not configured_cwd or configured_cwd in {".", "auto", "cwd"}:
-        if env.get("TERMINAL_ENV", "").strip().lower() == "ssh":
+    if not configured_cwd or configured_cwd in CWD_PLACEHOLDERS:
+        resolved = resolve_placeholder_terminal_cwd(
+            configured_cwd=configured_cwd,
+            terminal_backend=env.get("TERMINAL_ENV", ""),
+            messaging_cwd=env.get("MESSAGING_CWD"),
+            docker_mount_cwd_to_workspace=env.get(
+                "TERMINAL_DOCKER_MOUNT_CWD_TO_WORKSPACE", "false"
+            ).lower()
+            in {"true", "1", "yes"},
+            home_fallback="/root",
+        )
+        if resolved is None:
             env.pop("TERMINAL_CWD", None)
         else:
-            messaging_cwd = env.get("MESSAGING_CWD") or "/root"  # Path.home() for root
-            env["TERMINAL_CWD"] = messaging_cwd
+            env["TERMINAL_CWD"] = resolved
 
     return env
 
@@ -91,9 +102,9 @@ class TestTopLevelCwdAlias:
     """Top-level `cwd:` should be treated as `terminal.cwd`."""
 
     def test_top_level_cwd_sets_terminal_cwd(self):
-        cfg = {"cwd": "/home/lucifex/projects"}
+        cfg = {"cwd": "/home/hermes/projects"}
         result = _simulate_config_bridge(cfg)
-        assert result["TERMINAL_CWD"] == "/home/lucifex/projects"
+        assert result["TERMINAL_CWD"] == "/home/hermes/projects"
 
     def test_top_level_backend_sets_terminal_env(self):
         cfg = {"backend": "docker"}
@@ -101,19 +112,19 @@ class TestTopLevelCwdAlias:
         assert result["TERMINAL_ENV"] == "docker"
 
     def test_top_level_cwd_and_backend(self):
-        cfg = {"backend": "local", "cwd": "/home/lucifex/projects"}
+        cfg = {"backend": "local", "cwd": "/home/hermes/projects"}
         result = _simulate_config_bridge(cfg)
-        assert result["TERMINAL_CWD"] == "/home/lucifex/projects"
+        assert result["TERMINAL_CWD"] == "/home/hermes/projects"
         assert result["TERMINAL_ENV"] == "local"
 
     def test_nested_terminal_takes_precedence_over_top_level(self):
         """terminal.cwd should win over top-level cwd."""
         cfg = {
             "cwd": "/should/not/use",
-            "terminal": {"cwd": "/home/lucifex/real"},
+            "terminal": {"cwd": "/home/hermes/real"},
         }
         result = _simulate_config_bridge(cfg)
-        assert result["TERMINAL_CWD"] == "/home/lucifex/real"
+        assert result["TERMINAL_CWD"] == "/home/hermes/real"
 
     def test_nested_terminal_backend_takes_precedence(self):
         cfg = {
@@ -125,8 +136,8 @@ class TestTopLevelCwdAlias:
 
     def test_no_cwd_falls_back_to_messaging_cwd(self):
         cfg = {}
-        result = _simulate_config_bridge(cfg, {"MESSAGING_CWD": "/home/lucifex/projects"})
-        assert result["TERMINAL_CWD"] == "/home/lucifex/projects"
+        result = _simulate_config_bridge(cfg, {"MESSAGING_CWD": "/home/hermes/projects"})
+        assert result["TERMINAL_CWD"] == "/home/hermes/projects"
 
     def test_no_cwd_no_messaging_cwd_falls_back_to_home(self):
         cfg = {}
@@ -136,24 +147,24 @@ class TestTopLevelCwdAlias:
     def test_dot_cwd_triggers_messaging_fallback(self):
         """cwd: '.' should trigger MESSAGING_CWD fallback."""
         cfg = {"cwd": "."}
-        result = _simulate_config_bridge(cfg, {"MESSAGING_CWD": "/home/lucifex"})
+        result = _simulate_config_bridge(cfg, {"MESSAGING_CWD": "/home/hermes"})
         # "." is stripped but truthy, so it gets set as TERMINAL_CWD
         # Then the MESSAGING_CWD fallback does NOT trigger since TERMINAL_CWD
         # is set and not in (".", "auto", "cwd").
         # Wait — "." IS in the fallback list! So this should fall through.
         # Actually the alias sets it to ".", then the messaging fallback
         # checks if it's in (".", "auto", "cwd") and overrides.
-        assert result["TERMINAL_CWD"] == "/home/lucifex"
+        assert result["TERMINAL_CWD"] == "/home/hermes"
 
     def test_auto_cwd_triggers_messaging_fallback(self):
         cfg = {"cwd": "auto"}
-        result = _simulate_config_bridge(cfg, {"MESSAGING_CWD": "/home/lucifex"})
-        assert result["TERMINAL_CWD"] == "/home/lucifex"
+        result = _simulate_config_bridge(cfg, {"MESSAGING_CWD": "/home/hermes"})
+        assert result["TERMINAL_CWD"] == "/home/hermes"
 
     def test_empty_cwd_ignored(self):
         cfg = {"cwd": ""}
-        result = _simulate_config_bridge(cfg, {"MESSAGING_CWD": "/home/lucifex"})
-        assert result["TERMINAL_CWD"] == "/home/lucifex"
+        result = _simulate_config_bridge(cfg, {"MESSAGING_CWD": "/home/hermes"})
+        assert result["TERMINAL_CWD"] == "/home/hermes"
 
     def test_whitespace_only_cwd_ignored(self):
         cfg = {"cwd": "   "}
@@ -163,8 +174,8 @@ class TestTopLevelCwdAlias:
     def test_messaging_cwd_env_var_works(self):
         """MESSAGING_CWD in initial env should be picked up as fallback."""
         cfg = {}
-        result = _simulate_config_bridge(cfg, {"MESSAGING_CWD": "/home/lucifex/projects"})
-        assert result["TERMINAL_CWD"] == "/home/lucifex/projects"
+        result = _simulate_config_bridge(cfg, {"MESSAGING_CWD": "/home/hermes/projects"})
+        assert result["TERMINAL_CWD"] == "/home/hermes/projects"
 
     def test_top_level_cwd_beats_messaging_cwd(self):
         """Explicit top-level cwd should take precedence over MESSAGING_CWD."""
@@ -225,7 +236,44 @@ class TestNestedTerminalCwdPlaceholderSkip:
         result = _simulate_config_bridge(cfg, {"MESSAGING_CWD": "/from/env"})
         assert result["TERMINAL_ENV"] == "docker"
         assert result["TERMINAL_TIMEOUT"] == "300"
-        assert result["TERMINAL_CWD"] == "/from/env"
+        assert result.get("TERMINAL_CWD") is None
+
+    def test_docker_placeholder_does_not_inherit_host_home(self):
+        """terminal.cwd: '.' + docker + mount off must not resolve to host home."""
+        cfg = {
+            "terminal": {
+                "cwd": ".",
+                "backend": "docker",
+                "docker_mount_cwd_to_workspace": False,
+            },
+        }
+        result = _simulate_config_bridge(cfg, {"MESSAGING_CWD": "/home/user"})
+        assert "TERMINAL_CWD" not in result
+
+    def test_docker_placeholder_mount_on_preserves_messaging_cwd(self):
+        """Mount-enabled docker still needs the host cwd signal for /workspace."""
+        cfg = {
+            "terminal": {
+                "cwd": ".",
+                "backend": "docker",
+                "docker_mount_cwd_to_workspace": True,
+            },
+        }
+        result = _simulate_config_bridge(
+            cfg, {"MESSAGING_CWD": "/host/project"}
+        )
+        assert result["TERMINAL_CWD"] == "/host/project"
+        assert result["TERMINAL_DOCKER_MOUNT_CWD_TO_WORKSPACE"] == "True"
+
+    def test_ssh_placeholder_does_not_inherit_host_home(self):
+        cfg = {"terminal": {"cwd": "auto", "backend": "ssh"}}
+        result = _simulate_config_bridge(cfg, {"MESSAGING_CWD": "/home/user"})
+        assert "TERMINAL_CWD" not in result
+
+    def test_local_placeholder_still_falls_back_to_messaging_cwd(self):
+        cfg = {"terminal": {"cwd": ".", "backend": "local"}}
+        result = _simulate_config_bridge(cfg, {"MESSAGING_CWD": "/home/user"})
+        assert result["TERMINAL_CWD"] == "/home/user"
 
     def test_terminal_home_mode_bridges_to_env(self):
         cfg = {"terminal": {"home_mode": "profile"}}

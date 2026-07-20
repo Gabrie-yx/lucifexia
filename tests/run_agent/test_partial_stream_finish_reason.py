@@ -20,7 +20,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from lucifex_constants import PARTIAL_STREAM_STUB_ID, FINISH_REASON_LENGTH
+from hermes_constants import PARTIAL_STREAM_STUB_ID, FINISH_REASON_LENGTH
 from agent.conversation_loop import _get_continuation_prompt
 
 
@@ -78,7 +78,7 @@ class TestPartialStreamStubFinishReason:
         agent = _make_agent()
         agent._current_streamed_assistant_text = "Here's my answer so far"
 
-        monkeypatch.setenv("LUCIFEX_STREAM_RETRIES", "0")
+        monkeypatch.setenv("HERMES_STREAM_RETRIES", "0")
         response = agent._interruptible_streaming_api_call({})
 
         assert response.id == PARTIAL_STREAM_STUB_ID
@@ -116,7 +116,7 @@ class TestPartialStreamStubFinishReason:
         agent._fire_stream_delta = lambda text: None
         agent._current_streamed_assistant_text = "Let me write the audit: "
 
-        monkeypatch.setenv("LUCIFEX_STREAM_RETRIES", "0")
+        monkeypatch.setenv("HERMES_STREAM_RETRIES", "0")
         response = agent._interruptible_streaming_api_call({})
 
         assert response.id == PARTIAL_STREAM_STUB_ID
@@ -229,6 +229,45 @@ class TestCleanStreamEndMidToolCall:
         )
         assert response.id.startswith("stream-")
         assert response.choices[0].finish_reason == FINISH_REASON_LENGTH
+
+    @patch("run_agent.AIAgent._create_request_openai_client")
+    @patch("run_agent.AIAgent._close_request_openai_client")
+    def test_no_finish_reason_text_only_routes_to_stub(
+        self, _mock_close, mock_create, monkeypatch,
+    ):
+        """A clean stream-end with no finish_reason after text-only
+        delivery must route through the partial-stream-stub path so the
+        conversation loop continues instead of silently accepting
+        truncated text as a complete response (#32086)."""
+
+        def _clean_ending_stream():
+            yield _make_stream_chunk(content="Let me compare the ")
+            yield _make_stream_chunk(content="vision configs:")
+            # falls off the end — clean close, no terminator
+
+        mock_client = MagicMock()
+        mock_client.chat.completions.create.side_effect = (
+            lambda *a, **kw: _clean_ending_stream()
+        )
+        mock_create.return_value = mock_client
+
+        agent = _make_agent()
+        agent._fire_stream_delta = lambda text: None
+
+        response = agent._interruptible_streaming_api_call({})
+
+        assert response.id == PARTIAL_STREAM_STUB_ID, (
+            "A clean stream-end with no finish_reason after text-only "
+            "delivery must be tagged as a partial-stream stub, not "
+            "silently accepted as complete (#32086)."
+        )
+        assert response.choices[0].finish_reason == FINISH_REASON_LENGTH
+        assert response.choices[0].message.content == "Let me compare the vision configs:"
+        assert response.choices[0].message.tool_calls is None
+        assert getattr(response, "_dropped_tool_names", None) is None, (
+            "Text-only drops must not carry dropped tool names — there "
+            "were no tool calls in flight."
+        )
 
 
 # ── Length-continuation prompt branching ──────────────────────────────────
@@ -411,7 +450,7 @@ class TestContentFilterStallActivatesFallback:
         agent._fire_stream_delta = lambda text: None
         agent._current_streamed_assistant_text = "Writing the file: "
 
-        monkeypatch.setenv("LUCIFEX_STREAM_RETRIES", "0")
+        monkeypatch.setenv("HERMES_STREAM_RETRIES", "0")
         response = agent._interruptible_streaming_api_call({})
 
         assert response.id == PARTIAL_STREAM_STUB_ID
@@ -443,7 +482,7 @@ class TestContentFilterStallActivatesFallback:
         agent._fire_stream_delta = lambda text: None
         agent._current_streamed_assistant_text = "Writing the file: "
 
-        monkeypatch.setenv("LUCIFEX_STREAM_RETRIES", "0")
+        monkeypatch.setenv("HERMES_STREAM_RETRIES", "0")
         response = agent._interruptible_streaming_api_call({})
 
         assert response.id == PARTIAL_STREAM_STUB_ID

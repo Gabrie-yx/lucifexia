@@ -50,7 +50,7 @@ export const ru: Translations = {
   },
 
   app: {
-    brand: "Lucifex Agent",
+    brand: "Hermes Agent",
     brandShort: "HA",
     closeNavigation: "Закрыть навигацию",
     closeModelTools: "Закрыть модель и инструменты",
@@ -120,8 +120,8 @@ export const ru: Translations = {
     starting: "Запуск",
     startedInBackground: "Запущено в фоне — следите за журналами",
     stopped: "Остановлено",
-    updateLucifex: "Обновить Lucifex",
-    updatingLucifex: "Обновление Lucifex…",
+    updateHermes: "Обновить Hermes",
+    updatingHermes: "Обновление Hermes…",
     waitingForOutput: "Ожидание вывода…",
   },
 
@@ -320,7 +320,7 @@ export const ru: Translations = {
     enableRuntime: "Включить",
     forceReinstall: "Принудительная переустановка (сначала удалить существующую папку)",
     headline:
-      "Поиск, установка, включение и обновление плагинов Lucifex (аналог `lucifex plugins`).",
+      "Поиск, установка, включение и обновление плагинов Hermes (аналог `hermes plugins`).",
     identifierLabel: "Git URL или owner/repo",
     inactive: "неактивно",
     installBtn: "Установить",
@@ -337,8 +337,8 @@ export const ru: Translations = {
     providersHint:
       "Записывает memory.provider (пусто = встроенный) и context.engine в config.yaml. Применяется со следующей сессии.",
     refreshDashboard: "Пересканировать расширения панели",
-    removeConfirm: "Удалить этот плагин из ~/.lucifex/plugins/?",
-    removeHint: "Удалять можно только плагины, установленные пользователем в ~/.lucifex/plugins.",
+    removeConfirm: "Удалить этот плагин из ~/.hermes/plugins/?",
+    removeHint: "Удалять можно только плагины, установленные пользователем в ~/.hermes/plugins.",
     rescanHeading: "Реестр SPA-плагинов",
     rescanHint: "Пересканируйте после добавления файлов на диск, чтобы боковая панель подхватила новые манифесты.",
     runtimeHeading: "Рантайм шлюза (YAML-плагины)",
@@ -360,7 +360,7 @@ export const ru: Translations = {
     all: "Все",
     categories: "Категории",
     filters: "Фильтры",
-    noSkills: "Навыки не найдены. Навыки загружаются из ~/.lucifex/skills/",
+    noSkills: "Навыки не найдены. Навыки загружаются из ~/.hermes/skills/",
     noSkillsMatch: "Нет навыков, соответствующих запросу или фильтру.",
     skillCount: "{count} навык{s}",
     resultCount: "{count} результат{s}",
@@ -374,7 +374,7 @@ export const ru: Translations = {
   },
 
   config: {
-    configPath: "~/.lucifex/config.yaml",
+    configPath: "~/.hermes/config.yaml",
     filters: "Фильтры",
     sections: "Разделы",
     exportConfig: "Экспортировать конфигурацию в JSON",
@@ -434,7 +434,7 @@ export const ru: Translations = {
     showValue: "Показать реальное значение",
     hideValue: "Скрыть значение",
     customTitle: "Пользовательские ключи",
-    customHint: "Произвольные переменные окружения, сохранённые в вашем .env, которые Lucifex не распознаёт. Используйте их для внедрения переменных окружения для навыков, серверов MCP или собственных инструментов.",
+    customHint: "Произвольные переменные окружения, сохранённые в вашем .env, которые Hermes не распознаёт. Используйте их для внедрения переменных окружения для навыков, серверов MCP или собственных инструментов.",
     customConfigured: "Задано пользовательских ключей: {count}",
     addCustomKey: "Добавить пользовательский ключ",
     customKeyName: "Имя переменной",
@@ -446,16 +446,19 @@ export const ru: Translations = {
   oauth: {
     title: "Входы провайдеров (OAuth)",
     providerLogins: "Входы провайдеров (OAuth)",
-    description: "Подключено {connected} из {total} OAuth-провайдеров. Процесс входа в настоящее время выполняется через CLI; нажмите «Скопировать команду» и вставьте в терминал для настройки.",
+    description:
+      "Подключено {connected} из {total} OAuth-провайдеров. Используйте «Войти» для процессов, поддерживаемых панелью; команды CLI остаются доступными для внешней или резервной настройки.",
     connected: "Подключено",
     expired: "Срок истёк",
-    notConnected: "Не подключено. Выполните {command} в терминале.",
+    notConnected: "Не подключено. Используйте «Войти», если доступно, или выполните {command} в терминале.",
     runInTerminal: "в терминале.",
     noProviders: "OAuth-совместимые провайдеры не обнаружены.",
     login: "Войти",
     disconnect: "Отключить",
     managedExternally: "Управляется извне",
     copied: "Скопировано ✓",
+    copyCode: "Скопировать код",
+    copyFailed: "Не удалось скопировать автоматически. Выделите код и скопируйте его вручную.",
     cli: "Копировать",
     copyCliCommand: "Скопировать CLI-команду (для внешнего / резервного варианта)",
     connect: "Подключить",
@@ -494,11 +497,11 @@ export const ru: Translations = {
   achievements: {
     hero: {
       kicker: "Agentic Gamerscore",
-      title: "Lucifex Achievements",
+      title: "Hermes Achievements",
       subtitle:
-        "Коллекционные значки Lucifex, полученные на основе реальной истории сессий. Известные, но ещё не полученные достижения отображаются как «Обнаруженные»; «Секретные» достижения остаются скрытыми до появления первого подходящего поведения.",
+        "Коллекционные значки Hermes, полученные на основе реальной истории сессий. Известные, но ещё не полученные достижения отображаются как «Обнаруженные»; «Секретные» достижения остаются скрытыми до появления первого подходящего поведения.",
       scan_subtitle:
-        "Анализ истории сессий Lucifex. Первое сканирование может занять 5–10 секунд при большой истории.",
+        "Анализ истории сессий Hermes. Первое сканирование может занять 5–10 секунд при большой истории.",
     },
     actions: {
       rescan: "Пересканировать",
@@ -513,7 +516,7 @@ export const ru: Translations = {
       highest_tier: "Высший уровень",
       highest_tier_hint: "Copper → Silver → Gold → Diamond → Olympian",
       latest: "Последнее",
-      latest_hint_empty: "запускайте Lucifex чаще",
+      latest_hint_empty: "запускайте Hermes чаще",
       none_yet: "Пока нет",
     },
     state: {
@@ -544,10 +547,10 @@ export const ru: Translations = {
       tiers_header: "Уровни",
       secret_header: "Секретные достижения",
       secret_body:
-        "Секретные достижения скрывают свой точный триггер. Как только Lucifex обнаруживает связанный сигнал, карточка становится «Обнаруженной» и показывает требование.",
+        "Секретные достижения скрывают свой точный триггер. Как только Hermes обнаруживает связанный сигнал, карточка становится «Обнаруженной» и показывает требование.",
       scan_status_header: "Статус сканирования",
       scan_status_body:
-        "Lucifex сканирует локальную историю один раз, затем карточки появятся автоматически. Если это занимает несколько секунд — ничего не зависло.",
+        "Hermes сканирует локальную историю один раз, затем карточки появятся автоматически. Если это занимает несколько секунд — ничего не зависло.",
       what_scanned_header: "Что сканируется",
       what_scanned_body:
         "Сессии, вызовы инструментов, метаданные моделей, ошибки, достижения и локальное состояние разблокировки.",
@@ -594,7 +597,7 @@ export const ru: Translations = {
         "«Поделиться в X» открывает пост с заранее заполненным текстом в новой вкладке. Сначала нажмите «Скопировать изображение», если хотите прикрепить значок 1200×630 — X позволяет вставить его прямо в редактор твита. «Скачать PNG» сохраняет файл для использования где угодно.",
       clipboard_unsupported:
         "Копирование изображений в буфер обмена не поддерживается в этом браузере — используйте «Скачать».",
-      tweet_text: "Just unlocked {tier_part}\"{name}\" in Lucifex Agent ☤",
+      tweet_text: "Just unlocked {tier_part}\"{name}\" in Hermes Agent ☤",
     },
   },
   kanban: {

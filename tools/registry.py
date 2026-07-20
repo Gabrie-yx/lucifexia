@@ -1,4 +1,4 @@
-"""Central registry for all lucifex-agent tools.
+"""Central registry for all hermes-agent tools.
 
 Each tool file calls ``registry.register()`` at module level to declare its
 schema, handler, toolset membership, and availability check.  ``model_tools.py``
@@ -29,9 +29,9 @@ logger = logging.getLogger(__name__)
 
 def _is_registry_register_call(node: ast.AST) -> bool:
     """Return True when *node* is a ``registry.register(...)`` call expression."""
-    if not isinstance(node, ast.Call):
+    if not isinstance(node, ast.Expr) or not isinstance(node.value, ast.Call):
         return False
-    func = node.func
+    func = node.value.func
     return (
         isinstance(func, ast.Attribute)
         and func.attr == "register"
@@ -41,14 +41,27 @@ def _is_registry_register_call(node: ast.AST) -> bool:
 
 
 def _module_registers_tools(module_path: Path) -> bool:
-    """Return True when the module contains a ``registry.register(...)`` call anywhere."""
+    """Return True when the module contains a top-level ``registry.register(...)`` call.
+
+    Only inspects module-body statements so that helper modules which happen
+    to call ``registry.register()`` inside a function are not picked up.
+
+    A cheap text prefilter avoids the ``ast.parse`` cost for files that do not
+    mention both ``registry`` and ``register`` — a necessary condition for a
+    top-level ``registry.register()`` call to exist.
+    """
     try:
         source = module_path.read_text(encoding="utf-8")
+    except OSError:
+        return False
+    if "registry" not in source or "register" not in source:
+        return False
+    try:
         tree = ast.parse(source, filename=str(module_path))
-    except (OSError, SyntaxError):
+    except SyntaxError:
         return False
 
-    return any(_is_registry_register_call(node) for node in ast.walk(tree))
+    return any(_is_registry_register_call(stmt) for stmt in tree.body)
 
 
 def discover_builtin_tools(tools_dir: Optional[Path] = None) -> List[str]:
@@ -110,7 +123,7 @@ class ToolEntry:
 # probe external state (Docker daemon, Modal SDK install, playwright binary
 # availability). For a long-lived CLI or gateway process, calling them on
 # every get_definitions() is pure waste — external state changes on human
-# timescales. Cache results for ~30 s so env-var flips via ``lucifex tools``
+# timescales. Cache results for ~30 s so env-var flips via ``hermes tools``
 # or live credential file changes propagate within a turn or two without
 # requiring any explicit invalidation.
 #
@@ -195,79 +208,10 @@ def _check_fn_cached(fn: Callable) -> bool:
 
 def invalidate_check_fn_cache() -> None:
     """Drop all cached ``check_fn`` results. Call after config changes that
-    affect tool availability (e.g. ``lucifex tools enable``)."""
+    affect tool availability (e.g. ``hermes tools enable``)."""
     with _check_fn_cache_lock:
         _check_fn_cache.clear()
         _check_fn_last_good.clear()
-
-
-def _make_safe_handler(fn: Callable) -> Callable:
-    """Wrap a handler function to dynamically adapt to expected arguments.
-    
-    If the function does not accept **kwargs (or specific kwargs like task_id),
-    any extra arguments are filtered out to prevent TypeErrors.
-    If the function does not expect a single 'args' dictionary, but rather
-    expects individual keyword arguments, we unpack 'args' before calling it.
-    """
-    import inspect
-    from functools import wraps
-
-    try:
-        sig = inspect.signature(fn)
-        params = list(sig.parameters.values())
-    except (ValueError, TypeError):
-        return fn
-
-    takes_args_dict = False
-    if params:
-        first_param = params[0]
-        if first_param.name in {"args", "arg", "payload", "dict_args", "kwargs"} or first_param.kind == inspect.Parameter.VAR_POSITIONAL:
-            takes_args_dict = True
-        elif len(params) == 1 and first_param.name == "args":
-            takes_args_dict = True
-
-    has_var_keyword = any(p.kind == inspect.Parameter.VAR_KEYWORD for p in params)
-
-    if inspect.iscoroutinefunction(fn):
-        @wraps(fn)
-        async def safe_wrapper_async(args, **kwargs):
-            fn_kwargs = {}
-            if has_var_keyword:
-                fn_kwargs.update(kwargs)
-            else:
-                for k, v in kwargs.items():
-                    if k in sig.parameters:
-                        fn_kwargs[k] = v
-            if takes_args_dict:
-                return await fn(args, **fn_kwargs)
-            else:
-                fn_args = {}
-                for k, v in args.items():
-                    if k in sig.parameters:
-                        fn_args[k] = v
-                combined = {**fn_kwargs, **fn_args}
-                return await fn(**combined)
-        return safe_wrapper_async
-    else:
-        @wraps(fn)
-        def safe_wrapper(args, **kwargs):
-            fn_kwargs = {}
-            if has_var_keyword:
-                fn_kwargs.update(kwargs)
-            else:
-                for k, v in kwargs.items():
-                    if k in sig.parameters:
-                        fn_kwargs[k] = v
-            if takes_args_dict:
-                return fn(args, **fn_kwargs)
-            else:
-                fn_args = {}
-                for k, v in args.items():
-                    if k in sig.parameters:
-                        fn_args[k] = v
-                combined = {**fn_kwargs, **fn_args}
-                return fn(**combined)
-        return safe_wrapper
 
 
 class ToolRegistry:
@@ -398,7 +342,7 @@ class ToolRegistry:
             return mod
         # Also gate plugin modules currently loading but not yet policy-recorded
         # (defensive: a handler defined in the plugin namespace is plugin code).
-        if isinstance(mod, str) and mod.startswith("lucifex_plugins."):
+        if isinstance(mod, str) and mod.startswith("hermes_plugins."):
             return mod
         return None
 
@@ -493,7 +437,7 @@ class ToolRegistry:
                 name=name,
                 toolset=toolset,
                 schema=schema,
-                handler=_make_safe_handler(handler),
+                handler=handler,
                 check_fn=check_fn,
                 requires_env=requires_env or [],
                 is_async=is_async,
@@ -536,9 +480,9 @@ class ToolRegistry:
                 caller_mod = self._caller_module()
                 owner = self._plugin_owner_of(entry.handler)
                 # Ownership check: bind to the plugin package root
-                # (``lucifex_plugins.{name}``), not the exact module string.
-                # A handler defined in ``lucifex_plugins.pkg.handlers`` is
-                # still owned by the ``lucifex_plugins.pkg`` package — exact
+                # (``hermes_plugins.{name}``), not the exact module string.
+                # A handler defined in ``hermes_plugins.pkg.handlers`` is
+                # still owned by the ``hermes_plugins.pkg`` package — exact
                 # string equality would wrongly block root-module cleanup code
                 # from removing tools registered by a submodule of the same
                 # plugin (egilewski review on #55840).
@@ -546,7 +490,7 @@ class ToolRegistry:
                 owner_root = ".".join(owner.split(".")[:2]) if owner else ""
                 same_plugin = bool(owner and caller_root == owner_root)
                 if (
-                    caller_mod.startswith("lucifex_plugins.")
+                    caller_mod.startswith("hermes_plugins.")
                     and not same_plugin
                     and not self._plugin_override_policy.get(caller_root, False)
                 ):
@@ -590,7 +534,7 @@ class ToolRegistry:
         are included. ``check_fn()`` results are cached for ~30 s via
         :func:`_check_fn_cached` to amortize repeat probes (check_terminal_
         requirements probes modal/docker, browser checks probe playwright,
-        etc.); TTL chosen so env-var changes (``lucifex tools enable foo``)
+        etc.); TTL chosen so env-var changes (``hermes tools enable foo``)
         still take effect in near-real-time without forcing a full cache
         flush on every call.
         """
@@ -636,10 +580,43 @@ class ToolRegistry:
     # Dispatch
     # ------------------------------------------------------------------
 
-    def dispatch(self, name: str, args: dict, **kwargs) -> str:
+    @staticmethod
+    def _normalize_handler_result(name: str, result):
+        """Enforce the result shapes supported by the agent tool pipeline.
+
+        Normal tool results are strings.  The sole structured exception is the
+        multimodal envelope consumed by the agent executor.  Returning every
+        other value as a string error keeps logging, hooks, budgeting, and
+        persistence from receiving values they cannot safely slice or size.
+        """
+        if isinstance(result, str):
+            return result
+        if (
+            isinstance(result, dict)
+            and result.get("_multimodal") is True
+            and isinstance(result.get("content"), list)
+        ):
+            return result
+
+        result_type = type(result).__name__
+        logger.error(
+            "Tool %s handler returned unsupported result type: %s",
+            name,
+            result_type,
+        )
+        return json.dumps({
+            "error": f"Tool handler returned unsupported result type: {result_type}",
+            "error_type": "tool_result_contract",
+            "tool": name,
+            "result_type": result_type,
+        }, ensure_ascii=False)
+
+    def dispatch(self, name: str, args: dict, **kwargs) -> str | dict:
         """Execute a tool handler by name.
 
         * Async handlers are bridged automatically via ``_run_async()``.
+        * Handler results are normalized to a string or supported multimodal
+          envelope before leaving the registry.
         * All exceptions are caught and returned as ``{"error": "..."}``
           for consistent error format.
         """
@@ -649,8 +626,10 @@ class ToolRegistry:
         try:
             if entry.is_async:
                 from model_tools import _run_async
-                return _run_async(entry.handler(args, **kwargs))
-            return entry.handler(args, **kwargs)
+                result = _run_async(entry.handler(args, **kwargs))
+            else:
+                result = entry.handler(args, **kwargs)
+            return self._normalize_handler_result(name, result)
         except Exception as e:
             logger.exception("Tool %s dispatch error: %s", name, e)
             # Route through the sanitizer so framing tokens / CDATA / fences

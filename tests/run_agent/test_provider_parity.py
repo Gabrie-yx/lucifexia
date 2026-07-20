@@ -429,7 +429,7 @@ class TestBuildApiKwargsNousPortal:
         messages = [{"role": "user", "content": "hi"}]
         kwargs = agent._build_api_kwargs(messages)
         extra = kwargs.get("extra_body", {})
-        assert extra.get("tags") == nous_portal_tags()
+        assert extra.get("tags") == nous_portal_tags(session_id=agent.session_id)
 
     def test_uses_chat_completions_format(self, monkeypatch):
         agent = _make_agent(
@@ -1037,7 +1037,7 @@ class TestAuxiliaryClientProviderPriority:
         }
         with patch("agent.auxiliary_client._read_nous_auth", return_value=nous_auth), \
              patch("agent.auxiliary_client.OpenAI") as mock, \
-             patch("lucifex_cli.models.get_nous_recommended_aux_model", return_value=None):
+             patch("hermes_cli.models.get_nous_recommended_aux_model", return_value=None):
             client, model = get_text_auxiliary_client()
         assert model == "google/gemini-3-flash-preview"
 

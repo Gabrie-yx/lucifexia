@@ -9,7 +9,7 @@ Covers the canonical fix for issues #4146, #27303, #30882, #33057:
   3. tools.approval.check_execute_code_guard — the entry-point guard decision
      matrix (isolated backends, yolo/off, cron-deny, headless-local,
      gateway approve/deny/timeout/missing-notify, smart mode).
-  4. tools.code_execution_tool._scrub_child_env — broad LUCIFEX_ prefix dropped,
+  4. tools.code_execution_tool._scrub_child_env — broad HERMES_ prefix dropped,
      operational allowlist kept, DSN/WEBHOOK blocked, passthrough precedence.
 """
 
@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import concurrent.futures
 import contextvars
+import json
 import threading
 
 import pytest
@@ -105,14 +106,16 @@ def test_both_rpc_threads_use_propagation_helper():
 
 @pytest.fixture
 def gw_session(monkeypatch):
-    """A clean gateway session: LUCIFEX_GATEWAY_SESSION set, a bound session
+    """A clean gateway session: HERMES_GATEWAY_SESSION set, a bound session
     key, and isolated gateway queues/callbacks. Yields the session_key."""
-    monkeypatch.setenv("LUCIFEX_GATEWAY_SESSION", "1")
-    monkeypatch.delenv("LUCIFEX_INTERACTIVE", raising=False)
-    monkeypatch.delenv("LUCIFEX_CRON_SESSION", raising=False)
-    monkeypatch.delenv("LUCIFEX_EXEC_ASK", raising=False)
-    # Force manual mode regardless of host config.
+    monkeypatch.setenv("HERMES_GATEWAY_SESSION", "1")
+    monkeypatch.delenv("HERMES_INTERACTIVE", raising=False)
+    monkeypatch.delenv("HERMES_CRON_SESSION", raising=False)
+    monkeypatch.delenv("HERMES_EXEC_ASK", raising=False)
+    # Force manual mode regardless of host config and disable any process-level
+    # yolo inherited from the developer's live environment.
     monkeypatch.setattr(A, "_get_approval_mode", lambda: "manual")
+    monkeypatch.setattr(A, "_YOLO_MODE_FROZEN", False)
 
     session_key = "cluster-test-session"
     token = A.set_current_session_key(session_key)
@@ -142,6 +145,23 @@ def _register_resolver(session_key: str, result):
         A._gateway_notify_cbs[session_key] = cb
 
 
+def _register_capturing_resolver(session_key: str, result):
+    """Resolve immediately and retain the exact approval payload shown."""
+    seen = {}
+
+    def cb(approval_data):
+        seen["approval_data"] = approval_data
+        with A._lock:
+            entries = A._gateway_queues.get(session_key, [])
+            if entries:
+                entries[-1].result = result
+                entries[-1].event.set()
+
+    with A._lock:
+        A._gateway_notify_cbs[session_key] = cb
+    return seen
+
+
 def test_guard_isolated_backend_approved():
     # Container backends already sandbox the child — no-op approve.
     assert A.check_execute_code_guard("import os", "docker")["approved"] is True
@@ -149,17 +169,18 @@ def test_guard_isolated_backend_approved():
 
 def test_guard_headless_local_approved(monkeypatch):
     # Documented #30882 limitation: no approval surface → preserve auto-run.
-    monkeypatch.delenv("LUCIFEX_GATEWAY_SESSION", raising=False)
-    monkeypatch.delenv("LUCIFEX_INTERACTIVE", raising=False)
-    monkeypatch.delenv("LUCIFEX_CRON_SESSION", raising=False)
-    monkeypatch.delenv("LUCIFEX_EXEC_ASK", raising=False)
+    monkeypatch.delenv("HERMES_GATEWAY_SESSION", raising=False)
+    monkeypatch.delenv("HERMES_INTERACTIVE", raising=False)
+    monkeypatch.delenv("HERMES_CRON_SESSION", raising=False)
+    monkeypatch.delenv("HERMES_EXEC_ASK", raising=False)
     monkeypatch.setattr(A, "_get_approval_mode", lambda: "manual")
     assert A.check_execute_code_guard("import os", "local")["approved"] is True
 
 
 def test_guard_cron_deny_blocks(monkeypatch):
-    monkeypatch.setenv("LUCIFEX_CRON_SESSION", "1")
-    monkeypatch.delenv("LUCIFEX_GATEWAY_SESSION", raising=False)
+    monkeypatch.setattr(A, "_YOLO_MODE_FROZEN", False)
+    monkeypatch.setenv("HERMES_CRON_SESSION", "1")
+    monkeypatch.delenv("HERMES_GATEWAY_SESSION", raising=False)
     monkeypatch.setattr(A, "_get_approval_mode", lambda: "manual")
     monkeypatch.setattr(A, "_get_cron_approval_mode", lambda: "deny")
     res = A.check_execute_code_guard("import os", "local")
@@ -231,11 +252,21 @@ def test_guard_gateway_user_denies_blocks(gw_session):
     assert res["user_consent"] is False
 
 
-def test_guard_gateway_timeout_blocks(gw_session, monkeypatch):
+@pytest.mark.parametrize(
+    "approval_config",
+    [
+        {"timeout": 0},
+        {"timeout": 0, "gateway_timeout": 300},
+    ],
+    ids=["shared-timeout-only", "shared-timeout-is-canonical"],
+)
+def test_guard_gateway_wait_uses_canonical_timeout(
+    gw_session, monkeypatch, approval_config
+):
     # Register a callback that never resolves; force an immediate timeout.
     with A._lock:
         A._gateway_notify_cbs[gw_session] = lambda _d: None
-    monkeypatch.setattr(A, "_get_approval_config", lambda: {"gateway_timeout": 0})
+    monkeypatch.setattr(A, "_get_approval_config", lambda: approval_config)
     res = A.check_execute_code_guard("import os", "local")
     assert res["approved"] is False
     assert res["outcome"] == "timeout"
@@ -255,15 +286,161 @@ def test_guard_smart_mode(gw_session, monkeypatch):
     res = A.check_execute_code_guard("import os", "local")
     assert res["approved"] is True and res.get("smart_approved") is True
 
+    # Smart DENY on an interactive surface now asks the owner. With no bound
+    # notifier it remains pending rather than being hard-denied.
     monkeypatch.setattr(A, "_smart_approve", lambda c, d: "deny")
     res = A.check_execute_code_guard("import os", "local")
-    assert res["approved"] is False and res.get("smart_denied") is True
+    assert res["approved"] is False and res["status"] == "pending_approval"
 
     # escalate → falls through to manual gateway approval
     monkeypatch.setattr(A, "_smart_approve", lambda c, d: "escalate")
     _register_resolver(gw_session, "once")
     res = A.check_execute_code_guard("import os", "local")
     assert res["approved"] is True
+
+
+def test_terminal_smart_deny_owner_override_is_one_operation(gw_session, monkeypatch):
+    """A human may override DENY, but a broad UI choice must not be persisted."""
+    with A._lock:
+        A._permanent_approved.discard("owner-override-test-danger")
+        A._session_approved.get(gw_session, set()).discard("owner-override-test-danger")
+    monkeypatch.setattr(A, "_get_approval_mode", lambda: "smart")
+    monkeypatch.setattr(A, "_smart_approve", lambda _command, _description: "deny")
+    monkeypatch.setattr(
+        A,
+        "detect_dangerous_command",
+        lambda command: (True, "owner-override-test-danger", f"risk:{command}"),
+    )
+    monkeypatch.setattr(
+        "tools.tirith_security.check_command_security",
+        lambda _command: {"action": "allow", "findings": [], "summary": ""},
+        raising=False,
+    )
+
+    shown = _register_capturing_resolver(gw_session, "always")
+    result = A.check_all_command_guards("dangerous /tmp/first", "local")
+
+    assert result["approved"] is True
+    assert result["user_approved"] is True
+    assert shown["approval_data"]["smart_denied"] is True
+    assert shown["approval_data"]["allow_permanent"] is False
+    assert A.is_approved(gw_session, "owner-override-test-danger") is False
+
+    _register_resolver(gw_session, "deny")
+    changed = A.check_all_command_guards("dangerous /tmp/second", "local")
+    assert changed["approved"] is False
+    assert changed["outcome"] == "denied"
+
+
+def test_execute_code_smart_deny_owner_override_is_one_operation(gw_session, monkeypatch):
+    """Never persist the coarse execute_code key after overriding smart DENY."""
+    with A._lock:
+        A._permanent_approved.discard("execute_code")
+        A._session_approved.get(gw_session, set()).discard("execute_code")
+    monkeypatch.setattr(A, "_get_approval_mode", lambda: "smart")
+    monkeypatch.setattr(A, "_smart_approve", lambda _command, _description: "deny")
+
+    shown = _register_capturing_resolver(gw_session, "session")
+    result = A.check_execute_code_guard("print('first')", "local")
+
+    assert result["approved"] is True
+    assert result["user_approved"] is True
+    assert shown["approval_data"]["smart_denied"] is True
+    assert shown["approval_data"]["allow_permanent"] is False
+    assert A.is_approved(gw_session, "execute_code") is False
+
+    _register_resolver(gw_session, "deny")
+    changed = A.check_execute_code_guard("print('second')", "local")
+    assert changed["approved"] is False
+    assert changed["outcome"] == "denied"
+
+
+def test_smart_escalate_still_persists_session_choice(gw_session, monkeypatch):
+    """The DENY restriction must not alter Smart ESCALATE's manual choices."""
+    key = "smart-escalate-persistence"
+    with A._lock:
+        A._session_approved.get(gw_session, set()).discard(key)
+    monkeypatch.setattr(A, "_get_approval_mode", lambda: "smart")
+    monkeypatch.setattr(A, "_smart_approve", lambda _command, _description: "escalate")
+    monkeypatch.setattr(
+        A, "detect_dangerous_command",
+        lambda command: (True, key, f"risk:{command}"),
+    )
+    monkeypatch.setattr(
+        "tools.tirith_security.check_command_security",
+        lambda _command: {"action": "allow", "findings": [], "summary": ""},
+        raising=False,
+    )
+
+    shown = _register_capturing_resolver(gw_session, "session")
+    result = A.check_all_command_guards("dangerous escalate", "local")
+
+    assert result["approved"] is True
+    assert shown["approval_data"]["allow_permanent"] is True
+    assert "smart_denied" not in shown["approval_data"]
+    assert A.is_approved(gw_session, key) is True
+
+
+def test_terminal_smart_deny_pending_payload_is_one_operation(gw_session, monkeypatch):
+    monkeypatch.setattr(A, "_get_approval_mode", lambda: "smart")
+    monkeypatch.setattr(A, "_smart_approve", lambda _command, _description: "deny")
+    monkeypatch.setattr(
+        A, "detect_dangerous_command",
+        lambda command: (True, "pending-smart-deny", f"risk:{command}"),
+    )
+    monkeypatch.setattr(
+        "tools.tirith_security.check_command_security",
+        lambda _command: {"action": "allow", "findings": [], "summary": ""},
+        raising=False,
+    )
+
+    result = A.check_all_command_guards("dangerous pending", "local")
+
+    assert result["status"] == "pending_approval"
+    assert result["smart_denied"] is True
+    assert result["allow_permanent"] is False
+    with A._lock:
+        pending = dict(A._pending[gw_session])
+    assert pending["smart_denied"] is True
+    assert pending["allow_permanent"] is False
+
+
+def test_execute_code_smart_deny_pending_payload_is_one_operation(gw_session, monkeypatch):
+    monkeypatch.setattr(A, "_get_approval_mode", lambda: "smart")
+    monkeypatch.setattr(A, "_smart_approve", lambda _command, _description: "deny")
+
+    result = A.check_execute_code_guard("print('pending')", "local")
+
+    assert result["status"] == "pending_approval"
+    assert result["smart_denied"] is True
+    assert result["allow_permanent"] is False
+    with A._lock:
+        pending = dict(A._pending[gw_session])
+    assert pending["smart_denied"] is True
+    assert pending["allow_permanent"] is False
+
+
+def test_terminal_serializes_smart_deny_pending_capabilities(monkeypatch):
+    from tools import terminal_tool as terminal_module
+
+    monkeypatch.setattr(
+        terminal_module,
+        "_check_all_guards",
+        lambda *_args, **_kwargs: {
+            "approved": False,
+            "status": "pending_approval",
+            "command": "rm -rf /tmp/example",
+            "description": "recursive delete",
+            "pattern_key": "rm-rf",
+            "smart_denied": True,
+            "allow_permanent": False,
+        },
+    )
+
+    payload = json.loads(terminal_module.terminal_tool(command="rm -rf /tmp/example"))
+
+    assert payload["smart_denied"] is True
+    assert payload["allow_permanent"] is False
 
 
 def test_guard_session_yolo_bypasses(gw_session):
@@ -280,16 +457,16 @@ def test_guard_session_yolo_bypasses(gw_session):
 # 4. Env scrubbing (#27303)
 # ---------------------------------------------------------------------------
 
-def test_env_scrub_lucifex_allowlist_and_secret_blocks():
+def test_env_scrub_hermes_allowlist_and_secret_blocks():
     from tools.code_execution_tool import _scrub_child_env
 
     env = {
         # operational allowlist → kept
-        "LUCIFEX_HOME": "/h", "LUCIFEX_PROFILE": "p",
-        "LUCIFEX_CONFIG": "/c.yaml", "LUCIFEX_ENV": "/e",
-        # other LUCIFEX_* → dropped (broad prefix removed)
-        "LUCIFEX_BASE_URL": "https://x", "LUCIFEX_INTERACTIVE": "1",
-        "LUCIFEX_KANBAN_DB": "postgres://u:p@h/db",
+        "HERMES_HOME": "/h", "HERMES_PROFILE": "p",
+        "HERMES_CONFIG": "/c.yaml", "HERMES_ENV": "/e",
+        # other HERMES_* → dropped (broad prefix removed)
+        "HERMES_BASE_URL": "https://x", "HERMES_INTERACTIVE": "1",
+        "HERMES_KANBAN_DB": "postgres://u:p@h/db",
         # secret substrings (incl. new DSN/WEBHOOK) → dropped
         "SENTRY_DSN": "https://a@s.io/1", "SLACK_WEBHOOK": "https://h/x",
         "OPENAI_API_KEY": "sk", "GITHUB_TOKEN": "ghp",
@@ -298,10 +475,10 @@ def test_env_scrub_lucifex_allowlist_and_secret_blocks():
     }
     out = _scrub_child_env(env, is_passthrough=lambda _: False, is_windows=False)
 
-    for kept in ("LUCIFEX_HOME", "LUCIFEX_PROFILE", "LUCIFEX_CONFIG", "LUCIFEX_ENV", "PATH"):
+    for kept in ("HERMES_HOME", "HERMES_PROFILE", "HERMES_CONFIG", "HERMES_ENV", "PATH"):
         assert kept in out, f"{kept} should be kept"
     for dropped in (
-        "LUCIFEX_BASE_URL", "LUCIFEX_INTERACTIVE", "LUCIFEX_KANBAN_DB",
+        "HERMES_BASE_URL", "HERMES_INTERACTIVE", "HERMES_KANBAN_DB",
         "SENTRY_DSN", "SLACK_WEBHOOK", "OPENAI_API_KEY", "GITHUB_TOKEN",
         "RANDOM_X",
     ):
@@ -333,9 +510,10 @@ def test_execute_code_entry_blocks_before_spawn_when_guard_denies(monkeypatch, t
     from tools import terminal_tool as TT
 
     marker = tmp_path / "child-ran.marker"
-    monkeypatch.setenv("LUCIFEX_CRON_SESSION", "1")
-    monkeypatch.delenv("LUCIFEX_GATEWAY_SESSION", raising=False)
-    monkeypatch.delenv("LUCIFEX_INTERACTIVE", raising=False)
+    monkeypatch.setattr(A, "_YOLO_MODE_FROZEN", False)
+    monkeypatch.setenv("HERMES_CRON_SESSION", "1")
+    monkeypatch.delenv("HERMES_GATEWAY_SESSION", raising=False)
+    monkeypatch.delenv("HERMES_INTERACTIVE", raising=False)
     monkeypatch.setattr(A, "_get_approval_mode", lambda: "manual")
     monkeypatch.setattr(A, "_get_cron_approval_mode", lambda: "deny")
     monkeypatch.setattr(TT, "_get_env_config", lambda: {"env_type": "local"})
@@ -352,44 +530,44 @@ def test_execute_code_entry_blocks_before_spawn_when_guard_denies(monkeypatch, t
 # 6. Env-scrub diagnosability mitigation (#27303 follow-up)
 # ---------------------------------------------------------------------------
 
-def test_env_scrub_logs_dropped_lucifex_vars(caplog):
-    """Dropping a non-allowlisted, non-secret LUCIFEX_* var must be diagnosable:
+def test_env_scrub_logs_dropped_hermes_vars(caplog):
+    """Dropping a non-allowlisted, non-secret HERMES_* var must be diagnosable:
     the scrub emits a one-shot debug log naming the dropped vars and pointing at
     the env_passthrough opt-in, so the silent behavior change (#27303) doesn't
-    leave users guessing why a sandbox script sees an unset LUCIFEX_* var."""
+    leave users guessing why a sandbox script sees an unset HERMES_* var."""
     import logging
 
     from tools.code_execution_tool import _scrub_child_env
 
     env = {
-        "LUCIFEX_HOME": "/h",          # allowlisted → kept, not logged
-        "LUCIFEX_BASE_URL": "https://x",   # dropped → logged
-        "LUCIFEX_KANBAN_DB": "postgres://u:p@h/db",  # dropped → logged
-        "LUCIFEX_API_KEY": "sk",       # secret → dropped silently (not logged)
+        "HERMES_HOME": "/h",          # allowlisted → kept, not logged
+        "HERMES_BASE_URL": "https://x",   # dropped → logged
+        "HERMES_KANBAN_DB": "postgres://u:p@h/db",  # dropped → logged
+        "HERMES_API_KEY": "sk",       # secret → dropped silently (not logged)
         "PATH": "/usr/bin",           # safe prefix → kept
     }
     with caplog.at_level(logging.DEBUG, logger="tools.code_execution_tool"):
         out = _scrub_child_env(env, is_passthrough=lambda _: False, is_windows=False)
 
-    assert "LUCIFEX_HOME" in out and "PATH" in out
-    assert "LUCIFEX_BASE_URL" not in out and "LUCIFEX_KANBAN_DB" not in out
+    assert "HERMES_HOME" in out and "PATH" in out
+    assert "HERMES_BASE_URL" not in out and "HERMES_KANBAN_DB" not in out
 
     msgs = "\n".join(r.getMessage() for r in caplog.records)
-    assert "LUCIFEX_BASE_URL" in msgs and "LUCIFEX_KANBAN_DB" in msgs
+    assert "HERMES_BASE_URL" in msgs and "HERMES_KANBAN_DB" in msgs
     assert "env_passthrough" in msgs
     # Secret vars are dropped but must NOT be named in the diagnostic log.
-    assert "LUCIFEX_API_KEY" not in msgs
+    assert "HERMES_API_KEY" not in msgs
 
 
 def test_env_scrub_no_log_when_nothing_dropped(caplog):
-    """No diagnostic noise when there are no dropped LUCIFEX_* vars."""
+    """No diagnostic noise when there are no dropped HERMES_* vars."""
     import logging
 
     from tools.code_execution_tool import _scrub_child_env
 
     with caplog.at_level(logging.DEBUG, logger="tools.code_execution_tool"):
         _scrub_child_env(
-            {"LUCIFEX_HOME": "/h", "PATH": "/usr/bin"},
+            {"HERMES_HOME": "/h", "PATH": "/usr/bin"},
             is_passthrough=lambda _: False,
             is_windows=False,
         )

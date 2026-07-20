@@ -356,7 +356,7 @@ class TestAdapterInit:
             staticmethod(lambda: {"enabled": True, "effort": "xhigh"}),
         )
         monkeypatch.setattr("gateway.run.GatewayRunner._load_fallback_model", staticmethod(lambda: None))
-        monkeypatch.setattr("lucifex_cli.tools_config._get_platform_tools", lambda *_: set())
+        monkeypatch.setattr("hermes_cli.tools_config._get_platform_tools", lambda *_: set())
 
         adapter = APIServerAdapter(PlatformConfig(enabled=True))
         monkeypatch.setattr(adapter, "_ensure_session_db", lambda: None)
@@ -390,7 +390,7 @@ class TestAdapterInit:
         )
         monkeypatch.setattr("gateway.run.GatewayRunner._load_fallback_model", staticmethod(lambda: None))
         monkeypatch.setattr("gateway.run._current_max_iterations", lambda: 200)
-        monkeypatch.setattr("lucifex_cli.tools_config._get_platform_tools", lambda *_: set())
+        monkeypatch.setattr("hermes_cli.tools_config._get_platform_tools", lambda *_: set())
 
         adapter = APIServerAdapter(PlatformConfig(enabled=True))
         monkeypatch.setattr(adapter, "_ensure_session_db", lambda: None)
@@ -430,7 +430,7 @@ class TestAdapterInit:
         )
         monkeypatch.setattr("gateway.run.GatewayRunner._load_fallback_model", staticmethod(lambda: None))
         monkeypatch.setattr("gateway.run._current_max_iterations", lambda: 90)
-        monkeypatch.setattr("lucifex_cli.tools_config._get_platform_tools", lambda *_: set())
+        monkeypatch.setattr("hermes_cli.tools_config._get_platform_tools", lambda *_: set())
 
         adapter = APIServerAdapter(PlatformConfig(enabled=True))
         monkeypatch.setattr(adapter, "_ensure_session_db", lambda: None)
@@ -468,7 +468,7 @@ class TestAdapterInit:
         )
         monkeypatch.setattr("gateway.run.GatewayRunner._load_fallback_model", staticmethod(lambda: None))
         monkeypatch.setattr("gateway.run._current_max_iterations", lambda: 90)
-        monkeypatch.setattr("lucifex_cli.tools_config._get_platform_tools", lambda *_: set())
+        monkeypatch.setattr("hermes_cli.tools_config._get_platform_tools", lambda *_: set())
 
         adapter = APIServerAdapter(PlatformConfig(enabled=True))
         monkeypatch.setattr(adapter, "_ensure_session_db", lambda: None)
@@ -526,6 +526,27 @@ class TestAuth:
         assert result is not None
         assert result.status == 401
 
+    def test_non_ascii_bearer_token_returns_401_not_500(self):
+        """A non-ASCII byte in the bearer token must be rejected with 401, not
+        crash the handler: hmac.compare_digest raises TypeError on a str with
+        non-ASCII characters, and the token is raw client input."""
+        config = PlatformConfig(enabled=True, extra={"key": "sk-test123"})
+        adapter = APIServerAdapter(config)
+        mock_request = MagicMock()
+        mock_request.headers = {"Authorization": "Bearer ské-not-the-key"}
+        result = adapter._check_auth(mock_request)  # must not raise
+        assert result is not None
+        assert result.status == 401
+
+    def test_non_ascii_key_config_still_authenticates(self):
+        """A non-ASCII configured key must still match its exact value byte for
+        byte (bytes comparison keeps this working)."""
+        config = PlatformConfig(enabled=True, extra={"key": "sk-tést-kéy"})
+        adapter = APIServerAdapter(config)
+        mock_request = MagicMock()
+        mock_request.headers = {"Authorization": "Bearer sk-tést-kéy"}
+        assert adapter._check_auth(mock_request) is None
+
 
 # ---------------------------------------------------------------------------
 # Concurrency cap (gateway.api_server.max_concurrent_runs) — #7483
@@ -534,22 +555,22 @@ class TestAuth:
 
 class TestConcurrencyCap:
     def test_resolve_defaults_to_10_when_unset(self):
-        with patch("lucifex_cli.config.load_config", return_value={}):
+        with patch("hermes_cli.config.load_config", return_value={}):
             assert APIServerAdapter._resolve_max_concurrent_runs() == 10
 
     def test_resolve_reads_config_value(self):
         cfg = {"gateway": {"api_server": {"max_concurrent_runs": 3}}}
-        with patch("lucifex_cli.config.load_config", return_value=cfg):
+        with patch("hermes_cli.config.load_config", return_value=cfg):
             assert APIServerAdapter._resolve_max_concurrent_runs() == 3
 
     def test_resolve_clamps_negative_to_zero(self):
         cfg = {"gateway": {"api_server": {"max_concurrent_runs": -5}}}
-        with patch("lucifex_cli.config.load_config", return_value=cfg):
+        with patch("hermes_cli.config.load_config", return_value=cfg):
             assert APIServerAdapter._resolve_max_concurrent_runs() == 0
 
     def test_resolve_malformed_falls_back_to_default(self):
         cfg = {"gateway": {"api_server": {"max_concurrent_runs": "not-an-int"}}}
-        with patch("lucifex_cli.config.load_config", return_value=cfg):
+        with patch("hermes_cli.config.load_config", return_value=cfg):
             assert APIServerAdapter._resolve_max_concurrent_runs() == 10
 
     def test_under_cap_returns_none(self):
@@ -568,14 +589,29 @@ class TestConcurrencyCap:
         assert resp.headers.get("Retry-After")
 
     def test_cap_counts_both_buckets(self):
-        # /v1/runs (tracked by _run_streams) + chat/responses (inflight)
+        # /v1/runs (tracked by live tasks) + chat/responses (inflight)
         adapter = _make_adapter()
         adapter._max_concurrent_runs = 4
         adapter._inflight_agent_runs = 2
-        adapter._run_streams = {"r1": object(), "r2": object()}
-        resp = adapter._concurrency_limited_response()
-        assert resp is not None
-        assert resp.status == 429
+
+        async def _assert_live_tasks_are_counted_without_streams():
+            blocker = asyncio.Event()
+
+            async def _live_run():
+                await blocker.wait()
+
+            tasks = [asyncio.create_task(_live_run()) for _ in range(2)]
+            adapter._active_run_tasks = {f"r{i}": task for i, task in enumerate(tasks)}
+            adapter._run_streams = {}
+            try:
+                resp = adapter._concurrency_limited_response()
+                assert resp is not None
+                assert resp.status == 429
+            finally:
+                blocker.set()
+                await asyncio.gather(*tasks)
+
+        asyncio.run(_assert_live_tasks_are_counted_without_streams())
 
     def test_zero_disables_cap(self):
         adapter = _make_adapter()
@@ -616,7 +652,26 @@ def _create_app(adapter: APIServerAdapter) -> web.Application:
     app.router.add_post("/v1/responses", adapter._handle_responses)
     app.router.add_get("/v1/responses/{response_id}", adapter._handle_get_response)
     app.router.add_delete("/v1/responses/{response_id}", adapter._handle_delete_response)
+    app.router.add_post(
+        "/api/platforms/{platform}/events",
+        adapter._handle_platform_event_callback,
+    )
     return app
+
+
+class _FakeGoogleChatAdapter:
+    def __init__(self, *, verify_ok: bool = True, verify_code: str = ""):
+        self.verify_ok = verify_ok
+        self.verify_code = verify_code
+        self.dispatched = []
+
+    def verify_http_event_request(self, auth_header: str):
+        self.auth_header = auth_header
+        return self.verify_ok, self.verify_code
+
+    async def dispatch_http_event(self, payload):
+        self.dispatched.append(payload)
+        return {"ok": True}
 
 
 @pytest.fixture
@@ -693,7 +748,7 @@ class TestHealthEndpoint:
             assert resp.status == 200
             data = await resp.json()
             assert data["status"] == "ok"
-            assert data["platform"] == "lucifex-agent"
+            assert data["platform"] == "hermes-agent"
 
     @pytest.mark.asyncio
     async def test_health_reports_version(self, adapter):
@@ -718,7 +773,7 @@ class TestHealthEndpoint:
             assert resp.status == 200
             data = await resp.json()
             assert data["status"] == "ok"
-            assert data["platform"] == "lucifex-agent"
+            assert data["platform"] == "hermes-agent"
             assert data.get("version")
 
 
@@ -738,13 +793,13 @@ class TestHealthDetailedEndpoint:
             "active_agents": 2,
             "exit_reason": None,
             "updated_at": "2026-04-14T00:00:00Z",
-        }):
+        }), patch("gateway.run._resolve_gateway_model", return_value="test/model"):
             async with TestClient(TestServer(app)) as cli:
                 resp = await cli.get("/health/detailed")
                 assert resp.status == 200
                 data = await resp.json()
                 assert data["status"] == "ok"
-                assert data["platform"] == "lucifex-agent"
+                assert data["platform"] == "hermes-agent"
                 assert data["gateway_state"] == "running"
                 assert data["platforms"] == {"telegram": {"state": "connected"}}
                 assert data["active_agents"] == 2
@@ -764,7 +819,8 @@ class TestHealthDetailedEndpoint:
                 resp = await cli.get("/health/detailed")
                 assert resp.status == 200
                 data = await resp.json()
-                assert data["status"] == "ok"
+                assert data["status"] == "degraded"
+                assert data["readiness"]["checks"]["gateway"]["status"] == "degraded"
                 assert data["gateway_state"] is None
                 assert data["platforms"] == {}
                 # No runtime file ⇒ state None ⇒ not busy, not drainable.
@@ -789,6 +845,51 @@ class TestHealthDetailedEndpoint:
                 resp = await cli.get("/health/detailed", headers=headers)
                 assert resp.status == 200
 
+    @pytest.mark.asyncio
+    async def test_health_detailed_reports_runtime_readiness(self, adapter):
+        """Detailed health exposes bounded readiness probes without changing /health."""
+        app = _create_app(adapter)
+        expected = {
+            "status": "degraded",
+            "checks": {
+                "state_db": {"status": "ok"},
+                "config": {"status": "degraded", "detail": "invalid config"},
+            },
+        }
+        with patch("gateway.status.read_runtime_status", return_value={"gateway_state": "running"}), \
+             patch("gateway.platforms.api_server.collect_runtime_readiness", return_value=expected):
+            async with TestClient(TestServer(app)) as cli:
+                resp = await cli.get("/health/detailed")
+                assert resp.status == 200
+                data = await resp.json()
+                assert data["status"] == "degraded"
+                assert data["readiness"] == expected
+
+    @pytest.mark.asyncio
+    async def test_public_health_does_not_run_readiness_probes(self, adapter):
+        app = _create_app(adapter)
+        with patch("gateway.platforms.api_server.collect_runtime_readiness") as probe:
+            async with TestClient(TestServer(app)) as cli:
+                resp = await cli.get("/health")
+                assert resp.status == 200
+                assert (await resp.json())["status"] == "ok"
+        probe.assert_not_called()
+
+    def test_readiness_work_counts_exclude_retained_completed_runs(self, adapter):
+        adapter._run_statuses = {
+            "queued": {"status": "queued"},
+            "running": {"status": "running"},
+            "approval": {"status": "waiting_for_approval"},
+            "done": {"status": "completed"},
+            "failed": {"status": "failed"},
+        }
+        # Completed streams may remain attached for replay; they are not work.
+        adapter._run_streams = {"done": object(), "failed": object()}
+
+        with patch("tools.process_registry.process_registry.completion_queue.qsize", return_value=4), \
+             patch("tools.async_delegation.active_count", return_value=2):
+            assert adapter._readiness_work_counts() == (3, 4, 2)
+
 
 # ---------------------------------------------------------------------------
 # /v1/models endpoint
@@ -797,7 +898,7 @@ class TestHealthDetailedEndpoint:
 
 class TestModelsEndpoint:
     @pytest.mark.asyncio
-    async def test_models_returns_lucifex_agent(self, adapter):
+    async def test_models_returns_hermes_agent(self, adapter):
         app = _create_app(adapter)
         async with TestClient(TestServer(app)) as cli:
             resp = await cli.get("/v1/models")
@@ -805,8 +906,8 @@ class TestModelsEndpoint:
             data = await resp.json()
             assert data["object"] == "list"
             assert len(data["data"]) == 1
-            assert data["data"][0]["id"] == "lucifex-agent"
-            assert data["data"][0]["owned_by"] == "lucifex"
+            assert data["data"][0]["id"] == "hermes-agent"
+            assert data["data"][0]["owned_by"] == "hermes"
 
     @pytest.mark.asyncio
     async def test_models_returns_profile_name(self):
@@ -833,13 +934,13 @@ class TestModelsEndpoint:
         assert APIServerAdapter._resolve_model_name("my-bot") == "my-bot"
 
     def test_resolve_model_name_default_profile(self):
-        """Default profile falls back to 'lucifex-agent'."""
-        with patch("lucifex_cli.profiles.get_active_profile_name", return_value="default"):
-            assert APIServerAdapter._resolve_model_name("") == "lucifex-agent"
+        """Default profile falls back to 'hermes-agent'."""
+        with patch("hermes_cli.profiles.get_active_profile_name", return_value="default"):
+            assert APIServerAdapter._resolve_model_name("") == "hermes-agent"
 
     def test_resolve_model_name_named_profile(self):
         """Named profile uses the profile name as model name."""
-        with patch("lucifex_cli.profiles.get_active_profile_name", return_value="lucas"):
+        with patch("hermes_cli.profiles.get_active_profile_name", return_value="lucas"):
             assert APIServerAdapter._resolve_model_name("") == "lucas"
 
     @pytest.mark.asyncio
@@ -873,9 +974,9 @@ class TestCapabilitiesEndpoint:
             resp = await cli.get("/v1/capabilities")
             assert resp.status == 200
             data = await resp.json()
-            assert data["object"] == "lucifex.api_server.capabilities"
-            assert data["platform"] == "lucifex-agent"
-            assert data["model"] == "lucifex-agent"
+            assert data["object"] == "hermes.api_server.capabilities"
+            assert data["platform"] == "hermes-agent"
+            assert data["model"] == "hermes-agent"
             assert data["auth"]["type"] == "bearer"
             assert data["auth"]["required"] is False
             assert data["runtime"]["mode"] == "server_agent"
@@ -885,7 +986,7 @@ class TestCapabilitiesEndpoint:
             assert data["features"]["chat_completions"] is True
             assert data["features"]["run_status"] is True
             assert data["features"]["run_events_sse"] is True
-            assert data["features"]["session_continuity_header"] == "X-Lucifex-Session-Id"
+            assert data["features"]["session_continuity_header"] == "X-Hermes-Session-Id"
             assert data["endpoints"]["run_status"]["path"] == "/v1/runs/{run_id}"
             assert data["endpoints"]["skills"] == {"method": "GET", "path": "/v1/skills"}
             assert data["endpoints"]["toolsets"] == {"method": "GET", "path": "/v1/toolsets"}
@@ -969,13 +1070,13 @@ class TestToolsetsEndpoint:
             ("web", "Web Tools", "Search and extract"),
         ]
         with patch(
-            "lucifex_cli.tools_config._get_effective_configurable_toolsets",
+            "hermes_cli.tools_config._get_effective_configurable_toolsets",
             return_value=fake_toolsets,
         ), patch(
-            "lucifex_cli.tools_config._get_platform_tools",
+            "hermes_cli.tools_config._get_platform_tools",
             return_value={"default"},
         ), patch(
-            "lucifex_cli.tools_config._toolset_has_keys",
+            "hermes_cli.tools_config._toolset_has_keys",
             return_value=True,
         ), patch(
             "toolsets.resolve_toolset",
@@ -1012,13 +1113,13 @@ class TestToolsetsEndpoint:
             return ["some_tool"]
 
         with patch(
-            "lucifex_cli.tools_config._get_effective_configurable_toolsets",
+            "hermes_cli.tools_config._get_effective_configurable_toolsets",
             return_value=fake_toolsets,
         ), patch(
-            "lucifex_cli.tools_config._get_platform_tools",
+            "hermes_cli.tools_config._get_platform_tools",
             return_value=set(),
         ), patch(
-            "lucifex_cli.tools_config._toolset_has_keys",
+            "hermes_cli.tools_config._toolset_has_keys",
             return_value=False,
         ), patch(
             "toolsets.resolve_toolset",
@@ -1036,10 +1137,10 @@ class TestToolsetsEndpoint:
     @pytest.mark.asyncio
     async def test_toolsets_requires_auth_when_key_configured(self, auth_adapter):
         with patch(
-            "lucifex_cli.tools_config._get_effective_configurable_toolsets",
+            "hermes_cli.tools_config._get_effective_configurable_toolsets",
             return_value=[],
         ), patch(
-            "lucifex_cli.tools_config._get_platform_tools",
+            "hermes_cli.tools_config._get_platform_tools",
             return_value=set(),
         ):
             app = _create_app(auth_adapter)
@@ -1141,7 +1242,7 @@ class TestChatCompletionsEndpoint:
                 resp = await cli.post(
                     "/v1/chat/completions",
                     json={
-                        "model": "lucifex-agent",
+                        "model": "hermes-agent",
                         "messages": [{"role": "user", "content": "Hello"}],
                         "stream": "false",
                     },
@@ -1325,7 +1426,7 @@ class TestChatCompletionsEndpoint:
                 # Tool progress must appear as a custom SSE event, not in
                 # delta.content — prevents model from learning to imitate
                 # markers instead of calling tools (#6972).
-                assert "event: lucifex.tool.progress" in body
+                assert "event: hermes.tool.progress" in body
                 assert '"tool": "terminal"' in body
                 # ``label`` is now derived by ``build_tool_preview`` from the
                 # tool args rather than passed by the caller, so we assert
@@ -1384,7 +1485,7 @@ class TestChatCompletionsEndpoint:
                 assert "some internal state" not in body
                 assert "call_internal_1" not in body
                 # Real tool progress should appear as custom SSE event
-                assert "event: lucifex.tool.progress" in body
+                assert "event: hermes.tool.progress" in body
                 assert '"tool": "web_search"' in body
                 # Label is derived from the args dict by build_tool_preview;
                 # asserting on the structural fact (label exists, call id
@@ -1398,14 +1499,14 @@ class TestChatCompletionsEndpoint:
         """Regression for #16588.
 
         ``/v1/chat/completions`` streaming previously emitted only a
-        ``tool.started``-style ``lucifex.tool.progress`` event; clients
+        ``tool.started``-style ``hermes.tool.progress`` event; clients
         rendering tool lifecycle UI had no way to mark a tool as finished
         because no matching ``status: completed`` event was emitted, and
         no ``toolCallId`` was carried for correlation.
 
         The fix adds ``tool_start_callback`` / ``tool_complete_callback``
         to the chat completions agent invocation and writes both halves
-        of the lifecycle pair on the same ``event: lucifex.tool.progress``
+        of the lifecycle pair on the same ``event: hermes.tool.progress``
         SSE line, with stable ``toolCallId`` and ``status``.
         """
         import asyncio
@@ -1451,7 +1552,7 @@ class TestChatCompletionsEndpoint:
             pairs: list[tuple[str | None, str | None]] = []
             lines = body.splitlines()
             for i, line in enumerate(lines):
-                if line.strip() != "event: lucifex.tool.progress":
+                if line.strip() != "event: hermes.tool.progress":
                     continue
                 for follow in lines[i + 1: i + 4]:
                     if follow.startswith("data: "):
@@ -1548,7 +1649,7 @@ class TestChatCompletionsEndpoint:
                 resp = await cli.post(
                     "/v1/chat/completions",
                     json={
-                        "model": "lucifex-agent",
+                        "model": "hermes-agent",
                         "messages": [{"role": "user", "content": "Hello"}],
                     },
                 )
@@ -1557,7 +1658,7 @@ class TestChatCompletionsEndpoint:
             data = await resp.json()
             assert data["object"] == "chat.completion"
             assert data["id"].startswith("chatcmpl-")
-            assert data["model"] == "lucifex-agent"
+            assert data["model"] == "hermes-agent"
             assert len(data["choices"]) == 1
             assert data["choices"][0]["message"]["role"] == "assistant"
             assert data["choices"][0]["message"]["content"] == "Hello! How can I help you today?"
@@ -1580,7 +1681,7 @@ class TestChatCompletionsEndpoint:
                 resp = await cli.post(
                     "/v1/chat/completions",
                     json={
-                        "model": "lucifex-agent",
+                        "model": "hermes-agent",
                         "messages": [
                             {"role": "system", "content": "You are a pirate."},
                             {"role": "user", "content": "Hello"},
@@ -1606,7 +1707,7 @@ class TestChatCompletionsEndpoint:
                 resp = await cli.post(
                     "/v1/chat/completions",
                     json={
-                        "model": "lucifex-agent",
+                        "model": "hermes-agent",
                         "messages": [
                             {"role": "user", "content": "1+1=?"},
                             {"role": "assistant", "content": "2"},
@@ -1632,7 +1733,7 @@ class TestChatCompletionsEndpoint:
                 resp = await cli.post(
                     "/v1/chat/completions",
                     json={
-                        "model": "lucifex-agent",
+                        "model": "hermes-agent",
                         "messages": [{"role": "user", "content": "Hello"}],
                     },
                 )
@@ -1655,7 +1756,7 @@ class TestChatCompletionsEndpoint:
                 await cli.post(
                     "/v1/chat/completions",
                     json={
-                        "model": "lucifex-agent",
+                        "model": "hermes-agent",
                         "messages": [{"role": "user", "content": "Hello"}],
                     },
                 )
@@ -1667,7 +1768,7 @@ class TestChatCompletionsEndpoint:
                 await cli.post(
                     "/v1/chat/completions",
                     json={
-                        "model": "lucifex-agent",
+                        "model": "hermes-agent",
                         "messages": [
                             {"role": "user", "content": "Hello"},
                             {"role": "assistant", "content": "Hi there!"},
@@ -1694,7 +1795,7 @@ class TestChatCompletionsEndpoint:
                     await cli.post(
                         "/v1/chat/completions",
                         json={
-                            "model": "lucifex-agent",
+                            "model": "hermes-agent",
                             "messages": [{"role": "user", "content": first_msg}],
                         },
                     )
@@ -1776,7 +1877,7 @@ class TestResponsesEndpoint:
                 resp = await cli.post(
                     "/v1/responses",
                     json={
-                        "model": "lucifex-agent",
+                        "model": "hermes-agent",
                         "input": "What is the capital of France?",
                     },
                 )
@@ -1803,7 +1904,7 @@ class TestResponsesEndpoint:
                 resp = await cli.post(
                     "/v1/responses",
                     json={
-                        "model": "lucifex-agent",
+                        "model": "hermes-agent",
                         "input": [
                             {"role": "user", "content": "Hello"},
                             {"role": "user", "content": "What is 2+2?"},
@@ -1829,7 +1930,7 @@ class TestResponsesEndpoint:
                 resp = await cli.post(
                     "/v1/responses",
                     json={
-                        "model": "lucifex-agent",
+                        "model": "hermes-agent",
                         "input": "Hello",
                         "instructions": "Talk like a pirate.",
                     },
@@ -1855,7 +1956,7 @@ class TestResponsesEndpoint:
                 mock_run.return_value = (mock_result_1, {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0})
                 resp1 = await cli.post(
                     "/v1/responses",
-                    json={"model": "lucifex-agent", "input": "What is 1+1?"},
+                    json={"model": "hermes-agent", "input": "What is 1+1?"},
                 )
 
             assert resp1.status == 200
@@ -1874,7 +1975,7 @@ class TestResponsesEndpoint:
                 resp2 = await cli.post(
                     "/v1/responses",
                     json={
-                        "model": "lucifex-agent",
+                        "model": "hermes-agent",
                         "input": "Now add 1 more",
                         "previous_response_id": response_id,
                     },
@@ -1907,7 +2008,7 @@ class TestResponsesEndpoint:
                 )
                 resp1 = await cli.post(
                     "/v1/responses",
-                    json={"model": "lucifex-agent", "input": "What is 1+1?"},
+                    json={"model": "hermes-agent", "input": "What is 1+1?"},
                 )
 
             assert resp1.status == 200
@@ -1931,7 +2032,7 @@ class TestResponsesEndpoint:
                 resp2 = await cli.post(
                     "/v1/responses",
                     json={
-                        "model": "lucifex-agent",
+                        "model": "hermes-agent",
                         "input": "Now add 1 more",
                         "previous_response_id": resp1_data["id"],
                     },
@@ -2013,7 +2114,7 @@ class TestResponsesEndpoint:
                 resp = await cli.post(
                     "/v1/responses",
                     json={
-                        "model": "lucifex-agent",
+                        "model": "hermes-agent",
                         "input": "Read new file",
                         "previous_response_id": "resp_prev",
                     },
@@ -2043,7 +2144,7 @@ class TestResponsesEndpoint:
                 mock_run.return_value = (mock_result, usage)
                 resp1 = await cli.post(
                     "/v1/responses",
-                    json={"model": "lucifex-agent", "input": "Hello"},
+                    json={"model": "hermes-agent", "input": "Hello"},
                 )
             assert resp1.status == 200
             first_session_id = mock_run.call_args.kwargs["session_id"]
@@ -2056,7 +2157,7 @@ class TestResponsesEndpoint:
                 resp2 = await cli.post(
                     "/v1/responses",
                     json={
-                        "model": "lucifex-agent",
+                        "model": "hermes-agent",
                         "input": "Follow up",
                         "previous_response_id": response_id,
                     },
@@ -2074,7 +2175,7 @@ class TestResponsesEndpoint:
             resp = await cli.post(
                 "/v1/responses",
                 json={
-                    "model": "lucifex-agent",
+                    "model": "hermes-agent",
                     "input": "follow up",
                     "previous_response_id": "resp_nonexistent",
                 },
@@ -2093,7 +2194,7 @@ class TestResponsesEndpoint:
                 resp = await cli.post(
                     "/v1/responses",
                     json={
-                        "model": "lucifex-agent",
+                        "model": "hermes-agent",
                         "input": "Hello",
                         "store": False,
                     },
@@ -2119,7 +2220,7 @@ class TestResponsesEndpoint:
                 resp = await cli.post(
                     "/v1/responses",
                     json={
-                        "model": "lucifex-agent",
+                        "model": "hermes-agent",
                         "input": "Hello",
                         "store": "false",
                     },
@@ -2142,7 +2243,7 @@ class TestResponsesEndpoint:
                 resp1 = await cli.post(
                     "/v1/responses",
                     json={
-                        "model": "lucifex-agent",
+                        "model": "hermes-agent",
                         "input": "Hello",
                         "instructions": "Be a pirate",
                     },
@@ -2157,7 +2258,7 @@ class TestResponsesEndpoint:
                 resp2 = await cli.post(
                     "/v1/responses",
                     json={
-                        "model": "lucifex-agent",
+                        "model": "hermes-agent",
                         "input": "Tell me more",
                         "previous_response_id": resp_id,
                     },
@@ -2175,7 +2276,7 @@ class TestResponsesEndpoint:
                 mock_run.side_effect = RuntimeError("Boom")
                 resp = await cli.post(
                     "/v1/responses",
-                    json={"model": "lucifex-agent", "input": "Hello"},
+                    json={"model": "hermes-agent", "input": "Hello"},
                 )
 
             assert resp.status == 500
@@ -2197,7 +2298,7 @@ class TestResponsesEndpoint:
                 )
                 resp = await cli.post(
                     "/v1/responses",
-                    json={"model": "lucifex-agent", "input": "Hello"},
+                    json={"model": "hermes-agent", "input": "Hello"},
                 )
 
             assert resp.status == 200
@@ -2213,7 +2314,7 @@ class TestResponsesEndpoint:
         async with TestClient(TestServer(app)) as cli:
             resp = await cli.post(
                 "/v1/responses",
-                json={"model": "lucifex-agent", "input": 42},
+                json={"model": "hermes-agent", "input": 42},
             )
             assert resp.status == 400
 
@@ -2236,7 +2337,7 @@ class TestResponsesStreaming:
             with patch.object(adapter, "_run_agent", side_effect=_mock_run_agent):
                 resp = await cli.post(
                     "/v1/responses",
-                    json={"model": "lucifex-agent", "input": "hi", "stream": True},
+                    json={"model": "hermes-agent", "input": "hi", "stream": True},
                 )
                 assert resp.status == 200
                 assert "text/event-stream" in resp.headers.get("Content-Type", "")
@@ -2269,7 +2370,7 @@ class TestResponsesStreaming:
                 resp = await cli.post(
                     "/v1/responses",
                     json={
-                        "model": "lucifex-agent",
+                        "model": "hermes-agent",
                         "input": "What is the capital of France?",
                         "stream": "false",
                     },
@@ -2317,7 +2418,7 @@ class TestResponsesStreaming:
                 mock_write_sse.return_value = web.Response(status=200, text="ok")
                 resp = await cli.post(
                     "/v1/responses",
-                    json={"model": "lucifex-agent", "input": "hi", "stream": True},
+                    json={"model": "hermes-agent", "input": "hi", "stream": True},
                 )
                 assert resp.status == 200
 
@@ -2371,7 +2472,7 @@ class TestResponsesStreaming:
             with patch.object(adapter, "_run_agent", side_effect=_mock_run_agent):
                 resp = await cli.post(
                     "/v1/responses",
-                    json={"model": "lucifex-agent", "input": "read the file", "stream": True},
+                    json={"model": "hermes-agent", "input": "read the file", "stream": True},
                 )
                 assert resp.status == 200
                 body = await resp.text()
@@ -2400,7 +2501,7 @@ class TestResponsesStreaming:
             with patch.object(adapter, "_run_agent", side_effect=_mock_run_agent):
                 resp = await cli.post(
                     "/v1/responses",
-                    json={"model": "lucifex-agent", "input": "store this", "stream": True},
+                    json={"model": "hermes-agent", "input": "store this", "stream": True},
                 )
                 body = await resp.text()
                 response_id = None
@@ -2461,7 +2562,7 @@ class TestResponsesStreaming:
                 resp = await cli.post(
                     "/v1/responses",
                     json={
-                        "model": "lucifex-agent",
+                        "model": "hermes-agent",
                         "input": "Now add 1 more",
                         "previous_response_id": "resp_prev",
                         "stream": True,
@@ -2534,7 +2635,7 @@ class TestResponsesStreaming:
                 await adapter._write_sse_responses(
                     request=fake_request,
                     response_id=response_id,
-                    model="lucifex-agent",
+                    model="hermes-agent",
                     created_at=int(time.time()),
                     stream_q=stream_q,
                     agent_task=agent_task,
@@ -2603,7 +2704,7 @@ class TestResponsesStreaming:
             await adapter._write_sse_responses(
                 request=fake_request,
                 response_id=response_id,
-                model="lucifex-agent",
+                model="hermes-agent",
                 created_at=int(time.time()),
                 stream_q=stream_q,
                 agent_task=agent_task,
@@ -2737,7 +2838,7 @@ class TestMultipleSystemMessages:
                 resp = await cli.post(
                     "/v1/chat/completions",
                     json={
-                        "model": "lucifex-agent",
+                        "model": "hermes-agent",
                         "messages": [
                             {"role": "system", "content": "You are helpful."},
                             {"role": "system", "content": "Be concise."},
@@ -2768,6 +2869,81 @@ class TestSendMethod:
         assert "HTTP request/response" in result.error
 
 
+class TestPlatformEventCallbackEndpoint:
+    @pytest.mark.asyncio
+    async def test_dispatches_authorized_google_chat_event(self, adapter):
+        app = _create_app(adapter)
+        google_adapter = _FakeGoogleChatAdapter()
+        app["platform_event_adapters"] = {"google_chat": google_adapter}
+
+        async with TestClient(TestServer(app)) as cli:
+            resp = await cli.post(
+                "/api/platforms/google_chat/events",
+                headers={"Authorization": "Bearer google-token"},
+                json={"type": "MESSAGE", "message": {"text": "hi"}},
+            )
+            body = await resp.json()
+
+        assert resp.status == 200
+        assert body == {"ok": True}
+        assert google_adapter.auth_header == "Bearer google-token"
+        assert google_adapter.dispatched == [
+            {"type": "MESSAGE", "message": {"text": "hi"}}
+        ]
+
+    @pytest.mark.asyncio
+    async def test_rejects_invalid_google_chat_auth(self, adapter):
+        app = _create_app(adapter)
+        app["platform_event_adapters"] = {
+            "google_chat": _FakeGoogleChatAdapter(
+                verify_ok=False,
+                verify_code="invalid_google_bearer",
+            )
+        }
+
+        async with TestClient(TestServer(app)) as cli:
+            resp = await cli.post(
+                "/api/platforms/google_chat/events",
+                headers={"Authorization": "Bearer bad"},
+                json={"type": "MESSAGE"},
+            )
+            body = await resp.json()
+
+        assert resp.status == 401
+        assert body["error"]["code"] == "invalid_google_bearer"
+
+    @pytest.mark.asyncio
+    async def test_requires_connected_google_chat_adapter(self, adapter):
+        app = _create_app(adapter)
+
+        async with TestClient(TestServer(app)) as cli:
+            resp = await cli.post(
+                "/api/platforms/google_chat/events",
+                headers={"Authorization": "Bearer google-token"},
+                json={"type": "MESSAGE"},
+            )
+            body = await resp.json()
+
+        assert resp.status == 503
+        assert body["error"]["code"] == "platform_unavailable"
+
+    @pytest.mark.asyncio
+    async def test_rejects_malformed_platform_event_json(self, adapter):
+        app = _create_app(adapter)
+        app["platform_event_adapters"] = {"google_chat": _FakeGoogleChatAdapter()}
+
+        async with TestClient(TestServer(app)) as cli:
+            resp = await cli.post(
+                "/api/platforms/google_chat/events",
+                headers={"Authorization": "Bearer google-token"},
+                data="{",
+            )
+            body = await resp.json()
+
+        assert resp.status == 400
+        assert body["error"]["code"] == "invalid_json"
+
+
 # ---------------------------------------------------------------------------
 # GET /v1/responses/{response_id}
 # ---------------------------------------------------------------------------
@@ -2786,7 +2962,7 @@ class TestGetResponse:
                 mock_run.return_value = (mock_result, {"input_tokens": 10, "output_tokens": 5, "total_tokens": 15})
                 resp = await cli.post(
                     "/v1/responses",
-                    json={"model": "lucifex-agent", "input": "Hi"},
+                    json={"model": "hermes-agent", "input": "Hi"},
                 )
 
             assert resp.status == 200
@@ -2833,7 +3009,7 @@ class TestDeleteResponse:
                 mock_run.return_value = (mock_result, {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0})
                 resp = await cli.post(
                     "/v1/responses",
-                    json={"model": "lucifex-agent", "input": "Hi"},
+                    json={"model": "hermes-agent", "input": "Hi"},
                 )
 
             data = await resp.json()
@@ -2910,7 +3086,7 @@ class TestToolCallsInOutput:
                 mock_run.return_value = (mock_result, {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0})
                 resp = await cli.post(
                     "/v1/responses",
-                    json={"model": "lucifex-agent", "input": "What is 6*7?"},
+                    json={"model": "hermes-agent", "input": "What is 6*7?"},
                 )
 
             assert resp.status == 200
@@ -2940,7 +3116,7 @@ class TestToolCallsInOutput:
                 mock_run.return_value = (mock_result, {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0})
                 resp = await cli.post(
                     "/v1/responses",
-                    json={"model": "lucifex-agent", "input": "Hello"},
+                    json={"model": "hermes-agent", "input": "Hello"},
                 )
 
             assert resp.status == 200
@@ -2967,7 +3143,7 @@ class TestUsageCounting:
                 mock_run.return_value = (mock_result, usage)
                 resp = await cli.post(
                     "/v1/responses",
-                    json={"model": "lucifex-agent", "input": "Hi"},
+                    json={"model": "hermes-agent", "input": "Hi"},
                 )
 
             assert resp.status == 200
@@ -2989,7 +3165,7 @@ class TestUsageCounting:
                 resp = await cli.post(
                     "/v1/chat/completions",
                     json={
-                        "model": "lucifex-agent",
+                        "model": "hermes-agent",
                         "messages": [{"role": "user", "content": "Hi"}],
                     },
                 )
@@ -3027,7 +3203,7 @@ class TestTruncation:
                 resp = await cli.post(
                     "/v1/responses",
                     json={
-                        "model": "lucifex-agent",
+                        "model": "hermes-agent",
                         "input": "follow up",
                         "previous_response_id": "resp_prev",
                         "truncation": "auto",
@@ -3058,7 +3234,7 @@ class TestTruncation:
                 resp = await cli.post(
                     "/v1/responses",
                     json={
-                        "model": "lucifex-agent",
+                        "model": "hermes-agent",
                         "input": "follow up",
                         "previous_response_id": "resp_prev2",
                     },
@@ -3083,7 +3259,7 @@ class TestChatCompletionsAgentIncomplete:
     @pytest.mark.asyncio
     async def test_truncation_with_partial_text_uses_length_finish_reason(self, adapter):
         """Partial text + truncation marker → finish_reason='length', 200 OK,
-        plus lucifex extras + headers."""
+        plus hermes extras + headers."""
         mock_result = {
             "final_response": "Here is part one of the answer",
             "completed": False,
@@ -3098,17 +3274,17 @@ class TestChatCompletionsAgentIncomplete:
                 mock_run.return_value = (mock_result, {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0})
                 resp = await cli.post(
                     "/v1/chat/completions",
-                    json={"model": "lucifex-agent", "messages": [{"role": "user", "content": "tell me everything"}]},
+                    json={"model": "hermes-agent", "messages": [{"role": "user", "content": "tell me everything"}]},
                 )
             assert resp.status == 200
             data = await resp.json()
             assert data["choices"][0]["finish_reason"] == "length"
             assert data["choices"][0]["message"]["content"] == "Here is part one of the answer"
-            assert data["lucifex"]["partial"] is True
-            assert data["lucifex"]["completed"] is False
-            assert data["lucifex"]["error_code"] == "output_truncated"
-            assert resp.headers.get("X-Lucifex-Completed") == "false"
-            assert resp.headers.get("X-Lucifex-Partial") == "true"
+            assert data["hermes"]["partial"] is True
+            assert data["hermes"]["completed"] is False
+            assert data["hermes"]["error_code"] == "output_truncated"
+            assert resp.headers.get("X-Hermes-Completed") == "false"
+            assert resp.headers.get("X-Hermes-Partial") == "true"
 
     @pytest.mark.asyncio
     async def test_hard_failure_redacts_secret_like_error_text(self, adapter):
@@ -3128,16 +3304,16 @@ class TestChatCompletionsAgentIncomplete:
                 mock_run.return_value = (mock_result, {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0})
                 resp = await cli.post(
                     "/v1/chat/completions",
-                    json={"model": "lucifex-agent", "messages": [{"role": "user", "content": "hello"}]},
+                    json={"model": "hermes-agent", "messages": [{"role": "user", "content": "hello"}]},
                 )
 
             assert resp.status == 502
             data = await resp.json()
             body = json.dumps(data)
             assert raw_secret not in body
-            assert raw_secret not in resp.headers.get("X-Lucifex-Error", "")
+            assert raw_secret not in resp.headers.get("X-Hermes-Error", "")
             assert "OPENAI_API_KEY=" in body
-            assert data["error"]["lucifex"]["failed"] is True
+            assert data["error"]["hermes"]["failed"] is True
 
     @pytest.mark.asyncio
     async def test_failure_with_no_text_returns_502_error_envelope(self, adapter):
@@ -3162,21 +3338,21 @@ class TestChatCompletionsAgentIncomplete:
                 mock_run.return_value = (mock_result, {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0})
                 resp = await cli.post(
                     "/v1/chat/completions",
-                    json={"model": "lucifex-agent", "messages": [{"role": "user", "content": "x"}]},
+                    json={"model": "hermes-agent", "messages": [{"role": "user", "content": "x"}]},
                 )
             # Hard fail: SDK clients will raise on this status
             assert resp.status == 502
             data = await resp.json()
             assert data["error"]["code"] == "agent_incomplete"
             assert "truncated" in data["error"]["message"].lower()
-            assert data["error"]["lucifex"]["partial"] is True
-            assert data["error"]["lucifex"]["failed"] is True
-            assert resp.headers.get("X-Lucifex-Completed") == "false"
+            assert data["error"]["hermes"]["partial"] is True
+            assert data["error"]["hermes"]["failed"] is True
+            assert resp.headers.get("X-Hermes-Completed") == "false"
 
     @pytest.mark.asyncio
     async def test_normal_completion_unchanged(self, adapter):
         """Sanity: a completed-True result still returns finish_reason='stop'
-        and no lucifex extras (preserves the existing happy-path contract)."""
+        and no hermes extras (preserves the existing happy-path contract)."""
         mock_result = {
             "final_response": "All good.",
             "completed": True,
@@ -3191,14 +3367,14 @@ class TestChatCompletionsAgentIncomplete:
                 mock_run.return_value = (mock_result, {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0})
                 resp = await cli.post(
                     "/v1/chat/completions",
-                    json={"model": "lucifex-agent", "messages": [{"role": "user", "content": "hi"}]},
+                    json={"model": "hermes-agent", "messages": [{"role": "user", "content": "hi"}]},
                 )
             assert resp.status == 200
             data = await resp.json()
             assert data["choices"][0]["finish_reason"] == "stop"
             assert data["choices"][0]["message"]["content"] == "All good."
-            assert "lucifex" not in data
-            assert "X-Lucifex-Completed" not in resp.headers
+            assert "hermes" not in data
+            assert "X-Hermes-Completed" not in resp.headers
 
 
 # ---------------------------------------------------------------------------
@@ -3495,14 +3671,14 @@ class TestConversationParameter:
 
 
 # ---------------------------------------------------------------------------
-# X-Lucifex-Session-Id header (session continuity)
+# X-Hermes-Session-Id header (session continuity)
 # ---------------------------------------------------------------------------
 
 
 class TestSessionIdHeader:
     @pytest.mark.asyncio
     async def test_new_session_response_includes_session_id_header(self, adapter):
-        """Without X-Lucifex-Session-Id, a new session is created and returned in the header."""
+        """Without X-Hermes-Session-Id, a new session is created and returned in the header."""
         mock_result = {"final_response": "Hello!", "messages": [], "api_calls": 1}
         app = _create_app(adapter)
         async with TestClient(TestServer(app)) as cli:
@@ -3510,14 +3686,14 @@ class TestSessionIdHeader:
                 mock_run.return_value = (mock_result, {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0})
                 resp = await cli.post(
                     "/v1/chat/completions",
-                    json={"model": "lucifex-agent", "messages": [{"role": "user", "content": "Hi"}]},
+                    json={"model": "hermes-agent", "messages": [{"role": "user", "content": "Hi"}]},
                 )
             assert resp.status == 200
-            assert resp.headers.get("X-Lucifex-Session-Id") is not None
+            assert resp.headers.get("X-Hermes-Session-Id") is not None
 
     @pytest.mark.asyncio
     async def test_provided_session_id_is_used_and_echoed(self, auth_adapter):
-        """When X-Lucifex-Session-Id is provided, it's passed to the agent and echoed in the response."""
+        """When X-Hermes-Session-Id is provided, it's passed to the agent and echoed in the response."""
         mock_result = {"final_response": "Continuing!", "messages": [], "api_calls": 1}
         mock_db = MagicMock()
         mock_db.get_messages_as_conversation.return_value = [
@@ -3532,18 +3708,18 @@ class TestSessionIdHeader:
 
                 resp = await cli.post(
                     "/v1/chat/completions",
-                    headers={"X-Lucifex-Session-Id": "my-session-123", "Authorization": "Bearer sk-secret"},
-                    json={"model": "lucifex-agent", "messages": [{"role": "user", "content": "Continue"}]},
+                    headers={"X-Hermes-Session-Id": "my-session-123", "Authorization": "Bearer sk-secret"},
+                    json={"model": "hermes-agent", "messages": [{"role": "user", "content": "Continue"}]},
                 )
 
             assert resp.status == 200
-            assert resp.headers.get("X-Lucifex-Session-Id") == "my-session-123"
+            assert resp.headers.get("X-Hermes-Session-Id") == "my-session-123"
             call_kwargs = mock_run.call_args.kwargs
             assert call_kwargs["session_id"] == "my-session-123"
 
     @pytest.mark.asyncio
     async def test_traversal_session_id_header_rejected(self, auth_adapter):
-        """Security (#5958): a path-traversal X-Lucifex-Session-Id must be
+        """Security (#5958): a path-traversal X-Hermes-Session-Id must be
         rejected with 400 so it can't reach the filesystem artifact paths
         (session snapshot / request dump) and escape the sessions dir."""
         app = _create_app(auth_adapter)
@@ -3552,8 +3728,8 @@ class TestSessionIdHeader:
                 for bad in ("../../../../etc/pwned", "/abs/path", "..\\win"):
                     resp = await cli.post(
                         "/v1/chat/completions",
-                        headers={"X-Lucifex-Session-Id": bad, "Authorization": "Bearer sk-secret"},
-                        json={"model": "lucifex-agent", "messages": [{"role": "user", "content": "hi"}]},
+                        headers={"X-Hermes-Session-Id": bad, "Authorization": "Bearer sk-secret"},
+                        json={"model": "hermes-agent", "messages": [{"role": "user", "content": "hi"}]},
                     )
                     assert resp.status == 400, f"{bad!r} should be rejected"
                 # The agent is never invoked for a rejected ID.
@@ -3561,7 +3737,7 @@ class TestSessionIdHeader:
 
     @pytest.mark.asyncio
     async def test_provided_session_id_loads_history_from_db(self, auth_adapter):
-        """When X-Lucifex-Session-Id is provided, history comes from SessionDB not request body."""
+        """When X-Hermes-Session-Id is provided, history comes from SessionDB not request body."""
         mock_result = {"final_response": "OK", "messages": [], "api_calls": 1}
         db_history = [
             {"role": "user", "content": "stored message 1"},
@@ -3577,10 +3753,10 @@ class TestSessionIdHeader:
 
                 resp = await cli.post(
                     "/v1/chat/completions",
-                    headers={"X-Lucifex-Session-Id": "existing-session", "Authorization": "Bearer sk-secret"},
+                    headers={"X-Hermes-Session-Id": "existing-session", "Authorization": "Bearer sk-secret"},
                     # Request body has different history — should be ignored
                     json={
-                        "model": "lucifex-agent",
+                        "model": "hermes-agent",
                         "messages": [
                             {"role": "user", "content": "old msg from client"},
                             {"role": "assistant", "content": "old reply from client"},
@@ -3604,13 +3780,13 @@ class TestSessionIdHeader:
         app = _create_app(auth_adapter)
         async with TestClient(TestServer(app)) as cli:
             with patch.object(auth_adapter, "_run_agent", new_callable=AsyncMock) as mock_run, \
-                 patch("lucifex_state.SessionDB", side_effect=Exception("DB unavailable")):
+                 patch("hermes_state.SessionDB", side_effect=Exception("DB unavailable")):
                 mock_run.return_value = (mock_result, {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0})
 
                 resp = await cli.post(
                     "/v1/chat/completions",
-                    headers={"X-Lucifex-Session-Id": "some-session", "Authorization": "Bearer sk-secret"},
-                    json={"model": "lucifex-agent", "messages": [{"role": "user", "content": "Hi"}]},
+                    headers={"X-Hermes-Session-Id": "some-session", "Authorization": "Bearer sk-secret"},
+                    json={"model": "hermes-agent", "messages": [{"role": "user", "content": "Hi"}]},
                 )
 
             assert resp.status == 200
@@ -3620,7 +3796,7 @@ class TestSessionIdHeader:
 
 
 # ---------------------------------------------------------------------------
-# X-Lucifex-Session-Key header (long-term memory scoping)
+# X-Hermes-Session-Key header (long-term memory scoping)
 # ---------------------------------------------------------------------------
 
 
@@ -3634,7 +3810,7 @@ class TestSessionKeyHeader:
 
     @pytest.mark.asyncio
     async def test_session_key_passed_to_agent_and_echoed(self, auth_adapter):
-        """X-Lucifex-Session-Key reaches _run_agent as gateway_session_key and is echoed back."""
+        """X-Hermes-Session-Key reaches _run_agent as gateway_session_key and is echoed back."""
         mock_result = {"final_response": "ok", "messages": [], "api_calls": 1}
         app = _create_app(auth_adapter)
         async with TestClient(TestServer(app)) as cli:
@@ -3643,13 +3819,13 @@ class TestSessionKeyHeader:
                 resp = await cli.post(
                     "/v1/chat/completions",
                     headers={
-                        "X-Lucifex-Session-Key": "webui:user-42",
+                        "X-Hermes-Session-Key": "webui:user-42",
                         "Authorization": "Bearer sk-secret",
                     },
-                    json={"model": "lucifex-agent", "messages": [{"role": "user", "content": "hi"}]},
+                    json={"model": "hermes-agent", "messages": [{"role": "user", "content": "hi"}]},
                 )
             assert resp.status == 200
-            assert resp.headers.get("X-Lucifex-Session-Key") == "webui:user-42"
+            assert resp.headers.get("X-Hermes-Session-Key") == "webui:user-42"
             call_kwargs = mock_run.call_args.kwargs
             assert call_kwargs["gateway_session_key"] == "webui:user-42"
 
@@ -3667,15 +3843,15 @@ class TestSessionKeyHeader:
                 resp = await cli.post(
                     "/v1/chat/completions",
                     headers={
-                        "X-Lucifex-Session-Key": "channel-abc",
-                        "X-Lucifex-Session-Id": "transcript-xyz",
+                        "X-Hermes-Session-Key": "channel-abc",
+                        "X-Hermes-Session-Id": "transcript-xyz",
                         "Authorization": "Bearer sk-secret",
                     },
-                    json={"model": "lucifex-agent", "messages": [{"role": "user", "content": "hi"}]},
+                    json={"model": "hermes-agent", "messages": [{"role": "user", "content": "hi"}]},
                 )
             assert resp.status == 200
-            assert resp.headers.get("X-Lucifex-Session-Key") == "channel-abc"
-            assert resp.headers.get("X-Lucifex-Session-Id") == "transcript-xyz"
+            assert resp.headers.get("X-Hermes-Session-Key") == "channel-abc"
+            assert resp.headers.get("X-Hermes-Session-Id") == "transcript-xyz"
             call_kwargs = mock_run.call_args.kwargs
             assert call_kwargs["gateway_session_key"] == "channel-abc"
             assert call_kwargs["session_id"] == "transcript-xyz"
@@ -3691,10 +3867,10 @@ class TestSessionKeyHeader:
                 resp = await cli.post(
                     "/v1/chat/completions",
                     headers={"Authorization": "Bearer sk-secret"},
-                    json={"model": "lucifex-agent", "messages": [{"role": "user", "content": "hi"}]},
+                    json={"model": "hermes-agent", "messages": [{"role": "user", "content": "hi"}]},
                 )
             assert resp.status == 200
-            assert "X-Lucifex-Session-Key" not in resp.headers
+            assert "X-Hermes-Session-Key" not in resp.headers
             call_kwargs = mock_run.call_args.kwargs
             assert call_kwargs["gateway_session_key"] is None
 
@@ -3705,8 +3881,8 @@ class TestSessionKeyHeader:
         async with TestClient(TestServer(app)) as cli:
             resp = await cli.post(
                 "/v1/chat/completions",
-                headers={"X-Lucifex-Session-Key": "whatever"},
-                json={"model": "lucifex-agent", "messages": [{"role": "user", "content": "hi"}]},
+                headers={"X-Hermes-Session-Key": "whatever"},
+                json={"model": "hermes-agent", "messages": [{"role": "user", "content": "hi"}]},
             )
             assert resp.status == 403
 
@@ -3721,7 +3897,7 @@ class TestSessionKeyHeader:
         validation.
         """
         mock_request = MagicMock()
-        mock_request.headers = {"X-Lucifex-Session-Key": "bad\rvalue"}
+        mock_request.headers = {"X-Hermes-Session-Key": "bad\rvalue"}
         key, err = auth_adapter._parse_session_key_header(mock_request)
         assert key is None
         assert err is not None
@@ -3734,8 +3910,8 @@ class TestSessionKeyHeader:
         async with TestClient(TestServer(app)) as cli:
             resp = await cli.post(
                 "/v1/chat/completions",
-                headers={"X-Lucifex-Session-Key": "x" * 1000, "Authorization": "Bearer sk-secret"},
-                json={"model": "lucifex-agent", "messages": [{"role": "user", "content": "hi"}]},
+                headers={"X-Hermes-Session-Key": "x" * 1000, "Authorization": "Bearer sk-secret"},
+                json={"model": "hermes-agent", "messages": [{"role": "user", "content": "hi"}]},
             )
             assert resp.status == 400
 
@@ -3759,10 +3935,10 @@ class TestSessionKeyHeader:
                 resp = await cli.post(
                     "/v1/chat/completions",
                     headers={
-                        "X-Lucifex-Session-Key": "agent:main:webui:dm:user-7",
+                        "X-Hermes-Session-Key": "agent:main:webui:dm:user-7",
                         "Authorization": "Bearer sk-secret",
                     },
-                    json={"model": "lucifex-agent", "messages": [{"role": "user", "content": "hi"}]},
+                    json={"model": "hermes-agent", "messages": [{"role": "user", "content": "hi"}]},
                 )
             assert resp.status == 200
             # _create_agent must be called with gateway_session_key threaded through
@@ -3770,7 +3946,7 @@ class TestSessionKeyHeader:
 
     @pytest.mark.asyncio
     async def test_responses_endpoint_accepts_session_key(self, auth_adapter):
-        """Responses API honors the same X-Lucifex-Session-Key contract."""
+        """Responses API honors the same X-Hermes-Session-Key contract."""
         mock_result = {"final_response": "ok", "messages": [], "api_calls": 1}
         app = _create_app(auth_adapter)
         async with TestClient(TestServer(app)) as cli:
@@ -3779,13 +3955,13 @@ class TestSessionKeyHeader:
                 resp = await cli.post(
                     "/v1/responses",
                     headers={
-                        "X-Lucifex-Session-Key": "webui:chan-1",
+                        "X-Hermes-Session-Key": "webui:chan-1",
                         "Authorization": "Bearer sk-secret",
                     },
-                    json={"model": "lucifex-agent", "input": "hello", "store": False},
+                    json={"model": "hermes-agent", "input": "hello", "store": False},
                 )
             assert resp.status == 200
-            assert resp.headers.get("X-Lucifex-Session-Key") == "webui:chan-1"
+            assert resp.headers.get("X-Hermes-Session-Key") == "webui:chan-1"
             call_kwargs = mock_run.call_args.kwargs
             assert call_kwargs["gateway_session_key"] == "webui:chan-1"
 
@@ -3797,7 +3973,7 @@ class TestSessionKeyHeader:
             resp = await cli.get("/v1/capabilities")
             assert resp.status == 200
             data = await resp.json()
-            assert data["features"]["session_key_header"] == "X-Lucifex-Session-Key"
+            assert data["features"]["session_key_header"] == "X-Hermes-Session-Key"
 
 
 # ---------------------------------------------------------------------------
@@ -3826,13 +4002,13 @@ def _patch_create_agent_runtime(monkeypatch, captured: dict, fake_agent_cls):
     monkeypatch.setattr("gateway.run._resolve_gateway_model", lambda: "global/model")
     monkeypatch.setattr("gateway.run._load_gateway_config", lambda: {})
     monkeypatch.setattr(
-        "gateway.run.GatewayRunner._load_reasoning_config", staticmethod(lambda: {})
+        "gateway.run.GatewayRunner._load_reasoning_config", staticmethod(lambda model="": {})
     )
     monkeypatch.setattr(
         "gateway.run.GatewayRunner._load_fallback_model", staticmethod(lambda: None)
     )
     monkeypatch.setattr("gateway.run._current_max_iterations", lambda: 90)
-    monkeypatch.setattr("lucifex_cli.tools_config._get_platform_tools", lambda *_: set())
+    monkeypatch.setattr("hermes_cli.tools_config._get_platform_tools", lambda *_: set())
 
 
 class TestModelRoutesParsing:
@@ -3868,7 +4044,7 @@ class TestModelRoutesParsing:
 
     def test_no_routes_configured(self):
         adapter = _make_routing_adapter({})
-        assert adapter._resolve_route("lucifex-agent") is None
+        assert adapter._resolve_route("hermes-agent") is None
 
 
 class TestModelRoutesModelsEndpoint:
@@ -4073,3 +4249,129 @@ class TestModelRoutesAgentCreation:
         assert adapter._session_model_override_for("chan-1") == {"model": "user/model"}
         assert adapter._session_model_override_for("chan-2") is None
         assert adapter._session_model_override_for(None) is None
+
+
+# ---------------------------------------------------------------------------
+# Event-loop offloading for synchronous SessionDB calls (P1)
+# ---------------------------------------------------------------------------
+
+
+class TestSessionDbOffEventLoop:
+    """Regression: synchronous SessionDB calls in the OpenAI-compatible API
+    server must run OFF the aiohttp event loop. A blocking SQLite read/write on
+    the loop freezes every in-flight request under load (same class of bug as
+    gateway build_channel_directory, #60794 / #60810), so each call is wrapped
+    in asyncio.to_thread.
+    """
+
+    @pytest.mark.asyncio
+    async def test_get_existing_session_or_404_offloads(self, auth_adapter):
+        import threading
+
+        captured = {}
+
+        class FakeDB:
+            def get_session(self, session_id):
+                captured["thread"] = threading.current_thread()
+                return {"id": session_id, "source": "api_server"}
+
+        auth_adapter._session_db = FakeDB()
+        session, err = await auth_adapter._get_existing_session_or_404("sess-x")
+        assert err is None
+        assert session["id"] == "sess-x"
+        # The blocking DB call must NOT execute on the event-loop thread.
+        assert captured["thread"] is not None
+        assert captured["thread"] != threading.current_thread()
+
+    @pytest.mark.asyncio
+    async def test_list_sessions_offloads_db_off_event_loop(self, auth_adapter):
+        import threading
+
+        captured = {}
+
+        class FakeDB:
+            def list_sessions_rich(self, **kwargs):
+                captured["thread"] = threading.current_thread()
+                return []
+
+        auth_adapter._session_db = FakeDB()
+        app = _create_app(auth_adapter)
+        app.router.add_get("/api/sessions", auth_adapter._handle_list_sessions)
+        async with TestClient(TestServer(app)) as cli:
+            resp = await cli.get(
+                "/api/sessions",
+                headers={"Authorization": "Bearer sk-secret"},
+            )
+        assert resp.status == 200
+        assert captured["thread"] is not None
+        assert captured["thread"] != threading.current_thread()
+
+    @pytest.mark.asyncio
+    async def test_concurrent_same_id_create_one_201_one_409(self, auth_adapter):
+        """Two concurrent creates for the same ID must yield one 201 and one 409.
+
+        The create sequence (existence check + insert + title) runs as a
+        single off-loop call, so concurrent same-ID requests serialize at
+        the DB level.  Before the fix the TOCTOU window between the check
+        and the insert let both requests pass the existence guard and both
+        return 201 via the ON CONFLICT enrichment upsert.
+        """
+        import asyncio
+
+        app = _create_app(auth_adapter)
+        app.router.add_post("/api/sessions", auth_adapter._handle_create_session)
+
+        async with TestClient(TestServer(app)) as cli:
+            # Fire both requests concurrently through the same server.
+            resp_a, resp_b = await asyncio.gather(
+                cli.post(
+                    "/api/sessions",
+                    json={"id": "race-same-id"},
+                    headers={"Authorization": "Bearer sk-secret"},
+                ),
+                cli.post(
+                    "/api/sessions",
+                    json={"id": "race-same-id"},
+                    headers={"Authorization": "Bearer sk-secret"},
+                ),
+            )
+        assert sorted([resp_a.status, resp_b.status]) == [201, 409]
+
+    @pytest.mark.asyncio
+    async def test_ensure_session_db_first_request_path(self, auth_adapter):
+        """First /api/sessions request initializes SessionDB off the event loop."""
+        import threading
+
+        captured = {}
+
+        class FakeDB:
+            def __init__(self, db_path=None):
+                captured["init_thread"] = threading.current_thread()
+
+            def list_sessions_rich(self, **kwargs):
+                return []
+
+        # Simulate cold start -- no DB yet.
+        auth_adapter._session_db = None
+        auth_adapter._session_db_lock = None
+
+        original_class = None
+        import hermes_state
+        original_class = hermes_state.SessionDB
+        hermes_state.SessionDB = FakeDB
+        try:
+            app = _create_app(auth_adapter)
+            app.router.add_get("/api/sessions", auth_adapter._handle_list_sessions)
+            async with TestClient(TestServer(app)) as cli:
+                resp = await cli.get(
+                    "/api/sessions",
+                    headers={"Authorization": "Bearer sk-secret"},
+                )
+            assert resp.status == 200
+            # SessionDB() was constructed -- the init must NOT be on the event-loop thread.
+            assert "init_thread" in captured
+            assert captured["init_thread"] != threading.current_thread()
+        finally:
+            hermes_state.SessionDB = original_class
+            auth_adapter._session_db = None
+            auth_adapter._session_db_lock = None

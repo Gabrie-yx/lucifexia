@@ -1,0 +1,10 @@
+﻿
+[LUCIFEX] install stamp: 1eca5dd8a1a4 (main) [DIRTY] from local
+Lucifex.exe : (node:21968) [DEP0180] DeprecationWarning: fs.Stats constructor is deprecated.
+No linha:1 caractere:1
++ & 'C:\Users\gabri\AppData\Local\Programs\Lucifex\Lucifex.exe' *>&1 |  ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ((node:21968) [D... is deprecated.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+(Use `Lucifex --trace-deprecation ...` to show where the warning was created)

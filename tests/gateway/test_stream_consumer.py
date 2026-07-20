@@ -9,6 +9,22 @@ import pytest
 from gateway.stream_consumer import GatewayStreamConsumer, StreamConsumerConfig
 
 
+def test_stream_send_metadata_carries_original_reply_anchor():
+    consumer = GatewayStreamConsumer(
+        adapter=MagicMock(),
+        chat_id="123",
+        initial_reply_to_id="456",
+    )
+
+    assert consumer._metadata_for_send(final=False) == {
+        "reply_to_message_id": "456",
+    }
+    assert consumer._metadata_for_send(final=True) == {
+        "reply_to_message_id": "456",
+        "notify": True,
+    }
+
+
 # ── _clean_for_display unit tests ────────────────────────────────────────
 
 
@@ -22,14 +38,14 @@ class TestCleanForDisplay:
 
     def test_media_tag_stripped(self):
         """Basic MEDIA:<path> tag is removed."""
-        text = "Here is the image\nMEDIA:/tmp/lucifex/image.png"
+        text = "Here is the image\nMEDIA:/tmp/hermes/image.png"
         result = GatewayStreamConsumer._clean_for_display(text)
         assert "MEDIA:" not in result
         assert "Here is the image" in result
 
     def test_media_tag_with_space(self):
         """MEDIA: tag with space after colon is removed."""
-        text = "Audio generated\nMEDIA: /home/user/.lucifex/audio_cache/voice.mp3"
+        text = "Audio generated\nMEDIA: /home/user/.hermes/audio_cache/voice.mp3"
         result = GatewayStreamConsumer._clean_for_display(text)
         assert "MEDIA:" not in result
         assert "Audio generated" in result
@@ -343,7 +359,7 @@ class TestStreamRunMediaStripping:
 
         # Feed deltas
         consumer.on_delta("Here is your generated image\n")
-        consumer.on_delta("MEDIA:/home/user/.lucifex/cache/images/abc123.png")
+        consumer.on_delta("MEDIA:/home/user/.hermes/cache/images/abc123.png")
         consumer.finish()
 
         await consumer.run()

@@ -3,10 +3,25 @@ import { useLocation, useNavigate } from 'react-router-dom'
 
 import { codiconIcon } from '@/components/ui/codicon'
 import { Tip } from '@/components/ui/tooltip'
-import { getLucifexConfigDefaults, getLucifexConfigRecord, saveLucifexConfig } from '@/lucifex'
+import { getHermesConfigDefaults, getHermesConfigRecord, saveHermesConfig } from '@/hermes'
 import { useI18n } from '@/i18n'
 import { triggerHaptic } from '@/lib/haptics'
-import { Archive, Bell, Download, Globe, Info, KeyRound, RefreshCw, Settings2, Upload, Wrench, Zap } from '@/lib/icons'
+import {
+  Archive,
+  BarChart3,
+  Bell,
+  Download,
+  Globe,
+  Info,
+  Keyboard,
+  KeyRound,
+  Package,
+  RefreshCw,
+  Settings2,
+  Upload,
+  Wrench,
+  Zap
+} from '@/lib/icons'
 import { notifyError } from '@/store/notifications'
 
 import { useRouteEnumParam } from '../hooks/use-route-enum-param'
@@ -17,11 +32,14 @@ import { SKILLS_ROUTE } from '../routes'
 
 import { AboutSettings } from './about-settings'
 import { AppearanceSettings } from './appearance-settings'
+import { BillingSettings } from './billing'
 import { ConfigSettings } from './config-settings'
 import { SECTIONS } from './constants'
 import { GatewaySettings } from './gateway-settings'
+import { KeybindSettings } from './keybind-settings'
 import { KEYS_VIEWS, KeysSettings, type KeysView } from './keys-settings'
 import { NotificationsSettings } from './notifications-settings'
+import { PluginsSettings } from './plugins-settings'
 import { PROVIDER_VIEWS, ProvidersSettings, type ProviderView } from './providers-settings'
 import { SessionsSettings } from './sessions-settings'
 import type { SettingsPageProps, SettingsView as SettingsViewId } from './types'
@@ -30,8 +48,11 @@ const SETTINGS_VIEWS: readonly SettingsViewId[] = [
   ...SECTIONS.map(s => `config:${s.id}` as SettingsViewId),
   'providers',
   'gateway',
+  'keybinds',
   'keys',
   'notifications',
+  'billing',
+  'plugins',
   'sessions',
   'about'
 ]
@@ -85,12 +106,12 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
 
   const exportConfig = async () => {
     try {
-      const cfg = await getLucifexConfigRecord()
+      const cfg = await getHermesConfigRecord()
       const blob = new Blob([JSON.stringify(cfg, null, 2)], { type: 'application/json' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = 'lucifex-config.json'
+      a.download = 'hermes-config.json'
       a.click()
       URL.revokeObjectURL(url)
       triggerHaptic('success')
@@ -105,7 +126,7 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
     }
 
     try {
-      await saveLucifexConfig(await getLucifexConfigDefaults())
+      await saveHermesConfig(await getHermesConfigDefaults())
       triggerHaptic('success')
       onConfigSaved?.()
     } catch (err) {
@@ -133,6 +154,13 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
       onSelect: () => setActiveView('notifications')
     },
     {
+      active: activeView === 'billing',
+      icon: BarChart3,
+      id: 'billing',
+      label: t.settings.nav.billing,
+      onSelect: () => setActiveView('billing')
+    },
+    {
       active: activeView === 'providers',
       children: [
         {
@@ -148,6 +176,13 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
           id: 'pview:keys',
           label: t.settings.nav.providerApiKeys,
           onSelect: () => openProviderView('keys')
+        },
+        {
+          active: activeView === 'providers' && providerView === 'custom-endpoints',
+          icon: Globe,
+          id: 'pview:custom-endpoints',
+          label: t.settings.nav.providerCustomEndpoints,
+          onSelect: () => openProviderView('custom-endpoints')
         }
       ],
       gapBefore: true,
@@ -162,6 +197,13 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
       id: 'gateway',
       label: t.settings.nav.gateway,
       onSelect: () => setActiveView('gateway')
+    },
+    {
+      active: activeView === 'keybinds',
+      icon: Keyboard,
+      id: 'keybinds',
+      label: t.settings.nav.keybinds,
+      onSelect: () => setActiveView('keybinds')
     },
     {
       active: activeView === 'keys',
@@ -185,6 +227,13 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
       id: 'keys',
       label: t.settings.nav.apiKeys,
       onSelect: () => setActiveView('keys')
+    },
+    {
+      active: activeView === 'plugins',
+      icon: Package,
+      id: 'plugins',
+      label: t.settings.nav.plugins,
+      onSelect: () => setActiveView('plugins')
     },
     {
       active: activeView === 'sessions',
@@ -239,13 +288,15 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
       <OverlaySplitLayout>
         <OverlayNav footer={navFooter} groups={navGroups} />
 
-        <OverlayMain className="px-0 pb-0">
+        <OverlayMain className="px-0 pb-0 pt-[calc(var(--titlebar-height)+1rem)]">
           {activeView === 'config:appearance' ? (
             <AppearanceSettings />
           ) : activeView === 'about' ? (
             <AboutSettings />
           ) : activeView === 'gateway' ? (
             <GatewaySettings />
+          ) : activeView === 'keybinds' ? (
+            <KeybindSettings />
           ) : activeView.startsWith('config:') ? (
             <ConfigSettings
               activeSectionId={activeView.slice('config:'.length)}
@@ -254,11 +305,21 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
               onMainModelChanged={onMainModelChanged}
             />
           ) : activeView === 'providers' ? (
-            <ProvidersSettings onClose={onClose} onViewChange={setProviderView} view={providerView} />
+            <ProvidersSettings
+              onClose={onClose}
+              onConfigSaved={onConfigSaved}
+              onMainModelChanged={onMainModelChanged}
+              onViewChange={setProviderView}
+              view={providerView}
+            />
           ) : activeView === 'keys' ? (
             <KeysSettings view={keysView} />
           ) : activeView === 'notifications' ? (
             <NotificationsSettings />
+          ) : activeView === 'billing' ? (
+            <BillingSettings />
+          ) : activeView === 'plugins' ? (
+            <PluginsSettings />
           ) : (
             <SessionsSettings />
           )}

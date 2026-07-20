@@ -5,7 +5,7 @@
 > validated it. Evolution during the experimental phase is **additive-only**,
 > gated by `contract_version`. A breaking change updates both repos in lockstep.
 
-This document is the formal interface between the **Lucifex gateway** (Python,
+This document is the formal interface between the **Hermes gateway** (Python,
 `gateway/relay/`) and the **connector** (Node/TypeScript,
 `NousResearch/gateway-gateway`). The connector implementer's first action is to
 read this file.
@@ -51,6 +51,7 @@ JSON object. Source of truth: `gateway/relay/descriptor.py`.
 | `emoji` | string | no | Display emoji (default 🔌). |
 | `platform_hint` | string | no | System-prompt platform hint. |
 | `pii_safe` | bool | no | Redact PII in session descriptions. |
+| `supports_context` | bool | no | Whether the connector can supply surrounding channel/group **context** for an addressed turn on this platform (Model A on-demand history fetch — Discord/Slack/Matrix; Model B passive buffer — Telegram/Signal/WhatsApp). Default false ⇒ no `context` is attached to inbound events. See §3. |
 
 Most fields are a projection of the gateway's existing `PlatformEntry`; the
 runtime-only fields (`len_unit`, `supports_*`, `markdown_dialect`) come from the
@@ -94,6 +95,24 @@ Frames (connector → gateway, over the WS):
 - `{"type":"inbound", "event": <MessageEvent>, "bufferId"?}`
 - `{"type":"interrupt_inbound", "session_key", "chat_id"}` (§5)
 - `{"type":"passthrough_forward", "forward": <PassthroughForward>, "bufferId"?}` (§5.1)
+
+**Channel context on inbound (design relay-channel-context).** When the source
+platform's descriptor advertised `supports_context` (§2) and the chat is
+multi-party (`chat_type` ∈ group/channel/thread/forum, never `dm`), the
+connector MAY attach two optional, additive fields to the inbound `MessageEvent`:
+
+- `context`: an array of read-only surrounding messages (same channel, oldest→
+  newest) — nearby non-addressed chatter the connector fetched (Model A) or
+  buffered (Model B). REFERENCE ONLY: it never triggers the agent (the trigger
+  decision was already made connector-side on the addressed event alone). The
+  gateway renders it into `MessageEvent.channel_context` (the same read-only
+  injection path history-backfill uses).
+- `context_error`: bool, true when the platform is context-capable but the
+  fetch/buffer failed and the connector fail-opened to an empty `context`
+  (observability marker; surfaced connector-side via the delivery span).
+
+Both absent ⇒ byte-identical to today. A connector that never sends them, or a
+`dm`, or a no-context platform, yields no `channel_context`.
 
 `PassthroughForward` is the wire form of a forwarded passthrough-plane request
 (Class-2/3 webhooks — Discord interactions, Twilio): `{platform, botId, method,
@@ -285,7 +304,7 @@ the wake SIGNAL so a future scale-to-zero behaviour layer can rely on "buffered
 
 - **Registration.** The gateway registers a **wake URL** at enroll/provision —
   any reachable URL the connector can GET to wake it (a Fly autostart hostname,
-  a dashboard host). Self-hosted: `lucifex gateway enroll --wake-url <url>` (or
+  a dashboard host). Self-hosted: `hermes gateway enroll --wake-url <url>` (or
   `GATEWAY_RELAY_WAKE_URL` / `gateway.relay_wake_url`). Managed/NAS: stamped into
   the container env beside `GATEWAY_RELAY_URL`. Forwarded in the
   `/relay/provision` body as `wakeUrl` and stored per-instance on the connector's
@@ -456,7 +475,7 @@ only in transport. See `docs/capability-trust-boundary.md` (connector repo:
 A2 makes the connector the sole holder of platform secrets while the gateway may
 be **customer-managed and internet-exposed**, so the connector⇄gateway channel
 is itself authenticated. The gateway holds an enrollment- or provision-issued
-**per-gateway secret** (`lucifex gateway enroll` → connector `/relay/enroll`, or
+**per-gateway secret** (`hermes gateway enroll` → connector `/relay/enroll`, or
 managed self-provision → `/relay/provision`) that authenticates its outbound WS
 upgrade. It is an HMAC-SHA256 scheme with a multi-secret rotation verify list
 (gateway side: `gateway/relay/auth.py`; connector side:
@@ -523,7 +542,7 @@ body (a body-asserted `instanceId` is ignored).
 
 These are connector-owned (the management plane is not part of the gateway's
 agent path); the gateway only calls `POST /relay/policy` (§7.3). The others are
-driven by the managed Portal / `lucifex` CLI.
+driven by the managed Portal / `hermes` CLI.
 
 ### 7.3 Relevance-policy declaration (the gateway's responsibility)
 

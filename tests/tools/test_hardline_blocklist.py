@@ -150,6 +150,16 @@ _HARDLINE_ALLOW = [
     "rm -rf $HOME/tmp",
     "rm foo.txt",
     "rm -rf some/path",
+    # Literal root-level directories that only LOOK like root-collapse
+    # spellings. Each inter-slash segment must be exactly "." or ".." to
+    # count as a collapse back to "/" — "/..." is a dir literally named
+    # "..." and "/.foo" is an ordinary root dotfile. These must NOT be
+    # swept into the "recursive delete of root filesystem" hardline rule
+    # (regression guard for the collapse-spelling tightening).
+    "rm -rf /...",
+    "rm -rf /....",
+    "rm -rf /.foo",
+    "rm -rf /.config/foo",
     # A dangerous-looking command embedded as a quoted *argument* to another
     # command must not trip the floor: the path is immediately followed by a
     # closing quote with no matching opening quote of its own, so the
@@ -332,11 +342,11 @@ def test_hardline_blocks_line_continuation(command, desc_substr):
 @pytest.fixture
 def clean_session(monkeypatch):
     """Reset session-scoped approval state around each test."""
-    monkeypatch.delenv("LUCIFEX_YOLO_MODE", raising=False)
-    monkeypatch.delenv("LUCIFEX_INTERACTIVE", raising=False)
-    monkeypatch.delenv("LUCIFEX_GATEWAY_SESSION", raising=False)
-    monkeypatch.delenv("LUCIFEX_CRON_SESSION", raising=False)
-    monkeypatch.delenv("LUCIFEX_EXEC_ASK", raising=False)
+    monkeypatch.delenv("HERMES_YOLO_MODE", raising=False)
+    monkeypatch.delenv("HERMES_INTERACTIVE", raising=False)
+    monkeypatch.delenv("HERMES_GATEWAY_SESSION", raising=False)
+    monkeypatch.delenv("HERMES_CRON_SESSION", raising=False)
+    monkeypatch.delenv("HERMES_EXEC_ASK", raising=False)
     token = set_current_session_key("hardline_test")
     try:
         disable_session_yolo("hardline_test")
@@ -361,8 +371,8 @@ def test_check_all_command_guards_blocks_hardline(clean_session):
 
 
 def test_yolo_env_var_cannot_bypass_hardline(clean_session, monkeypatch):
-    """LUCIFEX_YOLO_MODE=1 must not bypass the hardline floor."""
-    monkeypatch.setenv("LUCIFEX_YOLO_MODE", "1")
+    """HERMES_YOLO_MODE=1 must not bypass the hardline floor."""
+    monkeypatch.setenv("HERMES_YOLO_MODE", "1")
 
     for cmd in ['rm -rf /', 'rm -rf "/"', 'rm -rf "$HOME"', "rm -rf ${HOME}",
                 "shutdown -h now", "mkfs.ext4 /dev/sda", "reboot"]:
@@ -383,7 +393,7 @@ def test_root_collapse_forms_cannot_bypass_hardline(clean_session, monkeypatch):
     rule, which yolo bypasses — leaving the hardline floor open to a full
     root wipe under --yolo / approvals.mode=off / cron approve-mode.
     """
-    monkeypatch.setenv("LUCIFEX_YOLO_MODE", "1")
+    monkeypatch.setenv("HERMES_YOLO_MODE", "1")
 
     for cmd in ["rm -rf //", "rm -rf /.", "rm -rf /./", "rm -rf /..", "rm -rf //*"]:
         is_hl, _ = detect_hardline_command(cmd)
@@ -401,7 +411,8 @@ def test_root_collapse_pattern_leaves_real_paths_alone(clean_session):
     be pulled onto the hardline floor by the "collapse to /" broadening.
     """
     for cmd in ["rm -rf /tmp", "rm -rf /home/user/x", "rm -rf /.ssh",
-                "rm -rf /.config", "rm -rf ./build", "rm -rf /opt/foo"]:
+                "rm -rf /.config", "rm -rf ./build", "rm -rf /opt/foo",
+                "rm -rf /...", "rm -rf /....", "rm -rf /.foo"]:
         is_hl, _ = detect_hardline_command(cmd)
         assert not is_hl, f"{cmd!r} must not be hardline-blocked (over-match)"
 
@@ -412,7 +423,7 @@ def test_subshell_brace_group_cannot_bypass_hardline(clean_session, monkeypatch)
     straight past the guard before the command-start tokenizer recognized the
     subshell and brace-group openers.
     """
-    monkeypatch.setenv("LUCIFEX_YOLO_MODE", "1")
+    monkeypatch.setenv("HERMES_YOLO_MODE", "1")
 
     for cmd in ["(reboot)", "( reboot )", "(shutdown -h now)", "(poweroff)",
                 "(systemctl reboot)", "(init 0)", "(sudo reboot)",
@@ -436,7 +447,7 @@ def test_quoted_paren_brace_prose_not_blocked_under_yolo(clean_session, monkeypa
     `gh pr create --title "…(reboot)…"` workflow. The quote-aware tokenizer
     must leave quoted text untouched, so these stay runnable.
     """
-    monkeypatch.setenv("LUCIFEX_YOLO_MODE", "1")
+    monkeypatch.setenv("HERMES_YOLO_MODE", "1")
 
     for cmd in ['gh pr create --title "block (reboot) spellings"',
                 'git commit -m "(rm -rf /) note"',
@@ -454,7 +465,7 @@ def test_line_continuation_root_wipe_cannot_bypass_hardline(clean_session, monke
     dangerous-command layer, so the hardline floor is the only thing left to
     catch it — it must hold.
     """
-    monkeypatch.setenv("LUCIFEX_YOLO_MODE", "1")
+    monkeypatch.setenv("HERMES_YOLO_MODE", "1")
 
     result = check_all_command_guards("rm -rf \\\n/", "local")
     assert result["approved"] is False, "yolo leaked a line-continuation root wipe"
@@ -477,7 +488,7 @@ def test_session_yolo_cannot_bypass_hardline(clean_session):
 
 def test_approvals_mode_off_cannot_bypass_hardline(clean_session, monkeypatch, tmp_path):
     """config approvals.mode=off (yolo-equivalent) must not bypass hardline."""
-    # _get_approval_mode() reads from lucifex config; simplest path: monkeypatch the helper.
+    # _get_approval_mode() reads from hermes config; simplest path: monkeypatch the helper.
     import tools.approval as approval_mod
     monkeypatch.setattr(approval_mod, "_get_approval_mode", lambda: "off")
 
@@ -488,7 +499,7 @@ def test_approvals_mode_off_cannot_bypass_hardline(clean_session, monkeypatch, t
 
 def test_cron_approve_mode_cannot_bypass_hardline(clean_session, monkeypatch):
     """Cron sessions with cron_mode=approve must not bypass hardline."""
-    monkeypatch.setenv("LUCIFEX_CRON_SESSION", "1")
+    monkeypatch.setenv("HERMES_CRON_SESSION", "1")
     import tools.approval as approval_mod
     monkeypatch.setattr(approval_mod, "_get_cron_approval_mode", lambda: "approve")
 
@@ -524,7 +535,7 @@ def test_recoverable_dangerous_commands_still_pass_yolo(clean_session, monkeypat
 
     This confirms we haven't broken the yolo escape hatch — only narrowed it.
     """
-    monkeypatch.setenv("LUCIFEX_YOLO_MODE", "1")
+    monkeypatch.setenv("HERMES_YOLO_MODE", "1")
 
     # These are dangerous but NOT hardline — yolo should still pass them.
     for cmd in ["rm -rf /tmp/x", "chmod -R 777 .", "git reset --hard", "git push --force"]:
@@ -624,7 +635,7 @@ def test_sudo_stdin_guard_blocks_via_check_all_command_guards(clean_session):
 
 def test_sudo_stdin_guard_not_blocked_by_yolo(clean_session, monkeypatch):
     """yolo/approvals.mode=off must NOT bypass sudo stdin guard."""
-    monkeypatch.setenv("LUCIFEX_YOLO_MODE", "1")
+    monkeypatch.setenv("HERMES_YOLO_MODE", "1")
 
     for cmd in _SUDO_STDIN_BLOCK_YOLO:
         result = check_all_command_guards(cmd, "local")

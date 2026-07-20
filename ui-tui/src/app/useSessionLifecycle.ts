@@ -1,7 +1,7 @@
 import { writeFileSync } from 'node:fs'
 
-import type { ScrollBoxHandle } from '@lucifex/ink'
-import { evictInkCaches } from '@lucifex/ink'
+import type { ScrollBoxHandle } from '@hermes/ink'
+import { evictInkCaches } from '@hermes/ink'
 import { type RefObject, useCallback, useEffect, useRef } from 'react'
 
 import { buildSetupRequiredSections, SETUP_REQUIRED_TITLE } from '../content/setup.js'
@@ -40,7 +40,7 @@ const statusFromLiveSession = (status?: string, running = false) => {
   return running || status === 'working' ? 'running…' : 'ready'
 }
 
-export const writeActiveSessionFile = (sessionId: null | string, file = process.env.LUCIFEX_TUI_ACTIVE_SESSION_FILE) => {
+export const writeActiveSessionFile = (sessionId: null | string, file = process.env.HERMES_TUI_ACTIVE_SESSION_FILE) => {
   if (!file || !sessionId) {
     return
   }
@@ -68,11 +68,26 @@ export const hydrateLiveSessionInflight = (inflight?: null | SessionInflightTurn
   turnController.hydrateStreamingText(assistant)
 }
 
+export const signalFreshSessionBoundary = (
+  previousSid: null | string,
+  nextSid: null | string,
+  onFreshSessionStarted?: (sessionId: string) => void
+) => {
+  if (!previousSid || !nextSid || previousSid === nextSid || !onFreshSessionStarted) {
+    return false
+  }
+
+  onFreshSessionStarted(nextSid)
+
+  return true
+}
+
 export const scheduleResumeScrollToBottom = (
   scrollRef: RefObject<null | ScrollBoxHandle>,
   delays: readonly number[] = [0, 80, 240]
 ) => {
   const startedAt = Date.now()
+
   const timers = delays.map((delay, index) =>
     setTimeout(() => {
       const scroll = scrollRef.current
@@ -114,6 +129,7 @@ export interface UseSessionLifecycleOptions {
   colsRef: { current: number }
   composerActions: ComposerActions
   gw: GatewayClient
+  onFreshSessionStarted?: (sessionId: string) => void
   panel: (title: string, sections: PanelSection[]) => void
   rpc: GatewayRpc
   scrollRef: RefObject<null | ScrollBoxHandle>
@@ -131,6 +147,7 @@ export function useSessionLifecycle(opts: UseSessionLifecycleOptions) {
     colsRef,
     composerActions,
     gw,
+    onFreshSessionStarted,
     panel,
     rpc,
     scrollRef,
@@ -148,6 +165,7 @@ export function useSessionLifecycle(opts: UseSessionLifecycleOptions) {
       targetSid ? rpc<SessionCloseResponse>('session.close', { session_id: targetSid }) : Promise.resolve(null),
     [rpc]
   )
+
   const cancelResumeScrollRef = useRef<null | (() => void)>(null)
 
   const resetSession = useCallback(() => {
@@ -202,8 +220,10 @@ export function useSessionLifecycle(opts: UseSessionLifecycleOptions) {
         return null
       }
 
+      const previousSid = getUiState().sid
+
       if (!keepCurrent) {
-        await closeSession(getUiState().sid)
+        await closeSession(previousSid)
       }
 
       const r = await rpc<SessionCreateResponse>('session.create', { cols: colsRef.current })
@@ -268,9 +288,11 @@ export function useSessionLifecycle(opts: UseSessionLifecycleOptions) {
           })
       }
 
+      signalFreshSessionBoundary(previousSid, r.session_id, onFreshSessionStarted)
+
       return r.session_id
     },
-    [closeSession, colsRef, panel, resetSession, rpc, setHistoryItems, setSessionStartedAt, sys]
+    [closeSession, colsRef, onFreshSessionStarted, panel, resetSession, rpc, setHistoryItems, setSessionStartedAt, sys]
   )
 
   const newSession = useCallback(
@@ -378,7 +400,6 @@ export function useSessionLifecycle(opts: UseSessionLifecycleOptions) {
             if (previousSid && previousSid !== r.session_id) {
               void closeSession(previousSid)
             }
-
           })
           .catch((e: Error) => {
             sys(`error: ${e.message}`)

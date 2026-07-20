@@ -76,19 +76,19 @@ class TestIsWriteDenied:
     )
     def test_oauth_mcp_tokens_and_pairing_denied(self, path):
         """PKCE creds, mcp-tokens, and pairing entries must be write-denied."""
-        from lucifex_constants import get_lucifex_home
-        lucifex_home = get_lucifex_home()
-        full_path = str(lucifex_home / path)
+        from hermes_constants import get_hermes_home
+        hermes_home = get_hermes_home()
+        full_path = str(hermes_home / path)
         assert _is_write_denied(full_path) is True
 
     @pytest.mark.parametrize(
         "path",
         ["auth.json", "config.yaml", "webhook_subscriptions.json"],
     )
-    def test_lucifex_control_files_requested_writable(self, path):
-        from lucifex_constants import get_lucifex_home
+    def test_hermes_control_files_requested_writable(self, path):
+        from hermes_constants import get_hermes_home
 
-        assert _is_write_denied(str(get_lucifex_home() / path)) is False
+        assert _is_write_denied(str(get_hermes_home() / path)) is False
 
     @pytest.mark.parametrize(
         "path",
@@ -98,9 +98,9 @@ class TestIsWriteDenied:
     )
     def test_oauth_traversal_denied(self, path):
         """Path traversal attempts to protected OAuth files must be blocked."""
-        from lucifex_constants import get_lucifex_home
-        lucifex_home = get_lucifex_home()
-        full_path = str(lucifex_home / path)
+        from hermes_constants import get_hermes_home
+        hermes_home = get_hermes_home()
+        full_path = str(hermes_home / path)
         assert _is_write_denied(full_path) is True
 
     @pytest.mark.parametrize(
@@ -118,10 +118,10 @@ class TestIsWriteDenied:
     @pytest.mark.parametrize("name", [".anthropic_oauth.json"])
     def test_oauth_protected_in_profile_mode(self, tmp_path, monkeypatch, name):
         """Under a profile, BOTH <profile>/X and <root>/X must be denied."""
-        root = tmp_path / "lucifex"
+        root = tmp_path / "hermes"
         profile = root / "profiles" / "coder"
         profile.mkdir(parents=True)
-        monkeypatch.setenv("LUCIFEX_HOME", str(profile))
+        monkeypatch.setenv("HERMES_HOME", str(profile))
 
         assert _is_write_denied(str(profile / name)) is True
         assert _is_write_denied(str(root / name)) is True
@@ -131,20 +131,20 @@ class TestIsWriteDenied:
         ["auth.json", "config.yaml", "webhook_subscriptions.json"],
     )
     def test_control_files_requested_writable_in_profile_mode(self, tmp_path, monkeypatch, name):
-        root = tmp_path / "lucifex"
+        root = tmp_path / "hermes"
         profile = root / "profiles" / "coder"
         profile.mkdir(parents=True)
-        monkeypatch.setenv("LUCIFEX_HOME", str(profile))
+        monkeypatch.setenv("HERMES_HOME", str(profile))
 
         assert _is_write_denied(str(profile / name)) is False
         assert _is_write_denied(str(root / name)) is False
 
     def test_mcp_tokens_dir_protected_in_profile_mode(self, tmp_path, monkeypatch):
         """mcp-tokens/ under profile AND under root must both be denied."""
-        root = tmp_path / "lucifex"
+        root = tmp_path / "hermes"
         profile = root / "profiles" / "coder"
         profile.mkdir(parents=True)
-        monkeypatch.setenv("LUCIFEX_HOME", str(profile))
+        monkeypatch.setenv("HERMES_HOME", str(profile))
 
         assert _is_write_denied(str(profile / "mcp-tokens" / "tok.json")) is True
         assert _is_write_denied(str(root / "mcp-tokens" / "tok.json")) is True
@@ -154,16 +154,16 @@ class TestIsWriteDenied:
     def test_pairing_dir_denied(self, tmp_path, monkeypatch):
         """Regression: pairing/ must be write-denied under both profile and root.
 
-        PR #30383 introduced ~/.lucifex/pairing/{platform}-approved.json as the
+        PR #30383 introduced ~/.hermes/pairing/{platform}-approved.json as the
         gateway access-control list. Without this block, a prompt-injected agent
         can write arbitrary user IDs into an approved file, granting persistent
         gateway access without going through the pairing code flow — the same
         threat class that motivated protecting webhook_subscriptions.json.
         """
-        root = tmp_path / "lucifex"
+        root = tmp_path / "hermes"
         profile = root / "profiles" / "coder"
         profile.mkdir(parents=True)
-        monkeypatch.setenv("LUCIFEX_HOME", str(profile))
+        monkeypatch.setenv("HERMES_HOME", str(profile))
 
         # Active profile pairing entries
         assert _is_write_denied(str(profile / "pairing" / "telegram-approved.json")) is True
@@ -467,6 +467,61 @@ class TestShellFileOpsHelpers:
         # Should be safely escaped
         assert result.count("'") >= 4  # wrapping + escaping
 
+    def test_escape_shell_arg_rewrites_windows_drive_paths_to_msys(self, monkeypatch, file_ops):
+        # bash eats backslashes and MSYS mangles ``C:\...``; the Git Bash
+        # ``/c/...`` form is the reliable one (reuses _windows_to_msys_path).
+        import tools.environments.local as local_mod
+
+        monkeypatch.setattr(local_mod, "_IS_WINDOWS", True)
+        assert file_ops._escape_shell_arg(r"C:\Users\alice\notes.txt") == "'/c/Users/alice/notes.txt'"
+        # Non-drive paths are untouched.
+        assert file_ops._escape_shell_arg("/tmp/foo") == "'/tmp/foo'"
+
+    def test_escape_shell_arg_normalizes_mixed_msys_paths(self, monkeypatch, file_ops):
+        import tools.environments.local as local_mod
+
+        monkeypatch.setattr(local_mod, "_IS_WINDOWS", True)
+        mixed = r"/c/Users/Alexander\Documents\NewTEST\readme.txt"
+        assert file_ops._escape_shell_arg(mixed) == (
+            "'/c/Users/Alexander/Documents/NewTEST/readme.txt'"
+        )
+
+    def test_escape_shell_arg_rewrites_forward_slash_native_paths(self, monkeypatch, file_ops):
+        import tools.environments.local as local_mod
+
+        monkeypatch.setattr(local_mod, "_IS_WINDOWS", True)
+        assert file_ops._escape_shell_arg(
+            "C:/Users/alice/notes.txt"
+        ) == "'/c/Users/alice/notes.txt'"
+
+    def test_read_file_uses_bash_safe_windows_paths(self, mock_env, monkeypatch):
+        import tools.environments.local as local_mod
+
+        monkeypatch.setattr(local_mod, "_IS_WINDOWS", True)
+        commands = []
+
+        def side_effect(command, **kwargs):
+            commands.append(command)
+            if command.startswith("wc -c"):
+                return {"output": "5\n", "returncode": 0}
+            if command.startswith("head -c"):
+                return {"output": "hello", "returncode": 0}
+            if command.startswith("sed -n"):
+                return {"output": "hello\n", "returncode": 0}
+            if command.startswith("wc -l"):
+                return {"output": "1\n", "returncode": 0}
+            return {"output": "", "returncode": 0}
+
+        mock_env.execute.side_effect = side_effect
+        ops = ShellFileOperations(mock_env)
+        result = ops.read_file(r"C:\Users\alice\notes.txt")
+
+        assert result.error is None
+        assert commands[0] == "wc -c < '/c/Users/alice/notes.txt' 2>/dev/null"
+        assert commands[1] == "head -c 1000 '/c/Users/alice/notes.txt' 2>/dev/null"
+        assert commands[2] == "sed -n '1,500p' '/c/Users/alice/notes.txt'"
+        assert commands[3] == "wc -l < '/c/Users/alice/notes.txt'"
+
     def test_is_likely_binary_by_extension(self, file_ops):
         assert file_ops._is_likely_binary("photo.png") is True
         assert file_ops._is_likely_binary("data.db") is True
@@ -527,10 +582,10 @@ class TestShellFileOpsHelpers:
 
     def test_read_file_strips_leaked_terminal_fence_markers(self, mock_env):
         leaked = (
-            "'\x07__LUCIFEX_FENCE_a9f7b3__\x1b]0;cat "
+            "'\x07__HERMES_FENCE_a9f7b3__\x1b]0;cat "
             "'/tmp/test/a.py' 2> /dev/null\x07\n"
             "print('ok')\n"
-            "__LUCIFEX_FENCE_a9f7b3__\x07'\n"
+            "__HERMES_FENCE_a9f7b3__\x07'\n"
         )
 
         def side_effect(command, **kwargs):
@@ -549,16 +604,16 @@ class TestShellFileOpsHelpers:
         result = ops.read_file("/tmp/test/a.py")
 
         assert result.error is None
-        assert "LUCIFEX_FENCE" not in result.content
+        assert "HERMES_FENCE" not in result.content
         assert "\x1b]" not in result.content
         assert "\x07" not in result.content
         assert "1|print('ok')" in result.content
 
     def test_read_file_raw_strips_leaked_terminal_fence_markers(self, mock_env):
         leaked = (
-            "__LUCIFEX_FENCE_a9f7b3__\x07'\n"
+            "__HERMES_FENCE_a9f7b3__\x07'\n"
             "alpha\n"
-            "\x1b]0;cat '/tmp/test/a.txt'\x07__LUCIFEX_FENCE_a9f7b3__\n"
+            "\x1b]0;cat '/tmp/test/a.txt'\x07__HERMES_FENCE_a9f7b3__\n"
         )
 
         def side_effect(command, **kwargs):
@@ -664,7 +719,7 @@ class TestSearchFilesFallbackHiddenPaths:
 
     def test_hidden_root_with_hidden_ancestor_includes_files(self, tmp_path, monkeypatch):
         """Fallback find should include visible files when path is inside hidden root."""
-        root = tmp_path / ".lucifex" / "logs"
+        root = tmp_path / ".hermes" / "logs"
         root.mkdir(parents=True)
         visible_file = root / "agent.log"
         hidden_dir_file = root / ".hidden" / "secret.log"

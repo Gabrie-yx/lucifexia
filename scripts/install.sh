@@ -1,12 +1,12 @@
 #!/bin/bash
 # ============================================================================
-# Lucifex Agent Installer
+# Hermes Agent Installer
 # ============================================================================
 # Installation script for Linux, macOS, and Android/Termux.
 # Uses uv for desktop/server installs and Python's stdlib venv + pip on Termux.
 #
 # Usage:
-#   curl -fsSL https://lucifex-agent.nousresearch.com/install.sh | bash
+#   curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
 #
 # Or with options:
 #   curl -fsSL ... | bash -s -- --no-venv --skip-setup
@@ -16,7 +16,7 @@
 set -e
 
 # Guard against environment leakage when the installer is launched from another
-# Python-driven tool session (e.g. Lucifex terminal tool). A pre-set PYTHONPATH
+# Python-driven tool session (e.g. Hermes terminal tool). A pre-set PYTHONPATH
 # can force pip/entrypoints to import a different checkout than the one being
 # installed, which makes fresh installs appear broken or stale.
 if [ -n "${PYTHONPATH:-}" ]; then
@@ -43,21 +43,14 @@ NC='\033[0m' # No Color
 BOLD='\033[1m'
 
 # Configuration
-REPO_URL_SSH="git@github.com:Gabrie-yx/lucifexia.git"
-REPO_URL_HTTPS="https://github.com/Gabrie-yx/lucifexia.git"
-if [ -n "${LUCIFEX_SOURCE_REPO_ROOT:-}" ] && [ -d "$LUCIFEX_SOURCE_REPO_ROOT/.git" ]; then
-    REPO_URL_HTTPS="$LUCIFEX_SOURCE_REPO_ROOT"
-    REPO_URL_SSH="$LUCIFEX_SOURCE_REPO_ROOT"
-elif [ -d "c:\Users\gabri\.gemini\antigravity-ide\scratch\lucifex-agent\.git" ]; then
-    REPO_URL_HTTPS="c:\Users\gabri\.gemini\antigravity-ide\scratch\lucifex-agent"
-    REPO_URL_SSH="c:\Users\gabri\.gemini\antigravity-ide\scratch\lucifex-agent"
-fi
-LUCIFEX_HOME="${LUCIFEX_HOME:-$HOME/.lucifex}"
+REPO_URL_SSH="git@github.com:NousResearch/hermes-agent.git"
+REPO_URL_HTTPS="https://github.com/NousResearch/hermes-agent.git"
+HERMES_HOME="${HERMES_HOME:-$HOME/.hermes}"
 # INSTALL_DIR is resolved AFTER arg parsing and OS detection so we can pick an
 # FHS-style layout for root installs.  Track whether the user gave us an
 # explicit directory — if so we never override it.
-if [ -n "${LUCIFEX_INSTALL_DIR:-}" ]; then
-    INSTALL_DIR="$LUCIFEX_INSTALL_DIR"
+if [ -n "${HERMES_INSTALL_DIR:-}" ]; then
+    INSTALL_DIR="$HERMES_INSTALL_DIR"
     INSTALL_DIR_EXPLICIT=true
 else
     INSTALL_DIR=""
@@ -67,8 +60,8 @@ PYTHON_VERSION="3.11"
 NODE_VERSION="22"
 
 # FHS-style root install layout (set by resolve_install_layout when applicable):
-#   code at /usr/local/lib/lucifex-agent, command at /usr/local/bin/lucifex,
-#   data still at /root/.lucifex (LUCIFEX_HOME).  Matches Claude Code / Codex CLI
+#   code at /usr/local/lib/hermes-agent, command at /usr/local/bin/hermes,
+#   data still at /root/.hermes (HERMES_HOME).  Matches Claude Code / Codex CLI
 #   and keeps Docker bind-mounted /root/ volumes lean.
 ROOT_FHS_LAYOUT=false
 DETECTED_BROWSER_EXECUTABLE=""
@@ -149,8 +142,8 @@ while [[ $# -gt 0 ]]; do
             INSTALL_DIR_EXPLICIT=true
             shift 2
             ;;
-        --lucifex-home)
-            LUCIFEX_HOME="$2"
+        --hermes-home)
+            HERMES_HOME="$2"
             shift 2
             ;;
         --ensure)
@@ -162,7 +155,7 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         -h|--help)
-            echo "Lucifex Agent Installer"
+            echo "Hermes Agent Installer"
             echo ""
             echo "Usage: install.sh [OPTIONS]"
             echo ""
@@ -171,34 +164,34 @@ while [[ $# -gt 0 ]]; do
             echo "  --skip-setup   Skip interactive setup wizard"
             echo "  --skip-browser Skip Playwright/Chromium install (browser tools won't work)"
             echo "  --no-skills    Start with a blank slate — seed no bundled skills, and"
-            echo "                   write \$LUCIFEX_HOME/.no-bundled-skills so future"
-            echo "                   'lucifex update' runs never inject bundled skills either"
+            echo "                   write \$HERMES_HOME/.no-bundled-skills so future"
+            echo "                   'hermes update' runs never inject bundled skills either"
             echo "  --branch NAME  Git branch to install (default: main)"
             echo "  --commit SHA   Pin checkout to a specific commit after clone/update"
             echo "  --manifest     Print desktop bootstrap stage manifest as JSON"
             echo "  --stage NAME   Run one desktop bootstrap stage"
             echo "  --json         Print a JSON result frame for --stage"
             echo "  --non-interactive  Skip stages that require user input"
-            echo "  --include-desktop  Also build the desktop app (apps/desktop -> Lucifex.app)"
+            echo "  --include-desktop  Also build the desktop app (apps/desktop -> Hermes.app)"
             echo "  --dir PATH     Installation directory"
-            echo "                   default (non-root):  ~/.lucifex/lucifex-agent"
-            echo "                   default (root, Linux): /usr/local/lib/lucifex-agent"
-            echo "  --lucifex-home PATH  Data directory (default: ~/.lucifex, or \$LUCIFEX_HOME)"
+            echo "                   default (non-root):  ~/.hermes/hermes-agent"
+            echo "                   default (root, Linux): /usr/local/lib/hermes-agent"
+            echo "  --hermes-home PATH  Data directory (default: ~/.hermes, or \$HERMES_HOME)"
             echo "  -h, --help     Show this help"
             echo ""
             echo "Notes:"
-            echo "  When running as root on Linux, Lucifex installs the code under"
-            echo "  /usr/local/lib/lucifex-agent and links the command into"
-            echo "  /usr/local/bin/lucifex (FHS layout — matches Claude Code / Codex CLI)."
-            echo "  Data, config, sessions, and logs still live in \$LUCIFEX_HOME"
-            echo "  (default /root/.lucifex).  This keeps Docker bind-mounted volumes"
+            echo "  When running as root on Linux, Hermes installs the code under"
+            echo "  /usr/local/lib/hermes-agent and links the command into"
+            echo "  /usr/local/bin/hermes (FHS layout — matches Claude Code / Codex CLI)."
+            echo "  Data, config, sessions, and logs still live in \$HERMES_HOME"
+            echo "  (default /root/.hermes).  This keeps Docker bind-mounted volumes"
             echo "  small and ensures the command is on PATH for all shells."
-            echo "  Existing installs at \$LUCIFEX_HOME/lucifex-agent are preserved in-place."
+            echo "  Existing installs at \$HERMES_HOME/hermes-agent are preserved in-place."
             echo "  --ensure DEPS  Install only specified deps (comma-separated)"
             echo "                   Supported: node, browser, ripgrep, ffmpeg"
             echo "                   Does NOT clone repo or create venv"
             echo "  --postinstall  Run post-install setup only (for pip users)"
-            echo "                   Installs optional deps + runs lucifex setup"
+            echo "                   Installs optional deps + runs hermes setup"
             echo "                   Does NOT clone repo or create venv"
             exit 0
             ;;
@@ -217,7 +210,7 @@ print_banner() {
     echo ""
     echo -e "${MAGENTA}${BOLD}"
     echo "┌─────────────────────────────────────────────────────────┐"
-    echo "│             ⚕ Lucifex Agent Installer                    │"
+    echo "│             ⚕ Hermes Agent Installer                    │"
     echo "├─────────────────────────────────────────────────────────┤"
     echo "│  An open source AI agent by Nous Research.              │"
     echo "└─────────────────────────────────────────────────────────┘"
@@ -250,7 +243,7 @@ json_escape() {
 
 # npm rewrites tracked package-lock.json files non-deterministically during
 # `npm install` / `npm run pack`. On a managed install those diffs are never
-# intentional, but they leave the checkout dirty — which forces `lucifex update`
+# intentional, but they leave the checkout dirty — which forces `hermes update`
 # to autostash on every run and makes branch switches fragile. Restore them so
 # a fresh install ends with a clean tree. Best-effort; only touches lockfiles.
 restore_dirty_lockfiles() {
@@ -319,7 +312,7 @@ EOF
 
 emit_manifest() {
     # Stage-Desktop is included only with --include-desktop, mirroring
-    # install.ps1: the signed bootstrap installer (Lucifex-Setup) passes it so
+    # install.ps1: the signed bootstrap installer (Hermes-Setup) passes it so
     # a GUI install ends up with a launchable app; the Electron app's own
     # first-launch bootstrap and the CLI one-liner omit it (building the
     # desktop from inside the already-running app would clobber it).
@@ -327,7 +320,7 @@ emit_manifest() {
     if [ "$INCLUDE_DESKTOP" = true ]; then
         desktop_stage='{"name":"desktop","title":"Build desktop app","category":"runtime","needs_user_input":false},'
     fi
-    printf '%s' '{"protocol_version":1,"stages":[{"name":"prerequisites","title":"System prerequisites","category":"runtime","needs_user_input":false},{"name":"repository","title":"Download Lucifex Agent","category":"runtime","needs_user_input":false},{"name":"venv","title":"Create Python virtual environment","category":"runtime","needs_user_input":false},{"name":"python-deps","title":"Install Python dependencies","category":"runtime","needs_user_input":false},{"name":"node-deps","title":"Install browser-tool dependencies","category":"runtime","needs_user_input":false},{"name":"path","title":"Install lucifex command","category":"runtime","needs_user_input":false},{"name":"config","title":"Prepare config and skills","category":"configuration","needs_user_input":false},{"name":"setup","title":"Configure API keys and settings","category":"configuration","needs_user_input":true},{"name":"gateway","title":"Configure gateway service","category":"configuration","needs_user_input":true},'"$desktop_stage"'{"name":"complete","title":"Finish install","category":"runtime","needs_user_input":false}]}'
+    printf '%s' '{"protocol_version":1,"stages":[{"name":"prerequisites","title":"System prerequisites","category":"runtime","needs_user_input":false},{"name":"repository","title":"Download Hermes Agent","category":"runtime","needs_user_input":false},{"name":"venv","title":"Create Python virtual environment","category":"runtime","needs_user_input":false},{"name":"python-deps","title":"Install Python dependencies","category":"runtime","needs_user_input":false},{"name":"node-deps","title":"Install browser-tool dependencies","category":"runtime","needs_user_input":false},{"name":"path","title":"Install hermes command","category":"runtime","needs_user_input":false},{"name":"config","title":"Prepare config and skills","category":"configuration","needs_user_input":false},{"name":"setup","title":"Configure API keys and settings","category":"configuration","needs_user_input":true},{"name":"gateway","title":"Configure gateway service","category":"configuration","needs_user_input":true},'"$desktop_stage"'{"name":"complete","title":"Finish install","category":"runtime","needs_user_input":false}]}'
     printf '\n'
 }
 
@@ -395,29 +388,29 @@ is_termux() {
     [ -n "${TERMUX_VERSION:-}" ] || [[ "${PREFIX:-}" == *"com.termux/files/usr"* ]]
 }
 
-# Decide where the repo checkout + venv live, and where the `lucifex` command
+# Decide where the repo checkout + venv live, and where the `hermes` command
 # symlink goes.  Called after detect_os so $OS/$DISTRO are known.
 #
 # Defaults:
-#   - Non-root, any OS:       INSTALL_DIR = $LUCIFEX_HOME/lucifex-agent
+#   - Non-root, any OS:       INSTALL_DIR = $HERMES_HOME/hermes-agent
 #                             command link in $HOME/.local/bin
-#   - Termux (any uid):       INSTALL_DIR = $LUCIFEX_HOME/lucifex-agent
+#   - Termux (any uid):       INSTALL_DIR = $HERMES_HOME/hermes-agent
 #                             command link in $PREFIX/bin (already on PATH)
-#   - Root on Linux (new):    INSTALL_DIR = /usr/local/lib/lucifex-agent
+#   - Root on Linux (new):    INSTALL_DIR = /usr/local/lib/hermes-agent
 #                             command link in /usr/local/bin
 #                             (unless a legacy install already exists at
-#                              $LUCIFEX_HOME/lucifex-agent — then preserve it)
+#                              $HERMES_HOME/hermes-agent — then preserve it)
 #
-# Always no-op when the user set --dir or $LUCIFEX_INSTALL_DIR.
+# Always no-op when the user set --dir or $HERMES_INSTALL_DIR.
 resolve_install_layout() {
     if [ "$INSTALL_DIR_EXPLICIT" = true ]; then
         log_info "Install directory: $INSTALL_DIR (explicit)"
         return 0
     fi
 
-    # Termux: package manager manages /data/data/..., keep code in LUCIFEX_HOME.
+    # Termux: package manager manages /data/data/..., keep code in HERMES_HOME.
     if is_termux; then
-        INSTALL_DIR="$LUCIFEX_HOME/lucifex-agent"
+        INSTALL_DIR="$HERMES_HOME/hermes-agent"
         return 0
     fi
 
@@ -425,31 +418,31 @@ resolve_install_layout() {
     # macOS root installs keep the legacy layout because /usr/local/ on macOS
     # is Homebrew territory and we don't want to fight that.
     if [ "$OS" = "linux" ] && [ "$(id -u)" -eq 0 ]; then
-        if [ -d "$LUCIFEX_HOME/lucifex-agent/.git" ]; then
-            INSTALL_DIR="$LUCIFEX_HOME/lucifex-agent"
+        if [ -d "$HERMES_HOME/hermes-agent/.git" ]; then
+            INSTALL_DIR="$HERMES_HOME/hermes-agent"
             log_info "Existing install detected at $INSTALL_DIR — keeping legacy layout"
-            log_info "  (new root installs use /usr/local/lib/lucifex-agent)"
+            log_info "  (new root installs use /usr/local/lib/hermes-agent)"
             return 0
         fi
-        INSTALL_DIR="/usr/local/lib/lucifex-agent"
+        INSTALL_DIR="/usr/local/lib/hermes-agent"
         ROOT_FHS_LAYOUT=true
         # Place uv-managed Python under /usr/local/share so the venv interpreter
         # is world-readable.  Default uv paths land in /root/.local/share/uv,
         # which non-root users can't traverse — leaving the shared
-        # /usr/local/bin/lucifex wrapper unable to exec the bad-interpreter venv
+        # /usr/local/bin/hermes wrapper unable to exec the bad-interpreter venv
         # python.  See #21457.
         export UV_PYTHON_INSTALL_DIR="${UV_PYTHON_INSTALL_DIR:-/usr/local/share/uv/python}"
         export UV_PYTHON_BIN_DIR="${UV_PYTHON_BIN_DIR:-/usr/local/share/uv/bin}"
         log_info "Root install on Linux — using FHS layout"
         log_info "  Code:    $INSTALL_DIR"
-        log_info "  Command: /usr/local/bin/lucifex"
-        log_info "  Data:    $LUCIFEX_HOME (unchanged)"
+        log_info "  Command: /usr/local/bin/hermes"
+        log_info "  Data:    $HERMES_HOME (unchanged)"
         log_info "  uv Python: $UV_PYTHON_INSTALL_DIR (world-readable)"
         return 0
     fi
 
     # Default: non-root, non-Termux → legacy user-scoped layout.
-    INSTALL_DIR="$LUCIFEX_HOME/lucifex-agent"
+    INSTALL_DIR="$HERMES_HOME/hermes-agent"
 }
 
 get_command_link_dir() {
@@ -472,32 +465,32 @@ get_command_link_display_dir() {
     fi
 }
 
-# Point a Lucifex-managed Node's `npm install -g` at a directory that is on
+# Point a Hermes-managed Node's `npm install -g` at a directory that is on
 # PATH. npm's default global prefix for a bundled Node is the Node dir itself,
-# so global package binaries land in $LUCIFEX_HOME/node/bin — which is NOT on
+# so global package binaries land in $HERMES_HOME/node/bin — which is NOT on
 # PATH (only the command link dir is) and is wiped on every Node upgrade.
 # Redirecting the prefix to the link dir's parent makes global bins resolve to
 # the command link dir (node/npm/npx live there too, already on PATH) and
 # survive upgrades. Scoped to the managed Node via its prefix-local global
 # npmrc, so the user's other Node installs and their ~/.npmrc are untouched.
-# Lucifex's own global installs pass an explicit --prefix and are unaffected.
-# Idempotent and a no-op when there is no Lucifex-managed npm, so calling it on
+# Hermes's own global installs pass an explicit --prefix and are unaffected.
+# Idempotent and a no-op when there is no Hermes-managed npm, so calling it on
 # every install run repairs pre-existing installs, not just fresh ones.
 configure_managed_node_npm_prefix() {
-    [ -x "$LUCIFEX_HOME/node/bin/npm" ] || return 0
+    [ -x "$HERMES_HOME/node/bin/npm" ] || return 0
     local link_dir
     link_dir="$(get_command_link_dir)"
-    mkdir -p "$LUCIFEX_HOME/node/etc"
-    printf 'prefix=%s\n' "$(dirname "$link_dir")" > "$LUCIFEX_HOME/node/etc/npmrc"
+    mkdir -p "$HERMES_HOME/node/etc"
+    printf 'prefix=%s\n' "$(dirname "$link_dir")" > "$HERMES_HOME/node/etc/npmrc"
 }
 
-get_lucifex_command_path() {
+get_hermes_command_path() {
     local link_dir
     link_dir="$(get_command_link_dir)"
-    if [ -x "$link_dir/lucifex" ]; then
-        echo "$link_dir/lucifex"
+    if [ -x "$link_dir/hermes" ]; then
+        echo "$link_dir/hermes"
     else
-        echo "lucifex"
+        echo "hermes"
     fi
 }
 
@@ -534,7 +527,7 @@ detect_os() {
             OS="windows"
             DISTRO="windows"
             log_error "Windows detected. Please use the PowerShell installer:"
-            log_info "  iex (irm https://lucifex-agent.nousresearch.com/install.ps1)"
+            log_info "  iex (irm https://hermes-agent.nousresearch.com/install.ps1)"
             exit 1
             ;;
         *)
@@ -558,11 +551,11 @@ install_uv() {
         return 0
     fi
 
-    # Lucifex owns its own uv at $LUCIFEX_HOME/bin/uv.  Always install there —
+    # Hermes owns its own uv at $HERMES_HOME/bin/uv.  Always install there —
     # no PATH probing, no conda guards, no multi-location resolution chains.
-    # The runtime update path (lucifex_cli/managed_uv.py) looks in the same
-    # place, so install.sh and `lucifex update` stay in sync.
-    local _managed_uv="$LUCIFEX_HOME/bin/uv"
+    # The runtime update path (hermes_cli/managed_uv.py) looks in the same
+    # place, so install.sh and `hermes update` stay in sync.
+    local _managed_uv="$HERMES_HOME/bin/uv"
 
     if [ -x "$_managed_uv" ]; then
         UV_CMD="$_managed_uv"
@@ -571,15 +564,15 @@ install_uv() {
         return 0
     fi
 
-    log_info "Installing managed uv into $LUCIFEX_HOME/bin ..."
-    mkdir -p "$LUCIFEX_HOME/bin"
+    log_info "Installing managed uv into $HERMES_HOME/bin ..."
+    mkdir -p "$HERMES_HOME/bin"
 
     # Two-stage: download the installer, then run it.  Piping
     # `curl | sh` masks curl failures (sh exits 0 on empty stdin)
     # and conflates network errors with installer errors.
     local _uv_install_log _uv_installer
-    _uv_install_log="$(mktemp 2>/dev/null || echo "/tmp/lucifex-uv-install.$$.log")"
-    _uv_installer="$(mktemp 2>/dev/null || echo "/tmp/lucifex-uv-installer.$$.sh")"
+    _uv_install_log="$(mktemp 2>/dev/null || echo "/tmp/hermes-uv-install.$$.log")"
+    _uv_installer="$(mktemp 2>/dev/null || echo "/tmp/hermes-uv-installer.$$.sh")"
     if ! curl -LsSf https://astral.sh/uv/install.sh -o "$_uv_installer" 2>"$_uv_install_log"; then
         log_error "Failed to download uv installer from https://astral.sh/uv/install.sh"
         log_info "curl output:"
@@ -589,8 +582,8 @@ install_uv() {
         exit 1
     fi
     # UV_UNMANAGED_INSTALL tells the astral installer to place the binary
-    # directly into $LUCIFEX_HOME/bin instead of ~/.local/bin.
-    if UV_UNMANAGED_INSTALL="$LUCIFEX_HOME/bin" sh "$_uv_installer" >>"$_uv_install_log" 2>&1; then
+    # directly into $HERMES_HOME/bin instead of ~/.local/bin.
+    if UV_UNMANAGED_INSTALL="$HERMES_HOME/bin" sh "$_uv_installer" >>"$_uv_install_log" 2>&1; then
         rm -f "$_uv_installer"
         if [ -x "$_managed_uv" ]; then
             UV_CMD="$_managed_uv"
@@ -789,7 +782,7 @@ check_git() {
 # `^20.19 || >=22.12` — older Node lacks `node:util.styleText`, so `vite build`
 # crashes with a SyntaxError that surfaces only as the opaque "Build desktop
 # app … exit code 1" install failure. Returns 0 when the given `node --version`
-# string clears that floor; anything below it is replaced with the Lucifex-
+# string clears that floor; anything below it is replaced with the Hermes-
 # managed Node $NODE_VERSION LTS.
 node_satisfies_build() {
     local ver="${1#v}"
@@ -805,7 +798,7 @@ node_satisfies_build() {
 check_node() {
     log_info "Checking Node.js (for browser tools)..."
 
-    # Repair pre-existing Lucifex-managed installs where `npm install -g` lands
+    # Repair pre-existing Hermes-managed installs where `npm install -g` lands
     # off PATH. No-op when there's no managed Node, so this is safe to run on
     # every install — including re-runs that skip the Node (re)install below.
     configure_managed_node_npm_prefix
@@ -816,16 +809,16 @@ check_node() {
         return 0
     fi
 
-    # Prefer a Lucifex-managed Node from a previous run over a too-old system one.
-    if [ -x "$LUCIFEX_HOME/node/bin/node" ] && node_satisfies_build "$("$LUCIFEX_HOME/node/bin/node" --version)"; then
-        export PATH="$LUCIFEX_HOME/node/bin:$PATH"
-        log_success "Node.js $("$LUCIFEX_HOME/node/bin/node" --version) found (Lucifex-managed)"
+    # Prefer a Hermes-managed Node from a previous run over a too-old system one.
+    if [ -x "$HERMES_HOME/node/bin/node" ] && node_satisfies_build "$("$HERMES_HOME/node/bin/node" --version)"; then
+        export PATH="$HERMES_HOME/node/bin:$PATH"
+        log_success "Node.js $("$HERMES_HOME/node/bin/node" --version) found (Hermes-managed)"
         HAS_NODE=true
         return 0
     fi
 
     if command -v node &> /dev/null; then
-        log_warn "Node.js $(node --version) is too old for the desktop build (need ^20.19 or >=22.12) — installing Lucifex-managed Node $NODE_VERSION LTS..."
+        log_warn "Node.js $(node --version) is too old for the desktop build (need ^20.19 or >=22.12) — installing Hermes-managed Node $NODE_VERSION LTS..."
     elif [ "$DISTRO" = "termux" ]; then
         log_info "Node.js not found — installing Node.js via pkg..."
     else
@@ -907,7 +900,7 @@ install_node() {
         return 0
     fi
 
-    log_info "Extracting to ~/.lucifex/node/..."
+    log_info "Extracting to ~/.hermes/node/..."
     if [[ "$tarball_name" == *.tar.xz ]]; then
         tar xf "$tmp_dir/$tarball_name" -C "$tmp_dir"
     else
@@ -924,28 +917,28 @@ install_node() {
         return 0
     fi
 
-    # Place into ~/.lucifex/node/ and symlink binaries into the same bin dir
-    # the lucifex command uses (get_command_link_dir): /usr/local/bin for root
+    # Place into ~/.hermes/node/ and symlink binaries into the same bin dir
+    # the hermes command uses (get_command_link_dir): /usr/local/bin for root
     # FHS installs, $PREFIX/bin on Termux, ~/.local/bin otherwise.
-    rm -rf "$LUCIFEX_HOME/node"
-    mkdir -p "$LUCIFEX_HOME"
-    mv "$extracted_dir" "$LUCIFEX_HOME/node"
+    rm -rf "$HERMES_HOME/node"
+    mkdir -p "$HERMES_HOME"
+    mv "$extracted_dir" "$HERMES_HOME/node"
     rm -rf "$tmp_dir"
 
     local node_link_dir
     node_link_dir="$(get_command_link_dir)"
     mkdir -p "$node_link_dir"
-    ln -sf "$LUCIFEX_HOME/node/bin/node" "$node_link_dir/node"
-    ln -sf "$LUCIFEX_HOME/node/bin/npm"  "$node_link_dir/npm"
-    ln -sf "$LUCIFEX_HOME/node/bin/npx"  "$node_link_dir/npx"
+    ln -sf "$HERMES_HOME/node/bin/node" "$node_link_dir/node"
+    ln -sf "$HERMES_HOME/node/bin/npm"  "$node_link_dir/npm"
+    ln -sf "$HERMES_HOME/node/bin/npx"  "$node_link_dir/npx"
 
     configure_managed_node_npm_prefix
 
-    export PATH="$LUCIFEX_HOME/node/bin:$PATH"
+    export PATH="$HERMES_HOME/node/bin:$PATH"
 
     local installed_ver
-    installed_ver=$("$LUCIFEX_HOME/node/bin/node" --version 2>/dev/null)
-    log_success "Node.js $installed_ver installed to ~/.lucifex/node/"
+    installed_ver=$("$HERMES_HOME/node/bin/node" --version 2>/dev/null)
+    log_success "Node.js $installed_ver installed to ~/.hermes/node/"
     HAS_NODE=true
 }
 
@@ -979,7 +972,7 @@ check_network_prerequisites() {
         log_info "If mirrors are stale: termux-change-repo"
         log_info "Then test: curl -I https://pypi.org/simple/ && curl -I https://duckduckgo.com/"
     else
-        log_warn "Network checks failed. Lucifex install may complete, but web search and dependency downloads can fail."
+        log_warn "Network checks failed. Hermes install may complete, but web search and dependency downloads can fail."
         log_info "Verify internet/DNS and retry if pip install fails."
     fi
 }
@@ -1103,7 +1096,7 @@ install_system_packages() {
             if [ "$IS_INTERACTIVE" = true ]; then
                 echo ""
                 log_info "sudo is needed ONLY to install optional system packages (${pkgs[*]}) via your package manager."
-                log_info "Lucifex Agent itself does not require or retain root access."
+                log_info "Hermes Agent itself does not require or retain root access."
                 if prompt_yes_no "Install ${description}? (requires sudo)" "no"; then
                     if sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a $install_cmd; then
                         [ "$need_ripgrep" = true ] && HAS_RIPGREP=true && log_success "ripgrep installed"
@@ -1119,7 +1112,7 @@ install_system_packages() {
                 # but opening fails with ENXIO. See #16746.
                 echo ""
                 log_info "sudo is needed ONLY to install optional system packages (${pkgs[*]}) via your package manager."
-                log_info "Lucifex Agent itself does not require or retain root access."
+                log_info "Hermes Agent itself does not require or retain root access."
                 if prompt_yes_no "Install ${description}?" "yes"; then
                     if sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a $install_cmd < /dev/tty; then
                         [ "$need_ripgrep" = true ] && HAS_RIPGREP=true && log_success "ripgrep installed"
@@ -1209,14 +1202,14 @@ clone_repo() {
                 # the whole install at the repository stage. Clear the conflict
                 # markers with `git reset` first -- this keeps working-tree
                 # changes (they're still stashed just below) and only drops the
-                # index-level conflict state. Mirrors the `lucifex update` path
+                # index-level conflict state. Mirrors the `hermes update` path
                 # (#4735).
                 if [ -n "$(git ls-files --unmerged)" ]; then
                     log_info "Clearing unmerged index entries from a previous conflict..."
                     git reset -q
                 fi
                 local stash_name
-                stash_name="lucifex-install-autostash-$(date -u +%Y%m%d-%H%M%S)"
+                stash_name="hermes-install-autostash-$(date -u +%Y%m%d-%H%M%S)"
                 log_info "Local changes detected, stashing before update..."
                 git stash push --include-untracked -m "$stash_name"
                 autostash_ref="stash@{0}"
@@ -1231,7 +1224,7 @@ clone_repo() {
             git checkout "$BRANCH"
             # Managed installs should follow origin/$BRANCH exactly. If the
             # checkout has diverged (or has local-only commits), ff-only pull
-            # cannot succeed — mirror ``lucifex update`` and reset to the
+            # cannot succeed — mirror ``hermes update`` and reset to the
             # fetched remote so bootstrap/install can recover.
             if ! git pull --ff-only origin "$BRANCH"; then
                 log_warn "Fast-forward not possible; resetting managed install to origin/$BRANCH..."
@@ -1254,14 +1247,38 @@ clone_repo() {
 
                 if [ "$restore_now" = "yes" ]; then
                     log_info "Restoring local changes..."
-                    if git stash apply "$autostash_ref"; then
+                    local restore_output=""
+                    local restore_ok="yes"
+                    if restore_output="$(git stash apply "$autostash_ref" 2>&1)"; then
+                        restore_ok="yes"
+                    else
+                        restore_ok="no"
+                    fi
+                    local conflicted_files=""
+                    conflicted_files="$(git diff --name-only --diff-filter=U || true)"
+                    if [ "$restore_ok" = "yes" ] && [ -z "$conflicted_files" ]; then
                         git stash drop "$autostash_ref" >/dev/null
                         log_warn "Local changes were restored on top of the updated codebase."
-                        log_warn "Review git diff / git status if Lucifex behaves unexpectedly."
+                        log_warn "Review git diff / git status if Hermes behaves unexpectedly."
                     else
-                        log_error "Update succeeded, but restoring local changes failed. Your changes are still preserved in git stash."
-                        log_info "Resolve manually with: git stash apply $autostash_ref"
-                        exit 1
+                        log_error "Update pulled new code, but restoring local changes hit conflicts."
+                        if [ -n "$restore_output" ]; then
+                            printf '%s\n' "$restore_output"
+                        fi
+                        if [ -n "$conflicted_files" ]; then
+                            printf '\nConflicted files:\n'
+                            while IFS= read -r file; do
+                                [ -n "$file" ] && printf '  • %s\n' "$file"
+                            done <<EOF
+$conflicted_files
+EOF
+                        fi
+                        printf '\n'
+                        log_info "Your stashed changes are preserved — nothing is lost."
+                        log_info "  Stash ref: $autostash_ref"
+                        git reset --hard HEAD >/dev/null 2>&1 || true
+                        log_info "Working tree reset to clean state."
+                        log_info "Restore your changes later with: git stash apply $autostash_ref"
                     fi
                 else
                     log_info "Skipped restoring local changes."
@@ -1288,13 +1305,8 @@ clone_repo() {
             if git clone --depth 1 --branch "$BRANCH" "$REPO_URL_HTTPS" "$INSTALL_DIR"; then
                 log_success "Cloned via HTTPS"
             else
-                log_info "Rebranded HTTPS clone failed, trying fallback to hermes-agent..."
-                if git clone --depth 1 --branch "$BRANCH" "https://github.com/NousResearch/hermes-agent.git" "$INSTALL_DIR"; then
-                    log_success "Cloned via fallback HTTPS"
-                else
-                    log_error "Failed to clone repository"
-                    exit 1
-                fi
+                log_error "Failed to clone repository"
+                exit 1
             fi
         fi
     fi
@@ -1306,10 +1318,7 @@ clone_repo() {
         if ! git cat-file -e "$INSTALL_COMMIT^{commit}" 2>/dev/null; then
             git fetch origin "$INSTALL_COMMIT" || true
         fi
-        if ! git checkout --detach "$INSTALL_COMMIT" 2>/dev/null; then
-            log_warn "Pinning to commit $INSTALL_COMMIT failed. Falling back to branch $BRANCH..."
-            git checkout "$BRANCH"
-        fi
+        git checkout --detach "$INSTALL_COMMIT"
     fi
 
     log_success "Repository ready"
@@ -1449,7 +1458,7 @@ install_deps() {
                     log_success "Build tools installed"
                 else
                     log_info "sudo is needed ONLY to install build tools (build-essential, python3-dev, libffi-dev) via apt."
-                    log_info "Lucifex Agent itself does not require or retain root access."
+                    log_info "Hermes Agent itself does not require or retain root access."
                     if prompt_yes_no "Install build tools?" "yes"; then
                         sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a apt-get update -qq && sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a apt-get install -y -qq build-essential python3-dev libffi-dev >/dev/null 2>&1 || true
                         log_success "Build tools installed"
@@ -1540,7 +1549,7 @@ try:
     specs = data["project"]["optional-dependencies"]["all"]
     extras = []
     for s in specs:
-        m = re.search(r"lucifex-agent\[([\w-]+)\]", s)
+        m = re.search(r"hermes-agent\[([\w-]+)\]", s)
         if m:
             extras.append(m.group(1))
     print(",".join(extras))
@@ -1607,44 +1616,27 @@ PY
         log_info "PyPI/network issue, re-run: $UV_CMD pip install -e '.[all]'"
     fi
 
-    # Pre-install dependencies for bundled skills (Google Workspace, YouTube transcript, etc.)
-    log_info "Pre-installing Python dependencies for skills..."
-    local _skills_deps=("google-api-python-client==2.194.0" "google-auth-oauthlib==1.3.1" "google-auth-httplib2==0.3.1" "youtube-transcript-api==1.2.4")
-    if [ "$DISTRO" = "termux" ]; then
-        if "$PIP_PYTHON" -m pip install "${_skills_deps[@]}"; then
-            log_success "Skills dependencies pre-installed successfully"
-        else
-            log_warn "Failed to pre-install skills dependencies on Termux. They will be resolved lazily at runtime."
-        fi
-    else
-        if $UV_CMD pip install "${_skills_deps[@]}"; then
-            log_success "Skills dependencies pre-installed successfully"
-        else
-            log_warn "Failed to pre-install skills dependencies. They will be resolved lazily at runtime."
-        fi
-    fi
-
     log_success "Main package installed"
 
     log_success "All dependencies installed"
 }
 
 setup_path() {
-    log_info "Setting up lucifex command..."
+    log_info "Setting up hermes command..."
 
     if [ "$USE_VENV" = true ]; then
-        LUCIFEX_BIN="$INSTALL_DIR/venv/bin/lucifex"
+        HERMES_BIN="$INSTALL_DIR/venv/bin/hermes"
     else
-        LUCIFEX_BIN="$(which lucifex 2>/dev/null || echo "")"
-        if [ -z "$LUCIFEX_BIN" ]; then
-            log_warn "lucifex not found on PATH after install"
+        HERMES_BIN="$(which hermes 2>/dev/null || echo "")"
+        if [ -z "$HERMES_BIN" ]; then
+            log_warn "hermes not found on PATH after install"
             return 0
         fi
     fi
 
     # Verify the entry point script was actually generated
-    if [ ! -x "$LUCIFEX_BIN" ]; then
-        log_warn "lucifex entry point not found at $LUCIFEX_BIN"
+    if [ ! -x "$HERMES_BIN" ]; then
+        log_warn "hermes entry point not found at $HERMES_BIN"
         log_info "This usually means the pip install didn't complete successfully."
         if [ "$DISTRO" = "termux" ]; then
             log_info "Try: cd $INSTALL_DIR && python -m pip install -e '.[termux-all]' -c constraints-termux.txt"
@@ -1659,27 +1651,27 @@ setup_path() {
     command_link_dir="$(get_command_link_dir)"
     command_link_display_dir="$(get_command_link_display_dir)"
 
-    # Create a user-facing shim for the lucifex command.
+    # Create a user-facing shim for the hermes command.
     # We intentionally clear PYTHONPATH/PYTHONHOME here so inherited env vars
     # can't make this launcher import modules from another checkout.
     mkdir -p "$command_link_dir"
-    # Older installs created this path as a symlink to $LUCIFEX_BIN. Without
+    # Older installs created this path as a symlink to $HERMES_BIN. Without
     # the rm, `cat >` follows the symlink and overwrites the venv pip entry
-    # point with this shim — making `exec "$LUCIFEX_BIN"` self-recurse. (#21454)
-    rm -f "$command_link_dir/lucifex"
-    cat > "$command_link_dir/lucifex" <<EOF
+    # point with this shim — making `exec "$HERMES_BIN"` self-recurse. (#21454)
+    rm -f "$command_link_dir/hermes"
+    cat > "$command_link_dir/hermes" <<EOF
 #!/usr/bin/env bash
 unset PYTHONPATH
 unset PYTHONHOME
-exec "$LUCIFEX_BIN" "\$@"
+exec "$HERMES_BIN" "\$@"
 EOF
-    chmod +x "$command_link_dir/lucifex"
-    log_success "Installed lucifex launcher → $command_link_display_dir/lucifex"
+    chmod +x "$command_link_dir/hermes"
+    log_success "Installed hermes launcher → $command_link_display_dir/hermes"
 
     if [ "$DISTRO" = "termux" ]; then
         export PATH="$command_link_dir:$PATH"
         log_info "$command_link_display_dir is the native Termux command path"
-        log_success "lucifex command ready"
+        log_success "hermes command ready"
         return 0
     fi
 
@@ -1694,16 +1686,16 @@ EOF
         # Probe a fresh non-login interactive bash the way the user will use it.
         # `bash -i -c` sources ~/.bashrc but NOT ~/.bash_profile or /etc/profile,
         # which is the exact scenario where RHEL root loses /usr/local/bin.
-        if env -i HOME="$HOME" TERM="${TERM:-dumb}" bash -i -c 'command -v lucifex' \
+        if env -i HOME="$HOME" TERM="${TERM:-dumb}" bash -i -c 'command -v hermes' \
                 >/dev/null 2>&1; then
             log_info "/usr/local/bin is already on PATH for all shells"
-            log_success "lucifex command ready"
+            log_success "hermes command ready"
             return 0
         fi
 
-        log_info "lucifex not on PATH in non-login shells (common on RHEL-family)"
+        log_info "hermes not on PATH in non-login shells (common on RHEL-family)"
         PATH_LINE='export PATH="/usr/local/bin:$PATH"'
-        PATH_COMMENT='# Lucifex Agent — ensure /usr/local/bin is on PATH (RHEL non-login shells)'
+        PATH_COMMENT='# Hermes Agent — ensure /usr/local/bin is on PATH (RHEL non-login shells)'
         for SHELL_CONFIG in "$HOME/.bashrc" "$HOME/.bash_profile"; do
             [ -f "$SHELL_CONFIG" ] || continue
             if ! grep -v '^[[:space:]]*#' "$SHELL_CONFIG" 2>/dev/null \
@@ -1714,7 +1706,7 @@ EOF
                 log_success "Added /usr/local/bin to PATH in $SHELL_CONFIG"
             fi
         done
-        log_success "lucifex command ready"
+        log_success "hermes command ready"
         return 0
     fi
 
@@ -1760,7 +1752,7 @@ EOF
         for SHELL_CONFIG in "${SHELL_CONFIGS[@]}"; do
             if ! grep -v '^[[:space:]]*#' "$SHELL_CONFIG" 2>/dev/null | grep -qE 'PATH=.*\.local/bin'; then
                 echo "" >> "$SHELL_CONFIG"
-                echo "# Lucifex Agent — ensure ~/.local/bin is on PATH" >> "$SHELL_CONFIG"
+                echo "# Hermes Agent — ensure ~/.local/bin is on PATH" >> "$SHELL_CONFIG"
                 echo "$PATH_LINE" >> "$SHELL_CONFIG"
                 log_success "Added ~/.local/bin to PATH in $SHELL_CONFIG"
             fi
@@ -1770,7 +1762,7 @@ EOF
         if [ "$IS_FISH" = "true" ]; then
             if ! grep -q 'fish_add_path.*\.local/bin' "$FISH_CONFIG" 2>/dev/null; then
                 echo "" >> "$FISH_CONFIG"
-                echo "# Lucifex Agent — ensure ~/.local/bin is on PATH" >> "$FISH_CONFIG"
+                echo "# Hermes Agent — ensure ~/.local/bin is on PATH" >> "$FISH_CONFIG"
                 echo 'fish_add_path "$HOME/.local/bin"' >> "$FISH_CONFIG"
                 log_success "Added ~/.local/bin to PATH in $FISH_CONFIG"
             fi
@@ -1784,80 +1776,80 @@ EOF
         log_info "~/.local/bin already on PATH"
     fi
 
-    # Export for current session so lucifex works immediately
+    # Export for current session so hermes works immediately
     export PATH="$command_link_dir:$PATH"
 
-    log_success "lucifex command ready"
+    log_success "hermes command ready"
 }
 
 copy_config_templates() {
     log_info "Setting up configuration files..."
 
-    # Create ~/.lucifex directory structure (config at top level, code in subdir)
-    mkdir -p "$LUCIFEX_HOME"/{cron,sessions,logs,pairing,hooks,image_cache,audio_cache,memories,skills}
+    # Create ~/.hermes directory structure (config at top level, code in subdir)
+    mkdir -p "$HERMES_HOME"/{cron,sessions,logs,pairing,hooks,image_cache,audio_cache,memories,skills}
 
-    # Create .env at ~/.lucifex/.env (top level, easy to find)
-    if [ ! -f "$LUCIFEX_HOME/.env" ]; then
+    # Create .env at ~/.hermes/.env (top level, easy to find)
+    if [ ! -f "$HERMES_HOME/.env" ]; then
         if [ -f "$INSTALL_DIR/.env.example" ]; then
-            cp "$INSTALL_DIR/.env.example" "$LUCIFEX_HOME/.env"
-            log_success "Created ~/.lucifex/.env from template"
+            cp "$INSTALL_DIR/.env.example" "$HERMES_HOME/.env"
+            log_success "Created ~/.hermes/.env from template"
         else
-            touch "$LUCIFEX_HOME/.env"
-            log_success "Created ~/.lucifex/.env"
+            touch "$HERMES_HOME/.env"
+            log_success "Created ~/.hermes/.env"
         fi
     else
-        log_info "~/.lucifex/.env already exists, keeping it"
+        log_info "~/.hermes/.env already exists, keeping it"
     fi
     # Restrict .env permissions — this file holds API keys and tokens.
     # 0600 ensures only the file owner can read/write, matching standard
     # practice for credential files (.netrc, .aws/credentials, .ssh/config).
-    chmod 600 "$LUCIFEX_HOME/.env"
+    chmod 600 "$HERMES_HOME/.env"
     configure_browser_env_from_system_browser
 
-    # Create config.yaml at ~/.lucifex/config.yaml (top level, easy to find)
-    if [ ! -f "$LUCIFEX_HOME/config.yaml" ]; then
+    # Create config.yaml at ~/.hermes/config.yaml (top level, easy to find)
+    if [ ! -f "$HERMES_HOME/config.yaml" ]; then
         if [ -f "$INSTALL_DIR/cli-config.yaml.example" ]; then
-            cp "$INSTALL_DIR/cli-config.yaml.example" "$LUCIFEX_HOME/config.yaml"
-            log_success "Created ~/.lucifex/config.yaml from template"
+            cp "$INSTALL_DIR/cli-config.yaml.example" "$HERMES_HOME/config.yaml"
+            log_success "Created ~/.hermes/config.yaml from template"
         fi
     else
-        log_info "~/.lucifex/config.yaml already exists, keeping it"
+        log_info "~/.hermes/config.yaml already exists, keeping it"
     fi
 
     # Create SOUL.md if it doesn't exist (global persona file).
-    # This MUST match DEFAULT_SOUL_MD in lucifex_cli/default_soul.py — the
+    # This MUST match DEFAULT_SOUL_MD in hermes_cli/default_soul.py — the
     # runtime (_ensure_default_soul_md) treats the old comment-only scaffold as
     # "never customized" and upgrades it to this text on next run, so any drift
     # here is self-healing, but keep them in sync to avoid a churn on first run.
-    if [ ! -f "$LUCIFEX_HOME/SOUL.md" ]; then
-        cat > "$LUCIFEX_HOME/SOUL.md" << 'SOUL_EOF'
-You are Lucifex Agent, an intelligent AI assistant created by Nous Research. You are helpful, knowledgeable, and direct. You assist users with a wide range of tasks including answering questions, writing and editing code, analyzing information, creative work, and executing actions via your tools. You communicate clearly, admit uncertainty when appropriate, and prioritize being genuinely useful over being verbose unless otherwise directed below. Be targeted and efficient in your exploration and investigations.
+    if [ ! -f "$HERMES_HOME/SOUL.md" ]; then
+        cat > "$HERMES_HOME/SOUL.md" << 'SOUL_EOF'
+You are Hermes Agent, an intelligent AI assistant created by Nous Research. You are helpful, knowledgeable, and direct. You assist users with a wide range of tasks including answering questions, writing and editing code, analyzing information, creative work, and executing actions via your tools. You communicate clearly, admit uncertainty when appropriate, and prioritize being genuinely useful over being verbose unless otherwise directed below. Be targeted and efficient in your exploration and investigations.
 SOUL_EOF
-        log_success "Created ~/.lucifex/SOUL.md (edit to customize personality)"
+        log_success "Created ~/.hermes/SOUL.md (edit to customize personality)"
     fi
 
-    log_success "Configuration directory ready: ~/.lucifex/"
+    log_success "Configuration directory ready: ~/.hermes/"
 
-    # Seed bundled skills into ~/.lucifex/skills/ (manifest-based, one-time per skill)
+    # Seed bundled skills into ~/.hermes/skills/ (manifest-based, one-time per skill)
     if [ "$NO_SKILLS" = true ]; then
         # Blank-slate install: write the opt-out marker and skip seeding.
-        # skills_sync.py and `lucifex update` both honor this marker, so the
+        # skills_sync.py and `hermes update` both honor this marker, so the
         # default profile stays empty across future updates too.
         printf '%s\n' \
             "This profile opted out of bundled-skill seeding (installed with --no-skills)." \
-            "Delete this file to re-enable sync on the next 'lucifex update'." \
-            > "$LUCIFEX_HOME/.no-bundled-skills" 2>/dev/null || true
-        log_info "Skipping bundled skills (--no-skills). Wrote $LUCIFEX_HOME/.no-bundled-skills"
-        log_info "  Future 'lucifex update' runs will not inject bundled skills. Delete the marker to opt back in."
+            "Delete this file to re-enable sync on the next 'hermes update'." \
+            > "$HERMES_HOME/.no-bundled-skills" 2>/dev/null || true
+        log_info "Skipping bundled skills (--no-skills). Wrote $HERMES_HOME/.no-bundled-skills"
+        log_info "  Future 'hermes update' runs will not inject bundled skills. Delete the marker to opt back in."
     else
-        log_info "Syncing bundled skills to ~/.lucifex/skills/ ..."
+        log_info "Syncing bundled skills to ~/.hermes/skills/ ..."
         if "$INSTALL_DIR/venv/bin/python" "$INSTALL_DIR/tools/skills_sync.py" 2>/dev/null; then
-            log_success "Skills synced to ~/.lucifex/skills/"
+            log_success "Skills synced to ~/.hermes/skills/"
         else
             # Fallback: simple directory copy if Python sync fails
-            if [ -d "$INSTALL_DIR/skills" ] && [ ! "$(ls -A "$LUCIFEX_HOME/skills/" 2>/dev/null | grep -v '.bundled_manifest')" ]; then
-                cp -r "$INSTALL_DIR/skills/"* "$LUCIFEX_HOME/skills/" 2>/dev/null || true
-                log_success "Skills copied to ~/.lucifex/skills/"
+            if [ -d "$INSTALL_DIR/skills" ] && [ ! "$(ls -A "$HERMES_HOME/skills/" 2>/dev/null | grep -v '.bundled_manifest')" ]; then
+                cp -r "$INSTALL_DIR/skills/"* "$HERMES_HOME/skills/" 2>/dev/null || true
+                log_success "Skills copied to ~/.hermes/skills/"
             fi
         fi
     fi
@@ -1906,17 +1898,17 @@ strip_snap_browser_override() {
     # snap-pointing override here (and its auto-written comment) so the bundled
     # Chromium download runs and the agent stops using the broken binary. A
     # deliberately-set non-snap override is left untouched.
-    local env_file="$LUCIFEX_HOME/.env"
+    local env_file="$HERMES_HOME/.env"
 
     [ -f "$env_file" ] || return 0
     grep -Eq '^AGENT_BROWSER_EXECUTABLE_PATH=/snap/' "$env_file" 2>/dev/null || return 0
 
     local tmp
     tmp="$(mktemp)" || return 0
-    if grep -Ev '^AGENT_BROWSER_EXECUTABLE_PATH=/snap/|^# Lucifex Agent browser tools' "$env_file" > "$tmp"; then
+    if grep -Ev '^AGENT_BROWSER_EXECUTABLE_PATH=/snap/|^# Hermes Agent browser tools' "$env_file" > "$tmp"; then
         mv "$tmp" "$env_file"
         log_warn "Removed stale Snap browser override (AGENT_BROWSER_EXECUTABLE_PATH=/snap/...) from $env_file"
-        log_info "Lucifex will use the bundled Chromium instead."
+        log_info "Hermes will use the bundled Chromium instead."
         # Drop it from this process too so the rest of the run doesn't re-detect it.
         unset AGENT_BROWSER_EXECUTABLE_PATH
     else
@@ -2114,7 +2106,7 @@ run_playwright_install() {
 }
 
 configure_browser_env_from_system_browser() {
-    local env_file="$LUCIFEX_HOME/.env"
+    local env_file="$HERMES_HOME/.env"
     local browser_path="${DETECTED_BROWSER_EXECUTABLE:-}"
 
     if [ -z "$browser_path" ]; then
@@ -2125,7 +2117,7 @@ configure_browser_env_from_system_browser() {
         return 0
     fi
 
-    mkdir -p "$LUCIFEX_HOME"
+    mkdir -p "$HERMES_HOME"
     if [ ! -f "$env_file" ]; then
         touch "$env_file"
     fi
@@ -2137,7 +2129,7 @@ configure_browser_env_from_system_browser() {
 
     {
         echo ""
-        echo "# Lucifex Agent browser tools — explicit browser override."
+        echo "# Hermes Agent browser tools — explicit browser override."
         echo "AGENT_BROWSER_EXECUTABLE_PATH=$browser_path"
     } >> "$env_file"
     log_success "Configured browser tools to use $browser_path"
@@ -2264,12 +2256,12 @@ install_node_deps() {
         cd "$INSTALL_DIR/ui-tui"
         # Time-boxed: a stalled registry fetch would otherwise hang here (#39219).
         run_with_timeout "$NODE_DEPS_TIMEOUT" npm install --silent || {
-            log_warn "TUI npm install failed or timed out (lucifex --tui may not work)"
+            log_warn "TUI npm install failed or timed out (hermes --tui may not work)"
         }
         log_success "TUI dependencies installed"
     fi
 
-    # Keep the checkout clean so `lucifex update` doesn't autostash every run.
+    # Keep the checkout clean so `hermes update` doesn't autostash every run.
     restore_dirty_lockfiles "$INSTALL_DIR"
 }
 
@@ -2288,7 +2280,7 @@ run_setup_wizard() {
     # but opening fails with ENXIO, so the wizard would proceed and
     # then crash on `< /dev/tty` below.
     if ! (: </dev/tty) 2>/dev/null; then
-        log_info "Setup wizard skipped (no terminal available). Run 'lucifex setup' after install."
+        log_info "Setup wizard skipped (no terminal available). Run 'hermes setup' after install."
         return 0
     fi
 
@@ -2298,18 +2290,18 @@ run_setup_wizard() {
 
     cd "$INSTALL_DIR"
 
-    # Run lucifex setup using the venv Python directly (no activation needed).
+    # Run hermes setup using the venv Python directly (no activation needed).
     # Redirect stdin from /dev/tty so interactive prompts work when piped from curl.
     if [ "$USE_VENV" = true ]; then
-        "$INSTALL_DIR/venv/bin/python" -m lucifex_cli.main setup < /dev/tty
+        "$INSTALL_DIR/venv/bin/python" -m hermes_cli.main setup < /dev/tty
     else
-        python -m lucifex_cli.main setup < /dev/tty
+        python -m hermes_cli.main setup < /dev/tty
     fi
 }
 
 maybe_start_gateway() {
     # Check if any messaging platform tokens were configured
-    ENV_FILE="$LUCIFEX_HOME/.env"
+    ENV_FILE="$HERMES_HOME/.env"
     if [ ! -f "$ENV_FILE" ]; then
         return 0
     fi
@@ -2329,23 +2321,23 @@ maybe_start_gateway() {
 
     echo ""
     log_info "Messaging platform token detected!"
-    log_info "The gateway needs to be running for Lucifex to send/receive messages."
+    log_info "The gateway needs to be running for Hermes to send/receive messages."
 
     # If WhatsApp is enabled and no session exists yet, run foreground first for QR scan
     WHATSAPP_VAL=$(grep "^WHATSAPP_ENABLED=" "$ENV_FILE" 2>/dev/null | cut -d'=' -f2-)
-    WHATSAPP_SESSION="$LUCIFEX_HOME/whatsapp/session/creds.json"
+    WHATSAPP_SESSION="$HERMES_HOME/whatsapp/session/creds.json"
     if [ "$WHATSAPP_VAL" = "true" ] && [ ! -f "$WHATSAPP_SESSION" ]; then
         if [ "$IS_INTERACTIVE" = true ]; then
             echo ""
             log_info "WhatsApp is enabled but not yet paired."
-            log_info "Running 'lucifex whatsapp' to pair via QR code..."
+            log_info "Running 'hermes whatsapp' to pair via QR code..."
             echo ""
             if prompt_yes_no "Pair WhatsApp now?" "yes"; then
-                LUCIFEX_CMD="$(get_lucifex_command_path)"
-                $LUCIFEX_CMD whatsapp || true
+                HERMES_CMD="$(get_hermes_command_path)"
+                $HERMES_CMD whatsapp || true
             fi
         else
-            log_info "WhatsApp pairing skipped (non-interactive). Run 'lucifex whatsapp' to pair."
+            log_info "WhatsApp pairing skipped (non-interactive). Run 'hermes whatsapp' to pair."
         fi
     fi
 
@@ -2353,7 +2345,7 @@ maybe_start_gateway() {
     # in Docker builds where the device node is in the mount namespace
     # but opening fails with ENXIO. See #16746.
     if ! (: </dev/tty) 2>/dev/null; then
-        log_info "Gateway setup skipped (no terminal available). Run 'lucifex gateway install' later."
+        log_info "Gateway setup skipped (no terminal available). Run 'hermes gateway install' later."
         return 0
     fi
 
@@ -2370,19 +2362,19 @@ maybe_start_gateway() {
     fi
 
     if [ "$should_install_gateway" = true ]; then
-        LUCIFEX_CMD="$(get_lucifex_command_path)"
+        HERMES_CMD="$(get_hermes_command_path)"
 
         if [ "$DISTRO" != "termux" ] && command -v systemctl &> /dev/null; then
             log_info "Installing systemd service..."
-            if $LUCIFEX_CMD gateway install 2>/dev/null; then
+            if $HERMES_CMD gateway install 2>/dev/null; then
                 log_success "Gateway service installed"
-                if $LUCIFEX_CMD gateway start 2>/dev/null; then
+                if $HERMES_CMD gateway start 2>/dev/null; then
                     log_success "Gateway started! Your bot is now online."
                 else
-                    log_warn "Service installed but failed to start. Try: lucifex gateway start"
+                    log_warn "Service installed but failed to start. Try: hermes gateway start"
                 fi
             else
-                log_warn "Systemd install failed. You can start manually: lucifex gateway"
+                log_warn "Systemd install failed. You can start manually: hermes gateway"
             fi
         else
             if [ "$DISTRO" = "termux" ]; then
@@ -2390,17 +2382,17 @@ maybe_start_gateway() {
             else
                 log_info "systemd not available — starting gateway in background..."
             fi
-            nohup $LUCIFEX_CMD gateway > "$LUCIFEX_HOME/logs/gateway.log" 2>&1 &
+            nohup $HERMES_CMD gateway > "$HERMES_HOME/logs/gateway.log" 2>&1 &
             GATEWAY_PID=$!
-            log_success "Gateway started (PID $GATEWAY_PID). Logs: ~/.lucifex/logs/gateway.log"
+            log_success "Gateway started (PID $GATEWAY_PID). Logs: ~/.hermes/logs/gateway.log"
             log_info "To stop: kill $GATEWAY_PID"
-            log_info "To restart later: lucifex gateway"
+            log_info "To restart later: hermes gateway"
             if [ "$DISTRO" = "termux" ]; then
                 log_warn "Android may stop background processes when Termux is suspended or the system reclaims resources."
             fi
         fi
     else
-        log_info "Skipped. Start the gateway later with: lucifex gateway"
+        log_info "Skipped. Start the gateway later with: hermes gateway"
     fi
 }
 
@@ -2416,9 +2408,9 @@ print_success() {
     # Show file locations
     echo -e "${CYAN}${BOLD}📁 Your files:${NC}"
     echo ""
-    echo -e "   ${YELLOW}Config:${NC}    $LUCIFEX_HOME/config.yaml"
-    echo -e "   ${YELLOW}API Keys:${NC}  $LUCIFEX_HOME/.env"
-    echo -e "   ${YELLOW}Data:${NC}      $LUCIFEX_HOME/cron/, sessions/, logs/"
+    echo -e "   ${YELLOW}Config:${NC}    $HERMES_HOME/config.yaml"
+    echo -e "   ${YELLOW}API Keys:${NC}  $HERMES_HOME/.env"
+    echo -e "   ${YELLOW}Data:${NC}      $HERMES_HOME/cron/, sessions/, logs/"
     echo -e "   ${YELLOW}Code:${NC}      $INSTALL_DIR"
     echo ""
 
@@ -2426,24 +2418,24 @@ print_success() {
     echo ""
     echo -e "${CYAN}${BOLD}🚀 Commands:${NC}"
     echo ""
-    echo -e "   ${GREEN}lucifex${NC}              Start chatting"
-    echo -e "   ${GREEN}lucifex setup${NC}        Configure API keys & settings"
-    echo -e "   ${GREEN}lucifex config${NC}       View/edit configuration"
-    echo -e "   ${GREEN}lucifex config edit${NC}  Open config in editor"
-    echo -e "   ${GREEN}lucifex gateway install${NC} Install gateway service (messaging + cron)"
-    echo -e "   ${GREEN}lucifex update${NC}       Update to latest version"
+    echo -e "   ${GREEN}hermes${NC}              Start chatting"
+    echo -e "   ${GREEN}hermes setup${NC}        Configure API keys & settings"
+    echo -e "   ${GREEN}hermes config${NC}       View/edit configuration"
+    echo -e "   ${GREEN}hermes config edit${NC}  Open config in editor"
+    echo -e "   ${GREEN}hermes gateway install${NC} Install gateway service (messaging + cron)"
+    echo -e "   ${GREEN}hermes update${NC}       Update to latest version"
     echo ""
 
     echo -e "${CYAN}─────────────────────────────────────────────────────────${NC}"
     echo ""
     if [ "$DISTRO" = "termux" ]; then
-        echo -e "${YELLOW}⚡ 'lucifex' was linked into $(get_command_link_display_dir), which is already on PATH in Termux.${NC}"
+        echo -e "${YELLOW}⚡ 'hermes' was linked into $(get_command_link_display_dir), which is already on PATH in Termux.${NC}"
         echo ""
     elif [ "$ROOT_FHS_LAYOUT" = true ]; then
-        echo -e "${YELLOW}⚡ 'lucifex' was linked into /usr/local/bin and is ready to use — no shell reload needed.${NC}"
+        echo -e "${YELLOW}⚡ 'hermes' was linked into /usr/local/bin and is ready to use — no shell reload needed.${NC}"
         echo ""
     else
-        echo -e "${YELLOW}⚡ Reload your shell to use 'lucifex' command:${NC}"
+        echo -e "${YELLOW}⚡ Reload your shell to use 'hermes' command:${NC}"
         echo ""
         LOGIN_SHELL="$(basename "${SHELL:-/bin/bash}")"
         if [ "$LOGIN_SHELL" = "zsh" ]; then
@@ -2487,9 +2479,9 @@ print_success() {
 
 ensure_browser() {
     if ! command -v node >/dev/null 2>&1; then
-        local node_bin="$LUCIFEX_HOME/node/bin/node"
+        local node_bin="$HERMES_HOME/node/bin/node"
         if [ -x "$node_bin" ]; then
-            export PATH="$LUCIFEX_HOME/node/bin:$PATH"
+            export PATH="$HERMES_HOME/node/bin:$PATH"
         else
             log_error "Node.js not found. Run with --ensure node first."
             return 1
@@ -2497,7 +2489,7 @@ ensure_browser() {
     fi
 
     local npm_bin
-    npm_bin="$(command -v npm 2>/dev/null || echo "$LUCIFEX_HOME/node/bin/npm")"
+    npm_bin="$(command -v npm 2>/dev/null || echo "$HERMES_HOME/node/bin/npm")"
     if [ ! -x "$npm_bin" ]; then
         log_error "npm not found"
         return 1
@@ -2508,7 +2500,7 @@ ensure_browser() {
     log_file="$(mktemp)"
     # Time-boxed (#39219): a stalled npm registry fetch here would otherwise
     # hang the installer with no progress, same class as the desktop build.
-    if ! run_with_timeout "$NODE_DEPS_TIMEOUT" "$npm_bin" install -g --prefix "$LUCIFEX_HOME/node" --silent --ignore-scripts \
+    if ! run_with_timeout "$NODE_DEPS_TIMEOUT" "$npm_bin" install -g --prefix "$HERMES_HOME/node" --silent --ignore-scripts \
         "agent-browser@^0.26.0" \
         "@askjo/camofox-browser@^1.5.2" \
         >"$log_file" 2>&1; then
@@ -2518,7 +2510,7 @@ ensure_browser() {
         return 1
     fi
     rm -f "$log_file"
-    export PATH="$LUCIFEX_HOME/node/bin:$PATH"
+    export PATH="$HERMES_HOME/node/bin:$PATH"
 
     strip_snap_browser_override
     local sys_browser
@@ -2530,7 +2522,7 @@ ensure_browser() {
     fi
 
     log_info "Installing Chromium via agent-browser install..."
-    local ab_bin="$LUCIFEX_HOME/node/bin/agent-browser"
+    local ab_bin="$HERMES_HOME/node/bin/agent-browser"
     if [ -x "$ab_bin" ]; then
         "$ab_bin" install 2>/dev/null || {
             log_warn "Chromium install failed. Browser tools may not work without a system browser."
@@ -2596,7 +2588,7 @@ postinstall_mode() {
     print_banner
     detect_os
 
-    log_info "Post-install mode: setting up Lucifex for pip install"
+    log_info "Post-install mode: setting up Hermes for pip install"
 
     check_node
     check_network_prerequisites
@@ -2606,13 +2598,13 @@ postinstall_mode() {
         ensure_browser
     fi
 
-    LUCIFEX_CMD="$(command -v lucifex 2>/dev/null || echo "")"
-    if [ -n "$LUCIFEX_CMD" ]; then
-        log_info "Running lucifex setup..."
-        "$LUCIFEX_CMD" setup
+    HERMES_CMD="$(command -v hermes 2>/dev/null || echo "")"
+    if [ -n "$HERMES_CMD" ]; then
+        log_info "Running hermes setup..."
+        "$HERMES_CMD" setup
     else
-        log_warn "lucifex command not found on PATH"
-        log_info "Try: python -m lucifex_cli.main setup"
+        log_warn "hermes command not found on PATH"
+        log_info "Try: python -m hermes_cli.main setup"
     fi
 }
 
@@ -2620,10 +2612,10 @@ postinstall_mode() {
 # next `npm run pack` re-downloads and re-stages from scratch. A corrupt zip in
 # the per-user Electron download cache - most often a partial/resumed download
 # that leaves concatenated junk - makes electron-builder's `unpack-electron`
-# extract a tree MISSING the electron binary, so the `electron`->`Lucifex` rename
+# extract a tree MISSING the electron binary, so the `electron`->`Hermes` rename
 # dies with ENOENT and every re-run repeats the broken extraction forever. This
 # is the bash sibling of install.ps1's Clear-ElectronBuildCache and the Python
-# _purge_electron_build_cache() used by `lucifex desktop`; install.sh was the only
+# _purge_electron_build_cache() used by `hermes desktop`; install.sh was the only
 # build path lacking it. Echoes the removed paths (one per line); best-effort.
 clear_electron_build_cache() {
     local desktop_dir="$1"
@@ -2719,7 +2711,7 @@ _electron_dir() {
     fi
 }
 
-# True when dist/ holds a usable Electron binary (#38673 / run-electron-builder.cjs).
+# True when dist/ holds a usable Electron binary (#38673 / run-electron-builder.mjs).
 _electron_dist_ok() {
     local install_dir="$1"
     local electron_dir
@@ -2781,7 +2773,7 @@ install_desktop() {
     # with no app and a confusing "couldn't find a built desktop" at launch.
     # Always re-resolve Node here. Stages run in separate processes, so we can't
     # trust an earlier check; more importantly check_node now enforces the build
-    # floor (^20.19 || >=22.12) and prepends the Lucifex-managed Node to PATH, so
+    # floor (^20.19 || >=22.12) and prepends the Hermes-managed Node to PATH, so
     # the build never runs on a too-old system Node — the cause of the opaque
     # "Build desktop app … exit code 1" failure (Vite crashes on old Node).
     check_node
@@ -2851,7 +2843,7 @@ install_desktop() {
     #    Electron download self-heals instead of failing the whole install:
     #      a) plain `npm run pack` (downloads Electron from GitHub),
     #      b) on failure, purge a corrupt cached zip + stale unpacked dir and
-    #         retry (matches install.ps1 / `lucifex desktop`),
+    #         retry (matches install.ps1 / `hermes desktop`),
     #      c) on still-failing, fall back to a public Electron mirror — this is
     #         the GitHub-blocked/throttled case (the repeating "retrying" log).
     log_info "Building desktop app (this takes 1-3 minutes)..."
@@ -2899,16 +2891,16 @@ install_desktop() {
 
     local app=""
     if [ "$OS" = "linux" ]; then
-        if [ -x "$desktop_dir/release/linux-unpacked/Lucifex" ]; then
-            app="$desktop_dir/release/linux-unpacked/Lucifex"
-        elif [ -x "$desktop_dir/release/linux-unpacked/lucifex" ]; then
-            app="$desktop_dir/release/linux-unpacked/lucifex"
+        if [ -x "$desktop_dir/release/linux-unpacked/Hermes" ]; then
+            app="$desktop_dir/release/linux-unpacked/Hermes"
+        elif [ -x "$desktop_dir/release/linux-unpacked/hermes" ]; then
+            app="$desktop_dir/release/linux-unpacked/hermes"
         fi
     else
         local cand
         for cand in \
-            "$desktop_dir/release/mac-arm64/Lucifex.app" \
-            "$desktop_dir/release/mac/Lucifex.app"; do
+            "$desktop_dir/release/mac-arm64/Hermes.app" \
+            "$desktop_dir/release/mac/Hermes.app"; do
             if [ -d "$cand" ]; then
                 app="$cand"
                 break
@@ -2948,7 +2940,7 @@ install_desktop() {
     # macOS: make the locally-built (ad-hoc) app relaunchable after an in-place
     # self-update. An ad-hoc bundle has no stable Designated Requirement, so a
     # later in-place rebuild (new cdhash) plus the inherited quarantine flag
-    # trips Gatekeeper's tamper check ("Lucifex is damaged and can't be opened").
+    # trips Gatekeeper's tamper check ("Hermes is damaged and can't be opened").
     # Strip quarantine + re-apply a clean deep ad-hoc signature (no
     # hardened-runtime flag, which an ad-hoc build can't satisfy). Skipped when a
     # real signing identity is configured so a signed build isn't clobbered.
@@ -2958,7 +2950,7 @@ install_desktop() {
     fi
 
     # `npm install` + `npm run pack` rewrite lockfiles; restore them so the
-    # checkout stays clean for the next `lucifex update`.
+    # checkout stays clean for the next `hermes update`.
     restore_dirty_lockfiles "$INSTALL_DIR"
 }
 
@@ -3049,8 +3041,8 @@ run_stage_body() {
             detect_os
             resolve_install_layout
             require_install_dir
-            # Each stage runs in its own process, so the Lucifex-managed Node
-            # provisioned during prerequisites/node-deps (at $LUCIFEX_HOME/node/bin)
+            # Each stage runs in its own process, so the Hermes-managed Node
+            # provisioned during prerequisites/node-deps (at $HERMES_HOME/node/bin)
             # isn't on PATH here. check_node re-adds it (or installs if missing)
             # so install_desktop can find npm instead of silently skipping.
             check_node
@@ -3061,10 +3053,10 @@ run_stage_body() {
             resolve_install_layout
             print_success
             # Code-scoped stamp: write next to the install tree, not into
-            # $LUCIFEX_HOME. $LUCIFEX_HOME is a shared data dir (it can be
+            # $HERMES_HOME. $HERMES_HOME is a shared data dir (it can be
             # bind-mounted into a Docker gateway too), so a stamp there gets
             # clobbered by the container's 'docker' stamp and wrongly blocks
-            # 'lucifex update' on this host install. See detect_install_method().
+            # 'hermes update' on this host install. See detect_install_method().
             echo "git" > "$INSTALL_DIR/.install_method"
             ;;
         *)
@@ -3144,10 +3136,10 @@ main() {
 
     print_success
 
-    # Code-scoped stamp: write next to the install tree, not into $LUCIFEX_HOME.
-    # $LUCIFEX_HOME is a shared data dir (it can be bind-mounted into a Docker
+    # Code-scoped stamp: write next to the install tree, not into $HERMES_HOME.
+    # $HERMES_HOME is a shared data dir (it can be bind-mounted into a Docker
     # gateway too), so a stamp there gets clobbered by the container's 'docker'
-    # stamp and wrongly blocks 'lucifex update' on this host install.
+    # stamp and wrongly blocks 'hermes update' on this host install.
     # See detect_install_method().
     echo "git" > "$INSTALL_DIR/.install_method"
 }

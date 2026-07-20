@@ -1,12 +1,12 @@
 import queue
 from unittest.mock import patch
 
-from cli import LucifexCLI
-from lucifex_cli.moa_config import decode_moa_turn
+from cli import HermesCLI
+from hermes_cli.moa_config import decode_moa_turn
 
 
 def _make_cli():
-    cli = LucifexCLI.__new__(LucifexCLI)
+    cli = HermesCLI.__new__(HermesCLI)
     cli.config = {
         "moa": {
             "default_preset": "default",
@@ -74,7 +74,7 @@ def test_moa_non_preset_is_one_shot_prompt():
 
 
 def test_decode_legacy_encoded_moa_turn_still_works():
-    from lucifex_cli.moa_config import build_moa_turn_prompt
+    from hermes_cli.moa_config import build_moa_turn_prompt
 
     encoded = build_moa_turn_prompt("hello", _make_cli().config["moa"], preset="review")
     prompt, cfg = decode_moa_turn(encoded)

@@ -141,10 +141,10 @@ _MATRIX_BANG_COMMAND_RE = re.compile(
 
 
 def _resolve_matrix_bang_command(name: str) -> str | None:
-    """Resolve a ``!command`` token to a dispatchable Lucifex command token.
+    """Resolve a ``!command`` token to a dispatchable Hermes command token.
 
     Matrix clients often reserve leading ``/`` for local client commands.
-    Lucifex accepts ``!command`` as a Matrix-friendly alias, but only for
+    Hermes accepts ``!command`` as a Matrix-friendly alias, but only for
     commands that the gateway can actually dispatch so ordinary exclamations
     remain normal chat text.
 
@@ -166,7 +166,7 @@ def _resolve_matrix_bang_command(name: str) -> str | None:
         candidates.append(hyphenated)
 
     try:
-        from lucifex_cli.commands import is_gateway_known_command
+        from hermes_cli.commands import is_gateway_known_command
 
         for candidate in candidates:
             if is_gateway_known_command(candidate):
@@ -192,7 +192,7 @@ def _resolve_matrix_bang_command(name: str) -> str | None:
 
 
 def _normalize_matrix_bang_command(text: str) -> str:
-    """Convert Matrix ``!command`` aliases to normal Lucifex ``/command`` text."""
+    """Convert Matrix ``!command`` aliases to normal Hermes ``/command`` text."""
     if not text or not text.startswith("!"):
         return text
     match = _MATRIX_BANG_COMMAND_RE.match(text)
@@ -337,15 +337,30 @@ class _MatrixModelPickerPrompt:
     bot_reaction_events: dict[str, str] = field(default_factory=dict)
 
 
+@dataclass
+class _MatrixChoicePickerPrompt:
+    """Tracks a pending Matrix reaction-based choice picker (/reasoning, /fast)."""
+
+    chat_id: str
+    message_id: str
+    session_key: str
+    choices: dict[str, str]  # emoji -> value
+    on_choice_selected: Any
+    requester_user_id: str | None = None
+    expires_at: float | None = None
+    resolved: bool = False
+    bot_reaction_events: dict[str, str] = field(default_factory=dict)
+
+
 # Matrix message size limit (4000 chars practical, spec has no hard limit
 # but clients render poorly above this).
 MAX_MESSAGE_LENGTH = 4000
 
 # Store directory for E2EE keys and sync state.
-# Uses get_lucifex_home() so each profile gets its own Matrix store.
-from lucifex_constants import get_lucifex_dir as _get_lucifex_dir
+# Uses get_hermes_home() so each profile gets its own Matrix store.
+from hermes_constants import get_hermes_dir as _get_hermes_dir
 
-_STORE_DIR = _get_lucifex_dir("platforms/matrix/store", "matrix/store")
+_STORE_DIR = _get_hermes_dir("platforms/matrix/store", "matrix/store")
 _CRYPTO_DB_PATH = _STORE_DIR / "crypto.db"
 
 # Grace period: ignore messages older than this many seconds before startup.
@@ -384,6 +399,14 @@ _MATRIX_MODEL_PICKER_REACTIONS = (
     "8\ufe0f\u20e3",
     "9\ufe0f\u20e3",
     "\U0001f51f",
+)
+
+# Choice pickers (/reasoning, /fast) can need more than 10 slots
+# (8 effort levels + none + reset/show/hide = 12), so extend the keycap
+# set with lettered squares.
+_MATRIX_CHOICE_PICKER_REACTIONS = _MATRIX_MODEL_PICKER_REACTIONS + (
+    "\U0001f170\ufe0f",  # 🅰️
+    "\U0001f171\ufe0f",  # 🅱️
 )
 
 _MATRIX_CAPABILITIES: Dict[str, str] = {
@@ -779,7 +802,7 @@ class MatrixAdapter(BasePlatformAdapter):
     splits_long_messages = True  # send() chunks via truncate_message(MAX_MESSAGE_LENGTH)
 
     # Matrix clients commonly reserve typed "/" for client-local commands;
-    # the adapter accepts "!command" as the alias that always reaches Lucifex
+    # the adapter accepts "!command" as the alias that always reaches Hermes
     # (see _normalize_matrix_bang_command), so instruction text shows "!".
     typed_command_prefix = "!"
 
@@ -924,10 +947,10 @@ class MatrixAdapter(BasePlatformAdapter):
         # Text batching: merge rapid successive messages (Telegram-style).
         # Matrix clients split long messages around 4000 chars.
         self._text_batch_delay_seconds = float(
-            os.getenv("LUCIFEX_MATRIX_TEXT_BATCH_DELAY_SECONDS", "0.6")
+            os.getenv("HERMES_MATRIX_TEXT_BATCH_DELAY_SECONDS", "0.6")
         )
         self._text_batch_split_delay_seconds = float(
-            os.getenv("LUCIFEX_MATRIX_TEXT_BATCH_SPLIT_DELAY_SECONDS", "2.0")
+            os.getenv("HERMES_MATRIX_TEXT_BATCH_SPLIT_DELAY_SECONDS", "2.0")
         )
         self._pending_text_batches: Dict[str, MessageEvent] = {}
         self._pending_text_batch_tasks: Dict[str, asyncio.Task] = {}
@@ -954,6 +977,7 @@ class MatrixAdapter(BasePlatformAdapter):
         except ValueError:
             self._approval_timeout_seconds = 300
         self._model_picker_prompts_by_event: Dict[str, _MatrixModelPickerPrompt] = {}
+        self._choice_picker_prompts_by_event: Dict[str, _MatrixChoicePickerPrompt] = {}
         allowed_users_raw = os.getenv("MATRIX_ALLOWED_USERS", "")
         self._allowed_user_ids: Set[str] = {
             u.strip() for u in allowed_users_raw.split(",") if u.strip()
@@ -1257,7 +1281,7 @@ class MatrixAdapter(BasePlatformAdapter):
                 resp = await client.login(
                     identifier=self._user_id,
                     password=self._password,
-                    device_name="Lucifex Agent",
+                    device_name="Hermes Agent",
                     device_id=self._device_id or None,
                 )
                 if resp and hasattr(resp, "device_id"):
@@ -1335,7 +1359,7 @@ class MatrixAdapter(BasePlatformAdapter):
                     await crypto_db.start()
                     self._crypto_db = crypto_db
 
-                    _acct_id = self._user_id or "lucifex"
+                    _acct_id = self._user_id or "hermes"
                     _pickle_key = f"{_acct_id}:{self._device_id or 'default'}"
                     crypto_store = PgCryptoStore(
                         account_id=_acct_id,
@@ -2000,6 +2024,8 @@ class MatrixAdapter(BasePlatformAdapter):
         session_key: str,
         description: str = "dangerous command",
         metadata: Optional[dict] = None,
+        allow_permanent: bool = True,
+        smart_denied: bool = False,
     ) -> SendResult:
         """Send a reaction-based exec approval prompt for Matrix."""
         if not self._client:
@@ -2007,12 +2033,18 @@ class MatrixAdapter(BasePlatformAdapter):
 
         requester_user_id = str((metadata or {}).get("requester_user_id") or "") or None
         cmd_preview = command[:2000] + "..." if len(command) > 2000 else command
+        scope_choices = ""
+        if smart_denied:
+            scope_choices = "Smart DENY: owner override applies to this one operation only.\n"
+        else:
+            scope_choices = "Reply `!approve session` to approve this pattern for the session, "
+            if allow_permanent:
+                scope_choices += "`!approve always` to approve permanently, "
         text = (
             "⚠️ **Dangerous command requires approval**\n"
             f"```\n{cmd_preview}\n```\n"
             f"Reason: {description}\n\n"
-            "Reply `!approve` to execute, `!approve session` to approve this pattern for the session, "
-            "`!approve always` to approve permanently, or `!deny` to cancel.\n\n"
+            f"{scope_choices}Reply `!approve` to execute once, or `!deny` to cancel.\n\n"
             "You can also click the reaction to approve:\n"
             "✅ = approve\n"
             "❎ = deny"
@@ -2035,7 +2067,8 @@ class MatrixAdapter(BasePlatformAdapter):
         self._approval_prompts_by_event[result.message_id] = prompt
         self._approval_prompt_by_session[session_key] = result.message_id
 
-        for emoji in ("✅", "♾️", "❌"):
+        reactions = ("✅", "❌") if smart_denied or not allow_permanent else ("✅", "♾️", "❌")
+        for emoji in reactions:
             try:
                 reaction_result = await self._send_reaction(chat_id, result.message_id, emoji)
                 # Save the bot's reaction event_id for later cleanup
@@ -2085,7 +2118,7 @@ class MatrixAdapter(BasePlatformAdapter):
             )
 
         try:
-            from lucifex_cli.providers import get_label
+            from hermes_cli.providers import get_label
             provider_label = get_label(current_provider)
         except Exception:
             provider_label = current_provider
@@ -2124,6 +2157,66 @@ class MatrixAdapter(BasePlatformAdapter):
                     prompt.bot_reaction_events[emoji] = str(reaction_event_id)
             except Exception as exc:
                 logger.debug("Matrix: failed to add model picker reaction %s: %s", emoji, exc)
+
+        return result
+
+    async def send_choice_picker(
+        self,
+        chat_id: str,
+        title: str,
+        choices: list,
+        session_key: str,
+        on_choice_selected,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> SendResult:
+        """Send a Matrix reaction-based choice picker (/reasoning, /fast).
+
+        Generic single-level companion to ``send_model_picker``. Each choice
+        dict: ``{"value": str, "label": str, "is_current": bool}``.
+        """
+        if not self._client:
+            return SendResult(success=False, error="Not connected")
+
+        emoji_choices: dict[str, str] = {}
+        lines = [title, ""]
+        for i, choice in enumerate(choices):
+            if i >= len(_MATRIX_CHOICE_PICKER_REACTIONS):
+                break
+            emoji = _MATRIX_CHOICE_PICKER_REACTIONS[i]
+            value = str(choice.get("value") or "")
+            label = str(choice.get("label") or value)
+            if choice.get("is_current"):
+                label = f"{label} ← current"
+            emoji_choices[emoji] = value
+            lines.append(f"{emoji} {label}")
+
+        if not emoji_choices:
+            return SendResult(success=False, error="No choices")
+
+        lines.append("")
+        lines.append("React to choose.")
+        result = await self.send(chat_id, "\n".join(lines), metadata=metadata)
+        if not result.success or not result.message_id:
+            return result
+
+        prompt = _MatrixChoicePickerPrompt(
+            chat_id=chat_id,
+            message_id=result.message_id,
+            session_key=session_key,
+            choices=emoji_choices,
+            on_choice_selected=on_choice_selected,
+            requester_user_id=str((metadata or {}).get("requester_user_id") or "") or None,
+            expires_at=time.monotonic() + max(self._approval_timeout_seconds, 0),
+        )
+        self._choice_picker_prompts_by_event[result.message_id] = prompt
+
+        for emoji in emoji_choices:
+            try:
+                reaction_event_id = await self._send_reaction(chat_id, result.message_id, emoji)
+                if reaction_event_id:
+                    prompt.bot_reaction_events[emoji] = str(reaction_event_id)
+            except Exception as exc:
+                logger.debug("Matrix: failed to add choice picker reaction %s: %s", emoji, exc)
 
         return result
 
@@ -3319,6 +3412,40 @@ class MatrixAdapter(BasePlatformAdapter):
                     )
                 return
 
+            choice_prompt = self._choice_picker_prompts_by_event.get(reacts_to)
+            if choice_prompt and not choice_prompt.resolved:
+                if room_id != choice_prompt.chat_id:
+                    return
+                if self._matrix_prompt_expired(choice_prompt):
+                    self._choice_picker_prompts_by_event.pop(reacts_to, None)
+                    return
+                if not await self._validate_matrix_prompt_reactor(
+                    room_id, reacts_to, sender, choice_prompt, "choice picker"
+                ):
+                    return
+                value = choice_prompt.choices.get(key)
+                if value is None:
+                    await self._send_invalid_reaction_feedback(
+                        room_id,
+                        reacts_to,
+                        "That reaction is not one of the available choices.",
+                    )
+                    return
+                choice_prompt.resolved = True
+                self._choice_picker_prompts_by_event.pop(reacts_to, None)
+                try:
+                    confirmation = await choice_prompt.on_choice_selected(room_id, value)
+                    if confirmation:
+                        await self.send(room_id, confirmation, reply_to=reacts_to)
+                except Exception as exc:
+                    logger.error("Failed to apply choice from Matrix reaction: %s", exc)
+                    await self.send(
+                        room_id,
+                        f"Failed to apply selection: {exc}",
+                        reply_to=reacts_to,
+                    )
+                return
+
     def _matrix_prompt_expired(self, prompt: Any) -> bool:
         expires_at = getattr(prompt, "expires_at", None)
         return expires_at is not None and time.monotonic() > float(expires_at)
@@ -3446,6 +3573,7 @@ class MatrixAdapter(BasePlatformAdapter):
             thread_sessions_per_user=self.config.extra.get(
                 "thread_sessions_per_user", False
             ),
+            profile=event.source.profile,
         )
 
     def _enqueue_text_event(self, event: MessageEvent) -> None:
@@ -4120,7 +4248,7 @@ class MatrixAdapter(BasePlatformAdapter):
 
         Important: only strip explicit mention tokens (``@user:server`` or
         ``@localpart``). Do NOT strip bare words matching the bot localpart,
-        otherwise normal phrases like "Lucifex Agent" become "Agent".
+        otherwise normal phrases like "Hermes Agent" become "Agent".
         """
         if not body:
             return ""
@@ -4365,7 +4493,7 @@ class MatrixAdapter(BasePlatformAdapter):
 # register(ctx) entry point plus hook implementations that replace the
 # per-platform core touchpoints (the Platform.MATRIX elif in gateway/run.py,
 # the matrix_cfg YAML→env block in gateway/config.py, the _setup_matrix wizard
-# + _PLATFORMS["matrix"] static dict in lucifex_cli/{setup,gateway}.py, and the
+# + _PLATFORMS["matrix"] static dict in hermes_cli/{setup,gateway}.py, and the
 # _send_matrix dispatch in tools/send_message_tool.py).  Matrix uses the
 # generic token/api_key connected check, so no is_connected override is needed.
 # ──────────────────────────────────────────────────────────────────────────
@@ -4398,7 +4526,7 @@ async def _standalone_send(
         token = token or os.getenv("MATRIX_ACCESS_TOKEN", "")
         if not homeserver or not token:
             return {"error": "Matrix not configured (MATRIX_HOMESERVER, MATRIX_ACCESS_TOKEN required)"}
-        txn_id = f"lucifex_{int(time.time() * 1000)}_{os.urandom(4).hex()}"
+        txn_id = f"hermes_{int(time.time() * 1000)}_{os.urandom(4).hex()}"
         from urllib.parse import quote
         encoded_room = quote(chat_id, safe="")
         url = f"{homeserver}/_matrix/client/v3/rooms/{encoded_room}/send/m.room.message/{txn_id}"
@@ -4426,12 +4554,12 @@ async def _standalone_send(
 
 
 def interactive_setup() -> None:
-    """Configure Matrix credentials. Replaces lucifex_cli/setup.py::_setup_matrix
+    """Configure Matrix credentials. Replaces hermes_cli/setup.py::_setup_matrix
     and the static _PLATFORMS["matrix"] dict. CLI helpers are lazy-imported."""
     import shutil
     import sys as _sys
-    from lucifex_cli.config import get_env_value, save_env_value
-    from lucifex_cli.cli_output import (
+    from hermes_cli.config import get_env_value, save_env_value
+    from hermes_cli.cli_output import (
         prompt,
         prompt_yes_no,
         print_header,
@@ -4497,23 +4625,14 @@ def interactive_setup() -> None:
                 __import__("mautrix")
             except ImportError:
                 print_info(f"Installing {matrix_pkg}...")
-                import subprocess
-                uv_bin = shutil.which("uv")
-                if uv_bin:
-                    result = subprocess.run(
-                        [uv_bin, "pip", "install", "--python", _sys.executable, matrix_pkg],
-                        capture_output=True, text=True,
-                    )
-                else:
-                    result = subprocess.run(
-                        [_sys.executable, "-m", "pip", "install", matrix_pkg],
-                        capture_output=True, text=True,
-                    )
+                from hermes_cli.tools_config import _pip_install
+
+                result = _pip_install([matrix_pkg])
                 if result.returncode == 0:
                     print_success(f"{matrix_pkg} installed")
                 else:
                     print_warning(
-                        f"Install failed — run manually: pip install "
+                        f"Install failed — run manually: uv pip install "
                         f"'{matrix_pkg}' asyncpg aiosqlite Markdown aiohttp-socks"
                     )
 
@@ -4526,7 +4645,7 @@ def interactive_setup() -> None:
         else:
             print_info("⚠️  No allowlist set - anyone who can message the bot can use it!")
 
-        print_info("📬 Home Room: where Lucifex delivers cron job results and notifications.")
+        print_info("📬 Home Room: where Hermes delivers cron job results and notifications.")
         print_info("   Room IDs look like !abc123:server (shown in Element room settings)")
         print_info("   You can also set this later by typing /set-home in a Matrix room.")
         home_room = prompt("Home room ID (leave empty to set later with /set-home)")
@@ -4576,7 +4695,7 @@ def _apply_yaml_config(yaml_cfg: dict, matrix_cfg: dict) -> dict | None:
 
 def _is_connected(config) -> bool:
     """Matrix is connected when a homeserver + access token (or password) are
-    configured. Read via lucifex_cli.gateway.get_env_value so setup-status
+    configured. Read via hermes_cli.gateway.get_env_value so setup-status
     callers that patch get_env_value observe the same value, and PlatformConfig
     extras (homeserver) are honored too. As a built-in, Matrix used the generic
     token check; as a plugin it needs an explicit is_connected so
@@ -4584,7 +4703,7 @@ def _is_connected(config) -> bool:
     rather than mere SDK presence. #41112.
     """
     extra = getattr(config, "extra", {}) or {}
-    import lucifex_cli.gateway as gateway_mod
+    import hermes_cli.gateway as gateway_mod
     homeserver = extra.get("homeserver") or gateway_mod.get_env_value("MATRIX_HOMESERVER") or ""
     token = (
         getattr(config, "token", None)
@@ -4601,7 +4720,7 @@ def _build_adapter(config):
 
 
 def register(ctx) -> None:
-    """Plugin entry point — called by the Lucifex plugin system."""
+    """Plugin entry point — called by the Hermes plugin system."""
     ctx.register_platform(
         name="matrix",
         label="Matrix",

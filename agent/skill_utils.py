@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from lucifex_constants import get_config_path, get_skills_dir, is_termux
+from hermes_constants import get_config_path, get_skills_dir, is_termux
 
 logger = logging.getLogger(__name__)
 
@@ -126,10 +126,22 @@ def parse_frontmatter(content: str) -> Tuple[Dict[str, Any], str]:
     Uses yaml with CSafeLoader for full YAML support (nested metadata, lists)
     with a fallback to simple key:value splitting for robustness.
 
+    A single leading UTF-8 BOM (U+FEFF) is stripped before parsing. Windows
+    GUI editors (Notepad, PowerShell ``>``) prepend one when saving a SKILL.md
+    as UTF-8, and ``read_text(encoding="utf-8")`` preserves it (only
+    ``utf-8-sig`` strips it). Left in place, the BOM defeats the ``---`` fence
+    check below and the whole frontmatter is silently discarded — name,
+    description, ``platforms`` gating, env-var setup, and conditional
+    activation all vanish. See CONTRIBUTING.md "File encoding".
+
     Returns:
         (frontmatter_dict, remaining_body)
     """
     frontmatter: Dict[str, Any] = {}
+
+    # Strip only a leading BOM; a BOM mid-content is data, not a marker.
+    if content.startswith("\ufeff"):
+        content = content[1:]
     body = content
 
     if not content.startswith("---"):
@@ -160,27 +172,8 @@ def parse_frontmatter(content: str) -> Tuple[Dict[str, Any], str]:
 # ── Platform matching ─────────────────────────────────────────────────────
 
 
-def skill_matches_platform(frontmatter: Dict[str, Any]) -> bool:
-    """Return True when the skill is compatible with the current OS.
-
-    Skills declare platform requirements via a top-level ``platforms`` list
-    in their YAML frontmatter::
-
-        platforms: [macos]          # macOS only
-        platforms: [macos, linux]   # macOS and Linux
-
-    If the field is absent or empty the skill is compatible with **all**
-    platforms (backward-compatible default).
-
-    Termux note: on Termux/Android, ``sys.platform`` is ``"linux"`` on
-    older Pythons but became ``"android"`` on Python 3.13+. Termux is a
-    Linux userland riding on the Android kernel, so skills tagged
-    ``linux`` are treated as compatible in Termux regardless of which
-    ``sys.platform`` value Python reports. Individual Linux commands
-    inside a skill may still misbehave (no systemd, BusyBox utils, no
-    apt/dnf, etc.) but that is on the skill, not on platform gating.
-    """
-    platforms = frontmatter.get("platforms")
+def skill_matches_platform_list(platforms: Any) -> bool:
+    """Return True when *platforms* is compatible with the current OS."""
     if not platforms:
         return True
     if not isinstance(platforms, list):
@@ -202,6 +195,29 @@ def skill_matches_platform(frontmatter: Dict[str, Any]) -> bool:
         if running_in_termux and mapped in ("termux", "android"):
             return True
     return False
+
+
+def skill_matches_platform(frontmatter: Dict[str, Any]) -> bool:
+    """Return True when the skill is compatible with the current OS.
+
+    Skills declare platform requirements via a top-level ``platforms`` list
+    in their YAML frontmatter::
+
+        platforms: [macos]          # macOS only
+        platforms: [macos, linux]   # macOS and Linux
+
+    If the field is absent or empty the skill is compatible with **all**
+    platforms (backward-compatible default).
+
+    Termux note: on Termux/Android, ``sys.platform`` is ``"linux"`` on
+    older Pythons but became ``"android"`` on Python 3.13+. Termux is a
+    Linux userland riding on the Android kernel, so skills tagged
+    ``linux`` are treated as compatible in Termux regardless of which
+    ``sys.platform`` value Python reports. Individual Linux commands
+    inside a skill may still misbehave (no systemd, BusyBox utils, no
+    apt/dnf, etc.) but that is on the skill, not on platform gating.
+    """
+    return skill_matches_platform_list(frontmatter.get("platforms"))
 
 
 # ── Environment matching ──────────────────────────────────────────────────
@@ -231,12 +247,12 @@ def _detect_environment(env: str) -> bool:
     result = True
     if env == "kanban":
         # Kanban is "active" either as a dispatcher-spawned worker (the
-        # dispatcher sets ``LUCIFEX_KANBAN_TASK`` / ``LUCIFEX_KANBAN_BOARD`` in the
+        # dispatcher sets ``HERMES_KANBAN_TASK`` / ``HERMES_KANBAN_BOARD`` in the
         # worker env) or as an orchestrator profile that has opted into the
         # kanban toolset. Mirror the same signals the kanban tools themselves
         # gate on (``tools/kanban_tools.py``) so the offer filter agrees with
         # tool availability.
-        if os.getenv("LUCIFEX_KANBAN_TASK") or os.getenv("LUCIFEX_KANBAN_BOARD"):
+        if os.getenv("HERMES_KANBAN_TASK") or os.getenv("HERMES_KANBAN_BOARD"):
             result = True
         else:
             try:
@@ -247,13 +263,13 @@ def _detect_environment(env: str) -> bool:
                 result = False
     elif env == "docker":
         try:
-            from lucifex_constants import is_container
+            from hermes_constants import is_container
 
             result = is_container()
         except Exception:
             result = False
     elif env == "s6":
-        # The Lucifex Docker image runs s6-overlay as PID 1 (/init). s6 plants
+        # The Hermes Docker image runs s6-overlay as PID 1 (/init). s6 plants
         # its runtime scaffolding under /run/s6 and ships its admin tree under
         # /package/admin/s6-overlay. Either marker means we're inside an
         # s6-supervised container.
@@ -318,7 +334,7 @@ def _raw_config_cache_clear() -> None:
 def _load_raw_config() -> Dict[str, Any]:
     """Read config.yaml with a shared mtime+size keyed cache.
 
-    This module intentionally avoids importing ``lucifex_cli.config`` on the
+    This module intentionally avoids importing ``hermes_cli.config`` on the
     skill prompt/build path. A tiny local cache gives the same repeated-read
     win without pulling the heavier CLI config stack into startup.
     """
@@ -355,8 +371,8 @@ def get_disabled_skill_names(platform: str | None = None) -> Set[str]:
 
     Args:
         platform: Explicit platform name (e.g. ``"telegram"``).  When
-            *None*, resolves from ``LUCIFEX_PLATFORM`` or
-            ``LUCIFEX_SESSION_PLATFORM`` env vars.  Returns the global
+            *None*, resolves from ``HERMES_PLATFORM`` or
+            ``HERMES_SESSION_PLATFORM`` env vars.  Returns the global
             disabled list, unioned with the platform-specific list when a
             platform is resolved (a globally-disabled skill stays disabled
             on every platform).
@@ -375,8 +391,8 @@ def get_disabled_skill_names(platform: str | None = None) -> Set[str]:
     from gateway.session_context import get_session_env
     resolved_platform = (
         platform
-        or os.getenv("LUCIFEX_PLATFORM")
-        or get_session_env("LUCIFEX_SESSION_PLATFORM")
+        or os.getenv("HERMES_PLATFORM")
+        or get_session_env("HERMES_SESSION_PLATFORM")
     )
     global_disabled = _normalize_string_set(skills_cfg.get("disabled"))
     if resolved_platform:
@@ -401,7 +417,7 @@ def _normalize_string_set(values) -> Set[str]:
 # (config_path_str, mtime_ns) -> resolved external dirs list.  Keyed by
 # mtime_ns so a config.yaml edit mid-run is picked up automatically;
 # otherwise every call would re-read + re-YAML-parse the 15KB config,
-# which becomes the dominant cost of ``lucifex`` startup when ~120 skills
+# which becomes the dominant cost of ``hermes`` startup when ~120 skills
 # each trigger a category lookup during banner construction (10+ seconds
 # of pure waste).
 _EXTERNAL_DIRS_CACHE: Dict[Tuple[str, int], List[Path]] = {}
@@ -418,11 +434,11 @@ def get_external_skills_dirs() -> List[Path]:
 
     Each entry is expanded (``~`` and ``${VAR}``) and resolved to an absolute
     path.  Only directories that actually exist are returned.  Duplicates and
-    paths that resolve to the local ``~/.lucifex/skills/`` are silently skipped.
+    paths that resolve to the local ``~/.hermes/skills/`` are silently skipped.
 
     Cached in-process, keyed on ``config.yaml`` mtime — the function is
     called once per skill during banner / tool-registry scans, and YAML
-    parsing a non-trivial config dominates ``lucifex`` cold-start time
+    parsing a non-trivial config dominates ``hermes`` cold-start time
     when the cache is absent.
     """
     config_path = get_config_path()
@@ -462,9 +478,9 @@ def get_external_skills_dirs() -> List[Path]:
     if not isinstance(raw_dirs, list):
         return []
 
-    from lucifex_constants import get_lucifex_home
+    from hermes_constants import get_hermes_home
 
-    lucifex_home = get_lucifex_home()
+    hermes_home = get_hermes_home()
     local_skills = get_skills_dir().resolve()
     seen: Set[Path] = set()
     result = []
@@ -476,9 +492,9 @@ def get_external_skills_dirs() -> List[Path]:
         # Expand ~ and environment variables
         expanded = os.path.expanduser(os.path.expandvars(entry))
         p = Path(expanded)
-        # Resolve relative paths against LUCIFEX_HOME, not cwd
+        # Resolve relative paths against HERMES_HOME, not cwd
         if not p.is_absolute():
-            p = (lucifex_home / p).resolve()
+            p = (hermes_home / p).resolve()
         else:
             p = p.resolve()
         if p == local_skills:
@@ -497,7 +513,7 @@ def get_external_skills_dirs() -> List[Path]:
 
 
 def get_all_skills_dirs() -> List[Path]:
-    """Return all skill directories: local ``~/.lucifex/skills/`` first, then external.
+    """Return all skill directories: local ``~/.hermes/skills/`` first, then external.
 
     The local dir is always first (and always included even if it doesn't exist
     yet — callers handle that).  External dirs follow in config order.
@@ -505,6 +521,63 @@ def get_all_skills_dirs() -> List[Path]:
     dirs = [get_skills_dir()]
     dirs.extend(get_external_skills_dirs())
     return dirs
+
+
+def normalize_skill_lookup_name(identifier: str) -> str:
+    """Normalize a skill identifier to a ``skill_view()``-safe relative path.
+
+    Slash commands and cron jobs may store absolute paths to skills that live
+    under ``~/.hermes/skills/`` (including via symlinks) or configured
+    ``skills.external_dirs``. ``skill_view()`` rejects absolute names for
+    security, so callers must translate trusted absolute paths to their
+    relative form first.
+    """
+    raw_identifier = (identifier or "").strip()
+    if not raw_identifier:
+        return raw_identifier
+
+    identifier_path = Path(raw_identifier).expanduser()
+    if not identifier_path.is_absolute():
+        return raw_identifier.lstrip("/")
+
+    # Look the primary skills root up on tools.skills_tool at CALL time
+    # (not via get_skills_dir()): callers and tests patch
+    # ``tools.skills_tool.SKILLS_DIR`` and skill_view() itself resolves
+    # against that module attribute, so normalization must agree with the
+    # exact root skill_view() will enforce.  Import deferred to avoid a
+    # module cycle (tools.skills_tool imports agent.skill_utils).
+    try:
+        from tools import skills_tool as _skills_tool
+        primary_root = Path(_skills_tool.SKILLS_DIR)
+    except Exception:
+        primary_root = get_skills_dir()
+
+    trusted_roots = [primary_root]
+    try:
+        trusted_roots.extend(get_external_skills_dirs())
+    except Exception:
+        pass
+
+    # Prefer the lexical path under a trusted skill root before resolving
+    # symlinks. Slash-command discovery can legitimately find a skill via
+    # ~/.hermes/skills/<name> where <name> is a symlink to a checked-out
+    # skill elsewhere. Resolving first turns that trusted visible path into
+    # an arbitrary absolute path that skill_view() refuses to load.
+    for root in trusted_roots:
+        try:
+            return str(identifier_path.relative_to(root))
+        except ValueError:
+            continue
+
+    try:
+        return str(identifier_path.resolve().relative_to(primary_root.resolve()))
+    except Exception:
+        logger.debug(
+            "Skill identifier %r is an absolute path outside trusted skills "
+            "roots — passing through unchanged (skill_view will reject it)",
+            raw_identifier,
+        )
+        return raw_identifier
 
 
 def _resolve_for_skill_ownership(path) -> Path:
@@ -518,7 +591,7 @@ def _resolve_for_skill_ownership(path) -> Path:
 def is_external_skill_path(path) -> bool:
     """Return True when ``path`` lives under a configured external skills dir.
 
-    ``skills.external_dirs`` are externally owned: Lucifex can discover and view
+    ``skills.external_dirs`` are externally owned: Hermes can discover and view
     their skills, and foreground user-directed tool calls may still edit them,
     but autonomous lifecycle maintenance must treat them as read-only. This
     helper centralizes the ownership boundary so curator/reporting/tool paths do
@@ -544,14 +617,14 @@ def extract_skill_conditions(frontmatter: Dict[str, Any]) -> Dict[str, List]:
     # Handle cases where metadata is not a dict (e.g., a string from malformed YAML)
     if not isinstance(metadata, dict):
         metadata = {}
-    lucifex = metadata.get("lucifex") or {}
-    if not isinstance(lucifex, dict):
-        lucifex = {}
+    hermes = metadata.get("hermes") or {}
+    if not isinstance(hermes, dict):
+        hermes = {}
     return {
-        "fallback_for_toolsets": lucifex.get("fallback_for_toolsets", []),
-        "requires_toolsets": lucifex.get("requires_toolsets", []),
-        "fallback_for_tools": lucifex.get("fallback_for_tools", []),
-        "requires_tools": lucifex.get("requires_tools", []),
+        "fallback_for_toolsets": hermes.get("fallback_for_toolsets", []),
+        "requires_toolsets": hermes.get("requires_toolsets", []),
+        "fallback_for_tools": hermes.get("fallback_for_tools", []),
+        "requires_tools": hermes.get("requires_tools", []),
     }
 
 
@@ -564,7 +637,7 @@ def extract_skill_config_vars(frontmatter: Dict[str, Any]) -> List[Dict[str, Any
     Skills declare config.yaml settings they need via::
 
         metadata:
-          lucifex:
+          hermes:
             config:
               - key: wiki.path
                 description: Path to the LLM Wiki knowledge base directory
@@ -577,10 +650,10 @@ def extract_skill_config_vars(frontmatter: Dict[str, Any]) -> List[Dict[str, Any
     metadata = frontmatter.get("metadata")
     if not isinstance(metadata, dict):
         return []
-    lucifex = metadata.get("lucifex")
-    if not isinstance(lucifex, dict):
+    hermes = metadata.get("hermes")
+    if not isinstance(hermes, dict):
         return []
-    raw = lucifex.get("config")
+    raw = hermes.get("config")
     if not raw:
         return []
     if isinstance(raw, dict):
@@ -724,14 +797,15 @@ def extract_skill_description(frontmatter: Dict[str, Any]) -> str:
 def iter_skill_index_files(skills_dir: Path, filename: str):
     """Walk skills_dir yielding sorted paths matching *filename*.
 
-    Excludes Lucifex metadata, VCS, virtualenv/dependency, cache, and skill
+    Excludes Hermes metadata, VCS, virtualenv/dependency, cache, and skill
     support directories. Support directories (references/templates/assets/
     scripts) can contain arbitrary markdown and even archived package
     ``SKILL.md`` files, but they are progressive-disclosure data loaded through
     ``skill_view(..., file_path=...)`` rather than active skill roots.
     """
-    matches = []
-    for root, dirs, files in os.walk(skills_dir, followlinks=True):
+    skills_dir_str = str(skills_dir)
+    matches: list[str] = []
+    for root, dirs, files in os.walk(skills_dir_str, followlinks=True):
         has_skill_md = "SKILL.md" in files
         dirs[:] = [
             d
@@ -740,9 +814,9 @@ def iter_skill_index_files(skills_dir: Path, filename: str):
             and not (has_skill_md and d in SKILL_SUPPORT_DIRS)
         ]
         if filename in files:
-            matches.append(Path(root) / filename)
-    for path in sorted(matches, key=lambda p: str(p.relative_to(skills_dir))):
-        yield path
+            matches.append(os.path.join(root, filename))
+    for path in sorted(matches):
+        yield Path(path)
 
 
 # ── Namespace helpers for plugin-provided skills ───────────────────────────

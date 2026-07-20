@@ -62,18 +62,18 @@ export const en: Translations = {
   },
 
   boot: {
-    ready: 'Lucifex Desktop is ready',
+    ready: 'Hermes Desktop is ready',
     desktopBootFailedWithMessage: message => `Desktop boot failed: ${message}`,
     steps: {
       connectingGateway: 'Connecting live desktop gateway',
-      loadingSettings: 'Loading Lucifex settings',
+      loadingSettings: 'Loading Hermes settings',
       loadingSessions: 'Loading recent sessions',
       startingDesktopConnection: 'Starting desktop connection',
-      startingLucifexDesktop: 'Starting Lucifex Desktop…'
+      startingHermesDesktop: 'Starting Hermes Desktop…'
     },
     errors: {
-      backgroundExited: 'Lucifex background process exited.',
-      backgroundExitedDuringStartup: 'Lucifex background process exited during startup.',
+      backgroundExited: 'Hermes background process exited.',
+      backgroundExitedDuringStartup: 'Hermes background process exited during startup.',
       backendStopped: 'Backend stopped',
       desktopBootFailed: 'Desktop boot failed',
       gatewayConnectionLost: 'Lost connection to the gateway',
@@ -81,7 +81,7 @@ export const en: Translations = {
       ipcBridgeUnavailable: 'Desktop IPC bridge is unavailable.'
     },
     failure: {
-      title: "Lucifex couldn't start",
+      title: "Hermes couldn't start",
       description:
         "The background gateway didn't come up. Try one of the recovery steps below. Nothing here deletes your chats or settings.",
       remoteTitle: 'Remote gateway sign-in required',
@@ -90,9 +90,14 @@ export const en: Translations = {
       retry: 'Retry',
       repairInstall: 'Repair install',
       useLocalGateway: 'Use local gateway',
+      gatewaySettings: 'Gateway settings',
+      back: 'Back',
       openLogs: 'Open logs',
       repairHint: 'Repair re-runs the installer and can take a few minutes on a fresh machine.',
-      remoteSignInHint: 'Opens the gateway login window. Use local gateway to switch to the bundled backend instead.',
+      remoteSignInHint: signInLabel =>
+        `Signs out of the saved remote browser session, then opens ${signInLabel}. Use local gateway to switch to the bundled backend instead.`,
+      signOutAndSignIn: 'Sign out & sign in',
+      remoteFailureHint: 'Check the gateway URL and sign-in under Gateway settings, or switch to the local gateway.',
       hideRecentLogs: 'Hide recent logs',
       showRecentLogs: 'Show recent logs',
       signedInTitle: 'Signed in',
@@ -118,8 +123,9 @@ export const en: Translations = {
     copyDetailFailed: 'Could not copy notification detail',
     backendOutOfDateTitle: 'Backend out of date',
     backendOutOfDateMessage:
-      'Your Lucifex backend is older than this desktop build and may not work correctly. Update to align them.',
-    updateLucifex: 'Update Lucifex',
+      'Your Hermes backend is older than this desktop build and may not work correctly. Update to align them.',
+    installMethodUnsupportedTitle: 'Unsupported install method',
+    updateHermes: 'Update Hermes',
     updateReadyTitle: 'Update ready',
     updateReadyMessage: count => `${count} new change${count === 1 ? '' : 's'} available.`,
     seeWhatsNew: "See what's new",
@@ -127,7 +133,7 @@ export const en: Translations = {
       elevenLabsNeedsKey: 'ElevenLabs STT needs ELEVENLABS_API_KEY.',
       elevenLabsRejectedKey: 'ElevenLabs rejected the API key (401).',
       methodNotAllowed:
-        'The desktop backend rejected that request (405 Method Not Allowed). Try restarting Lucifex Desktop.',
+        'The desktop backend rejected that request (405 Method Not Allowed). Try restarting Hermes Desktop.',
       microphonePermission: 'Microphone permission was denied.',
       openaiRejectedApiKey: 'OpenAI rejected the API key.',
       openaiRejectedApiKeyWithStatus: status => `OpenAI rejected the API key (${status} invalid_api_key).`,
@@ -157,8 +163,8 @@ export const en: Translations = {
       approveAction: 'Approve',
       rejectAction: 'Reject',
       inputTitle: 'Input needed',
-      inputBody: 'Lucifex is waiting for your response.',
-      turnDoneTitle: 'Lucifex finished',
+      inputBody: 'Hermes is waiting for your response.',
+      turnDoneTitle: 'Hermes finished',
       turnDoneBody: 'The response is ready.',
       turnErrorTitle: 'Turn failed',
       backgroundDoneTitle: 'Background task finished',
@@ -184,12 +190,15 @@ export const en: Translations = {
     unmuteHaptics: 'Unmute haptics',
     openSettings: 'Open settings',
     openStarmap: 'Open memory graph',
-    openKeybinds: 'Keyboard shortcuts'
+    openKeybinds: 'Keyboard shortcuts',
+    layoutEditor: 'Layout editor',
+    layoutEditorTitle: 'Layout editor — ⌘-click resets the layout'
   },
 
   keybinds: {
     title: 'Keyboard shortcuts',
     subtitle: open => `Click a shortcut to rebind it · ${open} reopens this panel.`,
+    search: 'Search shortcuts…',
     rebind: 'Rebind',
     reset: 'Reset to default',
     resetAll: 'Reset all',
@@ -215,6 +224,7 @@ export const en: Translations = {
       'nav.cron': 'Open scheduled jobs',
       'nav.agents': 'Open agents',
       'session.new': 'New session',
+      'session.newTab': 'New session tab',
       'session.newWindow': 'New session in window',
       'session.next': 'Next session',
       'session.prev': 'Previous session',
@@ -243,7 +253,8 @@ export const en: Translations = {
       'view.prevTerminal': 'Previous terminal',
       'view.closeTerminal': 'Close terminal',
       'view.terminalSelection': 'Send terminal selection to composer',
-      'view.closePreviewTab': 'Close preview tab',
+      'view.closeTab': 'Close tab',
+      'view.reopenTab': 'Reopen closed tab',
       'view.flipPanes': 'Swap sidebar sides',
       'appearance.toggleMode': 'Toggle light / dark',
       'profile.default': 'Switch to default profile',
@@ -296,21 +307,39 @@ export const en: Translations = {
     exportConfig: 'Export config',
     importConfig: 'Import config',
     resetToDefaults: 'Reset to defaults',
-    resetConfirm: 'Reset all settings to Lucifex defaults?',
+    resetConfirm: 'Reset all settings to Hermes defaults?',
     exportFailed: 'Export failed',
     resetFailed: 'Reset failed',
     nav: {
       providers: 'Providers',
       providerAccounts: 'Accounts',
       providerApiKeys: 'API keys',
+      providerCustomEndpoints: 'Custom Endpoints',
       gateway: 'Gateway',
       apiKeys: 'Tools & Keys',
+      keybinds: 'Keyboard Shortcuts',
       keysTools: 'Tools',
       keysSettings: 'Settings',
       mcp: 'MCP',
       archivedChats: 'Archived Chats',
       about: 'About',
-      notifications: 'Notifications'
+      billing: 'Billing',
+      notifications: 'Notifications',
+      plugins: 'Plugins'
+    },
+    plugins: {
+      title: 'Desktop plugins',
+      blurb:
+        'UI extensions loaded into this app — bundled with the build, or dropped into the desktop-plugins folder (including ones Hermes writes). Disabling unloads a plugin live and survives restarts.',
+      count: n => `${n} installed`,
+      openFolder: 'Open plugins folder',
+      rescan: 'Rescan',
+      reveal: 'Reveal in file manager',
+      enable: 'Enable',
+      disable: 'Disable',
+      failed: 'failed',
+      empty: 'No desktop plugins installed yet.',
+      kinds: { bundled: 'bundled', disk: 'on disk', runtime: 'runtime' }
     },
     notifications: {
       title: 'Notifications',
@@ -318,7 +347,7 @@ export const en: Translations = {
         'Native desktop notifications, separate from in-app toasts. These are device-local — each computer keeps its own settings.',
       enableAll: 'Enable notifications',
       enableAllDesc: 'Master switch. Turn this off to silence every notification below.',
-      focusedHint: 'Completion alerts only fire while Lucifex is in the background.',
+      focusedHint: 'Completion alerts only fire while Hermes is in the background.',
       kinds: {
         approval: {
           label: 'Approval needed',
@@ -326,11 +355,11 @@ export const en: Translations = {
         },
         input: {
           label: 'Input needed',
-          description: 'Lucifex asked a question or needs a password or secret.'
+          description: 'Hermes asked a question or needs a password or secret.'
         },
         turnDone: {
           label: 'Response ready',
-          description: 'A turn finished while Lucifex was in the background.'
+          description: 'A turn finished while Hermes was in the background.'
         },
         turnError: {
           label: 'Turn failed',
@@ -342,7 +371,7 @@ export const en: Translations = {
         }
       },
       test: 'Send test notification',
-      testTitle: 'Lucifex',
+      testTitle: 'Hermes',
       testBody: 'Notifications are working.',
       testSent: 'Test sent. If nothing appears, check your OS notification permissions and Focus/Do Not Disturb.',
       testUnsupported: 'This system does not support native notifications.',
@@ -361,7 +390,7 @@ export const en: Translations = {
       advanced: 'Advanced'
     },
     searchPlaceholder: {
-      about: 'About Lucifex Desktop',
+      about: 'About Hermes Desktop',
       config: 'Search settings...',
       gateway: 'Gateway connection...',
       keys: 'Search API keys...',
@@ -378,11 +407,16 @@ export const en: Translations = {
       intro:
         'These are desktop-only display preferences. Mode controls brightness; theme controls the accent palette and chat surface styling.',
       colorMode: 'Color Mode',
-      colorModeDesc: 'Pick a fixed mode or let Lucifex follow your system setting.',
+      colorModeDesc: 'Pick a fixed mode or let Hermes follow your system setting.',
       toolViewTitle: 'Tool Call Display',
       toolViewDesc: 'Product hides raw tool payloads; Technical shows full input/output.',
+      uiScaleTitle: 'UI Scale',
+      uiScaleDesc: (percent: number) =>
+        `Scales text and controls across the whole app. Cmd/Ctrl with +, - and 0 also works. Current: ${percent}%.`,
       translucencyTitle: 'Window Translucency',
       translucencyDesc: 'See your desktop through the whole window. macOS and Windows only.',
+      backdropTitle: 'Chat Backdrop',
+      backdropDesc: 'The faint statue image behind the conversation.',
       embedsTitle: 'Inline Embeds',
       embedsDesc:
         'Rich previews load from third-party sites (YouTube, X, …). Ask shows a placeholder until you allow each one; Always loads them automatically; Off keeps plain links.',
@@ -410,9 +444,9 @@ export const en: Translations = {
       pet: {
         title: 'Pet',
         intro:
-          'Adopt an animated petdex mascot that floats over the app and reacts to what Lucifex is doing — running while tools execute, celebrating on success, sulking on errors.',
+          'Adopt an animated petdex mascot that floats over the app and reacts to what Hermes is doing — running while tools execute, celebrating on success, sulking on errors.',
         restartHint:
-          'Pets need a quick restart — the running app started before this feature was added. Quit and reopen Lucifex, then come back here.',
+          'Pets need a quick restart — the running app started before this feature was added. Quit and reopen Hermes, then come back here.',
         on: 'On',
         off: 'Off',
         scaleTitle: 'Size',
@@ -450,7 +484,7 @@ export const en: Translations = {
     fieldLabels: FIELD_LABELS,
     fieldDescriptions: FIELD_DESCRIPTIONS,
     about: {
-      heading: 'Lucifex Desktop',
+      heading: 'Hermes Desktop',
       version: value => `Version ${value}`,
       versionUnavailable: 'Version unavailable',
       updates: 'Updates',
@@ -469,7 +503,7 @@ export const en: Translations = {
       justNowSuffix: ' · just now',
       automaticUpdates: 'Automatic updates',
       automaticUpdatesDesc:
-        'Lucifex checks for updates automatically in the background and lets you know when one is ready.',
+        'Hermes checks for updates automatically in the background and lets you know when one is ready.',
       branchCommit: (branch, commit) => `Branch ${branch} · Commit ${commit}`,
       never: 'never',
       justNow: 'just now',
@@ -480,9 +514,10 @@ export const en: Translations = {
     config: {
       none: 'None',
       noneParen: '(none)',
+      builtinOnly: 'Built-in only',
       notSet: 'Not set',
       commaSeparated: 'comma-separated values',
-      loading: 'Loading Lucifex configuration...',
+      loading: 'Loading Hermes configuration...',
       emptyTitle: 'Nothing to configure',
       emptyDesc: 'This section has no adjustable settings.',
       failedLoad: 'Settings failed to load',
@@ -503,6 +538,7 @@ export const en: Translations = {
     envActions: {
       actionsFor: label => `Actions for ${label}`,
       credentialActions: 'Credential actions',
+      manageInKeys: 'Manage in API Keys',
       docs: 'Docs',
       hideValue: 'Hide value',
       revealValue: 'Reveal value',
@@ -517,7 +553,7 @@ export const en: Translations = {
       title: 'Gateway Connection',
       envOverride: 'env override',
       intro:
-        'Lucifex Desktop starts its own local gateway by default. Use a remote gateway when you want this app to control an already-running Lucifex backend on another machine or behind a trusted proxy. Pick a profile below to give it its own remote host.',
+        'Hermes Desktop starts its own local gateway by default. Use a remote gateway when you want this app to control an already-running Hermes backend on another machine or behind a trusted proxy. Pick a profile below to give it its own remote host.',
       appliesTo: 'Applies to',
       allProfiles: 'All profiles',
       defaultConnection: 'Default connection for every profile that has no override of its own.',
@@ -525,14 +561,46 @@ export const en: Translations = {
         `Connection used only when “${profile}” is the active profile. Set it to Local to inherit the default.`,
       envOverrideTitle: 'Environment variables are controlling this desktop session.',
       envOverrideDesc:
-        'Unset LUCIFEX_DESKTOP_REMOTE_URL and LUCIFEX_DESKTOP_REMOTE_TOKEN to use the saved setting below.',
+        'Unset HERMES_DESKTOP_REMOTE_URL and HERMES_DESKTOP_REMOTE_TOKEN to use the saved setting below.',
+      modeTitle: 'Connection mode',
       localTitle: 'Local gateway',
-      localDesc: 'Start a private Lucifex backend on localhost. This is the default and works offline.',
+      localDesc: 'Start a private Hermes backend on localhost. This is the default and works offline.',
       remoteTitle: 'Remote gateway',
-      remoteDesc:
-        'Connect this desktop shell to a remote Lucifex backend. Hosted gateways use OAuth or a username and password; self-hosted ones may use a session token.',
+      remoteDesc: 'Connect this desktop shell to a remote Hermes backend.',
+      remoteAuthHint: 'Hosted gateways use OAuth or a username and password; self-hosted ones may use a session token.',
+      cloudTitle: 'Hermes Cloud',
+      cloudDesc: 'Sign in once to Hermes Cloud and pick from the agents on your account — no URL to paste.',
+      cloudSignInTitle: 'Hermes Cloud',
+      cloudSignIn: 'Sign in to Hermes Cloud',
+      cloudSignedIn: 'Signed in to Hermes Cloud',
+      cloudNeedsSignIn: 'Sign in to Hermes Cloud to discover the agents on your account.',
+      cloudSignedInDesc: 'You are signed in. Pick an agent below; the session refreshes automatically.',
+      cloudAgentsTitle: 'Your agents',
+      cloudOrgPickerTitle: 'Choose an organization',
+      cloudOrgSelect: 'Select',
+      cloudOrgChange: 'Change org',
+      cloudOrgRole: role => `Role: ${role}`,
+      cloudLoadingAgents: 'Loading your agents…',
+      cloudNoAgents: {
+        before: 'No agents found on this account. Create one in the ',
+        linkText: 'Nous portal',
+        after: ', then refresh.'
+      },
+      cloudRefresh: 'Refresh',
+      cloudConnect: 'Connect',
+      cloudConnecting: 'Connecting…',
+      cloudDiscoverFailed: 'Could not load your Hermes Cloud agents',
+      cloudConnectFailed: 'Could not connect to that agent',
+      cloudSignInFailed: 'Hermes Cloud sign-in failed',
+      cloudSignedOutTitle: 'Signed out of Hermes Cloud',
+      cloudSignedOutMessage: 'Cleared the Hermes Cloud session.',
+      cloudConnectedTitle: 'Connected',
+      cloudConnectedPill: 'Connected',
+      cloudConnectedTo: name => `Connected to ${name}.`,
+      cloudAgentProvisioning: 'Provisioning…',
+      cloudStatusLabel: status => `Status: ${status}`,
       remoteUrlTitle: 'Remote URL',
-      remoteUrlDesc: 'Base URL for the remote dashboard backend. Path prefixes are supported, for example /lucifex.',
+      remoteUrlDesc: 'Base URL for the remote dashboard backend. Path prefixes are supported, for example /hermes.',
       probing: 'Checking how this gateway authenticates…',
       probeError: 'Could not reach this gateway yet. Check the URL — the auth method will appear once it responds.',
       signedIn: 'Signed in',
@@ -564,9 +632,9 @@ export const en: Translations = {
       enterUrlFirst: 'Enter a remote URL first.',
       restartingTitle: 'Gateway connection restarting',
       savedTitle: 'Gateway settings saved',
-      restartingMessage: 'Lucifex Desktop will reconnect using the saved settings.',
+      restartingMessage: 'Hermes Desktop will reconnect using the saved settings — the shell stays open.',
       savedMessage: 'Saved for the next restart.',
-      connectedTo: (baseUrl, version) => `Connected to ${baseUrl}${version ? ` · Lucifex ${version}` : ''}`,
+      connectedTo: (baseUrl, version) => `Connected to ${baseUrl}${version ? ` · Hermes ${version}` : ''}`,
       reachableTitle: 'Remote gateway reachable',
       signedOutTitle: 'Signed out',
       signedOutMessage: 'Cleared the remote gateway session.',
@@ -665,6 +733,9 @@ export const en: Translations = {
       change: 'Change',
       autoUseMain: 'auto · use main model',
       providerDefault: '(provider default)',
+      fallbackAdd: 'Add fallback',
+      fallbackEmpty: 'No fallback models — the default model is used unless it fails.',
+      notInCatalog: "isn't in this provider's model list — calls may fall back to a backup.",
       tasks: {
         vision: { label: 'Vision', hint: 'Image analysis' },
         web_extract: { label: 'Web extract', hint: 'Page summarization' },
@@ -680,7 +751,7 @@ export const en: Translations = {
       connectAccount: 'Connect an account',
       haveApiKey: 'Have an API key instead?',
       intro:
-        'Sign in with a subscription — no API key to copy. Lucifex runs the browser sign-in for you, right here in the app.',
+        'Sign in with a subscription — no API key to copy. Hermes runs the browser sign-in for you, right here in the app.',
       connected: 'Connected',
       collapse: 'Collapse',
       connectAnother: 'Connect another provider',
@@ -699,6 +770,10 @@ export const en: Translations = {
       noProviderKeys: 'No provider API keys available.',
       searchKeys: 'Search providers…',
       noKeysMatch: 'No providers match your search.',
+      localEndpoint: {
+        title: 'Local / custom endpoint',
+        description: 'Point Hermes at any OpenAI-compatible endpoint (Zyphra, vLLM, llama.cpp, Ollama, etc).'
+      },
       loading: 'Loading providers...'
     },
     sessions: {
@@ -747,11 +822,22 @@ export const en: Translations = {
       noProviderOptions: 'This toolset has no provider options — enable it and it works with your current setup.',
       noProviders: 'No providers are available for this toolset right now.',
       ready: 'Ready',
-      nousIncluded: 'Included with LucifexIA — sign in to activate and use lucifexia.',
+      needsSignIn: 'Needs sign-in',
+      needsSetup: 'Needs setup',
+      nousIncluded: 'Included with a Nous subscription — sign in to Nous Portal to activate.',
+      nousAuthNeededTitle: 'Sign in to Nous Portal',
+      nousAuthNeededMessage: provider => `${provider} is saved but won't activate until you sign in to Nous Portal.`,
+      nousAuthSignIn: 'Sign in',
+      nousAuthDoneTitle: 'Nous Portal connected',
+      nousAuthDoneMessage: 'Your subscription backends are now active.',
+      nousAuthFailed: 'Nous Portal sign-in did not complete',
       noApiKeyRequired: 'No API key required.',
       postSetupHint: step =>
         `This backend needs a one-time install (${step}). Runs on this machine — may take a few minutes.`,
+      postSetupInstalledHint: 'Installed. Re-run setup only if something is broken.',
       postSetupRun: 'Run setup',
+      postSetupRerun: 'Re-run setup',
+      postSetupInstalled: 'Installed',
       postSetupRunning: 'Installing…',
       postSetupStarting: 'Starting…',
       postSetupCompleteTitle: 'Setup complete',
@@ -759,6 +845,15 @@ export const en: Translations = {
       postSetupErrorTitle: 'Setup finished with errors',
       postSetupErrorMessage: step => `Check the ${step} log.`,
       postSetupFailed: step => `Failed to run ${step} setup`,
+      webSearchActive: backend => `Search: ${backend}`,
+      webExtractActive: backend => `Extract: ${backend}`,
+      webCapabilityUnset: 'not set',
+      webUseForSearch: 'Use for Search',
+      webUseForExtract: 'Use for Extract',
+      webUsedForSearch: 'Search backend',
+      webUsedForExtract: 'Extract backend',
+      webCapabilitySelectedMessage: (provider, capability) => `${provider} now handles web ${capability}.`,
+      failedSelectCapability: provider => `Failed to set ${provider}`,
       loadingModels: 'Loading model catalog...',
       modelSectionTitle: 'Model',
       modelCount: count => `${count} model${count === 1 ? '' : 's'}`,
@@ -767,7 +862,20 @@ export const en: Translations = {
       modelInactiveHint: 'Select this backend first to change its model.',
       modelSelectedTitle: 'Model selected',
       modelSelectedMessage: model => `${model} applies to new sessions.`,
-      failedSelectModel: model => `Failed to select ${model}`
+      failedSelectModel: model => `Failed to select ${model}`,
+      terminalBackend: {
+        sectionTitle: 'Execution backend',
+        loading: 'Checking execution backends…',
+        failedLoad: 'Could not load terminal backends',
+        ready: 'Ready',
+        needsSetup: 'Needs setup',
+        unavailable: 'Unavailable',
+        inUse: 'In use',
+        selectedTitle: 'Backend selected',
+        selectedMessage: backend => `Terminal commands now run via ${backend}. Applies to new sessions.`,
+        failedSelect: backend => `Failed to select ${backend}`,
+        needsSetupHint: 'You can select this backend now — commands will fail until setup is complete.'
+      }
     }
   },
 
@@ -789,6 +897,9 @@ export const en: Translations = {
     noDescription: 'No description.',
     configured: 'Configured',
     needsKeys: 'Needs keys',
+    visionModelHint:
+      'Vision uses your auxiliary model configuration — the image-capable model is picked there, not per-provider here.',
+    visionModelLink: 'Choose vision model in Settings → Models',
     toolsetsEnabled: (enabled, total) => `${enabled}/${total} toolsets enabled`,
     configureToolset: label => `Configure ${label}`,
     toggleToolset: label => `Toggle ${label} toolset`,
@@ -823,7 +934,7 @@ export const en: Translations = {
     edit: 'Edit',
     archive: 'Archive',
     skillArchivedTitle: 'Skill archived',
-    skillArchivedMessage: 'Restorable via lucifex curator restore.',
+    skillArchivedMessage: 'Restorable via hermes curator restore.',
     hub: {
       searchPlaceholder: 'Search the skill hub',
       search: 'Search',
@@ -887,7 +998,7 @@ export const en: Translations = {
     loadFailed: 'Could not load memory graph',
     loading: 'Loading…',
     emptyTitle: 'Nothing learned yet',
-    emptyDesc: 'As Lucifex builds skills and memories for your work, they appear here.',
+    emptyDesc: 'As Hermes builds skills and memories for your work, they appear here.',
     share: 'Share map',
     shareHint:
       'Copy the code to share this map, or paste one to load. It only includes the layout, not your memory or skill text.',
@@ -940,6 +1051,7 @@ export const en: Translations = {
     goTo: 'Go to',
     goToSession: 'Go to session',
     branches: 'Branches',
+    commands: 'Commands',
     startInBranch: branch => `New conversation in ${branch}`,
     commandCenter: 'Command Center',
     appearance: 'Appearance',
@@ -951,7 +1063,7 @@ export const en: Translations = {
       placeholder: 'Search pets…',
       loading: 'Loading petdex gallery…',
       error: 'Could not reach the petdex gallery.',
-      staleBackend: 'Restart Lucifex to use pets — the backend predates this feature.',
+      staleBackend: 'Restart Hermes to use pets — the backend predates this feature.',
       empty: 'No matching pets.',
       turnOff: 'Turn off',
       turnOn: 'Turn on',
@@ -978,8 +1090,8 @@ export const en: Translations = {
       hatchComposing: 'Piecing it together…',
       hatchSaving: 'Almost there…',
       namePlaceholder: 'Name your pet',
-      staleBackend: 'Update Lucifex to generate pets.',
-      backgroundHint: 'You can close this — Lucifex will notify you when it’s done.',
+      staleBackend: 'Update Hermes to generate pets.',
+      backgroundHint: 'You can close this — Hermes will notify you when it’s done.',
       slowProviderHint: 'This can take several minutes',
       remix: 'Remix',
       remixConfirmTitle: 'Remix this look?',
@@ -1015,7 +1127,7 @@ export const en: Translations = {
     },
     nav: {
       newChat: { title: 'New session', detail: 'Start a fresh session' },
-      settings: { title: 'Settings', detail: 'Configure Lucifex desktop' },
+      settings: { title: 'Settings', detail: 'Configure Hermes desktop' },
       skills: { title: 'Capabilities', detail: 'Skills, tools, and MCP servers' },
       messaging: { title: 'Messaging', detail: 'Set up Telegram, Slack, Discord, and more' },
       artifacts: { title: 'Artifacts', detail: 'Browse generated outputs' }
@@ -1037,10 +1149,10 @@ export const en: Translations = {
     noSessions: 'No sessions yet.',
     gatewayRunning: 'Messaging gateway running',
     gatewayStopped: 'Messaging gateway stopped',
-    lucifexActiveSessions: (version, count) => `Lucifex ${version} · Active sessions ${count}`,
+    hermesActiveSessions: (version, count) => `Hermes ${version} · Active sessions ${count}`,
     restartGateway: 'Restart gateway',
     gatewayRestartFailed: 'Gateway restart failed.',
-    updateLucifex: 'Update Lucifex',
+    updateHermes: 'Update Hermes',
     actionRunning: 'running',
     actionDone: 'done',
     actionFailed: 'failed',
@@ -1223,7 +1335,7 @@ export const en: Translations = {
       },
       MATRIX_HOMESERVER: { label: 'Homeserver URL', placeholder: 'https://matrix.org' },
       MATRIX_ACCESS_TOKEN: { label: 'Access token' },
-      MATRIX_USER_ID: { label: 'Bot user ID', placeholder: '@lucifex:example.org' },
+      MATRIX_USER_ID: { label: 'Bot user ID', placeholder: '@hermes:example.org' },
       MATRIX_ALLOWED_USERS: {
         label: 'Allowed Matrix user IDs',
         help: 'Recommended. Comma-separated user IDs in @user:server format.'
@@ -1296,7 +1408,7 @@ export const en: Translations = {
     deleteDescMid: ' and remove its ',
     deleteDescSuffix: ' directory. This cannot be undone.',
     deleting: 'Deleting...',
-    createDesc: 'Profiles are independent Lucifex environments: separate config, skills, and SOUL.md.',
+    createDesc: 'Profiles are independent Hermes environments: separate config, skills, and SOUL.md.',
     nameLabel: 'Name',
     cloneFrom: 'Clone from',
     cloneFromNone: 'None (blank)',
@@ -1385,7 +1497,7 @@ export const en: Translations = {
     everyHourAt: minute => `Every hour at :${minute}`,
     newCron: 'New cron',
     emptyDescNew:
-      'Schedule a prompt to run on a cron expression. Lucifex will run it and deliver results to the destination you pick.',
+      'Schedule a prompt to run on a cron expression. Hermes will run it and deliver results to the destination you pick.',
     emptyDescSearch: 'Try a broader search query.',
     emptyTitleNew: 'No scheduled jobs yet',
     emptyTitleSearch: 'No matches',
@@ -1429,11 +1541,16 @@ export const en: Translations = {
     promptPlaceholder: 'Summarize my unread Slack threads and email me the top 5...',
     frequencyLabel: 'Frequency',
     deliverLabel: 'Deliver to',
+    modelLabel: 'Model',
+    modelDefault: 'Default (global model)',
     customScheduleLabel: 'Custom schedule',
     customPlaceholder: '0 9 * * * or weekdays at 9am',
     customHint: 'Cron expression, or phrases like "every hour" or "weekdays at 9am".',
     optional: 'Optional',
+    promptRequired: 'Prompt is required.',
     promptScheduleRequired: 'Prompt and schedule are required.',
+    scheduleRequired: 'Schedule is required.',
+    scriptOnlyEditHint: 'Script-only job (no AI prompt). Job id:',
     saveChanges: 'Save changes',
     createAction: 'Create cron'
   },
@@ -1531,12 +1648,15 @@ export const en: Translations = {
       removeFromSidebar: 'Hide from sidebar',
       createFailed: 'Could not create project',
       staleBackend:
-        'Update the Lucifex backend to create projects — your backend is older than this desktop app (Settings → Updates → Backend).',
-      deleteConfirm: 'This removes the saved project from Lucifex. Files, git repos, and worktrees stay untouched.',
+        'Update the Hermes backend to create projects — your backend is older than this desktop app (Settings → Updates → Backend).',
+      deleteConfirm: 'This removes the saved project from Hermes. Files, git repos, and worktrees stay untouched.',
       startWork: 'New worktree',
       newWorktreeTitle: 'New worktree',
       newWorktreeDesc: 'Name the branch for this worktree.',
       branchPlaceholder: 'e.g. my-feature',
+      branchOff: () => ({ after: '', before: 'branch off ' }),
+      baseBranchPlaceholder: 'Search branches…',
+      baseBranchNone: 'No branches found',
       startWorkFailed: 'Could not create worktree',
       convertBranch: 'Convert a branch…',
       convertBranchTitle: 'Convert a branch',
@@ -1574,18 +1694,25 @@ export const en: Translations = {
       rename: 'Rename',
       archive: 'Archive',
       newWindow: 'New window',
+      hideTabBar: 'Hide tab bar',
+      openInNewTab: 'Open in new tab',
+      openInSplit: 'Open in split',
       copyIdFailed: 'Could not copy session ID',
       actionsFor: title => `Actions for ${title}`,
       sessionActions: 'Session actions',
       sessionRunning: 'Session running',
       needsInput: 'Needs your input',
       waitingForAnswer: 'Waiting for your answer',
+      finishedUnread: 'Finished — unread',
+      backgroundRunning: 'Background task running',
       handoffOrigin: platform => `Handed off from ${platform}`,
+      ownedByProfile: profile => `Profile: ${profile}`,
       renamed: 'Renamed',
       renameFailed: 'Rename failed',
       renameTitle: 'Rename session',
       renameDesc: 'Give this chat a memorable title. Leave empty to clear.',
       untitledPlaceholder: 'Untitled session',
+      untitledChat: id => `Chat ${id}`,
       ageNow: 'now',
       ageDay: 'd',
       ageHour: 'h',
@@ -1596,12 +1723,12 @@ export const en: Translations = {
   composer: {
     message: 'Message',
     wakingProfile: profile => `Waking up ${profile}…`,
-    placeholderStarting: 'Starting Lucifex...',
-    placeholderReconnecting: 'Reconnecting to Lucifex…',
+    placeholderStarting: 'Starting Hermes...',
+    placeholderReconnecting: 'Reconnecting to Hermes…',
     placeholderFollowUp: 'Send follow-up',
     newSessionPlaceholders: [
       'What are we building?',
-      'Give Lucifex a task',
+      'Give Hermes a task',
       "What's on your mind?",
       'Describe what you need',
       'What should we tackle?',
@@ -1651,7 +1778,7 @@ export const en: Translations = {
       '/resume': 'resume a prior session',
       '/details': 'control transcript detail level',
       '/copy': 'copy selection or last assistant message',
-      '/quit': 'exit lucifex'
+      '/quit': 'exit hermes'
     },
     hotkeyDescs: {
       'composer.mention': 'reference files, folders, urls, git',
@@ -1664,7 +1791,7 @@ export const en: Translations = {
       'composer.history': 'cycle popover / history'
     },
     attachUrlTitle: 'Attach a URL',
-    attachUrlDesc: 'Lucifex will fetch the page and include it as context for this turn.',
+    attachUrlDesc: 'Hermes will fetch the page and include it as context for this turn.',
     urlPlaceholder: 'https://example.com/post',
     urlHintPre: 'Include the full URL, e.g. ',
     attach: 'Attach',
@@ -1769,7 +1896,7 @@ export const en: Translations = {
       createPr: 'Create PR',
       openPr: 'Open PR',
       ghMissing: 'Install the GitHub CLI (gh) and sign in to open PRs',
-      agentShip: 'Ask Lucifex to open PR',
+      agentShip: 'Ask Hermes to open PR',
       agentShipPrompt:
         'Review the current changes, commit them with a clear conventional-commit message, push the branch, and open a pull request.',
       newBranch: 'New branch',
@@ -1787,9 +1914,9 @@ export const en: Translations = {
       fetch: 'Downloading…',
       pull: 'Almost there…',
       pydeps: 'Finishing up…',
-      update: 'Updating Lucifex…',
+      update: 'Updating Hermes…',
       rebuild: 'Rebuilding the desktop app…',
-      restart: 'Restarting Lucifex…',
+      restart: 'Restarting Hermes…',
       done: 'Update complete',
       manual: 'Update from your terminal',
       guiSkew: 'Update the desktop app',
@@ -1799,33 +1926,33 @@ export const en: Translations = {
     checkFailedTitle: 'Couldn’t check for updates',
     tryAgain: 'Try again',
     notAvailableTitle: 'Update not available',
-    unsupportedMessage: 'This version of Lucifex can’t update itself from inside the app.',
+    unsupportedMessage: 'This version of Hermes can’t update itself from inside the app.',
     connectionRetry: 'Check your connection and try again.',
     latestBody: 'You’re running the latest version.',
     latestBodyBackend: 'The backend is running the latest version.',
     allSetTitle: 'You’re all set',
     availableTitle: 'New update available',
-    availableBody: 'A new version of Lucifex is ready to install.',
+    availableBody: 'A new version of Hermes is ready to install.',
     availableTitleBackend: 'Backend update available',
-    availableBodyBackend: 'A newer version of the connected Lucifex backend is ready to install.',
+    availableBodyBackend: 'A newer version of the connected Hermes backend is ready to install.',
     availableBodyNoChangelog: 'A newer version is ready. Release notes aren’t available for this install type.',
     updateNow: 'Update now',
     maybeLater: 'Maybe later',
     moreChanges: count => `+ ${count} more change${count === 1 ? '' : 's'} included.`,
     manualTitle: 'Update from your terminal',
-    manualBody: 'You installed Lucifex from the command line, so updates run there too. Paste this into your terminal:',
-    manualPickedUp: 'Lucifex will pick up the new version next time you launch it.',
+    manualBody: 'You installed Hermes from the command line, so updates run there too. Paste this into your terminal:',
+    manualPickedUp: 'Hermes will pick up the new version next time you launch it.',
     guiSkewTitle: 'Update the desktop app',
     guiSkewBody:
-      'The backend was updated, but this desktop app package wasn’t changed. Update or reinstall the Lucifex desktop app (your AppImage / .deb / .rpm) to match.',
+      'The backend was updated, but this desktop app package wasn’t changed. Update or reinstall the Hermes desktop app (your AppImage / .deb / .rpm) to match.',
     copy: 'Copy',
     copied: 'Copied',
     done: 'Done',
     applyingBody:
-      'The Lucifex updater takes over in its own window and reopens Lucifex automatically when it’s done. Please don’t reopen Lucifex yourself while it’s updating.',
+      'The Hermes updater takes over in its own window and reopens Hermes automatically when it’s done. Please don’t reopen Hermes yourself while it’s updating.',
     applyingBodyBackend:
-      'The remote backend is applying the update and will restart. Lucifex reconnects automatically when it’s back.',
-    applyingClose: 'This window will close while the update runs, then Lucifex reopens on its own.',
+      'The remote backend is applying the update and will restart. Hermes reconnects automatically when it’s back.',
+    applyingClose: 'This window will close while the update runs, then Hermes reopens on its own.',
     errorTitle: 'Update didn’t finish',
     errorBody: 'No worries — nothing was lost. You can try again now.',
     notNow: 'Not now',
@@ -1847,7 +1974,7 @@ export const en: Translations = {
       skipped: 'Skipped',
       failed: 'Failed'
     },
-    oneTimeTitle: 'Lucifex needs a one-time install',
+    oneTimeTitle: 'Hermes needs a one-time install',
     unsupportedDesc: platform =>
       `Automated first-launch install isn’t available on ${platform} yet. Open Terminal and run the command below, then relaunch this app. Subsequent launches will skip this step.`,
     installCommand: 'Install command',
@@ -1856,12 +1983,12 @@ export const en: Translations = {
     installTo: 'Will install to',
     retryAfterRun: 'I’ve run it -- retry',
     failedTitle: 'Installation failed',
-    settingUpTitle: 'Setting up Lucifex Agent',
+    settingUpTitle: 'Setting up Hermes Agent',
     finishingTitle: 'Finishing up',
     failedDesc:
-      'One of the install steps failed. On Windows, this can happen if another Lucifex CLI or desktop instance is running. Stop any running Lucifex instances, then retry. Check the details below or the desktop log for the full transcript.',
+      'One of the install steps failed. On Windows, this can happen if another Hermes CLI or desktop instance is running. Stop any running Hermes instances, then retry. Check the details below or the desktop log for the full transcript.',
     activeDesc:
-      'This is a one-time setup. The Lucifex installer is downloading dependencies and configuring your machine. Subsequent launches will skip this step.',
+      'This is a one-time setup. The Hermes installer is downloading dependencies and configuring your machine. Subsequent launches will skip this step.',
     progress: (completed, total) => `${completed} of ${total} steps complete`,
     currentStage: stage => ` -- now: ${stage}`,
     fetchingManifest: 'Fetching installer manifest...',
@@ -1879,10 +2006,10 @@ export const en: Translations = {
   },
 
   onboarding: {
-    headerTitle: "Let's get you setup with Lucifex Agent",
+    headerTitle: "Let's get you setup with Hermes Agent",
     headerDesc: 'Connect a model provider to start chatting. Most options take one click.',
-    preparingInstall: 'Lucifex is finishing install. This usually takes under a minute on first run.',
-    starting: 'Starting Lucifex…',
+    preparingInstall: 'Hermes is finishing install. This usually takes under a minute on first run.',
+    starting: 'Starting Hermes…',
     lookingUpProviders: 'Looking up providers...',
     collapse: 'Collapse',
     otherProviders: 'Other providers',
@@ -1890,9 +2017,14 @@ export const en: Translations = {
     chooseLater: "I'll choose a provider later",
     recommended: 'Recommended',
     connected: 'Connected',
-    featuredPitch: 'LucifexIA — Criado por Gabriel Almeida',
+    featuredPitch: 'One subscription, 300+ frontier models — the recommended way to run Hermes',
+    fireworksPitch: 'Direct model API — Fireworks-hosted frontier models',
     openRouterPitch: 'One key, hundreds of models — a solid default',
     apiKeyOptions: {
+      fireworks: {
+        short: 'direct model API',
+        description: 'Direct access to models hosted by Fireworks AI.'
+      },
       openrouter: {
         short: 'one key, many models',
         description: 'Hosts hundreds of models behind a single key. Good default for new installs.'
@@ -1902,7 +2034,7 @@ export const en: Translations = {
       xai: { short: 'Grok models', description: 'Direct access to xAI Grok models.' },
       local: {
         short: 'self-hosted',
-        description: 'Point Lucifex at a local or self-hosted OpenAI-compatible endpoint (vLLM, llama.cpp, Ollama, etc).'
+        description: 'Point Hermes at a local or self-hosted OpenAI-compatible endpoint (vLLM, llama.cpp, Ollama, etc).'
       }
     },
     backToSignIn: 'Back to sign in',
@@ -1915,7 +2047,7 @@ export const en: Translations = {
     update: 'Update',
     flowSubtitles: {
       pkce: 'Opens your browser to sign in, then continues here',
-      device_code: 'Opens a verification page in your browser — Lucifex connects automatically',
+      device_code: 'Opens a verification page in your browser — Hermes connects automatically',
       external: 'Sign in once in your terminal, then come back to chat'
     },
     startingSignIn: provider => `Starting sign-in for ${provider}...`,
@@ -1926,12 +2058,12 @@ export const en: Translations = {
     pickDifferentProvider: 'Pick a different provider',
     signInWith: provider => `Sign in with ${provider}`,
     openedBrowser: provider => `We opened ${provider} in your browser.`,
-    authorizeThere: 'Authorize Lucifex there.',
+    authorizeThere: 'Authorize Hermes there.',
     copyAuthCode: 'Copy the authorization code and paste it below.',
     pasteAuthCode: 'Paste authorization code',
     reopenAuthPage: 'Re-open authorization page',
     autoBrowser: provider =>
-      `We opened ${provider} in your browser. Authorize Lucifex there and you'll be connected automatically — nothing to copy or paste.`,
+      `We opened ${provider} in your browser. Authorize Hermes there and you'll be connected automatically — nothing to copy or paste.`,
     reopenSignInPage: 'Re-open sign-in page',
     waitingAuthorize: 'Waiting for you to authorize...',
     externalPending: provider =>
@@ -1960,7 +2092,7 @@ export const en: Translations = {
     loadFailed: 'Could not load models',
     noAuthenticatedProviders: 'No authenticated providers.',
     pro: 'Pro',
-    proNeedsSubscription: 'Pro models need a paid subscription.',
+    proNeedsSubscription: 'Pro models need a paid Nous subscription.',
     free: 'Free',
     freeTier: 'Free tier',
     priceTitle: 'Input / Output price per million tokens'
@@ -1995,7 +2127,9 @@ export const en: Translations = {
       low: 'Low',
       medium: 'Medium',
       high: 'High',
+      xhigh: 'Extra High',
       max: 'Max',
+      ultra: 'Ultra',
       updateFailed: 'Model option update failed',
       fastFailed: 'Fast mode update failed'
     },
@@ -2014,13 +2148,23 @@ export const en: Translations = {
       viewAllLogs: 'View all logs →',
       messagingPlatforms: 'Messaging platforms'
     },
+    approvalMode: {
+      title: 'Approval mode',
+      ariaLabel: mode => `Approval mode: ${mode}`,
+      manual: 'Manual',
+      manualDescription: 'Ask before actions that require approval',
+      smart: 'Smart',
+      smartDescription: 'Automatically assess actions and ask when needed',
+      off: 'Off',
+      offDescription: 'Run without approval prompts'
+    },
     statusbar: {
       unknown: 'unknown',
       restart: 'restart',
       update: 'update',
       updateInProgress: 'Update in progress',
       commitsBehind: (count, branch) => `${count} commit${count === 1 ? '' : 's'} behind ${branch}`,
-      desktopVersion: version => `Lucifex Desktop v${version}`,
+      desktopVersion: version => `Hermes Desktop v${version}`,
       backendVersion: version => `Backend v${version}`,
       clientLabel: version => `client v${version}`,
       backendLabel: version => `backend v${version}`,
@@ -2037,7 +2181,7 @@ export const en: Translations = {
       gatewayConnecting: 'connecting',
       gatewayOffline: 'offline',
       gatewayRestarting: 'restarting…',
-      gatewayTitle: 'Lucifex inference gateway status',
+      gatewayTitle: 'Hermes inference gateway status',
       agents: 'Agents',
       closeAgents: 'Close agents',
       openAgents: 'Open agents',
@@ -2077,6 +2221,7 @@ export const en: Translations = {
       noModel: 'no model',
       switchModel: 'Switch model',
       openModelPicker: 'Open model picker',
+      modelPinned: 'pinned by you; new chats use this instead of the Settings default',
       modelTitle: (provider, model) => `Model · ${provider}: ${model}`,
       providerModelTitle: (provider, model) => `${provider} · ${model}`
     }
@@ -2141,7 +2286,7 @@ export const en: Translations = {
     binaryTitle: 'This looks like a binary file',
     binaryBody: label => `Previewing ${label} may show unreadable text.`,
     largeTitle: 'This file is large',
-    largeBody: (label, size) => `${label} is ${size}. Lucifex will only show the first 512 KB.`,
+    largeBody: (label, size) => `${label} is ${size}. Hermes will only show the first 512 KB.`,
     previewAnyway: 'Preview anyway',
     truncated: 'Showing first 512 KB.',
     noInlineTitle: 'No inline preview',
@@ -2180,26 +2325,26 @@ export const en: Translations = {
       serverNotFound: 'Server not found',
       failedToLoad: 'Preview failed to load',
       tryAgain: 'Try again',
-      restarting: 'Lucifex is restarting...',
-      askRestart: 'Ask Lucifex to restart the server',
-      lookingRestart: taskId => `Lucifex is looking for a preview server to restart (${taskId})`,
+      restarting: 'Hermes is restarting...',
+      askRestart: 'Ask Hermes to restart the server',
+      lookingRestart: taskId => `Hermes is looking for a preview server to restart (${taskId})`,
       restartingTitle: 'Restarting preview server',
-      restartingMessage: 'Lucifex is working in the background. Watch the preview console for progress.',
+      restartingMessage: 'Hermes is working in the background. Watch the preview console for progress.',
       startRestartFailed: message => `Could not start server restart: ${message}`,
       restartFailed: 'Server restart failed',
       hideConsole: 'Hide preview console',
       showConsole: 'Show preview console',
       hideDevTools: 'Hide preview DevTools',
       openDevTools: 'Open preview DevTools',
-      finishedRestarting: message => `Lucifex finished restarting the preview server${message ? `: ${message}` : ''}`,
+      finishedRestarting: message => `Hermes finished restarting the preview server${message ? `: ${message}` : ''}`,
       failedRestarting: message => `Server restart failed: ${message}`,
       unknownError: 'unknown error',
       restartedTitle: 'Preview server restarted',
       reloadingNow: 'Reloading the preview now.',
       restartFailedTitle: 'Preview restart failed',
-      restartFailedMessage: 'Lucifex could not restart the server.',
+      restartFailedMessage: 'Hermes could not restart the server.',
       stillWorking:
-        'Lucifex is still working, but no restart result has arrived yet. The server command may be running in the foreground.',
+        'Hermes is still working, but no restart result has arrived yet. The server command may be running in the foreground.',
       workspaceReloading: 'Workspace changed, reloading preview',
       fileChanged: url => `File changed, reloading preview: ${url}`,
       filesChanged: (count, url) => `${count} file changes, reloading preview: ${url}`,
@@ -2213,11 +2358,57 @@ export const en: Translations = {
     }
   },
 
+  zones: {
+    showHeader: 'Show header',
+    hideHeader: 'Hide header',
+    minimize: 'Minimize',
+    restore: 'Restore',
+    closeRunningTitle: 'Close running tab?',
+    closeRunningBody:
+      'This chat is still working (or waiting on your input). Closing the tab hides it — the session keeps its progress and can be reopened from the sidebar.',
+    closeRunningConfirm: 'Close tab',
+    closeOthers: 'Close others',
+    closeToRight: 'Close to the right',
+    closeAll: 'Close all',
+    split: dir => `Split ${dir}`,
+    move: dir => `Move ${dir}`,
+    dirUp: 'up',
+    dirDown: 'down',
+    dirLeft: 'left',
+    dirRight: 'right',
+    pluginDisabled: pluginId => `Plugin "${pluginId}" disabled`,
+    pluginDisabledBody: 'Re-enable it in Settings → Plugins to bring the pane back.',
+    missingPane: paneId => `missing pane: ${paneId}`,
+    editTitle: 'Layouts',
+    editHint: 'Pick a layout, or drag panes between zones. Right-click a zone to split.',
+    reset: 'Reset',
+    templates: 'Templates',
+    custom: 'Custom',
+    newGridLayout: 'New grid layout',
+    saveCurrentAs: 'Save current arrangement as a template',
+    nameLayoutPlaceholder: 'Name this layout…',
+    deletePreset: name => `Delete ${name}`,
+    zoneEditorTitle: 'Zone editor',
+    editorHintPre: 'click to split · ',
+    editorHintPost: ' flips the line · drag across zones to merge · drag shared edges to resize',
+    templateColumns: 'Columns',
+    templateRows: 'Rows',
+    templateGrid: 'Grid',
+    templatePriority: 'Priority',
+    zoneTag: index => `zone ${index}`,
+    mergeZones: count => `Merge ${count} zones`,
+    customZoneName: count => `Custom ${count}-zone`,
+    layoutNamePlaceholder: fallback => `Layout name (${fallback})`,
+    saveApply: 'Save & apply',
+    notExpressible: 'this arrangement interlocks (pinwheel) — not expressible as nested splits yet',
+    zoneCount: count => `${count} zones`
+  },
+
   assistant: {
     thread: {
       loadingSession: 'Loading session',
       showEarlier: 'Show earlier messages',
-      loadingResponse: 'Lucifex is loading a response',
+      loadingResponse: 'Hermes is loading a response',
       resumeWhenBackgroundDone: count =>
         count === 1
           ? 'Will resume when the background task finishes'
@@ -2251,7 +2442,7 @@ export const en: Translations = {
       attachingFile: 'Attaching…'
     },
     approval: {
-      gatewayDisconnected: 'Lucifex gateway is not connected',
+      gatewayDisconnected: 'Hermes gateway is not connected',
       sendFailed: 'Could not send approval response',
       run: 'Run',
       command: 'Command',
@@ -2262,17 +2453,18 @@ export const en: Translations = {
       reject: 'Reject',
       alwaysTitle: 'Always allow this command?',
       alwaysDescription: pattern =>
-        `This adds the “${pattern}” pattern to your permanent allowlist (~/.lucifex/config.yaml). Lucifex won’t ask again for commands like this — in this session or any future one.`,
+        `This adds the “${pattern}” pattern to your permanent allowlist (~/.hermes/config.yaml). Hermes won’t ask again for commands like this — in this session or any future one.`,
       alwaysAllow: 'Always allow'
     },
     clarify: {
       notReady: 'Clarify request is not ready yet',
-      gatewayDisconnected: 'Lucifex gateway is not connected',
+      gatewayDisconnected: 'Hermes gateway is not connected',
       sendFailed: 'Could not send clarify response',
       loadingQuestion: 'Loading question…',
       other: 'Other (type your answer)',
       placeholder: 'Type your answer…',
       skip: 'Skip',
+      skipped: 'Skipped',
       continueLabel: 'Continue'
     },
     tool: {
@@ -2363,14 +2555,14 @@ export const en: Translations = {
   },
 
   prompts: {
-    gatewayDisconnected: 'Lucifex gateway is not connected',
+    gatewayDisconnected: 'Hermes gateway is not connected',
     sudoSendFailed: 'Could not send sudo password',
     secretSendFailed: 'Could not send secret',
     sudoTitle: 'Administrator password',
-    sudoDesc: 'Lucifex needs your sudo password to run a privileged command. It is sent only to your local agent.',
+    sudoDesc: 'Hermes needs your sudo password to run a privileged command. It is sent only to your local agent.',
     sudoPlaceholder: 'sudo password',
     secretTitle: 'Secret required',
-    secretDesc: 'Lucifex needs a credential to continue.',
+    secretDesc: 'Hermes needs a credential to continue.',
     secretPlaceholder: 'secret value'
   },
 
@@ -2422,8 +2614,8 @@ export const en: Translations = {
     sessionExportFailed: 'Could not export session',
     imageSaved: 'Image saved',
     downloadStarted: 'Download started',
-    restartToUseSaveImage: 'Restart Lucifex Desktop to use Save Image.',
-    restartToSaveImages: 'Restart Lucifex Desktop to save images',
+    restartToUseSaveImage: 'Restart Hermes Desktop to use Save Image.',
+    restartToSaveImages: 'Restart Hermes Desktop to save images',
     imageDownloadFailed: 'Image download failed',
     openImage: 'Open image',
     downloadImage: 'Download image',
@@ -2442,7 +2634,7 @@ export const en: Translations = {
       success: platform => `Handed off to ${platform}. Resume here anytime.`,
       systemNote: platform => `↻ Handed off to ${platform} — resume here anytime.`,
       failed: error => `Handoff failed: ${error}`,
-      timedOut: 'Timed out waiting for the gateway. Is `lucifex gateway` running?'
+      timedOut: 'Timed out waiting for the gateway. Is `hermes gateway` running?'
     }
   },
 

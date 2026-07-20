@@ -14,11 +14,11 @@ import logging
 from datetime import datetime
 from typing import Optional
 
-from lucifex_cli.config import get_lucifex_home
+from hermes_cli.config import get_hermes_home
 
 logger = logging.getLogger(__name__)
 
-_SESSIONS_DIR = get_lucifex_home() / "sessions"
+_SESSIONS_DIR = get_hermes_home() / "sessions"
 _SESSIONS_INDEX = _SESSIONS_DIR / "sessions.json"
 
 
@@ -102,14 +102,36 @@ def _find_session_id(
     """
     Find the active session_id for a platform + chat_id pair.
 
-    Scans sessions.json entries and matches where origin.chat_id == chat_id
-    on the right platform.  DM session keys don't embed the chat_id
-    (e.g. "agent:main:telegram:dm"), so we check the origin dict.
+    Queries state.db gateway session rows (primary source since #9006);
+    falls back to scanning sessions.json for pre-migration databases.
+    DM session keys don't embed the chat_id (e.g. "agent:main:telegram:dm"),
+    so we match on the persisted chat origin, not the key.
 
     When *user_id* is provided, prefer exact sender matches. If multiple
     same-chat candidates exist and none matches the user, return None instead
     of guessing and contaminating another participant's session.
     """
+    # Primary: state.db
+    try:
+        from hermes_state import SessionDB
+        db = SessionDB()
+        try:
+            finder = getattr(db, "find_session_by_origin", None)
+            if callable(finder):
+                session_id = finder(
+                    platform=platform,
+                    chat_id=chat_id,
+                    thread_id=thread_id,
+                    user_id=user_id,
+                )
+                if session_id:
+                    return str(session_id)
+        finally:
+            db.close()
+    except Exception as e:
+        logger.debug("Mirror state.db session lookup failed: %s", e)
+
+    # Fallback: sessions.json (pre-migration databases)
     if not _SESSIONS_INDEX.exists():
         return None
 
@@ -170,7 +192,7 @@ def _append_to_sqlite(session_id: str, message: dict) -> None:
     """Append a message to the SQLite session database."""
     db = None
     try:
-        from lucifex_state import SessionDB
+        from hermes_state import SessionDB
         db = SessionDB()
         db.append_message(
             session_id=session_id,

@@ -133,7 +133,7 @@ def fetch_manifest(*, timeout: float = _DEFAULT_TIMEOUT, force: bool = False) ->
             MANIFEST_URL,
             timeout=timeout,
             follow_redirects=True,
-            headers={"User-Agent": "lucifex-agent-petdex"},
+            headers={"User-Agent": "hermes-agent-petdex"},
         )
         resp.raise_for_status()
         payload = resp.json()

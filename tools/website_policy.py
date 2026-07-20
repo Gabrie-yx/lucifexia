@@ -1,6 +1,6 @@
 """Website access policy helpers for URL-capable tools.
 
-This module loads a user-managed website blocklist from ~/.lucifex/config.yaml
+This module loads a user-managed website blocklist from ~/.hermes/config.yaml
 and optional shared list files. It is intentionally lightweight so web/browser
 tools can enforce URL policy without pulling in the heavier CLI config stack.
 
@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
-from lucifex_constants import get_lucifex_home
+from hermes_constants import get_hermes_home
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +38,7 @@ _cached_policy_time: float = 0.0
 
 
 def _get_default_config_path() -> Path:
-    return get_lucifex_home() / "config.yaml"
+    return get_hermes_home() / "config.yaml"
 
 
 class WebsitePolicyError(Exception):
@@ -137,7 +137,8 @@ def load_website_blocklist(config_path: Optional[Path] = None) -> Dict[str, Any]
     """
     global _cached_policy, _cached_policy_path, _cached_policy_time
 
-    resolved_path = str(config_path) if config_path else "__default__"
+    default_path = str(_get_default_config_path())
+    resolved_path = str(config_path) if config_path else default_path
     now = time.monotonic()
 
     # Return cached policy if still fresh and same path
@@ -179,7 +180,7 @@ def load_website_blocklist(config_path: Optional[Path] = None) -> Dict[str, Any]
             continue
         path = Path(shared_file).expanduser()
         if not path.is_absolute():
-            path = (get_lucifex_home() / path).resolve()
+            path = (get_hermes_home() / path).resolve()
         for normalized in _iter_blocklist_file_rules(path):
             key = (str(path), normalized)
             if key in seen:
@@ -193,7 +194,7 @@ def load_website_blocklist(config_path: Optional[Path] = None) -> Dict[str, Any]
     if config_path == _get_default_config_path():
         with _cache_lock:
             _cached_policy = result
-            _cached_policy_path = "__default__"
+            _cached_policy_path = resolved_path
             _cached_policy_time = now
 
     return result

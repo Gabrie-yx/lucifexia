@@ -36,9 +36,9 @@ moa:
 
 
 def _facade(monkeypatch, tmp_path, on_call=None):
-    home = tmp_path / ".lucifex"
+    home = tmp_path / ".hermes"
     _write_cfg(home)
-    monkeypatch.setenv("LUCIFEX_HOME", str(home))
+    monkeypatch.setenv("HERMES_HOME", str(home))
     calls = []
 
     def fake_call_llm(**kwargs):
@@ -207,7 +207,7 @@ def test_call_llm_non_stream_still_validates(monkeypatch):
 
     validated = {"called": False}
 
-    def _validate(resp, task):
+    def _validate(resp, task, provider=None, base_url=None):
         validated["called"] = True
         return resp
 

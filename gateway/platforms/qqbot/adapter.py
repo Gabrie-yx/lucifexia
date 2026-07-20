@@ -255,7 +255,7 @@ class QQAdapter(BasePlatformAdapter):
 
         # Default interaction dispatcher: routes approval-button clicks to
         # tools.approval.resolve_gateway_approval() and update-prompt clicks
-        # to ~/.lucifex/.update_response. Set here so the cross-adapter gateway
+        # to ~/.hermes/.update_response. Set here so the cross-adapter gateway
         # contract (send_exec_approval / send_update_prompt) works out of the
         # box; callers can override with set_interaction_callback(None) or
         # register a custom handler.
@@ -278,8 +278,16 @@ class QQAdapter(BasePlatformAdapter):
     # Connection lifecycle
     # ------------------------------------------------------------------
 
-    async def connect(self) -> bool:
-        """Authenticate, obtain gateway URL, and open the WebSocket."""
+    async def connect(self, *, is_reconnect: bool = False) -> bool:
+        """
+        Authenticate, obtain gateway URL, and open the WebSocket.
+
+        Args:
+            is_reconnect: False on a cold first boot; True when the
+                reconnect watcher is re-establishing this platform after
+                an outage. QQBot has no server-side update queue so this
+                flag is accepted for interface conformance only.
+        """
         if not AIOHTTP_AVAILABLE:
             message = "QQ startup failed: aiohttp not installed"
             self._set_fatal_error("qq_missing_dependency", message, retryable=True)
@@ -455,7 +463,7 @@ class QQAdapter(BasePlatformAdapter):
             await self._session.close()
         self._session = None
 
-        # Honor WSL proxy env for QQ WebSocket. Lucifex upgrades overwrite this
+        # Honor WSL proxy env for QQ WebSocket. Hermes upgrades overwrite this
         # local patch, so QQ can regress to direct-connect timeouts after update.
         self._session = aiohttp.ClientSession(trust_env=True)
         ws_proxy = (
@@ -742,8 +750,8 @@ class QQAdapter(BasePlatformAdapter):
                 "shard": [0, 1],
                 "properties": {
                     "$os": "macOS",
-                    "$browser": "lucifex-agent",
-                    "$device": "lucifex-agent",
+                    "$browser": "hermes-agent",
+                    "$device": "hermes-agent",
                 },
             },
         }
@@ -1114,8 +1122,8 @@ class QQAdapter(BasePlatformAdapter):
           :func:`tools.approval.resolve_gateway_approval`
           (unblocks the agent thread waiting on a dangerous-command approval).
         - ``update_prompt:<answer>`` →
-          writes the answer to ``~/.lucifex/.update_response`` for the
-          detached ``lucifex update --gateway`` process to consume.
+          writes the answer to ``~/.hermes/.update_response`` for the
+          detached ``hermes update --gateway`` process to consume.
         - Anything else is logged at DEBUG and ignored.
 
         Installed as the adapter's default interaction callback in
@@ -1184,13 +1192,13 @@ class QQAdapter(BasePlatformAdapter):
         """Atomically write the update-prompt answer to ``.update_response``.
 
         Mirrors the Discord / Telegram / Feishu adapters: the detached
-        ``lucifex update --gateway`` watcher polls this file for a ``y``/``n``
+        ``hermes update --gateway`` watcher polls this file for a ``y``/``n``
         response to its interactive prompts (stash-restore, config migration).
         Writes via ``tmp + rename`` so a partial write can't fool the reader.
         """
         try:
-            from lucifex_constants import get_lucifex_home
-            home = get_lucifex_home()
+            from hermes_constants import get_hermes_home
+            home = get_hermes_home()
             response_path = home / ".update_response"
             tmp = response_path.with_suffix(".tmp")
             tmp.write_text(answer)
@@ -2186,7 +2194,7 @@ class QQAdapter(BasePlatformAdapter):
                                  or ("glm-asr" if provider in {"zai", "glm"} else "whisper-1"),
                     }
 
-        # 2. QQ-specific env vars (set by `lucifex setup gateway` / `lucifex gateway`)
+        # 2. QQ-specific env vars (set by `hermes setup gateway` / `hermes gateway`)
         qq_stt_key = os.getenv("QQ_STT_API_KEY", "")
         if qq_stt_key:
             base_url = os.getenv(
@@ -2640,7 +2648,10 @@ class QQAdapter(BasePlatformAdapter):
         return await self.send_with_keyboard(
             chat_id,
             build_approval_text(req),
-            build_approval_keyboard(req.session_key),
+            build_approval_keyboard(
+                req.session_key,
+                allow_permanent=getattr(req, "allow_permanent", True),
+            ),
             reply_to=reply_to,
         )
 
@@ -2660,6 +2671,8 @@ class QQAdapter(BasePlatformAdapter):
             session_key: str,
             description: str = "dangerous command",
             metadata: Optional[Dict[str, Any]] = None,
+        allow_permanent: bool = True,
+        smart_denied: bool = False,
     ) -> SendResult:
         """Send a button-based exec-approval prompt for a dangerous command.
 
@@ -2669,6 +2682,8 @@ class QQAdapter(BasePlatformAdapter):
         adapter's interaction callback (:meth:`_default_interaction_dispatch`).
         """
         del metadata  # QQ doesn't have thread_id / DM targeting overrides.
+        if smart_denied:
+            description += " Owner override applies to this one operation only."
 
         # Use the reply-to message for passive-message context when we have one.
         # QQ requires a msg_id on outbound messages to a user we've never
@@ -2677,10 +2692,11 @@ class QQAdapter(BasePlatformAdapter):
 
         req = ApprovalRequest(
             session_key=session_key,
-            title=f"Execute this command?",
+            title="Execute this command?",
             description=description,
             command_preview=command,
             timeout_sec=self._APPROVAL_TIMEOUT_SECONDS,
+            allow_permanent=allow_permanent and not smart_denied,
         )
         return await self.send_approval_request(
             chat_id, req, reply_to=msg_id,
@@ -2699,11 +2715,11 @@ class QQAdapter(BasePlatformAdapter):
         """Send a Yes/No update-confirmation prompt with inline buttons.
 
         Matches the cross-adapter contract used by
-        ``gateway/run.py``'s ``lucifex update --gateway`` watcher. Button
+        ``gateway/run.py``'s ``hermes update --gateway`` watcher. Button
         clicks surface as ``INTERACTION_CREATE`` with
         ``button_data = 'update_prompt:y'`` or ``'update_prompt:n'``;
         the adapter's interaction callback writes the answer to
-        ``~/.lucifex/.update_response`` so the detached update process
+        ``~/.hermes/.update_response`` so the detached update process
         can read it.
         """
         del session_key, metadata  # present for contract parity only.

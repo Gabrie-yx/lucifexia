@@ -66,15 +66,15 @@ from typing import Dict, Any, Optional, List, Tuple, Union
 from pathlib import Path
 from agent.auxiliary_client import call_llm
 from agent.redact import redact_cdp_url
-from lucifex_constants import agent_browser_runnable, get_lucifex_home
+from hermes_constants import agent_browser_runnable, get_hermes_home
 from utils import env_int, is_truthy_value
-from lucifex_cli.config import DEFAULT_CONFIG, cfg_get
-from lucifex_cli._subprocess_compat import windows_hide_flags
+from hermes_cli.config import DEFAULT_CONFIG, cfg_get
+from hermes_cli._subprocess_compat import windows_hide_flags
 
 # Browser-specific tool keys passed through to the agent-browser subprocess
 # AFTER credential stripping.  agent-browser is a Node process loading npm
 # deps; handing it the full operator keyring (#29157 / GHSA-m4m8-xjp4-5rmm)
-# means a compromised transitive dependency could read every Lucifex secret
+# means a compromised transitive dependency could read every Hermes secret
 # straight out of process.env.  Strip by default, then re-add only the
 # browser-backend keys the worker legitimately needs.
 _BROWSER_PASSTHROUGH_KEYS: tuple[str, ...] = (
@@ -90,15 +90,15 @@ _BROWSER_PASSTHROUGH_KEYS: tuple[str, ...] = (
 def _build_browser_env() -> dict:
     """Credential-scrubbed env for an agent-browser subprocess.
 
-    Strips Lucifex-managed secrets (provider keys, gateway tokens, GitHub auth,
+    Strips Hermes-managed secrets (provider keys, gateway tokens, GitHub auth,
     infra secrets) then re-adds only the browser-backend keys the worker needs.
-    The ``lucifex_subprocess_env`` import is deferred to keep ``browser_tool``
+    The ``hermes_subprocess_env`` import is deferred to keep ``browser_tool``
     importable under test harnesses that load it against a stubbed ``tools``
     package (tests/tools/test_managed_browserbase_and_modal.py).
     """
-    from tools.environments.local import lucifex_subprocess_env
+    from tools.environments.local import hermes_subprocess_env
 
-    env = lucifex_subprocess_env(inherit_credentials=False)
+    env = hermes_subprocess_env(inherit_credentials=False)
     for _key in _BROWSER_PASSTHROUGH_KEYS:
         if _key in os.environ:
             env[_key] = os.environ[_key]
@@ -193,11 +193,11 @@ def _discover_homebrew_node_dirs() -> tuple[str, ...]:
 
 def _browser_candidate_path_dirs() -> list[str]:
     """Return ordered browser CLI PATH candidates shared by discovery and execution."""
-    lucifex_home = get_lucifex_home()
-    lucifex_node_bin = str(lucifex_home / "node" / "bin")
-    lucifex_node_root = str(lucifex_home / "node")
-    lucifex_nm_bin = str(lucifex_home / "node_modules" / ".bin")
-    return [lucifex_node_bin, lucifex_node_root, lucifex_nm_bin, *list(_discover_homebrew_node_dirs()), *_SANE_PATH_DIRS]
+    hermes_home = get_hermes_home()
+    hermes_node_bin = str(hermes_home / "node" / "bin")
+    hermes_node_root = str(hermes_home / "node")
+    hermes_nm_bin = str(hermes_home / "node_modules" / ".bin")
+    return [hermes_node_bin, hermes_node_root, hermes_nm_bin, *list(_discover_homebrew_node_dirs()), *_SANE_PATH_DIRS]
 
 
 def _merge_browser_path(existing_path: str = "") -> str:
@@ -229,8 +229,17 @@ DEFAULT_COMMAND_TIMEOUT = 30
 MIN_OPEN_TIMEOUT = 60
 MIN_FIRST_OPEN_TIMEOUT = 120
 
-# Max tokens for snapshot content before summarization
-SNAPSHOT_SUMMARIZE_THRESHOLD = 8000
+# Max chars for snapshot content before truncation/summarization. Aligned
+# with web_tools.DEFAULT_EXTRACT_CHAR_LIMIT (15000) — the snapshot and
+# web_extract paths share the same truncate-and-store pattern, so the model
+# gets the same per-page budget from both.
+SNAPSHOT_SUMMARIZE_THRESHOLD = 15000
+
+# Hard ceiling on the full-snapshot file written to cache/web when a snapshot
+# is truncated or LLM-summarized. Mirrors web_tools.MAX_STORED_TEXT_CHARS —
+# the model only ever sees the truncated view; the stored copy exists for
+# read_file paging and must not write unbounded bytes to disk.
+MAX_STORED_SNAPSHOT_CHARS = 2_000_000
 
 # Commands that legitimately return empty stdout (e.g. close, record).
 _EMPTY_OK_COMMANDS: frozenset = frozenset({"close", "record"})
@@ -264,7 +273,7 @@ def _get_command_timeout() -> int:
 
     result = DEFAULT_COMMAND_TIMEOUT
     try:
-        from lucifex_cli.config import read_raw_config
+        from hermes_cli.config import read_raw_config
         cfg = read_raw_config()
         val = cfg_get(cfg, "browser", "command_timeout")
         if val is not None:
@@ -363,7 +372,7 @@ def _format_browser_timeout_error(
             hints.append(
                 "The browser daemon may still be starting or Chromium may be "
                 "missing. Pull the latest image: "
-                "docker pull ghcr.io/nousresearch/lucifex-agent:latest"
+                "docker pull ghcr.io/nousresearch/hermes-agent:latest"
             )
         else:
             hints.append(
@@ -464,7 +473,7 @@ def _get_cdp_override() -> str:
         return _resolve_cdp_override(env_override)
 
     try:
-        from lucifex_cli.config import read_raw_config
+        from hermes_cli.config import read_raw_config
 
         cfg = read_raw_config()
         browser_cfg = cfg.get("browser", {})
@@ -490,7 +499,7 @@ def _get_dialog_policy_config() -> Tuple[str, float]:
     )
 
     try:
-        from lucifex_cli.config import read_raw_config
+        from hermes_cli.config import read_raw_config
 
         cfg = read_raw_config()
         browser_cfg = cfg.get("browser", {}) if isinstance(cfg, dict) else {}
@@ -585,7 +594,7 @@ def _stop_cdp_supervisor(task_id: str) -> None:
 # When the test patches ``_PROVIDER_REGISTRY``, we honour it (so the cache
 # unit tests still drive the function); otherwise the registry-backed path
 # wins. This keeps the test surface stable while letting third-party
-# plugins drop in under ``~/.lucifex/plugins/browser/<vendor>/``.
+# plugins drop in under ``~/.hermes/plugins/browser/<vendor>/``.
 
 _PROVIDER_REGISTRY: Dict[str, type] = {
     "browserbase": BrowserbaseProvider,
@@ -646,7 +655,7 @@ def _ensure_browser_plugins_loaded() -> None:
     calls early-return inside `_ensure_plugins_discovered`.
     """
     try:
-        from lucifex_cli.plugins import _ensure_plugins_discovered
+        from hermes_cli.plugins import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()
     except Exception as exc:
@@ -664,7 +673,7 @@ def _get_cloud_provider() -> Optional[CloudBrowserProvider]:
     :data:`agent.browser_registry._LEGACY_PREFERENCE` walk.
 
     Selection routes through :mod:`agent.browser_registry` so third-party
-    browser plugins (``~/.lucifex/plugins/browser/<vendor>/``) participate
+    browser plugins (``~/.hermes/plugins/browser/<vendor>/``) participate
     in explicit-config resolution. Test fixtures that override
     ``_PROVIDER_REGISTRY`` or ``BrowserUseProvider`` / ``BrowserbaseProvider``
     on this module still drive the function — see
@@ -676,7 +685,7 @@ def _get_cloud_provider() -> Optional[CloudBrowserProvider]:
 
     resolved: Optional[CloudBrowserProvider] = None
     try:
-        from lucifex_cli.config import read_raw_config
+        from hermes_cli.config import read_raw_config
         cfg = read_raw_config()
         browser_cfg = cfg.get("browser", {})
         provider_key = None
@@ -758,7 +767,7 @@ def _get_cloud_provider() -> Optional[CloudBrowserProvider]:
     return _cached_cloud_provider
 
 
-from lucifex_constants import is_termux as _is_termux_environment
+from hermes_constants import is_termux as _is_termux_environment
 
 
 def _browser_install_hint() -> str:
@@ -850,7 +859,7 @@ def _get_browser_engine() -> str:
 
     # Config file takes priority
     try:
-        from lucifex_cli.config import read_raw_config
+        from hermes_cli.config import read_raw_config
         cfg = read_raw_config()
         val = cfg.get("browser", {}).get("engine")
         if val and str(val).strip():
@@ -876,6 +885,40 @@ def _get_browser_engine() -> str:
     return _cached_browser_engine
 
 
+_cached_headed_mode: Optional[bool] = None
+_headed_mode_resolved = False
+
+
+def _is_headed_mode() -> bool:
+    """Return True when the browser should launch in headed (visible) mode.
+
+    Reads ``config["browser"]["headed"]`` with ``AGENT_BROWSER_HEADED`` env
+    var as fallback.  Result is cached after the first call.
+    """
+    global _cached_headed_mode, _headed_mode_resolved
+    if _headed_mode_resolved:
+        return _cached_headed_mode  # type: ignore[return-value]
+
+    _headed_mode_resolved = True
+    _cached_headed_mode = False
+
+    try:
+        from hermes_cli.config import read_raw_config
+        cfg = read_raw_config()
+        val = cfg.get("browser", {}).get("headed")
+        if val is not None:
+            _cached_headed_mode = str(val).strip().lower() in ("true", "1", "yes")
+    except Exception as e:
+        logger.debug("Could not read browser.headed from config: %s", e)
+
+    if not _cached_headed_mode:
+        env_val = os.environ.get("AGENT_BROWSER_HEADED", "").strip()
+        if env_val and env_val.lower() in ("true", "1", "yes"):
+            _cached_headed_mode = True
+
+    return _cached_headed_mode
+
+
 def _should_inject_engine(engine: str) -> bool:
     """Return True when the engine flag should be added to agent-browser commands.
 
@@ -898,7 +941,7 @@ def _lightpanda_fallback_reason(engine: str, command: str, result: Dict[str, Any
     """Return the user-visible reason a Lightpanda result needs Chrome fallback.
 
     ``None`` means no fallback should run.  The returned string is copied into
-    the fallback result so CLI/TUI/gateway users can see when Lucifex silently
+    the fallback result so CLI/TUI/gateway users can see when Hermes silently
     switched from Lightpanda to Chrome for completeness.
     """
     if engine != "lightpanda":
@@ -1028,7 +1071,7 @@ def _run_chrome_fallback_command(
             hint = (
                 "Chrome fallback requires Chromium, but it is missing. "
                 "You're running in Docker — pull the latest image: "
-                "docker pull ghcr.io/nousresearch/lucifex-agent:latest"
+                "docker pull ghcr.io/nousresearch/hermes-agent:latest"
             )
         else:
             hint = (
@@ -1082,7 +1125,7 @@ def _run_chrome_fallback_command(
             #   and that grandchild's CreateProcess dies silently
             #   ("Daemon process exited during startup with no error output")
             #   when inherited parent handles are in a weird state. Observed
-            #   in the Lucifex CLI where sys.stdout and sys.stderr both report
+            #   in the Hermes CLI where sys.stdout and sys.stderr both report
             #   fileno=1 (stderr dup'd onto stdout at the OS level).
             # * close_fds=True → block inheritance of every other handle.
             #   (Default on POSIX; must be explicit on Windows for stdio.)
@@ -1178,7 +1221,7 @@ def _auto_local_for_private_urls() -> bool:
 
     _auto_local_for_private_urls_resolved = True
     try:
-        from lucifex_cli.config import read_raw_config
+        from hermes_cli.config import read_raw_config
         cfg = read_raw_config()
         browser_cfg = cfg.get("browser", {})
         if isinstance(browser_cfg, dict) and "auto_local_for_private_urls" in browser_cfg:
@@ -1353,7 +1396,7 @@ def _allow_private_urls() -> bool:
     _allow_private_urls_resolved = True
     _cached_allow_private_urls = False  # safe default
     try:
-        from lucifex_cli.config import read_raw_config
+        from hermes_cli.config import read_raw_config
         cfg = read_raw_config()
         browser_cfg = cfg.get("browser", {})
         if isinstance(browser_cfg, dict):
@@ -1369,7 +1412,7 @@ def _socket_safe_tmpdir() -> str:
     """Return a short temp directory path suitable for Unix domain sockets.
 
     macOS sets ``TMPDIR`` to ``/var/folders/xx/.../T/`` (~51 chars).  When we
-    append ``agent-browser-lucifex_…`` the resulting socket path exceeds the
+    append ``agent-browser-hermes_…`` the resulting socket path exceeds the
     104-byte macOS limit for ``AF_UNIX`` addresses, causing agent-browser to
     fail with "Failed to create socket directory" or silent screenshot failures.
 
@@ -1420,7 +1463,7 @@ DEFAULT_SESSION_INACTIVITY_TIMEOUT = int(
 def _get_session_inactivity_timeout() -> int:
     result = env_int("BROWSER_INACTIVITY_TIMEOUT", DEFAULT_SESSION_INACTIVITY_TIMEOUT)
     try:
-        from lucifex_cli.config import read_raw_config
+        from hermes_cli.config import read_raw_config
         cfg = read_raw_config()
         val = cfg_get(cfg, "browser", "inactivity_timeout")
         if val is not None:
@@ -1449,7 +1492,7 @@ def _emergency_cleanup_all_sessions():
     Called on process exit or interrupt to prevent orphaned sessions.
 
     Also runs the orphan reaper to clean up daemons left behind by previously
-    crashed lucifex processes — this way every clean lucifex exit sweeps
+    crashed hermes processes — this way every clean hermes exit sweeps
     accumulated orphans, not just ones that actively used the browser tool.
     """
     global _cleanup_done
@@ -1472,9 +1515,9 @@ def _emergency_cleanup_all_sessions():
                 _session_last_activity.clear()
                 _recording_sessions.clear()
 
-    # Sweep orphans from other crashed lucifex processes.  Safe even if we
+    # Sweep orphans from other crashed hermes processes.  Safe even if we
     # never used the browser — uses owner_pid liveness to avoid reaping
-    # daemons owned by other live lucifex processes.
+    # daemons owned by other live hermes processes.
     try:
         _reap_orphaned_browser_sessions()
     except Exception as e:
@@ -1523,10 +1566,10 @@ def _cleanup_inactive_browser_sessions():
 
 
 def _write_owner_pid(socket_dir: str, session_name: str) -> None:
-    """Record the current lucifex PID as the owner of a browser socket dir.
+    """Record the current hermes PID as the owner of a browser socket dir.
 
     Written atomically to ``<socket_dir>/<session_name>.owner_pid`` so the
-    orphan reaper can distinguish daemons owned by a live lucifex process
+    orphan reaper can distinguish daemons owned by a live hermes process
     (don't reap) from daemons whose owner crashed (reap).  Best-effort —
     an OSError here just falls back to the legacy ``tracked_names``
     heuristic in the reaper.
@@ -1635,13 +1678,13 @@ def _reap_orphaned_browser_sessions():
 
     This function scans the tmp directory for ``agent-browser-*`` socket dirs
     left behind by previous runs, reads the daemon PID files, and kills any
-    daemons whose owning lucifex process is no longer alive.
+    daemons whose owning hermes process is no longer alive.
 
     Ownership detection priority:
       1. ``<session>.owner_pid`` file (written by current code) — if the
-         referenced lucifex PID is alive, leave the daemon alone regardless
+         referenced hermes PID is alive, leave the daemon alone regardless
          of whether it's in *this* process's ``_active_sessions``.  This is
-         cross-process safe: two concurrent lucifex instances won't reap each
+         cross-process safe: two concurrent hermes instances won't reap each
          other's daemons.
       2. Fallback for daemons that predate owner_pid: check
          ``_active_sessions`` in the current process.  If not tracked here,
@@ -1657,7 +1700,7 @@ def _reap_orphaned_browser_sessions():
     # Also pick up CDP sessions
     socket_dirs += glob.glob(os.path.join(tmpdir, "agent-browser-cdp_*"))
     # Also pick up cloud-provider sessions (browser-use/browserbase/firecrawl)
-    socket_dirs += glob.glob(os.path.join(tmpdir, "agent-browser-lucifex_*"))
+    socket_dirs += glob.glob(os.path.join(tmpdir, "agent-browser-hermes_*"))
 
     if not socket_dirs:
         return
@@ -1692,7 +1735,7 @@ def _reap_orphaned_browser_sessions():
                 owner_alive = None  # corrupt file — fall through
 
         if owner_alive is True:
-            # Owner is alive — this session belongs to a live lucifex process.
+            # Owner is alive — this session belongs to a live hermes process.
             continue
 
         if owner_alive is None:
@@ -1833,7 +1876,7 @@ BROWSER_TOOL_SCHEMAS = [
     },
     {
         "name": "browser_snapshot",
-        "description": "Get a text-based snapshot of the current page's accessibility tree. Returns interactive elements with ref IDs (like @e1, @e2) for browser_click and browser_type. full=false (default): compact view with interactive elements. full=true: complete page content. Snapshots over 8000 chars are truncated or LLM-summarized. Requires browser_navigate first. Note: browser_navigate already returns a compact snapshot — use this to refresh after interactions that change the page, or with full=true for complete content.",
+        "description": "Get a text-based snapshot of the current page's accessibility tree. Returns interactive elements with ref IDs (like @e1, @e2) for browser_click and browser_type. full=false (default): compact view with interactive elements. full=true: complete page content. Snapshots over 15000 chars are truncated or LLM-summarized; when that happens the complete snapshot is saved to a file and the output includes its path so you can page through the rest with read_file. Requires browser_navigate first. Note: browser_navigate already returns a compact snapshot — use this to refresh after interactions that change the page, or with full=true for complete content.",
         "parameters": {
             "type": "object",
             "properties": {
@@ -1927,7 +1970,7 @@ BROWSER_TOOL_SCHEMAS = [
     },
     {
         "name": "browser_vision",
-        "description": "Take a screenshot of the current page so you can inspect it visually. Use this when you need to understand what the page looks like - especially for CAPTCHAs, visual verification challenges, complex layouts, or cases where the text snapshot misses important visual information. When your active model has native vision, the screenshot is attached to your context directly and you inspect it on the next turn; otherwise Lucifex falls back to an auxiliary vision model and returns a text analysis. Includes a screenshot_path that you can share with the user by including MEDIA:<screenshot_path> in your response. Requires browser_navigate to be called first.",
+        "description": "Take a screenshot of the current page so you can inspect it visually. Use this when you need to understand what the page looks like - especially for CAPTCHAs, visual verification challenges, complex layouts, or cases where the text snapshot misses important visual information. When your active model has native vision, the screenshot is attached to your context directly and you inspect it on the next turn; otherwise Hermes falls back to an auxiliary vision model and returns a text analysis. Includes a screenshot_path that you can share with the user by including MEDIA:<screenshot_path> in your response. Requires browser_navigate to be called first.",
         "parameters": {
             "type": "object",
             "properties": {
@@ -2112,7 +2155,7 @@ def _find_agent_browser(*, validate: bool = True) -> str:
     """
     Find the agent-browser CLI executable.
 
-    Checks in order: current PATH, Homebrew/common bin dirs, Lucifex-managed
+    Checks in order: current PATH, Homebrew/common bin dirs, Hermes-managed
     node, local node_modules/.bin/, npx fallback.
 
     Returns:
@@ -2139,7 +2182,7 @@ def _find_agent_browser(*, validate: bool = True) -> str:
     # Every candidate below is validated with ``agent_browser_runnable`` before
     # it is cached. A bare ``shutil.which`` hit is NOT trusted: agent-browser's
     # npm postinstall re-points a global install symlink at our local
-    # node_modules binary, which disappears on the next ``lucifex update`` and
+    # node_modules binary, which disappears on the next ``hermes update`` and
     # leaves a dangling link that ``which`` still reports but exec fails on with
     # exit 127 (issue #48521). Validating lets a dead candidate fall through to
     # the next working resolution (extended PATH → local .bin → npx) instead of
@@ -2156,7 +2199,7 @@ def _find_agent_browser(*, validate: bool = True) -> str:
         _agent_browser_resolved = True
         return which_result
 
-    # Build an extended search PATH including Lucifex-managed Node, macOS
+    # Build an extended search PATH including Hermes-managed Node, macOS
     # versioned Homebrew installs, and fallback system dirs like Termux.
     extended_path = _merge_browser_path("")
     if extended_path:
@@ -2207,14 +2250,14 @@ def _find_agent_browser(*, validate: bool = True) -> str:
 
     # Nothing found — try lazy installation before giving up.
     try:
-        from lucifex_cli.dep_ensure import ensure_dependency
+        from hermes_cli.dep_ensure import ensure_dependency
         if ensure_dependency("browser"):
             candidates = [
                 shutil.which("agent-browser"),
                 shutil.which("agent-browser", path=extended_path) if extended_path else None,
-                shutil.which("agent-browser", path=str(get_lucifex_home() / "node_modules" / ".bin")),
-                shutil.which("agent-browser", path=str(get_lucifex_home() / "node" / "bin")),
-                shutil.which("agent-browser", path=str(get_lucifex_home() / "node")),
+                shutil.which("agent-browser", path=str(get_hermes_home() / "node_modules" / ".bin")),
+                shutil.which("agent-browser", path=str(get_hermes_home() / "node" / "bin")),
+                shutil.which("agent-browser", path=str(get_hermes_home() / "node")),
             ]
             for recheck in candidates:
                 if recheck and agent_browser_runnable(recheck):
@@ -2252,34 +2295,6 @@ def _extract_screenshot_path_from_text(text: str) -> Optional[str]:
                 return path
 
     return None
-
-
-def _trigger_live_screenshot_async(task_id: str) -> None:
-    """Capture a background screenshot and write to the live-browser cache path.
-
-    Called after any browser navigation/interaction so the desktop Live Browser
-    pane can display a near-real-time view of what the agent sees.
-    Uses the same positional-arg convention as the real screenshot call path.
-    """
-    import threading
-
-    def _take_screenshot():
-        try:
-            from lucifex_constants import get_lucifex_dir
-            screenshots_dir = get_lucifex_dir("cache/screenshots", "browser_screenshots")
-            screenshots_dir.mkdir(parents=True, exist_ok=True)
-            latest_path = screenshots_dir / "latest_browser.png"
-            # Path is a POSITIONAL argument, NOT --path (--path flag does not exist
-            # in agent-browser CLI).  Matches the real screenshot path at line 4039-4043.
-            _run_browser_command(task_id, "screenshot", ["--full", str(latest_path)])
-        except Exception:
-            # Non-fatal — live view degrades gracefully; log but don't crash.
-            import logging
-            logging.getLogger(__name__).debug(
-                "_trigger_live_screenshot_async: screenshot failed", exc_info=True
-            )
-
-    threading.Thread(target=_take_screenshot, daemon=True).start()
 
 
 def _run_browser_command(
@@ -2334,7 +2349,7 @@ def _run_browser_command(
             hint = (
                 "Chromium browser is missing. You're running in Docker — pull "
                 "the latest image to get the bundled Chromium: "
-                "docker pull ghcr.io/nousresearch/lucifex-agent:latest"
+                "docker pull ghcr.io/nousresearch/hermes-agent:latest"
             )
         else:
             hint = (
@@ -2366,8 +2381,10 @@ def _run_browser_command(
         # --session creates a local browser instance and silently ignores --cdp.
         backend_args = ["--cdp", session_info["cdp_url"]]
     else:
-        # Local mode — launch a headless Chromium instance
+        # Local mode — launch Chromium (headless by default, headed when configured)
         backend_args = ["--session", session_info["session_name"]]
+        if _is_headed_mode():
+            backend_args.append("--headed")
 
     # Lightpanda engine injection (local mode only, agent-browser v0.25.3+).
     # Use the resolved session backend rather than global cloud-provider state:
@@ -2400,7 +2417,7 @@ def _run_browser_command(
             f"agent-browser-{session_info['session_name']}"
         )
         os.makedirs(task_socket_dir, mode=0o700, exist_ok=True)
-        # Record this lucifex PID as the session owner (cross-process safe
+        # Record this hermes PID as the session owner (cross-process safe
         # orphan detection — see _write_owner_pid).
         _write_owner_pid(task_socket_dir, session_info['session_name'])
         logger.debug("browser cmd=%s task=%s socket_dir=%s (%d chars)",
@@ -2588,7 +2605,6 @@ def _run_browser_command(
     # --- Lightpanda automatic Chrome fallback ---
     # If engine is lightpanda and the result looks broken, retry with Chrome.
     # This runs for ALL exit paths (timeout, empty, non-JSON, nonzero rc, parsed).
-    final_result = result
     fallback_reason = _lightpanda_fallback_reason(engine, command, result)
     if fallback_reason:
         logger.info(
@@ -2603,15 +2619,50 @@ def _run_browser_command(
             fallback_result = _chrome_fallback_screenshot(task_id, args or [], timeout)
         else:
             fallback_result = _run_chrome_fallback_command(task_id, command, args, timeout)
-        final_result = _annotate_lightpanda_fallback(fallback_result, fallback_reason)
+        return _annotate_lightpanda_fallback(fallback_result, fallback_reason)
 
-    if (
-        command in {"open", "click", "fill", "type", "press", "scroll", "back", "eval"}
-        and final_result.get("success")
-    ):
-        _trigger_live_screenshot_async(task_id)
+    return result
 
-    return final_result
+
+def _store_full_snapshot(snapshot_text: str) -> Optional[str]:
+    """Write a full page snapshot to cache/web and return its absolute path.
+
+    Called whenever a snapshot exceeds SNAPSHOT_SUMMARIZE_THRESHOLD and the
+    model is about to receive a truncated or LLM-summarized view. Mirrors
+    ``web_tools._store_full_text``: the file lands in the same cache/web
+    directory (mounted read-only into remote backends via
+    credential_files._CACHE_DIRS) so the agent's read_file/terminal tools can
+    page through the complete accessibility tree — including element refs that
+    the truncated view dropped — on any backend.
+
+    The stored copy is secret-redacted (same force-redaction boundary as
+    ``_redact_browser_output``) since page-rendered API keys or tokens must
+    not be written to disk unmasked. The filename is keyed on a content hash,
+    so repeated snapshots of the same page state dedupe to one file. Returns
+    None on failure (storage is best-effort; the truncated view is still
+    returned to the model).
+    """
+    try:
+        import hashlib
+        from hermes_constants import get_hermes_dir
+        from agent.redact import redact_sensitive_text
+
+        content = redact_sensitive_text(snapshot_text, force=True)
+        if len(content) > MAX_STORED_SNAPSHOT_CHARS:
+            content = (
+                content[:MAX_STORED_SNAPSHOT_CHARS]
+                + f"\n\n[... stored copy truncated at {MAX_STORED_SNAPSHOT_CHARS:,} chars "
+                f"of {len(content):,} ...]"
+            )
+        cache_dir = get_hermes_dir("cache/web", "web_cache")
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        digest = hashlib.sha256(content.encode("utf-8")).hexdigest()[:10]
+        path = cache_dir / f"browser-snapshot-{digest}.txt"
+        path.write_text(content, encoding="utf-8")
+        return str(path)
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("Failed to store full browser snapshot: %s", exc)
+        return None
 
 
 def _extract_relevant_content(
@@ -2620,8 +2671,15 @@ def _extract_relevant_content(
 ) -> str:
     """Use LLM to extract relevant content from a snapshot based on the user's task.
 
-    Falls back to simple truncation when no auxiliary text model is configured.
+    The full snapshot is stored to cache/web first (summarization is lossy —
+    the pointer lets the agent read anything the summary dropped). Falls back
+    to simple truncation when no auxiliary text model is configured.
     """
+    stored_path = _store_full_snapshot(snapshot_text)
+    stored_note = (
+        f'\n\n[Summarized from a {len(snapshot_text):,}-char snapshot. Full snapshot '
+        f'saved to: {stored_path} — read it with read_file if anything is missing.]'
+    ) if stored_path else ""
     if user_task:
         extraction_prompt = (
             f"You are a content extractor for a browser automation agent.\n\n"
@@ -2663,41 +2721,59 @@ def _extract_relevant_content(
         if model:
             call_kwargs["model"] = model
         response = call_llm(**call_kwargs)
-        extracted = (response.choices[0].message.content or "").strip() or _truncate_snapshot(snapshot_text)
+        extracted = (response.choices[0].message.content or "").strip()
+        if not extracted:
+            # _truncate_snapshot stores its own pointer (dedupes to the same
+            # cache file by content hash), so return it without stored_note.
+            return _truncate_snapshot(snapshot_text)
         # Redact any secrets the auxiliary LLM may have echoed back.
-        return redact_sensitive_text(extracted)
+        return redact_sensitive_text(extracted) + stored_note
     except Exception:
         return _truncate_snapshot(snapshot_text)
 
 
-def _truncate_snapshot(snapshot_text: str, max_chars: int = 8000) -> str:
+def _truncate_snapshot(snapshot_text: str, max_chars: int = SNAPSHOT_SUMMARIZE_THRESHOLD) -> str:
     """Structure-aware truncation for snapshots.
 
     Cuts at line boundaries so that accessibility tree elements are never
-    split mid-line, and appends a note telling the agent how much was
-    omitted.
+    split mid-line. The full snapshot is saved to cache/web (same pattern as
+    web_extract's truncate-and-store) and the appended note tells the agent
+    exactly where the complete text lives and how to page through it with
+    read_file — element refs beyond the cut are in the file, not lost.
 
     Args:
         snapshot_text: The snapshot text to truncate
         max_chars: Maximum characters to keep
 
     Returns:
-        Truncated text with indicator if truncated
+        Truncated text with a stored-full-text pointer if truncated
     """
     if len(snapshot_text) <= max_chars:
         return snapshot_text
 
+    stored_path = _store_full_snapshot(snapshot_text)
+
     lines = snapshot_text.split('\n')
     result: list[str] = []
     chars = 0
+    # Reserve space for the truncation note (the stored-path variant is the
+    # longer of the two). Clamp so tiny max_chars values still keep content.
+    reserve = min(110 + len(stored_path or ""), max_chars // 2)
     for line in lines:
-        if chars + len(line) + 1 > max_chars - 80:  # reserve space for note
+        if chars + len(line) + 1 > max_chars - reserve:
             break
         result.append(line)
         chars += len(line) + 1
     remaining = len(lines) - len(result)
     if remaining > 0:
-        result.append(f'\n[... {remaining} more lines truncated, use browser_snapshot for full content]')
+        if stored_path:
+            next_line = len(result) + 1
+            result.append(
+                f'\n[... {remaining} more lines truncated — full snapshot: '
+                f'read_file path="{stored_path}" offset={next_line} limit=200]'
+            )
+        else:
+            result.append(f'\n[... {remaining} more lines truncated, use browser_snapshot for full content]')
     return '\n'.join(result)
 
 
@@ -2853,16 +2929,6 @@ def browser_navigate(url: str, task_id: Optional[str] = None) -> str:
         data = result.get("data", {})
         title = data.get("title", "")
         final_url = data.get("url", url)
-        
-        # Write to latest_url.txt for live view
-        try:
-            from lucifex_constants import get_lucifex_dir
-            screenshots_dir = get_lucifex_dir("cache/screenshots", "browser_screenshots")
-            screenshots_dir.mkdir(parents=True, exist_ok=True)
-            url_path = screenshots_dir / "latest_url.txt"
-            url_path.write_text(final_url, encoding="utf-8")
-        except Exception:
-            pass
 
         # Post-redirect SSRF check — if the browser followed a redirect to a
         # private/internal address, block the result so the model can't read
@@ -3247,19 +3313,9 @@ def browser_back(task_id: Optional[str] = None) -> str:
                     ),
                 }, ensure_ascii=False)
         data = result.get("data", {})
-        final_url = data.get("url", "")
-        if final_url:
-            try:
-                from lucifex_constants import get_lucifex_dir
-                screenshots_dir = get_lucifex_dir("cache/screenshots", "browser_screenshots")
-                screenshots_dir.mkdir(parents=True, exist_ok=True)
-                url_path = screenshots_dir / "latest_url.txt"
-                url_path.write_text(final_url, encoding="utf-8")
-            except Exception:
-                pass
         response = {
             "success": True,
-            "url": final_url
+            "url": data.get("url", "")
         }
         return json.dumps(_copy_fallback_warning(response, result), ensure_ascii=False)
     else:
@@ -3502,19 +3558,40 @@ _SENSITIVE_BROWSER_EVAL_TOKENS: tuple[tuple[str, str], ...] = (
 def _allow_unsafe_browser_evaluate() -> bool:
     """Return whether sensitive browser JS evaluation is explicitly allowed.
 
-    ``browser_console(expression=...)`` is useful for read-only DOM inspection,
-    but a malicious page or prompt injection can try to steer the agent into
-    evaluating code that reads cookies/storage/form values or performs network
-    exfiltration.  Keep harmless expressions (``document.title`` etc.) working,
-    while requiring a config opt-in for the dangerous primitives.
+    When true, ``browser_console(expression=...)`` runs without the
+    sensitive-primitive denylist even if ``browser.restrict_evaluate`` is set.
     """
     try:
-        from lucifex_cli.config import read_raw_config
+        from hermes_cli.config import read_raw_config
 
         cfg = read_raw_config()
         return is_truthy_value(cfg_get(cfg, "browser", "allow_unsafe_evaluate"), default=False)
     except Exception as e:
         logger.debug("Could not read browser.allow_unsafe_evaluate from config: %s", e)
+        return False
+
+
+def _restrict_browser_evaluate() -> bool:
+    """Return whether the sensitive-primitive eval denylist is enabled.
+
+    Off by default. ``browser_console(expression=...)`` is the agent's only
+    programmatic page-inspection path, and the denylist blocks the *names* of
+    common primitives (``fetch``, ``cookie``, ``querySelector(...input...)``)
+    rather than any actual exfiltration — which also blocks a large class of
+    legitimate DOM extraction (any selector or page script text containing
+    those words). Egress itself is still gated by the SSRF/private-URL guards
+    in ``_browser_eval`` regardless of this setting. Users who want the
+    strict vocabulary denylist (e.g. when browsing hostile pages with a
+    logged-in profile) opt in with ``browser.restrict_evaluate: true``;
+    ``browser.allow_unsafe_evaluate: true`` overrides it back off.
+    """
+    try:
+        from hermes_cli.config import read_raw_config
+
+        cfg = read_raw_config()
+        return is_truthy_value(cfg_get(cfg, "browser", "restrict_evaluate"), default=False)
+    except Exception as e:
+        logger.debug("Could not read browser.restrict_evaluate from config: %s", e)
         return False
 
 
@@ -3574,7 +3651,16 @@ def _risky_browser_eval_reason(expression: str) -> Optional[str]:
 
 
 def _enforce_browser_eval_policy(expression: str) -> Optional[str]:
-    """Fail closed for sensitive browser JS evaluation unless config opts in."""
+    """Block sensitive browser JS evaluation when the opt-in denylist is on.
+
+    The denylist is opt-in (``browser.restrict_evaluate: true``) because it
+    gates on primitive *names*, which cripples legitimate DOM extraction —
+    see ``_restrict_browser_evaluate``. Network egress to private/internal
+    addresses is enforced separately in ``_browser_eval`` and does not depend
+    on this policy.
+    """
+    if not _restrict_browser_evaluate():
+        return None
     if _allow_unsafe_browser_evaluate():
         return None
     reason = _risky_browser_eval_reason(expression)
@@ -3582,10 +3668,11 @@ def _enforce_browser_eval_policy(expression: str) -> Optional[str]:
         return None
     return (
         "Blocked: browser_console(expression=...) tried to use sensitive browser "
-        f"JavaScript primitive ({reason}). Use browser_snapshot/browser_get_images/"
-        "browser_console without expression for normal inspection, or set "
-        "browser.allow_unsafe_evaluate: true in config.yaml only for trusted pages "
-        "when this access is explicitly required."
+        f"JavaScript primitive ({reason}) while browser.restrict_evaluate is "
+        "enabled. Use browser_snapshot/browser_get_images/browser_console "
+        "without expression for normal inspection, or set "
+        "browser.restrict_evaluate: false in config.yaml to allow "
+        "programmatic evaluation."
     )
 
 
@@ -3823,15 +3910,15 @@ def _maybe_start_recording(task_id: str):
         if task_id in _recording_sessions:
             return
     try:
-        from lucifex_cli.config import read_raw_config
-        lucifex_home = get_lucifex_home()
+        from hermes_cli.config import read_raw_config
+        hermes_home = get_hermes_home()
         cfg = read_raw_config()
         record_enabled = cfg_get(cfg, "browser", "record_sessions", default=False)
 
         if not record_enabled:
             return
 
-        recordings_dir = lucifex_home / "browser_recordings"
+        recordings_dir = hermes_home / "browser_recordings"
         recordings_dir.mkdir(parents=True, exist_ok=True)
         _cleanup_old_recordings(max_age_hours=72)
 
@@ -3946,7 +4033,7 @@ def browser_vision(question: str, annotate: bool = False, task_id: Optional[str]
 
     Captures what's visually displayed in the browser. When the active model
     supports native vision, the screenshot is attached directly to the
-    conversation so the model can inspect it on the next turn; otherwise Lucifex
+    conversation so the model can inspect it on the next turn; otherwise Hermes
     falls back to the auxiliary vision model and returns a text analysis. Useful
     for visual content the text-based snapshot may not capture (CAPTCHAs,
     verification challenges, images, complex layouts, etc.).
@@ -3969,8 +4056,8 @@ def browser_vision(question: str, annotate: bool = False, task_id: Optional[str]
 
     import base64
     import uuid as uuid_mod
-    from lucifex_constants import get_lucifex_dir
-    screenshots_dir = get_lucifex_dir("cache/screenshots", "browser_screenshots")
+    from hermes_constants import get_hermes_dir
+    screenshots_dir = get_hermes_dir("cache/screenshots", "browser_screenshots")
     screenshot_path = screenshots_dir / f"browser_screenshot_{uuid_mod.uuid4().hex}.png"
     effective_task_id = _last_session_key(task_id or "default")
 
@@ -4028,8 +4115,8 @@ def browser_vision(question: str, annotate: bool = False, task_id: Optional[str]
             _lp_fallback_warning = fb_result.get("fallback_warning")
             fb_path = fb_result.get("data", {}).get("path", "")
             if fb_path and os.path.exists(fb_path):
-                from lucifex_constants import get_lucifex_dir
-                screenshots_dir = get_lucifex_dir("cache/screenshots", "browser_screenshots")
+                from hermes_constants import get_hermes_dir
+                screenshots_dir = get_hermes_dir("cache/screenshots", "browser_screenshots")
                 screenshots_dir.mkdir(parents=True, exist_ok=True)
                 import shutil as _shutil_vision
                 persistent_path = screenshots_dir / f"browser_screenshot_{uuid_mod.uuid4().hex}.png"
@@ -4112,14 +4199,6 @@ def browser_vision(question: str, annotate: bool = False, task_id: Optional[str]
                 ),
             }, ensure_ascii=False)
 
-        # Copy to latest_browser.png for live view
-        try:
-            import shutil
-            latest_path = screenshots_dir / "latest_browser.png"
-            shutil.copy2(screenshot_path, latest_path)
-        except Exception:
-            pass
-
         # Convert screenshot to base64 at full resolution.
         _screenshot_bytes = screenshot_path.read_bytes()
         _screenshot_b64 = base64.b64encode(_screenshot_bytes).decode("ascii")
@@ -4173,7 +4252,7 @@ def browser_vision(question: str, annotate: bool = False, task_id: Optional[str]
         vision_timeout = 120.0
         vision_temperature = 0.1
         try:
-            from lucifex_cli.config import load_config
+            from hermes_cli.config import load_config
             _cfg = load_config()
             _vision_cfg = cfg_get(_cfg, "auxiliary", "vision", default={})
             _vt = _vision_cfg.get("timeout")
@@ -4280,8 +4359,8 @@ def _cleanup_old_screenshots(screenshots_dir, max_age_hours=24):
 def _cleanup_old_recordings(max_age_hours=72):
     """Remove browser recordings older than max_age_hours to prevent disk bloat."""
     try:
-        lucifex_home = get_lucifex_home()
-        recordings_dir = lucifex_home / "browser_recordings"
+        hermes_home = get_hermes_home()
+        recordings_dir = hermes_home / "browser_recordings"
         if not recordings_dir.exists():
             return
         cutoff = time.time() - (max_age_hours * 3600)
@@ -4473,7 +4552,7 @@ def _chromium_search_roots() -> List[str]:
     Order mirrors what agent-browser and Playwright actually probe:
 
     1. ``PLAYWRIGHT_BROWSERS_PATH`` when set (Docker image sets this to
-       ``/opt/lucifex/.playwright``).
+       ``/opt/hermes/.playwright``).
     2. ``~/.cache/ms-playwright`` — Playwright's default on Linux/macOS.
     3. ``~/Library/Caches/ms-playwright`` — Playwright's default on macOS.
     4. ``%USERPROFILE%\\AppData\\Local\\ms-playwright`` — Playwright's default
@@ -4753,7 +4832,7 @@ if __name__ == "__main__":
                         "     Docker: pull the latest image — the current one "
                         "predates the bundled Chromium install"
                     )
-                    print("       docker pull ghcr.io/nousresearch/lucifex-agent:latest")
+                    print("       docker pull ghcr.io/nousresearch/hermes-agent:latest")
                 else:
                     print("     Install it with:")
                     print("       npx agent-browser install --with-deps")

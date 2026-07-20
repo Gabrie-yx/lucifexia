@@ -5,9 +5,9 @@ import { useI18n } from '@/i18n'
 import { requestModelOptions } from '@/lib/model-options'
 import { currentPickerSelection } from '@/lib/model-status-label'
 import { normalize } from '@/lib/text'
-import type { ModelOptionProvider, ModelPricing } from '@/types/lucifex'
+import type { ModelOptionProvider, ModelPricing } from '@/types/hermes'
 
-import type { LucifexGateway } from '../lucifex'
+import type { HermesGateway } from '../hermes'
 import { cn } from '../lib/utils'
 import { startManualOnboarding } from '../store/onboarding'
 
@@ -20,7 +20,7 @@ import { Skeleton } from './ui/skeleton'
 interface ModelPickerDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  gw?: LucifexGateway
+  gw?: HermesGateway
   sessionId?: string | null
   currentModel: string
   currentProvider: string
@@ -50,7 +50,7 @@ export function ModelPickerDialog({
   // shouldFilter reorders items by its fuzzy-match score (≈alphabetical with
   // an empty query), which destroys the backend's curated order. We disable
   // it and do a plain substring filter that preserves array order — matching
-  // the `lucifex model` CLI picker, which shows the curated list verbatim.
+  // the `hermes model` CLI picker, which shows the curated list verbatim.
   const [search, setSearch] = useState('')
 
   const modelOptions = useQuery({
@@ -129,16 +129,6 @@ export function ModelPickerDialog({
   )
 }
 
-/** Maps internal Ollama model IDs to human-readable display names for the picker UI. */
-const MODEL_DISPLAY_NAMES: Record<string, string> = {
-  'lucifexia:latest': 'LUCIFEXIA V1',
-  'lucifexia-vision:latest': 'LUCIFEXIA Vision V1',
-}
-
-function modelDisplayName(modelId: string): string {
-  return MODEL_DISPLAY_NAMES[modelId] ?? modelId
-}
-
 function ModelResults({
   loading,
   error,
@@ -188,13 +178,7 @@ function ModelResults({
   // Only configured providers (those with curated models) are selectable
   // here. Switching to a NOT-yet-configured provider goes through the
   // "Add provider" footer button, which opens the full onboarding selector.
-  const configured = providers
-    .filter(p => (p.models ?? []).length > 0)
-    .sort((a, b) => {
-      if (a.slug === 'nous') return -1
-      if (b.slug === 'nous') return 1
-      return 0
-    })
+  const configured = providers.filter(p => (p.models ?? []).length > 0)
 
   return (
     <>
@@ -239,7 +223,7 @@ function ModelResults({
                   }}
                   value={`${provider.slug}:${model}`}
                 >
-                  <span className="min-w-0 flex-1 truncate">{modelDisplayName(model)}</span>
+                  <span className="min-w-0 flex-1 truncate">{model}</span>
                   {locked && (
                     <span className="shrink-0 text-[0.62rem] uppercase tracking-wide opacity-80">{copy.pro}</span>
                   )}

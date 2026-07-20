@@ -19,7 +19,7 @@
     /* Path aliases */
     "paths": {
       "@/*": ["./src/*"],
-      "@lucifex/shared": ["../apps/shared/src/index.ts"]
+      "@hermes/shared": ["../apps/shared/src/index.ts"]
     },
 
     /* Linting */

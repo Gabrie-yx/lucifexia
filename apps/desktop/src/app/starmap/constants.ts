@@ -1,4 +1,4 @@
-import type { StarmapNode } from '@/types/lucifex'
+import type { StarmapNode } from '@/types/hermes'
 
 import type { GraphParams, Rgb, RingParams, Shape } from './types'
 

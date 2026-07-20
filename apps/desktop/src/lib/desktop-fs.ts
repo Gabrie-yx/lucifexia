@@ -1,13 +1,13 @@
 import type {
-  LucifexConnection,
-  LucifexReadDirResult,
-  LucifexReadFileTextResult,
-  LucifexSelectPathsOptions
+  HermesConnection,
+  HermesReadDirResult,
+  HermesReadFileTextResult,
+  HermesSelectPathsOptions
 } from '@/global'
 import { $connection } from '@/store/session'
 
 export interface DesktopFsRemotePicker {
-  selectPaths: (options?: LucifexSelectPathsOptions) => Promise<string[]>
+  selectPaths: (options?: HermesSelectPathsOptions) => Promise<string[]>
 }
 
 let remotePicker: DesktopFsRemotePicker | null = null
@@ -16,7 +16,7 @@ export function setDesktopFsRemotePicker(next: DesktopFsRemotePicker | null) {
   remotePicker = next
 }
 
-function connectionCacheKey(connection: LucifexConnection | null) {
+function connectionCacheKey(connection: HermesConnection | null) {
   if (!connection) {
     return 'local:'
   }
@@ -43,10 +43,10 @@ function fsPath(endpoint: string, filePath: string) {
 }
 
 function bridge() {
-  const desktop = window.lucifexDesktop
+  const desktop = window.hermesDesktop
 
   if (!desktop) {
-    throw new Error('Lucifex Desktop bridge is unavailable')
+    throw new Error('Hermes Desktop bridge is unavailable')
   }
 
   return desktop
@@ -58,20 +58,20 @@ function remoteFsApi<T>(path: string, body?: Record<string, unknown>): Promise<T
   )
 }
 
-export async function readDesktopDir(path: string): Promise<LucifexReadDirResult> {
+export async function readDesktopDir(path: string): Promise<HermesReadDirResult> {
   if (!isDesktopFsRemoteMode()) {
     return bridge().readDir(path)
   }
 
-  return remoteFsApi<LucifexReadDirResult>(fsPath('list', path))
+  return remoteFsApi<HermesReadDirResult>(fsPath('list', path))
 }
 
-export async function readDesktopFileText(path: string): Promise<LucifexReadFileTextResult> {
+export async function readDesktopFileText(path: string): Promise<HermesReadFileTextResult> {
   if (!isDesktopFsRemoteMode()) {
     return bridge().readFileText(path)
   }
 
-  return remoteFsApi<LucifexReadFileTextResult>(fsPath('read-text', path))
+  return remoteFsApi<HermesReadFileTextResult>(fsPath('read-text', path))
 }
 
 // Save UTF-8 text back to a file. Local writes go through the hardened Electron
@@ -171,7 +171,7 @@ export async function desktopFileDiff(repoRoot: string, filePath: string): Promi
   return git?.fileDiff ? git.fileDiff(repoRoot, filePath) : ''
 }
 
-export async function selectDesktopPaths(options?: LucifexSelectPathsOptions): Promise<string[]> {
+export async function selectDesktopPaths(options?: HermesSelectPathsOptions): Promise<string[]> {
   const desktop = bridge()
 
   if (!isDesktopFsRemoteMode()) {

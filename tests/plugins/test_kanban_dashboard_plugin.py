@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import importlib.util
 import os
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -17,7 +18,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from lucifex_cli import kanban_db as kb
+from hermes_cli import kanban_db as kb
 
 
 # ---------------------------------------------------------------------------
@@ -32,7 +33,7 @@ def _load_plugin_router():
     assert plugin_file.exists(), f"plugin file missing: {plugin_file}"
 
     spec = importlib.util.spec_from_file_location(
-        "lucifex_dashboard_plugin_kanban_test", plugin_file,
+        "hermes_dashboard_plugin_kanban_test", plugin_file,
     )
     assert spec is not None and spec.loader is not None
     mod = importlib.util.module_from_spec(spec)
@@ -43,10 +44,10 @@ def _load_plugin_router():
 
 @pytest.fixture
 def kanban_home(tmp_path, monkeypatch):
-    """Isolated LUCIFEX_HOME with an empty kanban DB."""
-    home = tmp_path / ".lucifex"
+    """Isolated HERMES_HOME with an empty kanban DB."""
+    home = tmp_path / ".hermes"
     home.mkdir()
-    monkeypatch.setenv("LUCIFEX_HOME", str(home))
+    monkeypatch.setenv("HERMES_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     kb.init_db()
     return home
@@ -114,6 +115,163 @@ def test_create_task_appears_on_board(client):
     assert "researcher" in data["assignees"]
 
 
+def test_board_list_recommends_persistent_workspace_for_configured_workdir(
+    client, tmp_path
+):
+    """Board metadata should tell the UI which safe task default to use."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    subprocess.run(["git", "init", "-q", str(repo)], check=True)
+    kb.write_board_metadata("default", default_workdir=str(repo))
+
+    plain_dir = tmp_path / "notes"
+    plain_dir.mkdir()
+    kb.create_board("notes", default_workdir=str(plain_dir))
+    kb.create_board("disposable")
+
+    response = client.get("/api/plugins/kanban/boards")
+
+    assert response.status_code == 200
+    boards = {board["slug"]: board for board in response.json()["boards"]}
+    assert boards["default"]["default_workspace_kind"] == "worktree"
+    assert boards["notes"]["default_workspace_kind"] == "dir"
+    assert boards["disposable"]["default_workspace_kind"] == "scratch"
+
+
+def test_create_board_persists_project_directory(client, tmp_path):
+    """The dashboard board form should anchor future tasks to its project."""
+    project_dir = tmp_path / "project"
+    project_dir.mkdir()
+
+    response = client.post(
+        "/api/plugins/kanban/boards",
+        json={
+            "slug": "project-board",
+            "name": "Project Board",
+            "default_workdir": str(project_dir),
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    board = response.json()["board"]
+    assert board["default_workdir"] == str(project_dir.resolve())
+    assert board["default_workspace_kind"] == "dir"
+    assert kb.read_board_metadata("project-board")["default_workdir"] == str(
+        project_dir.resolve()
+    )
+
+
+@pytest.mark.parametrize("path", ["relative/project", "~/missing-project"])
+def test_create_board_rejects_invalid_project_directory(client, path):
+    """A board must not persist a path that cannot anchor worker output."""
+    response = client.post(
+        "/api/plugins/kanban/boards",
+        json={"slug": "invalid-project", "default_workdir": path},
+    )
+
+    assert response.status_code == 400
+    assert "project directory" in response.json()["detail"].lower()
+
+
+def test_patch_board_sets_project_directory(client, tmp_path):
+    """Board-level default_workdir must be editable after creation."""
+    kb.create_board("late-config")
+    project_dir = tmp_path / "late-project"
+    project_dir.mkdir()
+
+    response = client.patch(
+        "/api/plugins/kanban/boards/late-config",
+        json={"default_workdir": str(project_dir)},
+    )
+
+    assert response.status_code == 200, response.text
+    board = response.json()["board"]
+    assert board["default_workdir"] == str(project_dir.resolve())
+    # The recommendation flips from scratch to a persistent kind so the
+    # create-task dialog's workspace default follows the board setting.
+    assert board["default_workspace_kind"] == "dir"
+    assert kb.read_board_metadata("late-config")["default_workdir"] == str(
+        project_dir.resolve()
+    )
+
+
+def test_patch_board_clears_project_directory(client, tmp_path):
+    """Empty string clears default_workdir; omitting it leaves it unchanged."""
+    project_dir = tmp_path / "was-configured"
+    project_dir.mkdir()
+    kb.create_board("clearable", default_workdir=str(project_dir))
+
+    # Omitted key → unchanged.
+    r = client.patch(
+        "/api/plugins/kanban/boards/clearable",
+        json={"name": "Renamed Only"},
+    )
+    assert r.status_code == 200
+    assert r.json()["board"]["default_workdir"] == str(project_dir.resolve())
+
+    # Empty string → cleared, recommendation falls back to scratch.
+    r = client.patch(
+        "/api/plugins/kanban/boards/clearable",
+        json={"default_workdir": ""},
+    )
+    assert r.status_code == 200
+    board = r.json()["board"]
+    assert not board.get("default_workdir")
+    assert board["default_workspace_kind"] == "scratch"
+
+
+@pytest.mark.parametrize("path", ["relative/project", "~/missing-project"])
+def test_patch_board_rejects_invalid_project_directory(client, path):
+    """PATCH must validate default_workdir like board creation does."""
+    kb.create_board("strict")
+
+    response = client.patch(
+        "/api/plugins/kanban/boards/strict",
+        json={"default_workdir": path},
+    )
+
+    assert response.status_code == 400
+    assert "project directory" in response.json()["detail"].lower()
+
+
+def test_new_board_dialog_collects_project_directory():
+    """Board creation should expose the setting that controls safe task defaults."""
+    bundle = (
+        Path(__file__).resolve().parents[2]
+        / "plugins"
+        / "kanban"
+        / "dashboard"
+        / "dist"
+        / "index.js"
+    ).read_text(encoding="utf-8")
+
+    assert 'const [projectDirectory, setProjectDirectory] = useState("");' in bundle
+    assert "Project directory" in bundle
+    assert "Absolute path to the project folder" in bundle
+    assert "default_workdir: projectDirectory.trim() || undefined" in bundle
+
+
+def test_dashboard_workspace_picker_explains_persistence_contract():
+    """Task creation must make scratch deletion visible without a hover."""
+    bundle = (
+        Path(__file__).resolve().parents[2]
+        / "plugins"
+        / "kanban"
+        / "dashboard"
+        / "dist"
+        / "index.js"
+    ).read_text(encoding="utf-8")
+
+    assert "Temporary — deleted on completion" in bundle
+    assert "Git worktree — preserved" in bundle
+    assert "Directory — preserved" in bundle
+    assert "defaultWorkspacePath: (props.boardMeta && props.boardMeta.default_workdir) || \"\"" in bundle
+    assert (
+        "This workspace and any files left in it are deleted when the task completes."
+        in bundle
+    )
+
+
 def test_scheduled_tasks_have_their_own_column_not_todo(client):
     """Scheduled/time-delay tasks must not be silently bucketed into todo."""
 
@@ -158,7 +316,7 @@ def test_board_query_param_default_overrides_current_board_pointer(client):
     pointer targets a non-default board.
 
     Regression: selecting the Default board in the dashboard must not fall
-    through to whichever board ``lucifex kanban boards switch`` last pinned.
+    through to whichever board ``hermes kanban boards switch`` last pinned.
     """
     default_task = client.post(
         "/api/plugins/kanban/tasks",
@@ -725,12 +883,12 @@ def test_board_progress_rollup(client):
 
 def test_board_auto_initializes_missing_db(tmp_path, monkeypatch):
     """If kanban.db doesn't exist yet, GET /board must create it, not 500."""
-    home = tmp_path / ".lucifex"
+    home = tmp_path / ".hermes"
     home.mkdir()
-    monkeypatch.setenv("LUCIFEX_HOME", str(home))
-    monkeypatch.delenv("LUCIFEX_KANBAN_BOARD", raising=False)
-    monkeypatch.delenv("LUCIFEX_KANBAN_DB", raising=False)
-    monkeypatch.delenv("LUCIFEX_KANBAN_HOME", raising=False)
+    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.delenv("HERMES_KANBAN_BOARD", raising=False)
+    monkeypatch.delenv("HERMES_KANBAN_DB", raising=False)
+    monkeypatch.delenv("HERMES_KANBAN_HOME", raising=False)
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     # Deliberately DO NOT call kb.init_db().
 
@@ -753,15 +911,15 @@ def test_ws_events_rejects_when_token_required(tmp_path, monkeypatch):
     delegates to web_server._ws_auth_ok, so we stub that with the real
     loopback-token semantics (auth_required False → constant-time token
     compare)."""
-    home = tmp_path / ".lucifex"
+    home = tmp_path / ".hermes"
     home.mkdir()
-    monkeypatch.setenv("LUCIFEX_HOME", str(home))
+    monkeypatch.setenv("HERMES_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     kb.init_db()
 
     # Stub web_server with a loopback-mode _ws_auth_ok (auth_required False →
     # accept only the correct ?token=). Mirrors the real gate's loopback path.
-    import lucifex_cli
+    import hermes_cli
     import types
 
     def _fake_ws_auth_ok(ws):
@@ -771,8 +929,8 @@ def test_ws_events_rejects_when_token_required(tmp_path, monkeypatch):
         _SESSION_TOKEN="secret-xyz",
         _ws_auth_ok=_fake_ws_auth_ok,
     )
-    monkeypatch.setitem(sys.modules, "lucifex_cli.web_server", stub)
-    monkeypatch.setattr(lucifex_cli, "web_server", stub, raising=False)
+    monkeypatch.setitem(sys.modules, "hermes_cli.web_server", stub)
+    monkeypatch.setattr(hermes_cli, "web_server", stub, raising=False)
 
     app = FastAPI()
     app.include_router(_load_plugin_router(), prefix="/api/plugins/kanban")
@@ -804,13 +962,13 @@ def test_ws_events_accepts_gated_ticket(tmp_path, monkeypatch):
     for the hosted-dashboard bug where the kanban live-events WS 1008'd on
     every gated deployment because its bespoke check only knew _SESSION_TOKEN.
     We stub _ws_auth_ok with the real gated semantics (ticket-only)."""
-    home = tmp_path / ".lucifex"
+    home = tmp_path / ".hermes"
     home.mkdir()
-    monkeypatch.setenv("LUCIFEX_HOME", str(home))
+    monkeypatch.setenv("HERMES_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     kb.init_db()
 
-    import lucifex_cli
+    import hermes_cli
     import types
 
     def _fake_ws_auth_ok(ws):
@@ -821,8 +979,8 @@ def test_ws_events_accepts_gated_ticket(tmp_path, monkeypatch):
         _SESSION_TOKEN="secret-xyz",
         _ws_auth_ok=_fake_ws_auth_ok,
     )
-    monkeypatch.setitem(sys.modules, "lucifex_cli.web_server", stub)
-    monkeypatch.setattr(lucifex_cli, "web_server", stub, raising=False)
+    monkeypatch.setitem(sys.modules, "hermes_cli.web_server", stub)
+    monkeypatch.setattr(hermes_cli, "web_server", stub, raising=False)
 
     app = FastAPI()
     app.include_router(_load_plugin_router(), prefix="/api/plugins/kanban")
@@ -851,9 +1009,9 @@ def test_ws_events_board_query_param_default_overrides_current_board_pointer(tmp
     selects Default, the websocket must not subscribe to the CLI's current
     non-default board.
     """
-    home = tmp_path / ".lucifex"
+    home = tmp_path / ".hermes"
     home.mkdir()
-    monkeypatch.setenv("LUCIFEX_HOME", str(home))
+    monkeypatch.setenv("HERMES_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     kb.init_db()
 
@@ -872,15 +1030,15 @@ def test_ws_events_board_query_param_default_overrides_current_board_pointer(tmp
 
     kb.set_current_board("other")
 
-    import lucifex_cli
+    import hermes_cli
     import types
 
     stub = types.SimpleNamespace(
         _SESSION_TOKEN="secret-xyz",
         _ws_auth_ok=lambda ws: ws.query_params.get("token", "") == "secret-xyz",
     )
-    monkeypatch.setitem(sys.modules, "lucifex_cli.web_server", stub)
-    monkeypatch.setattr(lucifex_cli, "web_server", stub, raising=False)
+    monkeypatch.setitem(sys.modules, "hermes_cli.web_server", stub)
+    monkeypatch.setattr(hermes_cli, "web_server", stub, raising=False)
 
     app = FastAPI()
     app.include_router(_load_plugin_router(), prefix="/api/plugins/kanban")
@@ -908,9 +1066,9 @@ def test_ws_events_swallows_cancellation_on_shutdown(tmp_path, monkeypatch):
     """
     import asyncio
 
-    home = tmp_path / ".lucifex"
+    home = tmp_path / ".hermes"
     home.mkdir()
-    monkeypatch.setenv("LUCIFEX_HOME", str(home))
+    monkeypatch.setenv("HERMES_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     kb.init_db()
 
@@ -1182,7 +1340,7 @@ def test_config_returns_defaults_when_section_missing(client):
 
 
 def test_config_reads_dashboard_kanban_section(tmp_path, monkeypatch, client):
-    home = Path(os.environ["LUCIFEX_HOME"])
+    home = Path(os.environ["HERMES_HOME"])
     (home / "config.yaml").write_text(
         "dashboard:\n"
         "  kanban:\n"
@@ -1213,7 +1371,7 @@ def test_task_detail_includes_runs(client):
     # Drive status running to force a run creation: PATCH to running
     # doesn't call claim_task (the PATCH path uses _set_status_direct),
     # so use the bulk/claim indirection via the kernel.
-    import lucifex_cli.kanban_db as _kb
+    import hermes_cli.kanban_db as _kb
     conn = _kb.connect()
     try:
         _kb.claim_task(conn, tid)
@@ -1251,7 +1409,7 @@ def test_patch_status_done_with_summary_and_metadata(client):
     # Create + claim.
     r = client.post("/api/plugins/kanban/tasks", json={"title": "x", "assignee": "worker"})
     tid = r.json()["task"]["id"]
-    from lucifex_cli import kanban_db as kb
+    from hermes_cli import kanban_db as kb
     conn = kb.connect()
     try:
         kb.claim_task(conn, tid)
@@ -1283,7 +1441,7 @@ def test_patch_status_done_without_summary_still_works(client):
     """Back-compat: PATCH without the new fields still completes."""
     r = client.post("/api/plugins/kanban/tasks", json={"title": "y", "assignee": "worker"})
     tid = r.json()["task"]["id"]
-    from lucifex_cli import kanban_db as kb
+    from hermes_cli import kanban_db as kb
     conn = kb.connect()
     try:
         kb.claim_task(conn, tid)
@@ -1307,7 +1465,7 @@ def test_patch_status_archive_closes_running_run(client):
     """PATCH to archived while running must close the in-flight run."""
     r = client.post("/api/plugins/kanban/tasks", json={"title": "z", "assignee": "worker"})
     tid = r.json()["task"]["id"]
-    from lucifex_cli import kanban_db as kb
+    from hermes_cli import kanban_db as kb
     conn = kb.connect()
     try:
         kb.claim_task(conn, tid)
@@ -1334,7 +1492,7 @@ def test_event_dict_includes_run_id(client):
     """GET /tasks/:id returns events with run_id populated."""
     r = client.post("/api/plugins/kanban/tasks", json={"title": "e", "assignee": "worker"})
     tid = r.json()["task"]["id"]
-    from lucifex_cli import kanban_db as kb
+    from hermes_cli import kanban_db as kb
     conn = kb.connect()
     try:
         kb.claim_task(conn, tid)
@@ -1417,8 +1575,8 @@ def test_create_task_includes_warning_when_no_dispatcher(client, monkeypatch):
     so the dashboard UI can surface a banner."""
     # Force the dispatcher probe to report "not running".
     monkeypatch.setattr(
-        "lucifex_cli.kanban._check_dispatcher_presence",
-        lambda: (False, "No gateway is running — start `lucifex gateway start`."),
+        "hermes_cli.kanban._check_dispatcher_presence",
+        lambda: (False, "No gateway is running — start `hermes gateway start`."),
     )
     r = client.post(
         "/api/plugins/kanban/tasks",
@@ -1433,7 +1591,7 @@ def test_create_task_includes_warning_when_no_dispatcher(client, monkeypatch):
 def test_create_task_no_warning_when_dispatcher_up(client, monkeypatch):
     """Dispatcher running -> no `warning` field in the response."""
     monkeypatch.setattr(
-        "lucifex_cli.kanban._check_dispatcher_presence",
+        "hermes_cli.kanban._check_dispatcher_presence",
         lambda: (True, ""),
     )
     r = client.post(
@@ -1448,7 +1606,7 @@ def test_create_task_no_warning_on_triage(client, monkeypatch):
     """Triage tasks never get the warning (they can't be dispatched
     anyway until promoted)."""
     monkeypatch.setattr(
-        "lucifex_cli.kanban._check_dispatcher_presence",
+        "hermes_cli.kanban._check_dispatcher_presence",
         lambda: (False, "oh no"),
     )
     r = client.post(
@@ -1469,7 +1627,7 @@ def test_create_task_no_warning_on_triage(client, monkeypatch):
 # instead of 500'ing GET /board for the entire org.
 #
 # kanban_db._safe_int / task_age corruption paths are covered in
-# tests/lucifex_cli/test_kanban_db.py. The OUTER fallback here is not, which
+# tests/hermes_cli/test_kanban_db.py. The OUTER fallback here is not, which
 # means a refactor that drops the try/except would not be caught by CI. The
 # tests below pin that contract.
 # ---------------------------------------------------------------------------
@@ -1502,7 +1660,7 @@ def test_board_endpoint_survives_task_age_exception(client, monkeypatch):
     # contract this test pins.
     def _boom(_task):
         raise RuntimeError("simulated future task_age bug")
-    monkeypatch.setattr("lucifex_cli.kanban_db.task_age", _boom)
+    monkeypatch.setattr("hermes_cli.kanban_db.task_age", _boom)
 
     r = client.get("/api/plugins/kanban/board")
     assert r.status_code == 200, r.text
@@ -1533,7 +1691,7 @@ def test_single_task_endpoint_survives_task_age_exception(client, monkeypatch):
 
     def _boom(_task):
         raise RuntimeError("simulated future task_age bug")
-    monkeypatch.setattr("lucifex_cli.kanban_db.task_age", _boom)
+    monkeypatch.setattr("hermes_cli.kanban_db.task_age", _boom)
 
     r = client.get(f"/api/plugins/kanban/tasks/{task_id}")
     assert r.status_code == 200, r.text
@@ -1545,7 +1703,7 @@ def test_create_task_probe_error_does_not_break_create(client, monkeypatch):
     def _raise():
         raise RuntimeError("probe crashed")
     monkeypatch.setattr(
-        "lucifex_cli.kanban._check_dispatcher_presence", _raise,
+        "hermes_cli.kanban._check_dispatcher_presence", _raise,
     )
     r = client.post(
         "/api/plugins/kanban/tasks",
@@ -1603,7 +1761,7 @@ def test_home_channels_no_task_id_all_unsubscribed(client, with_home_channels):
 def test_home_subscribe_creates_notify_sub_row(client, with_home_channels):
     """POST .../home-subscribe/telegram writes a kanban_notify_subs row
     keyed to the telegram home's (chat_id, thread_id)."""
-    from lucifex_cli import kanban_db as kb
+    from hermes_cli import kanban_db as kb
     t = client.post("/api/plugins/kanban/tasks", json={"title": "x"}).json()["task"]
 
     r = client.post(f"/api/plugins/kanban/tasks/{t['id']}/home-subscribe/telegram")
@@ -1635,7 +1793,7 @@ def test_home_subscribe_flips_subscribed_flag_in_subsequent_get(client, with_hom
 
 def test_home_subscribe_is_idempotent(client, with_home_channels):
     """Re-subscribing keeps a single row at the DB layer."""
-    from lucifex_cli import kanban_db as kb
+    from hermes_cli import kanban_db as kb
     t = client.post("/api/plugins/kanban/tasks", json={"title": "x"}).json()["task"]
     client.post(f"/api/plugins/kanban/tasks/{t['id']}/home-subscribe/telegram")
     client.post(f"/api/plugins/kanban/tasks/{t['id']}/home-subscribe/telegram")
@@ -1649,7 +1807,7 @@ def test_home_subscribe_is_idempotent(client, with_home_channels):
 
 def test_home_subscribe_backfills_owner_on_legacy_row(client, with_home_channels):
     """Re-subscribing should backfill notifier ownership on ownerless rows."""
-    from lucifex_cli import kanban_db as kb
+    from hermes_cli import kanban_db as kb
     t = client.post("/api/plugins/kanban/tasks", json={"title": "x"}).json()["task"]
 
     conn = kb.connect()
@@ -1692,7 +1850,7 @@ def test_home_subscribe_unknown_task_returns_404(client, with_home_channels):
 
 def test_home_unsubscribe_removes_notify_sub_row(client, with_home_channels):
     """DELETE .../home-subscribe/telegram removes the matching row."""
-    from lucifex_cli import kanban_db as kb
+    from hermes_cli import kanban_db as kb
     t = client.post("/api/plugins/kanban/tasks", json={"title": "x"}).json()["task"]
     client.post(f"/api/plugins/kanban/tasks/{t['id']}/home-subscribe/telegram")
     r = client.delete(f"/api/plugins/kanban/tasks/{t['id']}/home-subscribe/telegram")
@@ -1707,7 +1865,7 @@ def test_home_unsubscribe_removes_notify_sub_row(client, with_home_channels):
 
 def test_home_subscribe_multiple_platforms_independent(client, with_home_channels):
     """Subscribing on telegram does not affect discord and vice versa."""
-    from lucifex_cli import kanban_db as kb
+    from hermes_cli import kanban_db as kb
     t = client.post("/api/plugins/kanban/tasks", json={"title": "x"}).json()["task"]
 
     client.post(f"/api/plugins/kanban/tasks/{t['id']}/home-subscribe/telegram")
@@ -1753,7 +1911,7 @@ def test_board_surfaces_warnings_field_for_hallucinated_completions(client):
     a ``warnings`` object on the /board payload so the UI can badge
     them without fetching per-task events. The warnings summary is
     keyed by diagnostic kind (``hallucinated_cards``) rather than the
-    raw event kind — see lucifex_cli.kanban_diagnostics for the rule
+    raw event kind — see hermes_cli.kanban_diagnostics for the rule
     that produces it.
     """
     conn = kb.connect()
@@ -2085,13 +2243,10 @@ def _patch_specifier_response(monkeypatch, *, content, model="test-model"):
     resp = MagicMock()
     resp.choices = [MagicMock()]
     resp.choices[0].message.content = content
-    fake_client = MagicMock()
-    fake_client.chat.completions.create = MagicMock(return_value=resp)
-    monkeypatch.setattr(
-        "agent.auxiliary_client.get_text_auxiliary_client",
-        lambda *a, **kw: (fake_client, model),
-    )
-    return fake_client
+    # specify_task routes through call_llm now (#35566) — mock it directly.
+    fake_call = MagicMock(return_value=resp)
+    monkeypatch.setattr("agent.auxiliary_client.call_llm", fake_call)
+    return fake_call
 
 
 def test_specify_happy_path(client, monkeypatch):
@@ -2153,11 +2308,11 @@ def test_specify_no_aux_client_surfaces_reason(client, monkeypatch):
         json={"title": "rough", "triage": True},
     ).json()["task"]
 
-    # Simulate "no auxiliary client configured".
-    monkeypatch.setattr(
-        "agent.auxiliary_client.get_text_auxiliary_client",
-        lambda *a, **kw: (None, ""),
-    )
+    # Simulate "no auxiliary client configured" — call_llm raises when
+    # no provider resolves (#35566 routing).
+    def _no_provider(**kwargs):
+        raise RuntimeError("No LLM provider configured")
+    monkeypatch.setattr("agent.auxiliary_client.call_llm", _no_provider)
 
     r = client.post(
         f"/api/plugins/kanban/tasks/{t['id']}/specify",
@@ -2166,7 +2321,8 @@ def test_specify_no_aux_client_surfaces_reason(client, monkeypatch):
     assert r.status_code == 200
     body = r.json()
     assert body["ok"] is False
-    assert "auxiliary client" in body["reason"]
+    # call_llm's no-provider RuntimeError surfaces via the LLM-error branch.
+    assert "LLM error" in body["reason"]
 
     # Task must stay in triage — nothing was touched.
     detail = client.get(f"/api/plugins/kanban/tasks/{t['id']}").json()["task"]
@@ -2230,7 +2386,7 @@ def test_dashboard_bulk_actions_include_reclaim_first():
     dist = (repo_root / "plugins" / "kanban" / "dashboard" / "dist" / "index.js").read_text()
 
     assert "reclaim_first: reclaimFirst" in dist
-    assert "lucifex-kanban-bulk-reclaim-first" in dist
+    assert "hermes-kanban-bulk-reclaim-first" in dist
     assert '"→ todo"' in dist
     assert '"Block"' in dist
     assert '"Unblock"' in dist
@@ -2262,6 +2418,130 @@ def test_dashboard_failed_card_highlight_class_exists():
     js = (repo_root / "plugins" / "kanban" / "dashboard" / "dist" / "index.js").read_text()
     css = (repo_root / "plugins" / "kanban" / "dashboard" / "dist" / "style.css").read_text()
 
-    assert "lucifex-kanban-card--failed" in js
-    assert "lucifex-kanban-card--failed" in css
+    assert "hermes-kanban-card--failed" in js
+    assert "hermes-kanban-card--failed" in css
     assert "failedIds" in js
+
+# ---------------------------------------------------------------------------
+# Final result visibility for Done cards
+# ---------------------------------------------------------------------------
+
+
+def test_task_detail_exposes_result_and_latest_summary_separately(client):
+    """The drawer receives both source fields without a duplicate alias."""
+    r = client.post(
+        "/api/plugins/kanban/tasks",
+        json={"title": "Task with explicit result"},
+    )
+    task_id = r.json()["task"]["id"]
+    client.patch(
+        f"/api/plugins/kanban/tasks/{task_id}",
+        json={"status": "done", "result": "The final answer is 42.", "summary": "short handoff"},
+    )
+    r = client.get(f"/api/plugins/kanban/tasks/{task_id}")
+    assert r.status_code == 200
+    data = r.json()["task"]
+    assert data["result"] == "The final answer is 42."
+    assert data["latest_summary"] == "short handoff"
+    assert "final_result" not in data
+
+
+def test_task_detail_exposes_latest_summary_when_result_is_empty(client):
+    """Summary-only completions remain available to the drawer fallback."""
+    conn = kb.connect()
+    task_id = kb.create_task(conn, title="Task with only run summary")
+    kb.claim_task(conn, task_id)
+    kb.complete_task(conn, task_id, summary="Report written to /output/report.md")
+    conn.close()
+
+    r = client.get(f"/api/plugins/kanban/tasks/{task_id}")
+    assert r.status_code == 200
+    data = r.json()["task"]
+    assert data["status"] == "done"
+    assert not data["result"]
+    assert data["latest_summary"] == "Report written to /output/report.md"
+
+
+def test_task_detail_latest_summary_none_when_nothing_recorded(client):
+    """When no run summary exists, the existing field remains None."""
+    r = client.post(
+        "/api/plugins/kanban/tasks",
+        json={"title": "Task with no result at all"},
+    )
+    task_id = r.json()["task"]["id"]
+    r = client.get(f"/api/plugins/kanban/tasks/{task_id}")
+    assert r.status_code == 200
+    assert r.json()["task"]["latest_summary"] is None
+
+
+def test_board_tasks_include_latest_summary(client):
+    """Board cards already expose the summary used by the drawer fallback."""
+    conn = kb.connect()
+    task_id = kb.create_task(conn, title="Board card with summary only")
+    kb.claim_task(conn, task_id)
+    kb.complete_task(conn, task_id, summary="Done: see attachment")
+    conn.close()
+
+    r = client.get("/api/plugins/kanban/board")
+    assert r.status_code == 200
+    done_col = next(c for c in r.json()["columns"] if c["name"] == "done")
+    card = next((t for t in done_col["tasks"] if t["id"] == task_id), None)
+    assert card is not None
+    assert "Done: see attachment" in card["latest_summary"]
+
+
+def test_dashboard_done_final_result_section_rendered_from_summary():
+    """Frontend must render Final Result section from run summary when task.result is empty."""
+    repo_root = Path(__file__).resolve().parents[2]
+    dist = (repo_root / "plugins" / "kanban" / "dashboard" / "dist" / "index.js").read_text()
+    assert "t.result || t.latest_summary" in dist
+    assert "Final Result (run summary)" in dist
+    assert "No final result was recorded" in dist
+    assert "orchestrator" in dist or "parent task" in dist
+
+
+def test_task_detail_includes_child_result_summaries(client):
+    """Parent drawers should receive the child results they need to render."""
+    with kb.connect() as conn:
+        parent = kb.create_task(conn, title="Research topic")
+        child = kb.create_task(conn, title="Collect sources")
+        kb.link_tasks(conn, parent, child)
+        kb.complete_task(conn, parent, summary="Delegated research to child tasks.")
+        kb.recompute_ready(conn)
+        kb.complete_task(conn, child, summary="Collected five primary sources.")
+
+    response = client.get(f"/api/plugins/kanban/tasks/{parent}")
+
+    assert response.status_code == 200
+    assert response.json()["child_results"] == [
+        {
+            "id": child,
+            "title": "Collect sources",
+            "status": "done",
+            "latest_summary": "Collected five primary sources.",
+            "result": None,
+        }
+    ]
+
+
+def test_dashboard_final_result_uses_existing_fields_without_alias():
+    """The drawer should not duplicate result/summary into another API field."""
+    repo_root = Path(__file__).resolve().parents[2]
+    dist = (repo_root / "plugins" / "kanban" / "dashboard" / "dist" / "index.js").read_text()
+    api = (repo_root / "plugins" / "kanban" / "dashboard" / "plugin_api.py").read_text()
+
+    assert "var finalResult = t.result || t.latest_summary || null;" in dist
+    assert "t.final_result" not in dist
+    assert 'd["final_result"]' not in api
+
+
+def test_dashboard_parent_notice_and_child_results_use_detail_links():
+    """Parent detection must use links.children, which exists in task detail."""
+    repo_root = Path(__file__).resolve().parents[2]
+    dist = (repo_root / "plugins" / "kanban" / "dashboard" / "dist" / "index.js").read_text()
+    detail = dist[dist.index("function TaskDetail"):]
+
+    assert "links.children.length > 0" in detail
+    assert "t.link_counts" not in detail
+    assert "Child Results" in detail
+    assert "props.data.child_results" in detail

@@ -7,6 +7,7 @@ import { Tip } from '@/components/ui/tooltip'
 import { type Translations, useI18n } from '@/i18n'
 import { isDesktopFsRemoteMode } from '@/lib/desktop-fs'
 import { Bug } from '@/lib/icons'
+import { rafCoalesce } from '@/lib/raf-coalesce'
 import { cn } from '@/lib/utils'
 import { notify, notifyError } from '@/store/notifications'
 import { $previewServerRestart, failPreviewServerRestart, type PreviewTarget } from '@/store/preview'
@@ -93,7 +94,7 @@ function PreviewLoadError({
             href={error.url}
             onClick={event => {
               event.preventDefault()
-              void window.lucifexDesktop?.openExternal(error.url)
+              void window.hermesDesktop?.openExternal(error.url)
             }}
           >
             {compactUrl(error.url)}
@@ -172,12 +173,16 @@ export function PreviewPane({
       document.body.style.cursor = 'row-resize'
       document.body.style.userSelect = 'none'
 
+      // pointermove outpaces 60fps and each setHeight reflows the webview +
+      // console split, so coalesce to one apply per frame (commits on cleanup).
+      const resize = rafCoalesce((height: number) => consoleState.setHeight(height))
+
       const handleMove = (moveEvent: PointerEvent) => {
         if (!active) {
           return
         }
 
-        consoleState.setHeight(clampConsoleHeight(startHeight + startY - moveEvent.clientY))
+        resize.push(clampConsoleHeight(startHeight + startY - moveEvent.clientY))
       }
 
       const cleanup = () => {
@@ -186,6 +191,7 @@ export function PreviewPane({
         }
 
         active = false
+        resize.finish()
         document.body.style.cursor = previousCursor
         document.body.style.userSelect = previousUserSelect
         handle.releasePointerCapture?.(pointerId)
@@ -236,7 +242,7 @@ export function PreviewPane({
 
     // Auto-open the preview console so the user can see progress events
     // streaming back from the background agent. Without this, clicking
-    // "Ask Lucifex to restart the server" looked like it did nothing —
+    // "Ask Hermes to restart the server" looked like it did nothing —
     // the work was happening, but in a collapsed pane.
     consoleState.setOpen(true)
 
@@ -408,8 +414,8 @@ export function PreviewPane({
     if (
       target.kind !== 'file' ||
       isDesktopFsRemoteMode() ||
-      !window.lucifexDesktop?.watchPreviewFile ||
-      !window.lucifexDesktop?.onPreviewFileChanged
+      !window.hermesDesktop?.watchPreviewFile ||
+      !window.hermesDesktop?.onPreviewFileChanged
     ) {
       return
     }
@@ -442,7 +448,7 @@ export function PreviewPane({
       reloadPreview()
     }
 
-    const unsubscribe = window.lucifexDesktop.onPreviewFileChanged(payload => {
+    const unsubscribe = window.hermesDesktop.onPreviewFileChanged(payload => {
       if (!active || payload.id !== watchId) {
         return
       }
@@ -460,11 +466,11 @@ export function PreviewPane({
       }, FILE_RELOAD_DEBOUNCE_MS)
     })
 
-    void window.lucifexDesktop
+    void window.hermesDesktop
       .watchPreviewFile(target.url)
       .then(watch => {
         if (!active) {
-          void window.lucifexDesktop?.stopPreviewFileWatch?.(watch.id)
+          void window.hermesDesktop?.stopPreviewFileWatch?.(watch.id)
 
           return
         }
@@ -487,7 +493,7 @@ export function PreviewPane({
       }
 
       if (watchId) {
-        void window.lucifexDesktop?.stopPreviewFileWatch?.(watchId)
+        void window.hermesDesktop?.stopPreviewFileWatch?.(watchId)
       }
     }
   }, [appendConsoleEntry, copy, reloadPreview, target.kind, target.url])
@@ -515,7 +521,7 @@ export function PreviewPane({
 
     const webview = document.createElement('webview') as PreviewWebview
     webview.className = 'flex h-full w-full flex-1 bg-transparent'
-    webview.setAttribute('partition', 'persist:lucifex-preview')
+    webview.setAttribute('partition', 'persist:hermes-preview')
     webview.setAttribute('src', target.url)
     webview.setAttribute('webpreferences', 'contextIsolation=yes,nodeIntegration=no,sandbox=yes')
 

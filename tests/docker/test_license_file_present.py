@@ -17,10 +17,10 @@ def test_docker_image_contains_license_file(built_image: str) -> None:
     """
     r = subprocess.run(
         ["docker", "run", "--rm", "--entrypoint", "test",
-         built_image, "-f", "/opt/lucifex/LICENSE"],
+         built_image, "-f", "/opt/hermes/LICENSE"],
         capture_output=True, text=True, timeout=60,
     )
     assert r.returncode == 0, (
-        f"LICENSE file not found at /opt/lucifex/LICENSE inside the Docker "
+        f"LICENSE file not found at /opt/hermes/LICENSE inside the Docker "
         f"image: {r.stderr[-500:]}"
     )

@@ -1,4 +1,4 @@
-import type { SessionInfo } from '@/types/lucifex'
+import type { SessionInfo } from '@/types/hermes'
 
 export interface SidebarSessionEntry {
   branchStem?: string

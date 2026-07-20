@@ -38,7 +38,7 @@ class _FakeResponse:
 
 def test_x_search_posts_responses_request(monkeypatch):
     from tools.x_search_tool import x_search_tool
-    from lucifex_cli import __version__
+    from hermes_cli import __version__
 
     captured = {}
 
@@ -69,9 +69,10 @@ def test_x_search_posts_responses_request(monkeypatch):
 
     tool_def = captured["json"]["tools"][0]
     assert captured["url"] == "https://api.x.ai/v1/responses"
-    assert captured["headers"]["User-Agent"] == f"Lucifex-Agent/{__version__}"
-    assert captured["json"]["model"] == "grok-4.20-reasoning"
+    assert captured["headers"]["User-Agent"] == f"Hermes-Agent/{__version__}"
+    assert captured["json"]["model"] == "grok-4.5"
     assert captured["json"]["store"] is False
+    assert "reasoning" not in captured["json"]
     assert tool_def["type"] == "x_search"
     assert tool_def["allowed_x_handles"] == ["xai", "grok"]
     assert tool_def["from_date"] == "2026-04-01"
@@ -231,7 +232,7 @@ def test_x_search_retries_5xx_then_succeeds(monkeypatch):
 
 def _no_xai_env(monkeypatch):
     """Strip any XAI_* env vars so the resolver doesn't see a leaked dev key."""
-    for var in ("XAI_API_KEY", "XAI_BASE_URL", "LUCIFEX_XAI_BASE_URL"):
+    for var in ("XAI_API_KEY", "XAI_BASE_URL", "HERMES_XAI_BASE_URL"):
         monkeypatch.delenv(var, raising=False)
 
 
@@ -375,7 +376,7 @@ def test_x_search_returns_tool_error_when_no_credentials(monkeypatch):
     # surfaces a friendly error rather than an HTTP exception.
     result = x_search_tool(query="anything")
     assert "No xAI credentials available" in result
-    assert "lucifex auth add xai-oauth" in result
+    assert "hermes auth add xai-oauth" in result
 
 
 def test_x_search_check_fn_false_when_resolver_raises(monkeypatch):
@@ -402,7 +403,7 @@ def test_x_search_honors_config_model_and_timeout(monkeypatch, tmp_path):
 
     monkeypatch.setenv("XAI_API_KEY", "xai-test-key")
 
-    # Patch the in-module config loader so tests don't touch ~/.lucifex/config.yaml.
+    # Patch the in-module config loader so tests don't touch ~/.hermes/config.yaml.
     monkeypatch.setattr(
         "tools.x_search_tool._load_x_search_config",
         lambda: {"model": "grok-custom-test", "timeout_seconds": 45, "retries": 0},
@@ -422,6 +423,50 @@ def test_x_search_honors_config_model_and_timeout(monkeypatch, tmp_path):
     assert result["success"] is True
     assert captured["model"] == "grok-custom-test"
     assert captured["timeout"] == 45
+
+
+def test_x_search_honors_config_reasoning_effort(monkeypatch, tmp_path):
+    """Configured reasoning effort reaches the xAI Responses request."""
+    from tools.x_search_tool import x_search_tool
+
+    monkeypatch.setenv("XAI_API_KEY", "xai-test-key")
+    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    (tmp_path / "config.yaml").write_text(
+        "x_search:\n  reasoning_effort: low\n  retries: 0\n",
+        encoding="utf-8",
+    )
+    captured = {}
+
+    def _fake_post(url, headers=None, json=None, timeout=None):
+        assert json is not None
+        captured["reasoning"] = json.get("reasoning")
+        return _FakeResponse({"output_text": "Reasoning configured."})
+
+    monkeypatch.setattr("requests.post", _fake_post)
+
+    result = json.loads(x_search_tool(query="anything"))
+
+    assert result["success"] is True
+    assert captured["reasoning"] == {"effort": "low"}
+
+
+def test_x_search_rejects_invalid_config_reasoning_effort(monkeypatch):
+    """A typo must fail closed instead of silently using xAI's default effort."""
+    from tools.x_search_tool import x_search_tool
+
+    monkeypatch.setenv("XAI_API_KEY", "xai-test-key")
+    monkeypatch.setattr(
+        "tools.x_search_tool._load_x_search_config",
+        lambda: {"reasoning_effort": "minimal"},
+    )
+    _no_post_allowed(monkeypatch)
+
+    result = json.loads(x_search_tool(query="anything"))
+
+    assert result["error"] == (
+        "x_search.reasoning_effort must be one of: low, medium, high, xhigh "
+        "(got 'minimal')"
+    )
 
 
 def test_x_search_registered_in_registry_with_check_fn():

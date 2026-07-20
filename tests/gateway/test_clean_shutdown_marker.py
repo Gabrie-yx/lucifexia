@@ -1,6 +1,6 @@
 """Tests for the clean shutdown marker that prevents unwanted session auto-resets.
 
-When the gateway shuts down gracefully (lucifex update, gateway restart, /restart),
+When the gateway shuts down gracefully (hermes update, gateway restart, /restart),
 it writes a .clean_shutdown marker.  On the next startup, if the marker exists,
 suspend_recently_active() is skipped so users don't lose their sessions.
 
@@ -91,7 +91,7 @@ class TestCleanShutdownMarker:
 
     def test_marker_written_on_graceful_stop(self, tmp_path, monkeypatch):
         """stop() should write .clean_shutdown marker."""
-        monkeypatch.setattr("gateway.run._lucifex_home", tmp_path)
+        monkeypatch.setattr("gateway.run._hermes_home", tmp_path)
         marker = tmp_path / ".clean_shutdown"
         assert not marker.exists()
 
@@ -133,7 +133,7 @@ class TestCleanShutdownMarker:
 
     def test_marker_skips_suspension_on_startup(self, tmp_path, monkeypatch):
         """If .clean_shutdown exists, suspend_recently_active should NOT be called."""
-        monkeypatch.setattr("gateway.run._lucifex_home", tmp_path)
+        monkeypatch.setattr("gateway.run._hermes_home", tmp_path)
 
         # Create the marker
         marker = tmp_path / ".clean_shutdown"
@@ -162,7 +162,7 @@ class TestCleanShutdownMarker:
 
     def test_no_marker_triggers_suspension(self, tmp_path, monkeypatch):
         """Without .clean_shutdown marker (crash), suspension should fire."""
-        monkeypatch.setattr("gateway.run._lucifex_home", tmp_path)
+        monkeypatch.setattr("gateway.run._hermes_home", tmp_path)
 
         marker = tmp_path / ".clean_shutdown"
         assert not marker.exists()
@@ -187,7 +187,7 @@ class TestCleanShutdownMarker:
 
     def test_marker_written_on_restart_stop(self, tmp_path, monkeypatch):
         """stop(restart=True) should also write the marker."""
-        monkeypatch.setattr("gateway.run._lucifex_home", tmp_path)
+        monkeypatch.setattr("gateway.run._hermes_home", tmp_path)
         marker = tmp_path / ".clean_shutdown"
 
         from gateway.run import GatewayRunner
@@ -227,7 +227,7 @@ class TestCleanShutdownMarker:
 
     def test_shutdown_cleanup_does_not_end_gateway_session_rows(self, tmp_path, monkeypatch):
         """Gateway process restart/stop must not mark live chats ended in state.db."""
-        monkeypatch.setattr("gateway.run._lucifex_home", tmp_path)
+        monkeypatch.setattr("gateway.run._hermes_home", tmp_path)
         from gateway.run import GatewayRunner
 
         runner = object.__new__(GatewayRunner)
@@ -237,6 +237,33 @@ class TestCleanShutdownMarker:
         async def _run():
             await GatewayRunner._cleanup_agent_resources_off_loop(
                 runner, agent, context="shutdown idle-cache"
+            )
+
+        import asyncio
+        asyncio.get_event_loop().run_until_complete(_run())
+
+        assert agent._end_session_on_close is False
+        agent.close.assert_called_once()
+
+    def test_session_expiry_cleanup_preserves_lazy_reset_boundary(self, tmp_path, monkeypatch):
+        """Session expiry cleanup must not turn an expired chat into an agent_close row.
+
+        The expiry watcher only tears down cached resources. The next inbound
+        message owns the reset boundary, creating a fresh session with the
+        normal auto-reset notice. If cleanup lets ``agent.close()`` end the
+        SQLite row as ``agent_close``, stale-route recovery treats it as
+        recoverable and resurrects the expired session instead.
+        """
+        monkeypatch.setattr("gateway.run._hermes_home", tmp_path)
+        from gateway.run import GatewayRunner
+
+        runner = object.__new__(GatewayRunner)
+        agent = MagicMock()
+        agent._end_session_on_close = True
+
+        async def _run():
+            await GatewayRunner._cleanup_agent_resources_off_loop(
+                runner, agent, context="session expiry"
             )
 
         import asyncio
@@ -284,8 +311,13 @@ class TestResumePendingFreshnessGate:
         assert refreshed.resume_pending
 
     def test_stale_resume_pending_falls_through_to_reset(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("LUCIFEX_AUTO_CONTINUE_FRESHNESS", "3600")
-        store = _make_store(tmp_path)
+        monkeypatch.setenv("HERMES_AUTO_CONTINUE_FRESHNESS", "3600")
+        # The freshness gate only applies when the user has opted into
+        # automatic resets — session_reset.mode: none disables it (#61052).
+        from gateway.config import SessionResetPolicy
+        store = _make_store(
+            tmp_path, policy=SessionResetPolicy(mode="idle", idle_minutes=999999)
+        )
         source = _make_source()
         entry = self._mark_resume_pending(store, source)
 
@@ -302,9 +334,28 @@ class TestResumePendingFreshnessGate:
         assert fresh.session_id != entry.session_id
         assert not fresh.resume_pending
 
+    def test_reset_mode_none_disables_freshness_gate(self, tmp_path, monkeypatch):
+        """session_reset.mode: none opts out of ALL automatic resets —
+        including the resume_pending freshness gate (#61052)."""
+        monkeypatch.setenv("HERMES_AUTO_CONTINUE_FRESHNESS", "3600")
+        from gateway.config import SessionResetPolicy
+        store = _make_store(tmp_path, policy=SessionResetPolicy(mode="none"))
+        source = _make_source()
+        entry = self._mark_resume_pending(store, source)
+
+        with store._lock:
+            entry.last_resume_marked_at = datetime.now() - timedelta(seconds=7200)
+            entry.updated_at = datetime.now()
+            store._save()
+
+        refreshed = store.get_or_create_session(source)
+        # Explicit opt-out honored: same session back, transcript preserved.
+        assert refreshed.session_id == entry.session_id
+        assert refreshed.resume_pending
+
     def test_freshness_gate_disabled_returns_stale_session(self, tmp_path, monkeypatch):
         # Opt-out: window <= 0 restores the pre-fix "always fresh" behaviour.
-        monkeypatch.setenv("LUCIFEX_AUTO_CONTINUE_FRESHNESS", "0")
+        monkeypatch.setenv("HERMES_AUTO_CONTINUE_FRESHNESS", "0")
         store = _make_store(tmp_path)
         source = _make_source()
         entry = self._mark_resume_pending(store, source)

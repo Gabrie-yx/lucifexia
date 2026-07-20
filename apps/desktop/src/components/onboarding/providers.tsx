@@ -1,10 +1,10 @@
 import { RowButton } from '@/components/ui/row-button'
 import { useI18n } from '@/i18n'
 import { Check, ChevronRight, Terminal } from '@/lib/icons'
-import type { OAuthProvider } from '@/types/lucifex'
+import type { OAuthProvider } from '@/types/hermes'
 
 const PROVIDER_DISPLAY: Record<string, { order: number; title: string }> = {
-  nous: { order: 0, title: 'LUCIFEXIA (Ollama) — Em Breve' },
+  nous: { order: 0, title: 'Nous Portal' },
   'openai-codex': { order: 1, title: 'OpenAI OAuth (ChatGPT)' },
   'minimax-oauth': { order: 2, title: 'MiniMax' },
   'qwen-oauth': { order: 3, title: 'Qwen Code' },
@@ -32,33 +32,21 @@ export function FeaturedProviderRow({
 }) {
   const { t } = useI18n()
   const loggedIn = provider.status?.logged_in
-  const isNous = provider.id === 'nous'
 
   return (
     <button
-      className={`group relative flex w-full items-center justify-between gap-4 rounded-[8px] bg-primary/[0.06] px-3 py-2.5 text-left transition-colors ${
-        isNous ? 'opacity-50 cursor-not-allowed' : 'hover:bg-primary/10'
-      }`}
-      onClick={() => {
-        if (!isNous) {
-          onSelect(provider)
-        }
-      }}
-      disabled={isNous}
+      className="group relative flex w-full items-center justify-between gap-4 rounded-[8px] bg-primary/[0.06] px-3 py-2.5 text-left transition-colors hover:bg-primary/10"
+      onClick={() => onSelect(provider)}
       type="button"
     >
-      <span aria-hidden className={`arc-border arc-reverse arc-nous ${isNous ? 'opacity-20' : ''}`} />
+      <span aria-hidden className="arc-border arc-reverse arc-nous" />
       <div className="min-w-0">
         <div className="flex items-center gap-2">
           <img alt="" className="size-5 shrink-0 rounded" src={assetPath('apple-touch-icon.png')} />
           <span className="text-[length:var(--conversation-text-font-size)] font-semibold">
             {providerTitle(provider)}
           </span>
-          {isNous ? (
-            <span className="inline-flex items-center gap-1.5 bg-muted-foreground/30 px-2 py-0.5 text-[0.64rem] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-              Em Breve
-            </span>
-          ) : loggedIn ? (
+          {loggedIn ? (
             <ConnectedTag />
           ) : (
             <span className="inline-flex items-center gap-1.5 bg-primary px-2 py-0.5 text-[0.64rem] font-semibold uppercase tracking-[0.16em] text-primary-foreground">
@@ -69,9 +57,7 @@ export function FeaturedProviderRow({
         </div>
         <p className="mt-1 text-xs leading-5 text-muted-foreground">{t.onboarding.featuredPitch}</p>
       </div>
-      {!isNous && (
-        <ChevronRight className="size-4 shrink-0 text-primary transition group-hover:translate-x-0.5" />
-      )}
+      <ChevronRight className="size-4 shrink-0 text-primary transition group-hover:translate-x-0.5" />
     </button>
   )
 }
@@ -90,18 +76,29 @@ function ConnectedTag() {
 const PROVIDER_ROW_CLASS =
   'group flex w-full items-center justify-between gap-3 rounded-[6px] px-3 py-2.5 text-left transition-colors hover:bg-(--ui-control-hover-background)'
 
-export function KeyProviderRow({ onClick }: { onClick: () => void }) {
-  const { t } = useI18n()
-
+/** Quick-key row for API-key providers (Fireworks #2 after Nous, OpenRouter further down). */
+export function KeyProviderRow({ onClick, pitch, title }: { onClick: () => void; pitch: string; title: string }) {
   return (
     <RowButton className={PROVIDER_ROW_CLASS} onClick={onClick}>
       <div className="min-w-0">
-        <span className="text-[length:var(--conversation-text-font-size)] font-semibold">OpenRouter</span>
-        <p className="mt-1 text-xs leading-5 text-muted-foreground">{t.onboarding.openRouterPitch}</p>
+        <span className="text-[length:var(--conversation-text-font-size)] font-semibold">{title}</span>
+        <p className="mt-1 text-xs leading-5 text-muted-foreground">{pitch}</p>
       </div>
       <ChevronRight className="size-4 text-muted-foreground transition group-hover:text-foreground" />
     </RowButton>
   )
+}
+
+export function FireworksProviderRow({ onClick }: { onClick: () => void }) {
+  const { t } = useI18n()
+
+  return <KeyProviderRow onClick={onClick} pitch={t.onboarding.fireworksPitch} title="Fireworks AI" />
+}
+
+export function OpenRouterProviderRow({ onClick }: { onClick: () => void }) {
+  const { t } = useI18n()
+
+  return <KeyProviderRow onClick={onClick} pitch={t.onboarding.openRouterPitch} title="OpenRouter" />
 }
 
 export function ProviderRow({
@@ -114,34 +111,19 @@ export function ProviderRow({
   const { t } = useI18n()
   const loggedIn = provider.status?.logged_in
   const Trail = provider.flow === 'external' ? Terminal : ChevronRight
-  const isNous = provider.id === 'nous'
 
   return (
-    <RowButton
-      className={`${PROVIDER_ROW_CLASS} ${isNous ? 'opacity-50 cursor-not-allowed' : ''}`}
-      onClick={() => {
-        if (!isNous) {
-          onSelect(provider)
-        }
-      }}
-      disabled={isNous}
-    >
+    <RowButton className={PROVIDER_ROW_CLASS} onClick={() => onSelect(provider)}>
       <div className="min-w-0">
         <div className="flex items-center gap-2">
           <span className="text-[length:var(--conversation-text-font-size)] font-semibold">
             {providerTitle(provider)}
           </span>
-          {isNous ? (
-            <span className="inline-flex items-center gap-1.5 bg-muted-foreground/30 px-2 py-0.5 text-[0.64rem] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-              Em Breve
-            </span>
-          ) : loggedIn ? (
-            <ConnectedTag />
-          ) : null}
+          {loggedIn ? <ConnectedTag /> : null}
         </div>
         <p className="mt-1 text-xs leading-5 text-muted-foreground">{t.onboarding.flowSubtitles[provider.flow]}</p>
       </div>
-      {!isNous && <Trail className="size-4 text-muted-foreground transition group-hover:text-foreground" />}
+      <Trail className="size-4 text-muted-foreground transition group-hover:text-foreground" />
     </RowButton>
   )
 }

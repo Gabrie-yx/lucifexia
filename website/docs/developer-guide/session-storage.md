@@ -1,16 +1,16 @@
 # Session Storage
 
-Lucifex Agent uses a SQLite database (`~/.lucifex/state.db`) to persist session
+Hermes Agent uses a SQLite database (`~/.hermes/state.db`) to persist session
 metadata, full message history, and model configuration across CLI and gateway
 sessions. This replaces the earlier per-session JSONL file approach.
 
-Source file: `lucifex_state.py`
+Source file: `hermes_state.py`
 
 
 ## Architecture Overview
 
 ```
-~/.lucifex/state.db (SQLite, WAL mode)
+~/.hermes/state.db (SQLite, WAL mode)
 ├── sessions              — Session metadata, token counts, billing
 ├── messages              — Full message history per session
 ├── messages_fts          — FTS5 virtual table (content + tool_name + tool_calls)
@@ -133,7 +133,7 @@ END;
 
 ## Schema Version and Migrations
 
-Current schema version: **11**
+Current schema version: **21**
 
 The `schema_version` table stores a single integer. Simple column additions are handled declaratively by `_reconcile_columns()` (which diffs live columns against `SCHEMA_SQL` and ADDs any missing ones). The version-gated chain is reserved for data migrations and index/FTS changes that can't be expressed declaratively:
 
@@ -150,13 +150,18 @@ The `schema_version` table stores a single integer. Simple column additions are 
 | 9 | Add `codex_message_items` column to messages for Codex Responses message id/phase replay |
 | 10 | Add `messages_fts_trigram` virtual table (trigram tokenizer for CJK / substring search) and backfill existing rows |
 | 11 | Re-index `messages_fts` and `messages_fts_trigram` to cover `tool_name` + `tool_calls` and switch from external-content to inline mode; drop old triggers and backfill every message row |
+| 16 | Tag delegate subagent rows in `model_config` (`$._delegate_from`) so session pickers stay clean after parent deletes orphan them |
+| 18 | Gateway metadata consolidation — backfill `display_name` / `origin_json` / `expiry_finalized` from `sessions.json` |
+| 20 | Per-model usage attribution — seed `session_model_usage` rows from historical per-session aggregate totals |
+
+Versions not listed above were declarative column additions handled by `_reconcile_columns()` (version bump only, no data migration).
 
 Declarative column adds use `ALTER TABLE ADD COLUMN` wrapped in try/except to handle the column-already-exists case (idempotent). The version number is bumped after each successful migration block.
 
 
 ## Write Contention Handling
 
-Multiple lucifex processes (gateway + CLI sessions + worktree agents) share one
+Multiple hermes processes (gateway + CLI sessions + worktree agents) share one
 `state.db`. The `SessionDB` class handles write contention with:
 
 - **Short SQLite timeout** (1 second) instead of the default 30s
@@ -180,9 +185,9 @@ _CHECKPOINT_EVERY_N_WRITES = 50
 ### Initialize
 
 ```python
-from lucifex_state import SessionDB
+from hermes_state import SessionDB
 
-db = SessionDB()                           # Default: ~/.lucifex/state.db
+db = SessionDB()                           # Default: ~/.hermes/state.db
 db = SessionDB(db_path=Path("/tmp/test.db"))  # Custom path
 ```
 
@@ -386,10 +391,10 @@ db.delete_session("sess_abc123")
 
 ## Database Location
 
-Default path: `~/.lucifex/state.db`
+Default path: `~/.hermes/state.db`
 
-This is derived from `lucifex_constants.get_lucifex_home()` which resolves to
-`~/.lucifex/` by default, or the value of `LUCIFEX_HOME` environment variable.
+This is derived from `hermes_constants.get_hermes_home()` which resolves to
+`~/.hermes/` by default, or the value of `HERMES_HOME` environment variable.
 
 The database file, WAL file (`state.db-wal`), and shared-memory file
 (`state.db-shm`) are all created in the same directory.

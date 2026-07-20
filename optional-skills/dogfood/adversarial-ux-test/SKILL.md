@@ -6,7 +6,7 @@ author: Omni @ Comelse
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
-  lucifex:
+  hermes:
     tags: [qa, ux, testing, adversarial, dogfood, personas, user-testing]
     related_skills: [dogfood]
 ---

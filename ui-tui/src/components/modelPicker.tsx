@@ -1,4 +1,4 @@
-import { Box, Text, useInput, useStdout } from '@lucifex/ink'
+import { Box, Text, useInput, useStdout } from '@hermes/ink'
 import { useEffect, useMemo, useState } from 'react'
 
 import { providerDisplayNames } from '../domain/providers.js'
@@ -19,7 +19,10 @@ type Stage = 'provider' | 'key' | 'model' | 'disconnect'
 
 type ProviderRow = { name: string; provider: ModelOptionProvider }
 
-export function providerIndexAfterClearingFilter(providerRows: ProviderRow[], provider: ModelOptionProvider | undefined) {
+export function providerIndexAfterClearingFilter(
+  providerRows: ProviderRow[],
+  provider: ModelOptionProvider | undefined
+) {
   if (!provider) {
     return -1
   }
@@ -27,7 +30,15 @@ export function providerIndexAfterClearingFilter(providerRows: ProviderRow[], pr
   return providerRows.findIndex(row => row.provider.slug === provider.slug)
 }
 
-export function ModelPicker({ allowPersistGlobal = true, gw, onCancel, onSelect, sessionId, t }: ModelPickerProps) {
+export function ModelPicker({
+  allowPersistGlobal = true,
+  gw,
+  initialRefresh = false,
+  onCancel,
+  onSelect,
+  sessionId,
+  t
+}: ModelPickerProps) {
   const [providers, setProviders] = useState<ModelOptionProvider[]>([])
   const [currentModel, setCurrentModel] = useState('')
   const [err, setErr] = useState('')
@@ -50,7 +61,15 @@ export function ModelPicker({ allowPersistGlobal = true, gw, onCancel, onSelect,
   const width = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, (stdout?.columns ?? 80) - 6))
 
   useEffect(() => {
-    gw.request<ModelOptionsResponse>('model.options', sessionId ? { session_id: sessionId } : {})
+    gw.request<ModelOptionsResponse>('model.options', {
+      ...(sessionId ? { session_id: sessionId } : {}),
+      ...(initialRefresh ? { refresh: true } : {}),
+      // The TUI picker shows the full provider universe with setup
+      // affordances ("paste KEY to activate"), so opt into unconfigured
+      // rows — the backend now defaults to the configured subset for
+      // desktop chat pickers (#56974).
+      include_unconfigured: true
+    })
       .then(raw => {
         const r = asRpcResult<ModelOptionsResponse>(raw)
 
@@ -79,7 +98,7 @@ export function ModelPicker({ allowPersistGlobal = true, gw, onCancel, onSelect,
         setErr(rpcErrorMessage(e))
         setLoading(false)
       })
-  }, [gw, sessionId])
+  }, [gw, initialRefresh, sessionId])
 
   const names = useMemo(() => providerDisplayNames(providers), [providers])
 
@@ -260,7 +279,7 @@ export function ModelPicker({ allowPersistGlobal = true, gw, onCancel, onSelect,
                         authenticated: false,
                         models: [],
                         total_models: 0,
-                        warning: p.key_env ? `paste ${p.key_env} to activate` : 'run `lucifex model` to configure'
+                        warning: p.key_env ? `paste ${p.key_env} to activate` : 'run `hermes model` to configure'
                       }
                     : p
                 )
@@ -338,7 +357,7 @@ export function ModelPicker({ allowPersistGlobal = true, gw, onCancel, onSelect,
             setFilter('')
           }
 
-          // Other auth types: no-op (warning shown tells them to run lucifex model)
+          // Other auth types: no-op (warning shown tells them to run hermes model)
           return
         }
 
@@ -386,7 +405,7 @@ export function ModelPicker({ allowPersistGlobal = true, gw, onCancel, onSelect,
     }
 
     // Persist-global toggle moved to Ctrl+G so 'g' can be typed into the
-    // filter. With Ctrl held, @lucifex/ink reports `ch` as the key name ('g'),
+    // filter. With Ctrl held, @hermes/ink reports `ch` as the key name ('g'),
     // not the raw control byte (see input-event.ts: input = ctrl ? name : seq).
     if (allowPersistGlobal && key.ctrl && ch === 'g') {
       setPersistGlobal(v => !v)
@@ -448,7 +467,7 @@ export function ModelPicker({ allowPersistGlobal = true, gw, onCancel, onSelect,
         </Text>
 
         <Text color={t.color.muted} wrap="truncate-end">
-          Paste your API key below (saved to ~/.lucifex/.env)
+          Paste your API key below (saved to ~/.hermes/.env)
         </Text>
 
         <Text color={t.color.muted} wrap="truncate-end">
@@ -677,6 +696,7 @@ export function ModelPicker({ allowPersistGlobal = true, gw, onCancel, onSelect,
 interface ModelPickerProps {
   allowPersistGlobal?: boolean
   gw: GatewayClient
+  initialRefresh?: boolean
   onCancel: () => void
   onSelect: (value: string) => void
   sessionId: string | null

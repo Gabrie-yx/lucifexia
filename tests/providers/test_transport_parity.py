@@ -201,17 +201,32 @@ class TestNousParity:
     def test_tags(self, transport):
         from agent.portal_tags import nous_portal_tags
         kw = transport.build_kwargs(
-            model="lucifex-3-llama-3.1-405b",
+            model="hermes-3-llama-3.1-405b",
             messages=_simple_messages(),
             tools=None,
             provider_profile=get_provider_profile("nous"),
         )
         assert kw["extra_body"]["tags"] == nous_portal_tags()
 
+    def test_provider_preferences(self, transport):
+        preferences = {
+            "only": ["deepseek"],
+            "ignore": ["deepinfra"],
+            "sort": "throughput",
+        }
+        kw = transport.build_kwargs(
+            model="deepseek/deepseek-v4-flash",
+            messages=_simple_messages(),
+            tools=None,
+            provider_profile=get_provider_profile("nous"),
+            provider_preferences=preferences,
+        )
+        assert kw["extra_body"]["provider"] == preferences
+
     def test_reasoning_omitted_when_disabled(self, transport):
         """Nous special case: reasoning omitted entirely when disabled."""
         kw = transport.build_kwargs(
-            model="lucifex-3-llama-3.1-405b",
+            model="hermes-3-llama-3.1-405b",
             messages=_simple_messages(),
             tools=None,
             provider_profile=get_provider_profile("nous"),
@@ -223,7 +238,7 @@ class TestNousParity:
     def test_reasoning_enabled(self, transport):
         rc = {"enabled": True, "effort": "high"}
         kw = transport.build_kwargs(
-            model="lucifex-3-llama-3.1-405b",
+            model="hermes-3-llama-3.1-405b",
             messages=_simple_messages(),
             tools=None,
             provider_profile=get_provider_profile("nous"),

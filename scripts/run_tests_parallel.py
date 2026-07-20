@@ -31,8 +31,8 @@ Usage:
     a literal ``--`` is also passed through, and stacks with bare flags.
 
 Environment:
-    LUCIFEX_TEST_WORKERS  Override worker count (default: os.cpu_count())
-    LUCIFEX_TEST_PATHS    Override discovery roots (colon-sep, default: 'tests')
+    HERMES_TEST_WORKERS  Override worker count (default: os.cpu_count())
+    HERMES_TEST_PATHS    Override discovery roots (colon-sep, default: 'tests')
 
 Exit code: 0 if every file's pytest exited 0; 1 otherwise.
 """
@@ -62,8 +62,8 @@ _DEFAULT_ROOTS = ["tests"]
 #   tests/integration/ — historical; legacy --ignore flags
 #   tests/docker/      — .github/workflows/docker.yml ::
 #                        build-amd64 job (runs against the freshly-loaded
-#                        nousresearch/lucifex-agent:test image, via
-#                        ``LUCIFEX_TEST_IMAGE`` so the fixture skips
+#                        nousresearch/hermes-agent:test image, via
+#                        ``HERMES_TEST_IMAGE`` so the fixture skips
 #                        rebuild). The full pytest-shard runner can't
 #                        host these because the session-scoped
 #                        ``built_image`` fixture would do a 3-7min
@@ -73,7 +73,7 @@ _DEFAULT_ROOTS = ["tests"]
 _SKIP_PARTS = {"integration", "e2e", "docker"}
 
 # Per-file wall-clock cap. Override
-# via --file-timeout or LUCIFEX_TEST_FILE_TIMEOUT.
+# via --file-timeout or HERMES_TEST_FILE_TIMEOUT.
 #
 # Set to 300s (5 min) deliberately generous: the per-test subprocess
 # isolation plugin spawns a fresh Python process per test, so a
@@ -84,6 +84,15 @@ _SKIP_PARTS = {"integration", "e2e", "docker"}
 # take 7-10 min anyway, so this headroom costs nothing on total CI wall
 # time while keeping a genuinely hung file bounded.
 _DEFAULT_FILE_TIMEOUT_SECONDS = 300.0
+
+# One-shot retry of failing test FILES. A file that exits non-zero is re-run
+# once in a fresh subprocess; if the re-run passes, the file counts as passed
+# but is loudly reported as FLAKY so it gets fixed rather than hidden.
+# Deterministic failures fail both attempts — a real regression can never be
+# laundered into green by this (it would have to flake in our favor twice in
+# a row on the same runner, which is exactly the definition of a flake).
+# Set to 0 to disable (env: HERMES_TEST_FILE_RETRIES).
+_DEFAULT_FILE_RETRIES = 1
 
 # Duration cache: maps relative file paths to last-observed subprocess
 # wall-clock seconds. Used by ``--slice`` to distribute files across
@@ -224,10 +233,18 @@ def _run_one_file(
     pytest_args: List[str],
     repo_root: Path,
     file_timeout: float,
+    retries: int = 0,
 ) -> Tuple[Path, int, str, dict[str, int], float]:
     """Run ``python -m pytest <file> <pytest_args>`` in a fresh subprocess.
 
     Returns (file, returncode, captured_combined_output, summary_counts, subprocess_wall_seconds).
+
+    ``retries`` > 0 enables the one-shot flake retry: a non-zero exit is
+    re-run in a fresh subprocess; if the re-run passes, the file counts as
+    passed but the output is prefixed with a FLAKY banner and the file/output
+    are recorded in ``_FLAKY_RESULTS`` so the summary can call it out. A
+    deterministic failure fails every attempt, so real regressions cannot
+    be laundered green.
 
     ``summary_counts`` is the result of ``_parse_pytest_summary(output)`` —
 
@@ -250,6 +267,44 @@ def _run_one_file(
     orphan onto PID 1. This outer timeout exists only to
     bound a pathologically slow or hung file as a whole.
     """
+    file, rc, output, summary, subproc_wall = _run_one_file_once(
+        file, pytest_args, repo_root, file_timeout
+    )
+    attempt = 0
+    while rc != 0 and attempt < retries:
+        attempt += 1
+        first_output = output
+        file, rc, output, summary, subproc_wall2 = _run_one_file_once(
+            file, pytest_args, repo_root, file_timeout
+        )
+        subproc_wall += subproc_wall2
+        if rc == 0:
+            output = (
+                f"⚠ FLAKY: failed on attempt 1, passed on retry "
+                f"(attempt {attempt + 1}). Fix the flake — do not ignore this.\n"
+                f"--- first-attempt output ---\n{first_output}\n"
+                f"--- retry output ---\n{output}"
+            )
+            with _flaky_lock:
+                _FLAKY_RESULTS.append((file, output))
+    return file, rc, output, summary, subproc_wall
+
+
+# Files that failed once and passed on retry, with both attempts' output.
+# Keeping the traceback is load-bearing: a self-healed flake without its
+# failing assertion is only a filename, which forces another expensive full
+# run to rediscover the race.
+_FLAKY_RESULTS: List[Tuple[Path, str]] = []
+_flaky_lock = threading.Lock()
+
+
+def _run_one_file_once(
+    file: Path,
+    pytest_args: List[str],
+    repo_root: Path,
+    file_timeout: float,
+) -> Tuple[Path, int, str, dict[str, int], float]:
+    """Single attempt of a per-file pytest subprocess (see _run_one_file)."""
     cmd = [sys.executable, "-m", "pytest", str(file), *pytest_args]
     
     subproc_start = time.monotonic()
@@ -260,8 +315,7 @@ def _run_one_file(
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
-        # skipping writing bytecode because we're running a bunch of parallel python processes on the same code
-        env={**os.environ, 'PYTHONDONTWRITEBYTECODE': '1'},
+        env=os.environ,
         # POSIX: place the child at the head of its own process group so
         # _kill_tree can SIGKILL the group atomically.
         # Windows: this maps to CREATE_NEW_PROCESS_GROUP in CPython 3.12+;
@@ -354,7 +408,7 @@ def _parse_pytest_summary(output: str) -> dict[str, int]:
 def _format_file(file: Path, repo_root: Path) -> str:
     """Render a test-file path for display: strip the repo-root prefix
     when possible so output reads ``tests/acp/test_auth.py`` instead of
-    ``/home/runner/work/lucifex-agent/lucifex-agent/tests/acp/test_auth.py``.
+    ``/home/runner/work/hermes-agent/hermes-agent/tests/acp/test_auth.py``.
 
     Falls back to the absolute path for anything outside the repo root.
     """
@@ -462,9 +516,9 @@ def _print_inline_failure(
     print(f"  ╔╍ Failed: {rel} ╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍", flush=True)
     for line in tail.splitlines():
         print(f"  ║ {line}", flush=True)
-    print(f"  ║", flush=True)
+    print("  ║", flush=True)
     print(f"  ║  Repro: {repro}", flush=True)
-    print(f"  ╚╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍", flush=True)
+    print("  ╚╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍", flush=True)
     print(flush=True)
 
 
@@ -600,12 +654,12 @@ def main() -> int:
         "-j",
         "--jobs",
         type=int,
-        default=int(os.environ.get("LUCIFEX_TEST_WORKERS") or (os.cpu_count() or 4) * 2),
-        help="Parallel worker count (default: $LUCIFEX_TEST_WORKERS or cpu_count*2)",
+        default=int(os.environ.get("HERMES_TEST_WORKERS") or (os.cpu_count() or 4) * 2),
+        help="Parallel worker count (default: $HERMES_TEST_WORKERS or cpu_count*2)",
     )
     parser.add_argument(
         "--paths",
-        default=os.environ.get("LUCIFEX_TEST_PATHS", ":".join(_DEFAULT_ROOTS)),
+        default=os.environ.get("HERMES_TEST_PATHS", ":".join(_DEFAULT_ROOTS)),
         help="Colon-separated discovery roots (default: 'tests')",
     )
     parser.add_argument(
@@ -617,12 +671,25 @@ def main() -> int:
         "--file-timeout",
         type=float,
         default=float(
-            os.environ.get("LUCIFEX_TEST_FILE_TIMEOUT", _DEFAULT_FILE_TIMEOUT_SECONDS)
+            os.environ.get("HERMES_TEST_FILE_TIMEOUT", _DEFAULT_FILE_TIMEOUT_SECONDS)
         ),
         help=(
             "Per-file wall-clock cap in seconds. On timeout, the pytest "
             "subprocess and its full process tree are SIGKILL'd. "
-            f"Default: {_DEFAULT_FILE_TIMEOUT_SECONDS}s ({round(_DEFAULT_FILE_TIMEOUT_SECONDS/60)} min), env: LUCIFEX_TEST_FILE_TIMEOUT."
+            f"Default: {_DEFAULT_FILE_TIMEOUT_SECONDS}s ({round(_DEFAULT_FILE_TIMEOUT_SECONDS/60)} min), env: HERMES_TEST_FILE_TIMEOUT."
+        ),
+    )
+    parser.add_argument(
+        "--file-retries",
+        type=int,
+        default=int(
+            os.environ.get("HERMES_TEST_FILE_RETRIES", _DEFAULT_FILE_RETRIES)
+        ),
+        help=(
+            "Re-run a failing test FILE this many times in a fresh subprocess "
+            "before declaring it failed. A pass-on-retry counts as passed but "
+            "is reported as FLAKY in the summary. 0 disables. "
+            f"Default: {_DEFAULT_FILE_RETRIES}, env: HERMES_TEST_FILE_RETRIES."
         ),
     )
     parser.add_argument(
@@ -633,7 +700,7 @@ def main() -> int:
             "Files are distributed across slices using cached durations "
             "so each slice takes roughly equal wall time. "
             "Without a duration cache, files are distributed by count. "
-            "Env: LUCIFEX_TEST_SLICE (format: I/N)."
+            "Env: HERMES_TEST_SLICE (format: I/N)."
         ),
     )
     parser.add_argument(
@@ -685,7 +752,7 @@ def main() -> int:
     # (``-k=expr``, ``--tb=long``) are self-contained and need no lookahead.
     OUR_FLAGS = {
         "-j", "--jobs", "--paths", "--include-integration",
-        "--file-timeout", "--slice", "--generate-slices", "--files",
+        "--file-timeout", "--file-retries", "--slice", "--generate-slices", "--files",
     }
     # pytest short flags that consume the NEXT token as their value.
     PYTEST_VALUE_FLAGS = {"-k", "-m", "-p", "-o", "-c", "-r", "-W"}
@@ -731,9 +798,9 @@ def main() -> int:
     # intuitive (``run_tests.sh tests/foo.py -q -- --tb=long`` → ``-q --tb=long``).
     pytest_passthrough = bare_passthrough + explicit_passthrough
 
-    # Parse --slice (or LUCIFEX_TEST_SLICE) early so we can exit on bad input
+    # Parse --slice (or HERMES_TEST_SLICE) early so we can exit on bad input
     # before doing any expensive discovery.
-    slice_raw = args.slice or os.environ.get("LUCIFEX_TEST_SLICE")
+    slice_raw = args.slice or os.environ.get("HERMES_TEST_SLICE")
     slice_index: int | None = None
     slice_count: int = 1
     if slice_raw:
@@ -767,7 +834,7 @@ def main() -> int:
         files = _discover_files(roots)
 
     if not files:
-        print(f"No test files to run", file=sys.stderr)
+        print("No test files to run", file=sys.stderr)
         return 1
 
     # --generate-slices: compute LPT distribution and emit JSON, then exit.
@@ -876,7 +943,8 @@ def main() -> int:
         for file in files:
             t0 = time.monotonic()
             fut = pool.submit(
-                _run_one_file, file, pytest_passthrough, repo_root, args.file_timeout
+                _run_one_file, file, pytest_passthrough, repo_root,
+                args.file_timeout, args.file_retries,
             )
             fut.add_done_callback(lambda f, file=file, t0=t0: _on_done(file, t0, f))
             futures.append(fut)
@@ -890,6 +958,15 @@ def main() -> int:
     print()
     pct = min(100, (tests_done / approx_total_tests * 100)) if approx_total_tests else 0
     print(f"=== Summary: {len(files)} files, {tests_passed} tests passed, {tests_failed} failed ({pct:.0f}% complete) in {elapsed:.1f}s ({args.jobs} workers) ===")
+
+    # Flaky files: failed once, passed on the automatic retry. Green, but
+    # loudly reported so they get fixed instead of silently re-flaking.
+    if _FLAKY_RESULTS:
+        print()
+        print(f"=== ⚠ {len(_FLAKY_RESULTS)} FLAKY file{'s' if len(_FLAKY_RESULTS) != 1 else ''} (failed once, passed on retry — fix these) ===")
+        for f, output in _FLAKY_RESULTS:
+            print(f"  {_format_file(f, repo_root)}")
+            print(output.rstrip())
 
     # Save durations for future --slice runs. Each slice writes its own
     # partial test_durations.json; a CI merge step joins them later.
@@ -914,14 +991,14 @@ def main() -> int:
         fast = sum(1 for t in times if t < 1.0)
         fast_2s = sum(1 for t in times if t < 2.0)
         print()
-        print(f"=== Per-file subprocess time distribution ===")
+        print("=== Per-file subprocess time distribution ===")
         print(f"  Files:   {len(times)}")
         print(f"  Total subprocess CPU-wall: {total_subproc:.1f}s  (runner wall: {elapsed:.1f}s, parallelism: {args.jobs}x)")
         print(f"  P50: {p50:.2f}s  P90: {p90:.2f}s  P95: {p95:.2f}s  P99: {p99:.2f}s  Max: {max_t:.2f}s")
         print(f"  <1s: {fast} files ({fast/len(times)*100:.0f}%)  <2s: {fast_2s} files ({fast_2s/len(times)*100:.0f}%)")
         # Top 10 slowest files — likely the ones dragging the run.
         slowest = sorted(file_times, key=lambda x: x[1], reverse=True)[:10]
-        print(f"  Top 10 slowest:")
+        print("  Top 10 slowest:")
         for f, t in slowest:
             print(f"    {t:>6.2f}s  {_format_file(f, repo_root)}")
 

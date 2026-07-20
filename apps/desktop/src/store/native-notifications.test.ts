@@ -12,8 +12,8 @@ import {
 import { $approvalRequest, setApprovalRequest } from './prompts'
 import { $activeSessionId, setActiveSessionId } from './session'
 
-const desktopWindow = window as unknown as { lucifexDesktop?: Window['lucifexDesktop'] }
-const initialLucifexDesktop = desktopWindow.lucifexDesktop
+const desktopWindow = window as unknown as { hermesDesktop?: Window['hermesDesktop'] }
+const initialHermesDesktop = desktopWindow.hermesDesktop
 
 const notify = vi.fn().mockResolvedValue(true)
 
@@ -34,7 +34,7 @@ function freshSession(): string {
 
 beforeEach(() => {
   notify.mockClear()
-  desktopWindow.lucifexDesktop = { notify } as unknown as Window['lucifexDesktop']
+  desktopWindow.hermesDesktop = { notify } as unknown as Window['hermesDesktop']
   setNativeNotifyEnabled(true)
 
   for (const kind of NATIVE_NOTIFICATION_KINDS) {
@@ -46,10 +46,10 @@ beforeEach(() => {
 })
 
 afterEach(() => {
-  if (initialLucifexDesktop) {
-    desktopWindow.lucifexDesktop = initialLucifexDesktop
+  if (initialHermesDesktop) {
+    desktopWindow.hermesDesktop = initialHermesDesktop
   } else {
-    delete desktopWindow.lucifexDesktop
+    delete desktopWindow.hermesDesktop
   }
 })
 
@@ -153,7 +153,7 @@ describe('sendTestNativeNotification', () => {
   it('fires regardless of focus or active session', () => {
     setWindowState({ focused: true, hidden: false })
     setActiveSessionId('on-screen')
-    sendTestNativeNotification('Lucifex', 'works')
+    sendTestNativeNotification('Hermes', 'works')
     expect(notify).toHaveBeenCalledTimes(1)
   })
 })

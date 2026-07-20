@@ -12,7 +12,7 @@ Features:
 - Shared file store tools (upload, list, read, ingest, delete)
 - Explicit memory tools (profile, search, context, remember, forget)
 
-Config (env vars or lucifex config.yaml under retaindb:):
+Config (env vars or hermes config.yaml under retaindb:):
   RETAINDB_API_KEY     — API key (required)
   RETAINDB_BASE_URL    — API endpoint (default: https://api.retaindb.com)
   RETAINDB_PROJECT     — Project identifier (optional — defaults to "default")
@@ -34,6 +34,7 @@ from typing import Any, Dict, List
 from urllib.parse import quote
 
 from agent.memory_provider import MemoryProvider
+from agent.file_safety import raise_if_read_blocked
 from tools.registry import tool_error
 
 logger = logging.getLogger(__name__)
@@ -187,7 +188,7 @@ class _Client:
         h = {
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json",
-            "x-sdk-runtime": "lucifex-plugin",
+            "x-sdk-runtime": "hermes-plugin",
         }
         if path.startswith(("/v1/memory", "/v1/context")):
             h["X-API-Key"] = token
@@ -286,7 +287,7 @@ class _Client:
         import requests
         url = f"{self.base_url}/v1/files"
         token = self.api_key.replace("Bearer ", "").strip()
-        headers = {"Authorization": f"Bearer {token}", "x-sdk-runtime": "lucifex-plugin"}
+        headers = {"Authorization": f"Bearer {token}", "x-sdk-runtime": "hermes-plugin"}
         fields = {"path": remote_path, "scope": scope.upper()}
         if project_id:
             fields["project_id"] = project_id
@@ -307,7 +308,7 @@ class _Client:
         import requests
         token = self.api_key.replace("Bearer ", "").strip()
         url = f"{self.base_url}/v1/files/{quote(file_id, safe='')}/content"
-        resp = requests.get(url, headers={"Authorization": f"Bearer {token}", "x-sdk-runtime": "lucifex-plugin"}, timeout=30, allow_redirects=True)
+        resp = requests.get(url, headers={"Authorization": f"Bearer {token}", "x-sdk-runtime": "hermes-plugin"}, timeout=30, allow_redirects=True)
         resp.raise_for_status()
         return resp.content
 
@@ -457,7 +458,7 @@ class RetainDBMemoryProvider(MemoryProvider):
         self._queue: _WriteQueue | None = None
         self._user_id = "default"
         self._session_id = ""
-        self._agent_id = "lucifex"
+        self._agent_id = "hermes"
         self._lock = threading.Lock()
 
         # Prefetch caches
@@ -490,28 +491,28 @@ class RetainDBMemoryProvider(MemoryProvider):
         api_key = os.environ.get("RETAINDB_API_KEY", "")
         base_url = re.sub(r"/+$", "", os.environ.get("RETAINDB_BASE_URL", _DEFAULT_BASE_URL))
 
-        # Project resolution: RETAINDB_PROJECT > lucifex-<profile> > "default"
+        # Project resolution: RETAINDB_PROJECT > hermes-<profile> > "default"
         # If unset, the API auto-creates and uses the "default" project — no config required.
         explicit = os.environ.get("RETAINDB_PROJECT")
         if explicit:
             project = explicit
         else:
-            lucifex_home = str(kwargs.get("lucifex_home", ""))
-            profile_name = os.path.basename(lucifex_home) if lucifex_home else ""
-            project = f"lucifex-{profile_name}" if (profile_name and profile_name not in {"", ".lucifex"}) else "default"
+            hermes_home = str(kwargs.get("hermes_home", ""))
+            profile_name = os.path.basename(hermes_home) if hermes_home else ""
+            project = f"hermes-{profile_name}" if (profile_name and profile_name not in {"", ".hermes"}) else "default"
 
         self._client = _Client(api_key, base_url, project)
         self._session_id = session_id
         self._user_id = kwargs.get("user_id", "default") or "default"
-        self._agent_id = kwargs.get("agent_id", "lucifex") or "lucifex"
+        self._agent_id = kwargs.get("agent_id", "hermes") or "hermes"
 
-        from lucifex_constants import get_lucifex_home
-        lucifex_home_path = get_lucifex_home()
-        db_path = lucifex_home_path / "retaindb_queue.db"
+        from hermes_constants import get_hermes_home
+        hermes_home_path = get_hermes_home()
+        db_path = hermes_home_path / "retaindb_queue.db"
         self._queue = _WriteQueue(self._client, db_path)
 
         # Seed agent identity from SOUL.md in background
-        soul_path = lucifex_home_path / "SOUL.md"
+        soul_path = hermes_home_path / "SOUL.md"
         if soul_path.exists():
             soul_content = soul_path.read_text(encoding="utf-8", errors="replace").strip()
             if soul_content:
@@ -702,6 +703,10 @@ class RetainDBMemoryProvider(MemoryProvider):
             path_obj = Path(local_path)
             if not path_obj.exists():
                 return {"error": f"File not found: {local_path}"}
+            try:
+                raise_if_read_blocked(str(path_obj))
+            except ValueError as exc:
+                return {"error": str(exc)}
             data = path_obj.read_bytes()
             import mimetypes
             mime = mimetypes.guess_type(path_obj.name)[0] or "application/octet-stream"

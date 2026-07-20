@@ -27,7 +27,7 @@ class TestSpecSafety:
     @pytest.mark.parametrize("spec", [
         "mistralai>=2.3.0,<3",
         "elevenlabs>=1.0,<2",
-        "honcho-ai>=2.0.1,<3",
+        "honcho-ai>=2.2.0,<3",
         "boto3>=1.35.0,<2",
         "mautrix[encryption]>=0.20,<1",
         "google-api-python-client>=2.100,<3",
@@ -119,18 +119,18 @@ class TestSecurityGating:
             ld.ensure("test.feat", prompt=False)
 
     def test_disabled_via_env_var(self, monkeypatch):
-        monkeypatch.setenv("LUCIFEX_DISABLE_LAZY_INSTALLS", "1")
+        monkeypatch.setenv("HERMES_DISABLE_LAZY_INSTALLS", "1")
         # Bypass config layer; the env var alone must disable.
         monkeypatch.setattr(
-            "lucifex_cli.config.load_config",
+            "hermes_cli.config.load_config",
             lambda: {"security": {"allow_lazy_installs": True}},
         )
         assert ld._allow_lazy_installs() is False
 
     def test_default_allows(self, monkeypatch):
-        monkeypatch.delenv("LUCIFEX_DISABLE_LAZY_INSTALLS", raising=False)
+        monkeypatch.delenv("HERMES_DISABLE_LAZY_INSTALLS", raising=False)
         monkeypatch.setattr(
-            "lucifex_cli.config.load_config",
+            "hermes_cli.config.load_config",
             lambda: {"security": {}},
         )
         assert ld._allow_lazy_installs() is True
@@ -138,9 +138,9 @@ class TestSecurityGating:
     def test_config_failure_fails_open(self, monkeypatch):
         # If config can't be read at all, we ALLOW installs rather than
         # blocking the user out of their own backends.
-        monkeypatch.delenv("LUCIFEX_DISABLE_LAZY_INSTALLS", raising=False)
+        monkeypatch.delenv("HERMES_DISABLE_LAZY_INSTALLS", raising=False)
         monkeypatch.setattr(
-            "lucifex_cli.config.load_config",
+            "hermes_cli.config.load_config",
             lambda: (_ for _ in ()).throw(RuntimeError("config broken")),
         )
         assert ld._allow_lazy_installs() is True
@@ -253,13 +253,13 @@ class TestIsSatisfiedVersionAware:
         monkeypatch.setattr(_md, "version", _version)
 
     def test_exact_pin_match_returns_true(self, monkeypatch):
-        self._fake_version(monkeypatch, {"honcho-ai": "2.0.1"})
-        assert ld._is_satisfied("honcho-ai==2.0.1") is True
+        self._fake_version(monkeypatch, {"honcho-ai": "2.2.0"})
+        assert ld._is_satisfied("honcho-ai==2.2.0") is True
 
     def test_exact_pin_mismatch_returns_false(self, monkeypatch):
-        # Installed 2.0.0, spec requires 2.0.1 → False (needs upgrade).
-        self._fake_version(monkeypatch, {"honcho-ai": "2.0.0"})
-        assert ld._is_satisfied("honcho-ai==2.0.1") is False
+        # Installed 2.1.2, spec requires 2.2.0 → False (needs upgrade).
+        self._fake_version(monkeypatch, {"honcho-ai": "2.1.2"})
+        assert ld._is_satisfied("honcho-ai==2.2.0") is False
 
     def test_range_within_returns_true(self, monkeypatch):
         self._fake_version(monkeypatch, {"slack-bolt": "1.27.0"})
@@ -295,7 +295,7 @@ class TestIsSatisfiedVersionAware:
 
 
 # ---------------------------------------------------------------------------
-# active_features + refresh_active_features (Piece A — lucifex update wiring)
+# active_features + refresh_active_features (Piece A — hermes update wiring)
 # ---------------------------------------------------------------------------
 
 
@@ -332,6 +332,50 @@ class TestRefreshActiveFeatures:
         monkeypatch.setattr(ld, "active_features", lambda: [])
         assert ld.refresh_active_features() == {}
 
+    def test_windows_matrix_refresh_is_skipped_before_pip(self, monkeypatch):
+        # Matrix E2EE pulls python-olm, which has no native Windows wheel/build
+        # path. `hermes update` must not retry that doomed install every run.
+        monkeypatch.setattr(ld.sys, "platform", "win32")
+        monkeypatch.setattr(ld, "active_features", lambda: ["platform.matrix"])
+        monkeypatch.setattr(ld, "_is_satisfied", lambda spec: False)
+        monkeypatch.setattr(ld, "_allow_lazy_installs", lambda: True)
+        monkeypatch.setattr(
+            ld,
+            "_venv_pip_install",
+            lambda *a, **kw: pytest.fail("pip should not be called for unsupported Matrix on Windows"),
+        )
+
+        result = ld.refresh_active_features()
+
+        assert result["platform.matrix"].startswith("skipped:")
+        assert "unsupported on Windows" in result["platform.matrix"]
+
+    def test_windows_matrix_ensure_fails_before_pip(self, monkeypatch):
+        monkeypatch.setattr(ld.sys, "platform", "win32")
+        monkeypatch.setattr(ld, "_is_satisfied", lambda spec: False)
+        monkeypatch.setattr(ld, "_allow_lazy_installs", lambda: True)
+        monkeypatch.setattr(
+            ld,
+            "_venv_pip_install",
+            lambda *a, **kw: pytest.fail("pip should not be called for unsupported Matrix on Windows"),
+        )
+
+        with pytest.raises(ld.FeatureUnavailable, match="unsupported on Windows"):
+            ld.ensure("platform.matrix", prompt=False)
+
+    def test_windows_matrix_already_satisfied_still_works(self, monkeypatch):
+        # Do not break users who already have a working Matrix dependency set;
+        # only the impossible Windows install/refresh path should be blocked.
+        monkeypatch.setattr(ld.sys, "platform", "win32")
+        monkeypatch.setattr(ld, "_is_satisfied", lambda spec: True)
+        monkeypatch.setattr(
+            ld,
+            "_venv_pip_install",
+            lambda *a, **kw: pytest.fail("pip should not be called when Matrix deps are current"),
+        )
+
+        ld.ensure("platform.matrix", prompt=False)
+
     def test_already_current_is_noop(self, monkeypatch):
         monkeypatch.setattr(ld, "active_features", lambda: ["test.feat"])
         monkeypatch.setitem(ld.LAZY_DEPS, "test.feat", ("zzzfake==1.0.0",))
@@ -360,7 +404,7 @@ class TestRefreshActiveFeatures:
         assert result == {"test.feat": "refreshed"}
 
     def test_install_failure_recorded_not_raised(self, monkeypatch):
-        # A failed refresh must NOT raise out of lucifex update.
+        # A failed refresh must NOT raise out of hermes update.
         monkeypatch.setattr(ld, "active_features", lambda: ["test.feat"])
         monkeypatch.setitem(ld.LAZY_DEPS, "test.feat", ("zzzfake==2.0.0",))
         monkeypatch.setattr(ld, "_is_satisfied", lambda spec: False)
@@ -378,7 +422,7 @@ class TestRefreshActiveFeatures:
 
     def test_lazy_installs_disabled_marked_skipped(self, monkeypatch):
         # security.allow_lazy_installs=false → don't error, mark skipped
-        # so lucifex update can render "respecting your config" message.
+        # so hermes update can render "respecting your config" message.
         monkeypatch.setattr(ld, "active_features", lambda: ["test.feat"])
         monkeypatch.setitem(ld.LAZY_DEPS, "test.feat", ("zzzfake==2.0.0",))
         monkeypatch.setattr(ld, "_is_satisfied", lambda spec: False)

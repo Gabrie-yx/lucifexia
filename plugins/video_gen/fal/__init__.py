@@ -180,7 +180,11 @@ def _clamp_duration(family: Dict[str, Any], duration: Optional[int]) -> Optional
     if not durations:
         return duration
     if duration is None:
-        return durations[0]
+        # Range families (e.g. pixverse-v6 (1,15)) should omit the field so
+        # the FAL endpoint applies its own default rather than receiving the
+        # minimum value.  Enum families (e.g. veo3.1 (4,6,8)) keep sending
+        # their first entry as the default.
+        return None if _is_duration_range(durations) else durations[0]
     if _is_duration_range(durations):
         lo, hi = durations
         return max(lo, min(hi, duration))
@@ -197,7 +201,7 @@ def _clamp_duration(family: Dict[str, Any], duration: Optional[int]) -> Optional
 
 def _load_video_gen_section() -> Dict[str, Any]:
     try:
-        from lucifex_cli.config import load_config
+        from hermes_cli.config import load_config
 
         cfg = load_config()
         section = cfg.get("video_gen") if isinstance(cfg, dict) else None
@@ -386,7 +390,7 @@ def _submit_fal_video_request(endpoint: str, arguments: Dict[str, Any]):
                 f"(HTTP {status}). This model may not yet be enabled on "
                 f"the Nous Portal's FAL proxy. Either:\n"
                 f"  • Set FAL_KEY in your environment to use FAL.ai directly, or\n"
-                f"  • Pick a different model via `lucifex tools` → Video Generation."
+                f"  • Pick a different model via `hermes tools` → Video Generation."
             ) from exc
         raise
 
@@ -493,8 +497,8 @@ class FALVideoGenProvider(VideoGenProvider):
             return error_response(
                 error=(
                     "No FAL backend available. Either set FAL_KEY "
-                    "(run `lucifex tools` → Video Generation → FAL to configure) "
-                    "or sign in to Nous (`lucifex setup`) for managed gateway access."
+                    "(run `hermes tools` → Video Generation → FAL to configure) "
+                    "or sign in to Nous (`hermes setup`) for managed gateway access."
                 ),
                 error_type="auth_required",
                 provider="fal",
@@ -524,7 +528,7 @@ class FALVideoGenProvider(VideoGenProvider):
                     error=(
                         f"FAL family {family_id} has no image-to-video "
                         f"endpoint. Pick a family with image-to-video support "
-                        f"via `lucifex tools` → Video Generation."
+                        f"via `hermes tools` → Video Generation."
                     ),
                     error_type="modality_unsupported",
                     provider="fal", model=family_id, prompt=prompt,

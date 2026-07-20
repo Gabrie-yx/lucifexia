@@ -38,11 +38,11 @@ WORK_DURATION_S = 2.0  # longer than TTL => reclaimer wins
 WT = str(Path(__file__).resolve().parents[2])
 
 
-def worker_loop(worker_id: int, lucifex_home: str, result_file: str) -> None:
-    os.environ["LUCIFEX_HOME"] = lucifex_home
-    os.environ["HOME"] = lucifex_home
+def worker_loop(worker_id: int, hermes_home: str, result_file: str) -> None:
+    os.environ["HERMES_HOME"] = hermes_home
+    os.environ["HOME"] = hermes_home
     sys.path.insert(0, WT)
-    from lucifex_cli import kanban_db as kb
+    from hermes_cli import kanban_db as kb
 
     events = []
     start = time.monotonic()
@@ -95,11 +95,11 @@ def worker_loop(worker_id: int, lucifex_home: str, result_file: str) -> None:
         json.dump(events, f)
 
 
-def reclaimer_loop(lucifex_home: str, result_file: str) -> None:
-    os.environ["LUCIFEX_HOME"] = lucifex_home
-    os.environ["HOME"] = lucifex_home
+def reclaimer_loop(hermes_home: str, result_file: str) -> None:
+    os.environ["HERMES_HOME"] = hermes_home
+    os.environ["HOME"] = hermes_home
     sys.path.insert(0, WT)
-    from lucifex_cli import kanban_db as kb
+    from hermes_cli import kanban_db as kb
 
     events = []
     start = time.monotonic()
@@ -121,11 +121,11 @@ def reclaimer_loop(lucifex_home: str, result_file: str) -> None:
 
 
 def main():
-    home = tempfile.mkdtemp(prefix="lucifex_reclaim_race_")
-    os.environ["LUCIFEX_HOME"] = home
+    home = tempfile.mkdtemp(prefix="hermes_reclaim_race_")
+    os.environ["HERMES_HOME"] = home
     os.environ["HOME"] = home
     sys.path.insert(0, WT)
-    from lucifex_cli import kanban_db as kb
+    from hermes_cli import kanban_db as kb
 
     kb.init_db()
     conn = kb.connect()
@@ -134,7 +134,7 @@ def main():
                        tenant="reclaim-race")
     conn.close()
     print(f"Seeded {NUM_TASKS} tasks. TTL={TTL}s, work_duration={WORK_DURATION_S}s")
-    print(f"(worker work > TTL guarantees reclaims)")
+    print("(worker work > TTL guarantees reclaims)")
 
     ctx = mp.get_context("spawn")
     worker_results = [f"/tmp/rc_worker_{i}.json" for i in range(NUM_WORKERS)]

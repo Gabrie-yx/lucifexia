@@ -20,13 +20,13 @@ Usage:
     response = agent.run_conversation("Tell me about the latest Python updates")
 """
 
-# IMPORTANT: lucifex_bootstrap must be the very first import — UTF-8 stdio
-# on Windows.  No-op on POSIX.  See lucifex_bootstrap.py for full rationale.
+# IMPORTANT: hermes_bootstrap must be the very first import — UTF-8 stdio
+# on Windows.  No-op on POSIX.  See hermes_bootstrap.py for full rationale.
 try:
-    import lucifex_bootstrap  # noqa: F401
+    import hermes_bootstrap  # noqa: F401
 except ModuleNotFoundError:
-    # Graceful fallback when lucifex_bootstrap isn't registered in the venv
-    # yet — happens during partial ``lucifex update`` where git-reset landed
+    # Graceful fallback when hermes_bootstrap isn't registered in the venv
+    # yet — happens during partial ``hermes update`` where git-reset landed
     # new code but ``uv pip install -e .`` didn't finish.  Missing bootstrap
     # means UTF-8 stdio setup is skipped on Windows; POSIX is unaffected.
     pass
@@ -62,14 +62,14 @@ from datetime import datetime
 from pathlib import Path
 from types import SimpleNamespace
 
-from lucifex_constants import get_lucifex_home
+from hermes_constants import get_hermes_home
 
 
 def _launch_cwd_for_session(source: str) -> Optional[str]:
     """Working directory to stamp on a new session row, or None.
 
     Only local CLI sessions get a recorded cwd: the directory the process was
-    launched from is meaningful for ``lucifex -c`` / ``--resume`` (relaunch
+    launched from is meaningful for ``hermes -c`` / ``--resume`` (relaunch
     where you left off). Gateway/cron/remote-backend sessions have no stable
     host cwd to restore, so they record nothing.
 
@@ -93,9 +93,9 @@ def _session_source_for_agent(platform: Optional[str]) -> str:
     try:
         from gateway.session_context import get_session_env
 
-        source = get_session_env("LUCIFEX_SESSION_SOURCE", "")
+        source = get_session_env("HERMES_SESSION_SOURCE", "")
     except Exception:
-        source = os.environ.get("LUCIFEX_SESSION_SOURCE", "")
+        source = os.environ.get("HERMES_SESSION_SOURCE", "")
     source = str(source or "").strip()
     if source:
         return source
@@ -116,15 +116,15 @@ from agent.process_bootstrap import (
 from agent.iteration_budget import IterationBudget
 
 
-from lucifex_cli.env_loader import load_lucifex_dotenv
-from lucifex_cli.timeouts import (
+from hermes_cli.env_loader import load_hermes_dotenv
+from hermes_cli.timeouts import (
     get_provider_request_timeout,
     get_provider_stale_timeout,
 )
 
-_lucifex_home = get_lucifex_home()
+_hermes_home = get_hermes_home()
 _project_env = Path(__file__).parent / '.env'
-_loaded_env_paths = load_lucifex_dotenv(lucifex_home=_lucifex_home, project_env=_project_env)
+_loaded_env_paths = load_hermes_dotenv(hermes_home=_hermes_home, project_env=_project_env)
 if _loaded_env_paths:
     for _env_path in _loaded_env_paths:
         logger.info("Loaded environment variables from %s", _env_path)
@@ -139,7 +139,7 @@ from model_tools import (
     handle_function_call,  # noqa: F401  # re-exported for tests that mock.patch("run_agent.handle_function_call")
     check_toolset_requirements,  # noqa: F401  # re-exported for tests that mock.patch("run_agent.check_toolset_requirements")
 )
-from tools.terminal_tool import cleanup_vm
+from tools.terminal_tool import cleanup_vm, get_active_env
 from tools.interrupt import set_interrupt as _set_interrupt
 from tools.browser_tool import cleanup_browser
 
@@ -148,13 +148,17 @@ from tools.browser_tool import cleanup_browser
 from agent.memory_manager import sanitize_context
 from agent.error_classifier import FailoverReason
 from agent.redact import redact_sensitive_text
+from agent.message_content import flatten_message_text
 from agent.model_metadata import (
     estimate_request_tokens_rough,  # noqa: F401  # re-exported for tests that mock.patch("run_agent.estimate_request_tokens_rough")
     is_local_endpoint,
 )
 from agent.usage_pricing import normalize_usage
 # Re-exported for tests that monkeypatch these symbols on run_agent.
-from agent.context_compressor import ContextCompressor  # noqa: F401
+from agent.context_compressor import (  # noqa: F401
+    COMPRESSED_SUMMARY_METADATA_KEY,
+    ContextCompressor,
+)
 from agent.retry_utils import jittered_backoff  # noqa: F401
 from agent.prompt_builder import (  # noqa: F401  # re-exported via _ra() / mock.patch("run_agent.<name>") / from run_agent import <name>
     DEFAULT_AGENT_IDENTITY,
@@ -198,7 +202,7 @@ from agent.trajectory import (
     save_trajectory as _save_trajectory_to_file,
 )
 from agent.tool_dispatch_helpers import (
-    _should_parallelize_tool_batch,
+    _should_parallelize_tool_batch,  # noqa: F401  # re-exported for tests that `from run_agent import _should_parallelize_tool_batch`
     _is_destructive_command,  # noqa: F401  # re-exported for tests that access `run_agent._is_destructive_command`
     _extract_parallel_scope_path,  # noqa: F401  # re-exported for tests that `from run_agent import _extract_parallel_scope_path`
     _paths_overlap,  # noqa: F401  # re-exported for tests that `from run_agent import _paths_overlap`
@@ -232,6 +236,8 @@ _EPHEMERAL_SCAFFOLDING_FLAGS = (
     # transcript and breaks prompt-prefix cache reuse on later turns. (#55733)
     "_verification_stop_synthetic",
     "_pre_verify_synthetic",
+    # kanban worker stop-guard: narrated exit without kanban_complete/block
+    "_kanban_stop_synthetic",
 )
 
 
@@ -281,33 +287,27 @@ _QWEN_CODE_VERSION = "0.14.1"
 
 def _routermint_headers() -> dict:
     """Return the User-Agent RouterMint needs to avoid Cloudflare 1010 blocks."""
-    from lucifex_cli import __version__ as _LUCIFEX_VERSION
+    from hermes_cli import __version__ as _HERMES_VERSION
 
     return {
-        "User-Agent": f"LucifexAgent/{_LUCIFEX_VERSION}",
+        "User-Agent": f"HermesAgent/{_HERMES_VERSION}",
     }
 
 
-def _pool_may_recover_from_rate_limit(
-    pool, *, provider: str | None = None, base_url: str | None = None
-) -> bool:
+def _pool_may_recover_from_rate_limit(pool) -> bool:
     """Decide whether to wait for credential-pool rotation instead of falling back.
 
     The existing pool-rotation path requires the pool to (1) exist and (2) have
     at least one entry not currently in exhaustion cooldown.  But rotation is
     only meaningful when the pool has more than one entry.
 
-    With a single-credential pool (common for Gemini OAuth, Vertex service
-    accounts, and any "one personal key" configuration), the primary entry
-    just 429'd and there is nothing to rotate to.  Waiting for the pool
-    cooldown to expire means retrying against the same exhausted quota — the
-    daily-quota 429 will recur immediately, and the retry budget is burned.
+    With a single-credential pool (common for Vertex service accounts and any
+    "one personal key" configuration), the primary entry just 429'd and there
+    is nothing to rotate to.  Waiting for the pool cooldown to expire means
+    retrying against the same exhausted quota — the daily-quota 429 will recur
+    immediately, and the retry budget is burned.
 
-    Additionally, Google CloudCode / Gemini CLI rate limits are ACCOUNT-level
-    throttles — even a multi-entry pool shares the same quota window, so
-    rotation won't recover.  Skip straight to the fallback for those (#13636).
-
-    In those cases we must fall back to the configured ``fallback_model``
+    In that case we must fall back to the configured ``fallback_model``
     instead.  Returns True only when rotation has somewhere to go.
 
     See issues #11314 and #13636.
@@ -315,10 +315,6 @@ def _pool_may_recover_from_rate_limit(
     if pool is None:
         return False
     if not pool.has_available():
-        return False
-    # CloudCode / Gemini CLI quotas are account-wide — all pool entries share
-    # the same throttle window, so rotation can't recover.  Prefer fallback.
-    if str(base_url or "").startswith("cloudcode-pa://"):
         return False
     return len(pool.entries()) > 1
 
@@ -340,8 +336,8 @@ def _safe_session_filename_component(session_id: str) -> str:
     """Return a stable, path-safe filename component for a session ID.
 
     Session IDs can originate from untrusted input (e.g. the
-    ``X-Lucifex-Session-Id`` API header) and are otherwise interpolated raw
-    into on-disk artifact filenames under ``~/.lucifex/sessions/``.  Without
+    ``X-Hermes-Session-Id`` API header) and are otherwise interpolated raw
+    into on-disk artifact filenames under ``~/.hermes/sessions/``.  Without
     sanitization, a traversal-shaped ID such as ``../../../../etc/pwned``
     would let a caller write the session snapshot / request dump outside the
     sessions directory.  This collapses every non ``[A-Za-z0-9_-]`` character
@@ -409,7 +405,7 @@ class AIAgent:
     """
 
     _TOOL_CALL_ARGUMENTS_CORRUPTION_MARKER = (
-        "[lucifex-agent: tool call arguments were corrupted in this session and "
+        "[hermes-agent: tool call arguments were corrupted in this session and "
         "have been dropped to keep the conversation alive. See issue #15236.]"
     )
 
@@ -468,6 +464,7 @@ class AIAgent:
         notice_callback: callable = None,
         notice_clear_callback: callable = None,
         event_callback: Optional[Callable[[str, dict], None]] = None,
+        reaction_callback: Optional[Callable[[str], None]] = None,
         max_tokens: int = None,
         reasoning_config: Dict[str, Any] = None,
         service_tier: str = None,
@@ -543,6 +540,7 @@ class AIAgent:
             notice_callback=notice_callback,
             notice_clear_callback=notice_clear_callback,
             event_callback=event_callback,
+            reaction_callback=reaction_callback,
             max_tokens=max_tokens,
             reasoning_config=reasoning_config,
             service_tier=service_tier,
@@ -589,7 +587,7 @@ class AIAgent:
         if self._session_db is not None:
             return self._session_db
         try:
-            from lucifex_state import SessionDB
+            from hermes_state import SessionDB
 
             self._session_db = SessionDB()
             return self._session_db
@@ -605,6 +603,13 @@ class AIAgent:
             return
         source = _session_source_for_agent(self.platform)
         try:
+            try:
+                from hermes_cli.profiles import get_active_profile_name
+                _profile_for_session = get_active_profile_name()
+                if _profile_for_session == "default":
+                    _profile_for_session = None
+            except Exception:
+                _profile_for_session = None
             self._session_db.create_session(
                 session_id=self.session_id,
                 source=source,
@@ -614,6 +619,7 @@ class AIAgent:
                 user_id=None,
                 parent_session_id=self._parent_session_id,
                 cwd=_launch_cwd_for_session(source),
+                profile_name=_profile_for_session,
             )
             self._session_db_created = True
         except Exception as e:
@@ -735,6 +741,10 @@ class AIAgent:
         # Turn counter (added after reset_session_state was first written — #2635)
         self._user_turn_count = 0
 
+        # Copilot x-initiator: True for the first API call of a user turn,
+        # False for tool-loop follow-ups (#3040).
+        self._is_user_initiated_turn = False
+
         # Context engine reset/transition (works for built-in compressor and plugins)
         self._transition_context_engine_session(
             old_session_id=old_session_id,
@@ -764,13 +774,16 @@ class AIAgent:
 
     def _ensure_lmstudio_runtime_loaded(self, config_context_length: Optional[int] = None) -> None:
         """
-        Preload the LM Studio model with at least Lucifex' minimum context.
+        Preload the LM Studio model unless configured to rely on LM Studio JIT loading.
         """
         if (self.provider or "").strip().lower() != "lmstudio":
             return
+        if (getattr(self, "lmstudio_load_mode", "explicit") or "explicit").strip().lower() == "jit":
+            logger.debug("LM Studio explicit preload skipped: lmstudio_load_mode=jit")
+            return
         try:
             from agent.model_metadata import MINIMUM_CONTEXT_LENGTH
-            from lucifex_cli.models import ensure_lmstudio_model_loaded
+            from hermes_cli.models import ensure_lmstudio_model_loaded
             if config_context_length is None:
                 config_context_length = getattr(self, "_config_context_length", None)
             target_ctx = max(config_context_length or 0, MINIMUM_CONTEXT_LENGTH)
@@ -833,7 +846,7 @@ class AIAgent:
         all non-forced output is suppressed.
 
         ``suppress_status_output`` is a stricter CLI automation mode used by
-        parseable single-query flows such as ``lucifex chat -q``. In that mode,
+        parseable single-query flows such as ``hermes chat -q``. In that mode,
         all status/diagnostic prints routed through ``_vprint`` are suppressed
         so stdout stays machine-readable.
         """
@@ -936,6 +949,30 @@ class AIAgent:
             except Exception:
                 logger.debug("notice_clear_callback error in _emit_notice_clear", exc_info=True)
 
+    def _emit_wait_notice(self, text: str) -> None:
+        """Surface a live wait-state explanation on every driver.
+
+        Long provider waits (slow/overloaded backend, no first byte, reasoning
+        model thinking for minutes) used to leave the user staring at a generic
+        "cogitating..." spinner with no hint of what the agent was waiting on.
+        This helper rewrites the live status line with an explanation:
+
+        - CLI: ``thinking_callback`` updates the prompt_toolkit spinner text.
+        - TUI / Desktop: the same callback is bridged to the ``thinking.delta``
+          event, which both render as the live spinner/status line.
+        - Gateway: ``_touch_activity`` stores the text as the activity
+          description, which the "⏳ Working — N min" heartbeat includes.
+
+        Never raises — a wait notice must not break the API-call wait loop.
+        """
+        self._touch_activity(text)
+        _thinking_cb = getattr(self, "thinking_callback", None)
+        if _thinking_cb:
+            try:
+                _thinking_cb(text)
+            except Exception:
+                logger.debug("thinking_callback error in _emit_wait_notice", exc_info=True)
+
     # ── Buffered retry/fallback status ────────────────────────────────────
     # Retry and fallback chains were flooding the CLI/gateway with status
     # noise that users found confusing: a single transient 429 could produce
@@ -987,6 +1024,29 @@ class AIAgent:
         except Exception:
             pass
 
+    def _emit_pending_fallback_notice(self) -> None:
+        """Surface the one-shot fallback-switch notice on successful recovery.
+
+        A provider/model switch is a durable state change operators must see,
+        unlike transient retry chatter that ``_clear_status_buffer`` drops.
+        ``try_activate_fallback`` records the switch in
+        ``self._pending_fallback_notice``; this emits it exactly once via
+        ``_emit_status`` and then clears it, so a successful fallback still
+        produces one visible notice.  On terminal failure the buffered switch
+        line is flushed instead (and this notice discarded) — see
+        ``_flush_status_buffer`` — so the user always sees the switch once.
+        """
+        try:
+            notice = getattr(self, "_pending_fallback_notice", None)
+            if notice:
+                # Clear before emitting so a (swallowed) callback error can't
+                # leave the notice set for a stale re-emit on a later turn.
+                self._pending_fallback_notice = None
+                self._emit_status(notice)
+        except Exception:
+            # Never break the conversation loop on a notice hiccup.
+            pass
+
     def _flush_status_buffer(self) -> None:
         """Emit buffered retry messages — call on terminal failure.
 
@@ -994,6 +1054,10 @@ class AIAgent:
         was tried before the turn gave up.
         """
         try:
+            # The buffered trace already carries the fallback switch line, so
+            # drop any one-shot fallback notice to avoid a stale duplicate
+            # leaking into a later successful turn.
+            self._pending_fallback_notice = None
             buf = getattr(self, "_retry_status_buffer", None)
             if not buf:
                 return
@@ -1139,6 +1203,7 @@ class AIAgent:
             "base_url": getattr(self, "base_url", "") or "",
             "api_key": getattr(self, "api_key", "") or "",
             "api_mode": getattr(self, "api_mode", "") or "",
+            "auth_mode": getattr(self, "auth_mode", "") or "",
         }
 
     def _check_compression_model_feasibility(self) -> None:
@@ -1195,19 +1260,19 @@ class AIAgent:
         Priority:
           1. ``providers.<id>.models.<model>.timeout_seconds`` (per-model override)
           2. ``providers.<id>.request_timeout_seconds`` (provider-wide)
-          3. ``LUCIFEX_API_TIMEOUT`` env var (legacy escape hatch)
+          3. ``HERMES_API_TIMEOUT`` env var (legacy escape hatch)
           4. 1800.0s default
 
         Used by OpenAI-wire chat completions (streaming and non-streaming) so
         the per-provider config knob wins over the 1800s default.  Without this
-        helper, the hardcoded ``LUCIFEX_API_TIMEOUT`` fallback would always be
+        helper, the hardcoded ``HERMES_API_TIMEOUT`` fallback would always be
         passed as a per-call ``timeout=`` kwarg, overriding the client-level
         timeout the AIAgent.__init__ path configured.
         """
         cfg = get_provider_request_timeout(self.provider, self.model)
         if cfg is not None:
             return cfg
-        return env_float("LUCIFEX_API_TIMEOUT", 1800.0)
+        return env_float("HERMES_API_TIMEOUT", 1800.0)
 
     def _resolved_api_call_stale_timeout_base(self) -> tuple[float, bool]:
         """Resolve the base non-stream stale timeout and whether it is implicit.
@@ -1215,7 +1280,7 @@ class AIAgent:
         Priority:
           1. ``providers.<id>.models.<model>.stale_timeout_seconds``
           2. ``providers.<id>.stale_timeout_seconds``
-          3. ``LUCIFEX_API_CALL_STALE_TIMEOUT`` env var
+          3. ``HERMES_API_CALL_STALE_TIMEOUT`` env var
           4. 90.0s default (time-to-first-byte for non-streaming / Codex
              internal-streaming requests; lowered from 300s in May 2026 so
              fallback providers kick in faster when upstream providers
@@ -1231,7 +1296,7 @@ class AIAgent:
         if cfg is not None:
             return cfg, False
 
-        env_timeout = os.getenv("LUCIFEX_API_CALL_STALE_TIMEOUT")
+        env_timeout = os.getenv("HERMES_API_CALL_STALE_TIMEOUT")
         if env_timeout is not None:
             return float(env_timeout), False
 
@@ -1284,7 +1349,7 @@ class AIAgent:
         This helper substitutes an actionable hint into the stale-timeout
         warning when the request matches a known silent-reject pattern.
         Currently flagged: ``gpt-5.5`` family on the Codex backend.  See
-        lucifex-agent #21444 for the symptom history.  The upstream backend
+        hermes-agent #21444 for the symptom history.  The upstream backend
         behavior has historically come and gone with ChatGPT entitlement
         changes — the heuristic stays in place as future-proofing even when
         the symptom is dormant.
@@ -1320,12 +1385,19 @@ class AIAgent:
             "Workaround: try `gpt-5.4` on the same OAuth profile, or `gpt-5.3-codex`, "
             "or switch to a different model/provider in your fallback chain. "
             "Some ChatGPT Codex accounts do not support `gpt-5.4-codex`. "
-            "See lucifex-agent#21444 for symptom history."
+            "See hermes-agent#21444 for symptom history."
         )
 
     def _is_openrouter_url(self) -> bool:
         """Return True when the base URL targets OpenRouter."""
         return base_url_host_matches(self._base_url_lower, "openrouter.ai")
+
+    def _is_copilot_url(self) -> bool:
+        """Return True when the base URL targets GitHub Copilot or GitHub Models."""
+        return (
+            "api.githubcopilot.com" in self._base_url_lower
+            or "models.github.ai" in self._base_url_lower
+        )
 
     def _anthropic_prompt_cache_policy(
         self,
@@ -1373,7 +1445,7 @@ class AIAgent:
             return False
         if normalized_provider == "copilot":
             try:
-                from lucifex_cli.models import _should_use_copilot_responses_api
+                from hermes_cli.models import _should_use_copilot_responses_api
                 return _should_use_copilot_responses_api(model)
             except Exception:
                 # Fall back to the generic GPT-5 rule if Copilot-specific
@@ -1633,14 +1705,14 @@ class AIAgent:
             msg = messages[idx]
             if isinstance(msg, dict) and msg.get("role") == "user":
                 # Text-only call paths may pass a synthetic API-facing prompt
-                # and a cleaner transcript string separately. Multimodal
-                # turns, however, keep image/audio blocks in the live
-                # messages list that is still used for the API request after
-                # early crash-resilience persistence. Do not replace those
-                # blocks with the text-only persistence override before the
-                # model call is built. The paired timestamp override still
-                # applies — it is metadata, not content.
-                if override is not None and not isinstance(msg.get("content"), list):
+                # and a cleaner transcript string separately. Before the API
+                # call, a plain-text override must not replace native image/audio
+                # blocks. A list override, however, is the original clean
+                # multimodal payload (for example before a queued /model note)
+                # and must replace the API-local list once the turn is final.
+                if override is not None and (
+                    not isinstance(msg.get("content"), list) or isinstance(override, list)
+                ):
                     msg["content"] = override
                 if timestamp is not None:
                     msg["timestamp"] = timestamp
@@ -1659,10 +1731,26 @@ class AIAgent:
         """
         # Scaffolding removal mutates the live list (desired — ephemeral
         # retry/failure sentinels must not survive into the real transcript).
-        self._drop_trailing_empty_response_scaffolding(messages)
-        self._session_messages = messages
-        self._save_session_log(messages)
-        self._flush_messages_to_session_db(messages, conversation_history)
+        # Close and turn-start persistence can run on separate CLI threads; the
+        # marker test-and-append below must be one critical section or both can
+        # observe the same unmarked dict and write duplicate durable rows.
+        from agent.agent_runtime_helpers import note_turn_persisted
+
+        persist_lock = getattr(self, "_session_persist_lock", None)
+        if persist_lock is None:
+            self._drop_trailing_empty_response_scaffolding(messages)
+            self._session_messages = messages
+            self._save_session_log(messages)
+            self._flush_messages_to_session_db(messages, conversation_history)
+            note_turn_persisted(self)
+            return
+
+        with persist_lock:
+            self._drop_trailing_empty_response_scaffolding(messages)
+            self._session_messages = messages
+            self._save_session_log(messages)
+            self._flush_messages_to_session_db(messages, conversation_history)
+            note_turn_persisted(self)
 
     def _drop_trailing_empty_response_scaffolding(self, messages: List[Dict]) -> None:
         """Remove private empty-response retry/failure scaffolding from transcript tails.
@@ -1722,7 +1810,23 @@ class AIAgent:
         from agent.agent_runtime_helpers import repair_message_sequence
         return repair_message_sequence(self, messages)
 
-    def _flush_messages_to_session_db(self, messages: List[Dict], conversation_history: List[Dict] = None):
+    def _flush_messages_to_session_db(
+        self,
+        messages: List[Dict],
+        conversation_history: Optional[List[Dict]] = None,
+    ):
+        """Serialize direct and turn-boundary session flushes per agent."""
+        persist_lock = getattr(self, "_session_persist_lock", None)
+        if persist_lock is None:
+            return self._flush_messages_to_session_db_unlocked(messages, conversation_history)
+        with persist_lock:
+            return self._flush_messages_to_session_db_unlocked(messages, conversation_history)
+
+    def _flush_messages_to_session_db_unlocked(
+        self,
+        messages: List[Dict],
+        conversation_history: Optional[List[Dict]] = None,
+    ):
         """Persist any un-flushed messages to the SQLite session store.
 
         Deduplicates via an intrinsic ``_DB_PERSISTED_MARKER`` stamped on each
@@ -1827,16 +1931,77 @@ class AIAgent:
                     continue
                 role = msg.get("role", "unknown")
                 content = msg.get("content")
+                # api_content sidecar: the exact bytes sent to the API when
+                # they differ from the clean content (stamped by the turn
+                # prologue for prefetch/plugin injections). Written verbatim
+                # so replay can reproduce the sent prefix byte-for-byte.
+                _row_api_content = msg.get("api_content")
+                if not isinstance(_row_api_content, str):
+                    _row_api_content = None
                 _row_timestamp = msg.get("timestamp")
                 # Apply the persist override to THIS row's written values only
-                # (never to the live dict). Match the original guard: text-only
-                # content is replaced; multimodal (list) content is left intact
-                # so image/audio blocks aren't clobbered by the text override.
-                if _ov_idx == _msg_idx and msg.get("role") == "user":
-                    if _ov_content is not None and not isinstance(content, list):
+                # (never to the live dict). A multimodal override is a complete
+                # clean replacement for an API-local noted payload. Preserve the
+                # historical text-only guard for a list payload, though: a plain
+                # text override must not erase its image/audio transcript summary.
+                # The close safety-net may flush a shortened snapshot while
+                # turn setup still owns its staged CLI dict. In that shape the
+                # normal turn index refers to the full history, not this list;
+                # preserve the API-local override by recognizing the same dict.
+                pending_cli_message = getattr(self, "_pending_cli_user_message", None)
+                is_current_turn_user = (
+                    _ov_idx == _msg_idx or msg is pending_cli_message
+                )
+                if is_current_turn_user and msg.get("role") == "user":
+                    # Preflight compaction can re-anchor the override index at
+                    # a message whose content was MERGED with the compaction
+                    # summary (merge-summary-into-tail). Overwriting that with
+                    # the clean gateway text would silently drop the summary
+                    # from the durable transcript. The wire is already
+                    # consistent — the merge popped the sidecar and the merged
+                    # content is what gets sent — so keep it.
+                    if (
+                        _ov_content is not None
+                        and (not isinstance(content, list) or isinstance(_ov_content, list))
+                        and not msg.get(COMPRESSED_SUMMARY_METADATA_KEY)
+                    ):
+                        # The live content is what the API call sends; the
+                        # override is the cleaned transcript value. If they
+                        # differ and no injection already stamped the sidecar,
+                        # keep the sent bytes in api_content so replay matches
+                        # the wire (#48677 divergence, closed for the cache
+                        # prefix too).
+                        if (
+                            _row_api_content is None
+                            and isinstance(content, str)
+                            and content != _ov_content
+                        ):
+                            _row_api_content = content
                         content = _ov_content
                     if _ov_timestamp is not None:
                         _row_timestamp = _ov_timestamp
+                # Store the sidecar only when it actually differs.
+                if _row_api_content == content:
+                    _row_api_content = None
+                # Load-time sanitize divergence: get_messages_as_conversation
+                # replays user/assistant rows through
+                # ``sanitize_context(content).strip()``, so content that
+                # sanitize would rewrite (echoed/pasted <memory-context>
+                # fences or system notes) replays different bytes after a
+                # session reload even though THIS turn sent it verbatim.
+                # Capture the sent bytes in the sidecar so a reloaded session
+                # replays what was actually on the wire. Compared in wire form
+                # (both sides .strip()-ed — the api_messages build strips
+                # every outgoing content string) so plain surrounding
+                # whitespace doesn't grow redundant sidecars.
+                if (
+                    _row_api_content is None
+                    and role in ("user", "assistant")
+                    and isinstance(content, str)
+                    and content
+                    and sanitize_context(content).strip() != content.strip()
+                ):
+                    _row_api_content = content
                 # Persist multimodal tool results as their text summary only —
                 # base64 images would bloat the session DB and aren't useful
                 # for cross-session replay.
@@ -1873,6 +2038,7 @@ class AIAgent:
                     codex_reasoning_items=msg.get("codex_reasoning_items") if role == "assistant" else None,
                     codex_message_items=msg.get("codex_message_items") if role == "assistant" else None,
                     timestamp=_row_timestamp,
+                    api_content=_row_api_content,
                 )
                 msg[_DB_PERSISTED_MARKER] = True
             # The intrinsic markers are now the sole source of truth. Reset the
@@ -2024,7 +2190,7 @@ class AIAgent:
         That body covers several real causes we cannot distinguish without
         more info from xAI.  The most common (and least obvious) one is
         that **X Premium+ does NOT include API access** — only standalone
-        SuperGrok subscribers can use Lucifex against xai-oauth.  Lots of
+        SuperGrok subscribers can use Hermes against xai-oauth.  Lots of
         users see Grok in their X app, assume it works here too, and hit
         this 403 with no idea why.  Lead the hint with that.
 
@@ -2142,7 +2308,10 @@ class AIAgent:
         # widens exposure vs the old empty-body "HTTP 400" string).
         response = getattr(error, "response", None)
         if response is not None:
-            snippet = (getattr(response, "text", None) or "").strip()
+            try:
+                snippet = (getattr(response, "text", None) or "").strip()
+            except Exception:
+                snippet = ""
             if snippet:
                 status_code = getattr(error, "status_code", None)
                 prefix = f"HTTP {status_code}: " if status_code else ""
@@ -2224,7 +2393,7 @@ class AIAgent:
 
     @staticmethod
     def _hook_payload_max_chars() -> int:
-        raw = os.getenv("LUCIFEX_PLUGIN_PAYLOAD_MAX_CHARS", "50000")
+        raw = os.getenv("HERMES_PLUGIN_PAYLOAD_MAX_CHARS", "50000")
         try:
             return max(1000, int(raw))
         except (TypeError, ValueError):
@@ -2432,11 +2601,11 @@ class AIAgent:
         reason: Optional[str] = None,
     ) -> None:
         # Lazy module import (not from-import) so tests that
-        # ``monkeypatch.setattr("lucifex_cli.plugins.has_hook", ...)`` still
+        # ``monkeypatch.setattr("hermes_cli.plugins.has_hook", ...)`` still
         # take effect on this call site. After first call the import is a
         # ``sys.modules`` dict lookup, so retries don't repay any real cost.
         try:
-            from lucifex_cli import plugins as _plugins
+            from hermes_cli import plugins as _plugins
 
             if not _plugins.has_hook("api_request_error"):
                 return
@@ -2501,7 +2670,7 @@ class AIAgent:
         parts. Image / binary parts are left untouched; only text fields are
         passed through ``redact_sensitive_text``.
 
-        Respects ``LUCIFEX_REDACT_SECRETS`` via ``redact_sensitive_text`` —
+        Respects ``HERMES_REDACT_SECRETS`` via ``redact_sensitive_text`` —
         when disabled the helper is effectively a no-op.
         """
         if content is None:
@@ -2526,7 +2695,7 @@ class AIAgent:
 
         Gated by ``sessions.write_json_snapshots`` (default False).  state.db
         is the canonical message store; this writer exists only for users
-        whose external tooling consumes ``~/.lucifex/sessions/session_{sid}.json``
+        whose external tooling consumes ``~/.hermes/sessions/session_{sid}.json``
         directly.  When the flag is off this is a fast no-op.
 
         When enabled, rewrites the snapshot after every persistence point with
@@ -2546,7 +2715,7 @@ class AIAgent:
         # session-id changes land in the right file without any re-point
         # bookkeeping at the call sites.  Sanitize the session ID into a
         # single traversal-free path segment — session IDs can come from
-        # untrusted input (X-Lucifex-Session-Id header) and must not escape
+        # untrusted input (X-Hermes-Session-Id header) and must not escape
         # the sessions directory.
         try:
             safe_sid = _safe_session_filename_component(self.session_id)
@@ -2567,7 +2736,7 @@ class AIAgent:
                 # Defence-in-depth: redact credentials from every message
                 # content before persistence. Catches PATs / API keys / Bearer
                 # tokens that may have leaked into assistant responses, tool
-                # output, or user paste. Respects LUCIFEX_REDACT_SECRETS via
+                # output, or user paste. Respects HERMES_REDACT_SECRETS via
                 # redact_sensitive_text — no-op when disabled. (#19798, #19845)
                 if "content" in msg:
                     msg = dict(msg)
@@ -2641,6 +2810,16 @@ class AIAgent:
         """
         self._interrupt_requested = True
         self._interrupt_message = message
+        # A cron turn performs its API request on the conversation thread to
+        # avoid the nested interrupt-worker deadlock.  Unlike the normal worker
+        # path, its client is registered here so this cross-thread interrupt can
+        # still shut down the active sockets promptly.
+        _abort_active_request = getattr(self, "_active_request_abort", None)
+        if callable(_abort_active_request):
+            try:
+                _abort_active_request("interrupt_abort")
+            except Exception:
+                logger.debug("Failed to abort active inline request", exc_info=True)
         # Signal all tools to abort any in-flight operations immediately.
         # Scope the interrupt to this agent's execution thread so other
         # agents running in the same process (gateway) are not affected.
@@ -2815,19 +2994,19 @@ class AIAgent:
         """Check whether the per-turn file-mutation verifier footer is on.
 
         Config path: ``display.file_mutation_verifier`` (bool, default True).
-        ``LUCIFEX_FILE_MUTATION_VERIFIER`` env var overrides config.  Exposed
+        ``HERMES_FILE_MUTATION_VERIFIER`` env var overrides config.  Exposed
         as a method so tests can patch a single seam without reaching into
         the private ``_turn_failed_file_mutations`` state dict.
         """
         try:
             import os as _os
-            env = _os.environ.get("LUCIFEX_FILE_MUTATION_VERIFIER")
+            env = _os.environ.get("HERMES_FILE_MUTATION_VERIFIER")
             if env is not None:
                 return env.strip().lower() not in {"0", "false", "no", "off"}
             # Read from the persisted config.yaml so gateway and CLI share
             # the same setting.  Import lazily to avoid a startup-time cycle.
             try:
-                from lucifex_cli.config import load_config as _load_config
+                from hermes_cli.config import load_config as _load_config
                 _cfg = _load_config() or {}
             except Exception:
                 _cfg = {}
@@ -2879,7 +3058,7 @@ class AIAgent:
         path and any path echoed inside the tool's error preview — is
         backtick-wrapped via ``_neutralize_footer_paths`` so the gateway's
         bare-path media extractor can never auto-attach a protected file
-        (e.g. ``~/.lucifex/config.yaml``) to a messaging channel (#35584).
+        (e.g. ``~/.hermes/config.yaml``) to a messaging channel (#35584).
         """
         if not failed:
             return ""
@@ -2912,19 +3091,19 @@ class AIAgent:
         """Check whether the end-of-turn completion explainer footer is on.
 
         Config path: ``display.turn_completion_explainer`` (bool, default
-        True).  ``LUCIFEX_TURN_COMPLETION_EXPLAINER`` env var overrides
+        True).  ``HERMES_TURN_COMPLETION_EXPLAINER`` env var overrides
         config.  Exposed as a method so tests can patch a single seam,
         mirroring ``_file_mutation_verifier_enabled``.
         """
         try:
             import os as _os
-            env = _os.environ.get("LUCIFEX_TURN_COMPLETION_EXPLAINER")
+            env = _os.environ.get("HERMES_TURN_COMPLETION_EXPLAINER")
             if env is not None:
                 return env.strip().lower() not in {"0", "false", "no", "off"}
             # Read from the persisted config.yaml so gateway and CLI share
             # the same setting.  Import lazily to avoid a startup-time cycle.
             try:
-                from lucifex_cli.config import load_config as _load_config
+                from hermes_cli.config import load_config as _load_config
                 _cfg = _load_config() or {}
             except Exception:
                 _cfg = {}
@@ -3037,14 +3216,14 @@ class AIAgent:
         """Update the last-activity timestamp and description (thread-safe).
 
         Also bridges to the kanban board's heartbeat fields when this
-        process is a dispatcher-spawned worker (LUCIFEX_KANBAN_TASK set),
+        process is a dispatcher-spawned worker (HERMES_KANBAN_TASK set),
         so the dispatcher watchdog doesn't reclaim an actively-running
         worker as stale (#31752). Bridge is rate-limited (60s) and
         best-effort — it never raises into the agent loop.
         """
         self._last_activity_ts = time.time()
         self._last_activity_desc = desc
-        if os.environ.get("LUCIFEX_KANBAN_TASK"):
+        if os.environ.get("HERMES_KANBAN_TASK"):
             try:
                 from tools.kanban_tools import heartbeat_current_worker_from_env
                 heartbeat_current_worker_from_env()
@@ -3086,7 +3265,7 @@ class AIAgent:
         EVALUATION/EMIT is a SEPARATE block that WARNS on failure (R1-M2): a bug in the
         depletion-notice path must not vanish silently under the parse swallow.
         """
-        # Dev test fixture (LUCIFEX_DEV_CREDITS_FIXTURE): inject a chosen notice state
+        # Dev test fixture (HERMES_DEV_CREDITS_FIXTURE): inject a chosen notice state
         # each turn for repeatable testing, bypassing real headers. Throwaway scaffolding.
         try:
             from agent.credits_tracker import dev_fixture_credits_state
@@ -3103,7 +3282,7 @@ class AIAgent:
             _used = _fixture.used_fraction
             logger.info(
                 "credits ▸ [FIXTURE] remaining=%d (%s) · paid=%s · denom=%s · used=%s "
-                "(real headers bypassed — `echo clear` / unset LUCIFEX_DEV_CREDITS_FIXTURE to restore)",
+                "(real headers bypassed — `echo clear` / unset HERMES_DEV_CREDITS_FIXTURE to restore)",
                 _fixture.remaining_micros,
                 _fixture.remaining_usd or "?",
                 _fixture.paid_access,
@@ -3117,7 +3296,7 @@ class AIAgent:
         headers = getattr(http_response, "headers", None)
         if not headers:
             return
-        _dev = is_truthy_value(os.environ.get("LUCIFEX_DEV_CREDITS"))
+        _dev = is_truthy_value(os.environ.get("HERMES_DEV_CREDITS"))
 
         # ── Parse (fail-open → miss; never overwrite good state with None) ──
         try:
@@ -3139,8 +3318,8 @@ class AIAgent:
         if self._credits_session_start_micros is None:
             self._credits_session_start_micros = state.remaining_micros
         if _dev:
-            # LUCIFEX_DEV_CREDITS: stream each capture to agent.log — watch live with
-            # `lucifex logs -f` (grep 'credits ▸'). Dev-only; silent for normal users.
+            # HERMES_DEV_CREDITS: stream each capture to agent.log — watch live with
+            # `hermes logs -f` (grep 'credits ▸'). Dev-only; silent for normal users.
             spent = self.get_credits_spent_micros()
             used = state.used_fraction
             logger.info(
@@ -3209,7 +3388,7 @@ class AIAgent:
             return cached
         enabled = True
         try:
-            from lucifex_cli.config import load_config as _load_config
+            from hermes_cli.config import load_config as _load_config
             _cfg = _load_config() or {}
             _display = _cfg.get("display") if isinstance(_cfg, dict) else None
             if isinstance(_display, dict) and "credits_notices" in _display:
@@ -3885,30 +4064,70 @@ class AIAgent:
 
     @staticmethod
     def _build_keepalive_http_client(base_url: str = "", *, verify: Any = True) -> Any:
+        """Build an httpx.Client with proactive idle-connection reaping.
+
+        Previously this method injected a custom ``httpx.HTTPTransport``
+        with ``socket_options`` (``SO_KEEPALIVE``, ``TCP_KEEPIDLE``, …) to
+        prevent CLOSE-WAIT accumulation on long-lived connections (#10324).
+
+        That approach broke streaming for providers behind reverse proxies
+        (OpenResty, Cloudflare, etc.) because the custom socket options
+        conflict with the proxy's chunked-transfer handling (#54049,
+        #12952).  It also stripped ``TCP_NODELAY``, stalling TLS handshakes
+        and SSE encoding.
+
+        The fix moves connection lifecycle management from the socket layer
+        to the HTTP pool layer: ``keepalive_expiry=20.0`` tells httpx to
+        close idle pooled connections *before* a reverse proxy's typical
+        30–60 s timeout drops them, preventing CLOSE-WAIT accumulation
+        without modifying socket options.  The default httpx transport
+        preserves OS TCP defaults (including ``TCP_NODELAY``).
+
+        ``verify`` carries per-provider ``ssl_ca_cert`` / ``ssl_verify`` and
+        ``HERMES_CA_BUNDLE`` settings.  It is passed on the client AND on
+        the plain no-proxy mounts (a mounted transport owns the SSL context
+        for its scheme).
+        """
         try:
             import httpx as _httpx
-            import socket as _socket
 
-            if "api.githubcopilot.com" in str(base_url or "").lower():
-                return _httpx.Client(verify=verify)
-
-            _sock_opts = [(_socket.SOL_SOCKET, _socket.SO_KEEPALIVE, 1)]
-            if hasattr(_socket, "TCP_KEEPIDLE"):
-                _sock_opts.append((_socket.IPPROTO_TCP, _socket.TCP_KEEPIDLE, 30))
-                _sock_opts.append((_socket.IPPROTO_TCP, _socket.TCP_KEEPINTVL, 10))
-                _sock_opts.append((_socket.IPPROTO_TCP, _socket.TCP_KEEPCNT, 3))
-            elif hasattr(_socket, "TCP_KEEPALIVE"):
-                _sock_opts.append((_socket.IPPROTO_TCP, _socket.TCP_KEEPALIVE, 30))
-            # When a custom transport is provided, httpx won't auto-read proxy
-            # from env vars (allow_env_proxies = trust_env and transport is None).
-            # Explicitly read proxy settings while still honoring NO_PROXY for
-            # loopback / local endpoints such as a locally hosted sub2api.
+            # Explicitly read proxy settings so requests route through
+            # HTTP_PROXY / HTTPS_PROXY / NO_PROXY correctly.
             _proxy = _get_proxy_for_base_url(base_url)
-            # verify lives on the transport: httpx ignores the client-level
-            # ``verify`` when a custom ``transport=`` is supplied.
+
+            # Proactive pool reaping: close idle connections at 20 s,
+            # before reverse proxies (30–60 s typical) send FIN and
+            # cause CLOSE-WAIT accumulation.
+            _limits = _httpx.Limits(
+                max_keepalive_connections=20,
+                max_connections=100,
+                keepalive_expiry=20.0,
+            )
+
+            # Timeouts: generous read=None for SSE streaming endpoints.
+            _timeout = _httpx.Timeout(
+                connect=15.0,
+                read=None,
+                write=15.0,
+                pool=10.0,
+            )
+
+            # When _proxy is None (NO_PROXY bypass or no proxy configured),
+            # mount plain transports to prevent httpx from reading env proxy
+            # vars and creating an HTTPProxy mount that would bypass our
+            # NO_PROXY resolution.
+            _mounts = {}
+            if _proxy is None:
+                _mounts = {
+                    "http://": _httpx.HTTPTransport(verify=verify),
+                    "https://": _httpx.HTTPTransport(verify=verify),
+                }
             return _httpx.Client(
-                transport=_httpx.HTTPTransport(socket_options=_sock_opts, verify=verify),
+                limits=_limits,
+                timeout=_timeout,
                 proxy=_proxy,
+                mounts=_mounts or None,
+                verify=verify,
             )
         except Exception:
             return None
@@ -4026,7 +4245,7 @@ class AIAgent:
         return any(_contains_image(item) for item in candidates)
 
     def _copilot_headers_for_request(self, *, is_vision: bool) -> dict:
-        from lucifex_cli.copilot_auth import copilot_request_headers
+        from hermes_cli.copilot_auth import copilot_request_headers
 
         return copilot_request_headers(is_agent_turn=True, is_vision=is_vision)
 
@@ -4094,6 +4313,103 @@ class AIAgent:
                 exc,
             )
 
+    def _create_request_anthropic_client(self, *, reason: str) -> Any:
+        """Build a request-local Anthropic client for one in-flight call.
+
+        The shared ``_anthropic_client`` stays the long-lived primary, but the
+        stale/interrupt watchdog runs on the poll thread and must never call
+        ``close()`` on the client whose TLS socket a worker thread is still
+        reading: releasing that FD from a stranger thread lets the kernel
+        recycle it under a still-live SSL BIO, which then writes a TLS record
+        into an unrelated SQLite header (#29507 / #67142). A per-request client
+        lets the stranger thread ``shutdown()`` the socket while the owning
+        worker performs the SDK-level close from its own context — the same
+        ownership contract the OpenAI-wire path already uses.
+
+        Mirrors ``_rebuild_anthropic_client`` construction (direct + Bedrock,
+        1M-beta drop) but returns a fresh client instead of swapping the shared
+        one.
+        """
+        if self.api_mode == "anthropic_messages":
+            self._try_refresh_anthropic_client_credentials()
+        _drop_1m = bool(getattr(self, "_oauth_1m_beta_disabled", False))
+        if getattr(self, "provider", None) == "bedrock":
+            from agent.anthropic_adapter import build_anthropic_bedrock_client
+            region = getattr(self, "_bedrock_region", "us-east-1") or "us-east-1"
+            client = build_anthropic_bedrock_client(region)
+        else:
+            from agent.anthropic_adapter import build_anthropic_client
+            client = build_anthropic_client(
+                self._anthropic_api_key,
+                getattr(self, "_anthropic_base_url", None),
+                timeout=get_provider_request_timeout(self.provider, self.model),
+                drop_context_1m_beta=_drop_1m,
+            )
+        logger.debug(
+            "Anthropic request client created (%s, shared=False) provider=%s model=%s",
+            reason,
+            getattr(self, "provider", None),
+            getattr(self, "model", None),
+        )
+        return client
+
+    def _close_request_anthropic_client(self, client: Any, *, reason: str) -> None:
+        """Owner-thread full close of a request-local Anthropic client.
+
+        Force-closes the pool's TCP sockets first (CLOSE-WAIT hygiene, parity
+        with ``_close_openai_client``), then does the graceful SDK close. Safe
+        because the caller owns the connection.
+        """
+        if client is None:
+            return
+        try:
+            self._force_close_tcp_sockets(client)
+            client.close()
+            logger.info(
+                "Anthropic client closed (%s, shared=False) provider=%s model=%s",
+                reason,
+                getattr(self, "provider", None),
+                getattr(self, "model", None),
+            )
+        except Exception as exc:
+            logger.debug(
+                "Anthropic client close failed (%s, shared=False) provider=%s model=%s error=%s",
+                reason,
+                getattr(self, "provider", None),
+                getattr(self, "model", None),
+                exc,
+            )
+
+    def _abort_request_anthropic_client(self, client: Any, *, reason: str) -> None:
+        """Cross-thread abort for request-local Anthropic clients.
+
+        Stranger threads (the interrupt-check / stale-stream detector loop)
+        must not call the SDK ``close()`` — that races the owning worker's live
+        SSL BIO and can recycle a TLS FD into a SQLite header (#29507 /
+        #67142). Only ``shutdown(SHUT_RDWR)`` the pool's sockets so the worker
+        unblocks and releases the FD from its own thread.
+        """
+        if client is None:
+            return
+        try:
+            shutdown_count = self._force_close_tcp_sockets(client)
+            logger.info(
+                "Anthropic client aborted (%s, shared=False, tcp_force_closed=%d, "
+                "deferred_close=stranger_thread) provider=%s model=%s",
+                reason,
+                shutdown_count,
+                getattr(self, "provider", None),
+                getattr(self, "model", None),
+            )
+        except Exception as exc:
+            logger.debug(
+                "Anthropic client abort failed (%s, shared=False) provider=%s model=%s error=%s",
+                reason,
+                getattr(self, "provider", None),
+                getattr(self, "model", None),
+                exc,
+            )
+
     def _run_codex_stream(self, api_kwargs: dict, client: Any = None, on_first_delta: callable = None):
         """Forwarder — see ``agent.codex_runtime.run_codex_stream``."""
         from agent.codex_runtime import run_codex_stream
@@ -4111,7 +4427,7 @@ class AIAgent:
         # Guard against silent account swap.
         #
         # When an agent is using a non-singleton credential — e.g. a manual
-        # pool entry (``lucifex auth add xai-oauth``) whose tokens belong to
+        # pool entry (``hermes auth add xai-oauth``) whose tokens belong to
         # a different account than the device_code singleton, or an agent
         # constructed with an explicit ``api_key=`` arg — force-refreshing
         # the singleton here and adopting its tokens silently re-routes the
@@ -4122,13 +4438,13 @@ class AIAgent:
         # MUST only fire when the agent really is on singleton tokens.
         try:
             if self.provider == "openai-codex":
-                from lucifex_cli.auth import resolve_codex_runtime_credentials
+                from hermes_cli.auth import resolve_codex_runtime_credentials
 
                 singleton_now = resolve_codex_runtime_credentials(
                     refresh_if_expiring=False,
                 )
             else:
-                from lucifex_cli.auth import resolve_xai_oauth_runtime_credentials
+                from hermes_cli.auth import resolve_xai_oauth_runtime_credentials
 
                 singleton_now = resolve_xai_oauth_runtime_credentials(
                     refresh_if_expiring=False,
@@ -4150,11 +4466,11 @@ class AIAgent:
 
         try:
             if self.provider == "openai-codex":
-                from lucifex_cli.auth import resolve_codex_runtime_credentials
+                from hermes_cli.auth import resolve_codex_runtime_credentials
 
                 creds = resolve_codex_runtime_credentials(force_refresh=force)
             else:
-                from lucifex_cli.auth import resolve_xai_oauth_runtime_credentials
+                from hermes_cli.auth import resolve_xai_oauth_runtime_credentials
 
                 creds = resolve_xai_oauth_runtime_credentials(force_refresh=force)
         except Exception as exc:
@@ -4187,10 +4503,10 @@ class AIAgent:
             return False
 
         try:
-            from lucifex_cli.auth import resolve_nous_runtime_credentials
+            from hermes_cli.auth import resolve_nous_runtime_credentials
 
             creds = resolve_nous_runtime_credentials(
-                timeout_seconds=env_float("LUCIFEX_NOUS_TIMEOUT_SECONDS", 15),
+                timeout_seconds=env_float("HERMES_NOUS_TIMEOUT_SECONDS", 15),
                 force_refresh=force,
             )
         except Exception as exc:
@@ -4265,7 +4581,7 @@ class AIAgent:
             return False
 
         try:
-            from lucifex_cli.copilot_auth import resolve_copilot_token
+            from hermes_cli.copilot_auth import resolve_copilot_token
 
             new_token, token_source = resolve_copilot_token()
         except Exception as exc:
@@ -4352,7 +4668,7 @@ class AIAgent:
         elif base_url_host_matches(base_url, "api.routermint.com"):
             self._client_kwargs["default_headers"] = _routermint_headers()
         elif base_url_host_matches(base_url, "githubcopilot.com"):
-            from lucifex_cli.models import copilot_default_headers
+            from hermes_cli.models import copilot_default_headers
 
             self._client_kwargs["default_headers"] = copilot_default_headers()
         elif base_url_host_matches(base_url, "api.kimi.com"):
@@ -4390,7 +4706,7 @@ class AIAgent:
         # SECURITY: values may carry credentials — never log them.
         if self.api_mode not in ("anthropic_messages", "bedrock_converse"):
             try:
-                from lucifex_cli.config import (
+                from hermes_cli.config import (
                     apply_custom_provider_extra_headers_to_client_kwargs,
                 )
 
@@ -4477,24 +4793,20 @@ class AIAgent:
         pool = self._credential_pool
         if pool is None:
             return False
-        if (
-            str(getattr(self, "base_url", "")).startswith("cloudcode-pa://")
-        ):
-            # CloudCode/Gemini quota windows are usually account-level throttles.
-            # Prefer the configured fallback immediately instead of waiting out
-            # Retry-After while a pooled OAuth credential may still appear usable.
-            return False
         return pool.has_available()
 
-    def _anthropic_messages_create(self, api_kwargs: dict):
-        if self.api_mode == "anthropic_messages":
+    def _anthropic_messages_create(self, api_kwargs: dict, *, client: Any = None):
+        # When a request-local client is supplied it was already credential-
+        # refreshed in ``_create_request_anthropic_client``; only the shared
+        # fallback path refreshes here.
+        if client is None and self.api_mode == "anthropic_messages":
             self._try_refresh_anthropic_client_credentials()
         # Defensive: strip Responses-only kwargs that can leak in under an
         # api_mode-flip race (the Anthropic SDK raises a non-retryable
         # TypeError on them). See #31673.
         from agent.anthropic_adapter import create_anthropic_message
         return create_anthropic_message(
-            self._anthropic_client,
+            client or self._anthropic_client,
             api_kwargs,
             log_prefix=getattr(self, "log_prefix", ""),
             prefer_stream=not bool(getattr(self, "_disable_streaming", False)),
@@ -4576,6 +4888,12 @@ class AIAgent:
 
     def _record_streamed_assistant_text(self, text: str) -> None:
         """Accumulate visible assistant text emitted through stream callbacks."""
+        # Single-writer guard (#65991): a superseded stream must not pollute the
+        # turn's accumulated text (which also feeds the interim-visible-text
+        # de-dup comparison), even when a caller reaches this directly (the
+        # tool-suppressed content path) rather than through _fire_stream_delta.
+        if self._stream_writer_superseded():
+            return
         if isinstance(text, str) and text:
             self._current_streamed_assistant_text = (
                 getattr(self, "_current_streamed_assistant_text", "") + text
@@ -4598,23 +4916,231 @@ class AIAgent:
         )
         return bool(streamed) and streamed == visible_content
 
+    def _extract_codex_interim_visible_parts(
+        self,
+        assistant_msg: Dict[str, Any],
+    ) -> List[str]:
+        """Extract visible Codex commentary as one string per message item.
+
+        Codex Responses can keep user-facing mid-turn narration as structured
+        ``phase=commentary`` message items while final answer text remains in
+        assistant ``content``.  Non-streaming gateway surfaces need that
+        commentary through the interim assistant callback before tool calls run.
+        ``phase=analysis`` remains hidden because it is provider scratchpad.
+        """
+        if not getattr(self, "show_commentary", True):
+            # display.show_commentary=false — commentary stays on the
+            # reasoning channel (pre-commentary-channel behavior).
+            return []
+        items = assistant_msg.get("codex_message_items")
+        if not isinstance(items, list):
+            return []
+
+        messages: List[str] = []
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            if item.get("type") != "message":
+                continue
+            phase = item.get("phase")
+            if not isinstance(phase, str) or phase.strip().lower() != "commentary":
+                continue
+            content_parts = item.get("content")
+            if not isinstance(content_parts, list):
+                continue
+            item_parts: List[str] = []
+            for part in content_parts:
+                if not isinstance(part, dict):
+                    continue
+                if part.get("type") != "output_text":
+                    continue
+                text = part.get("text")
+                if isinstance(text, str) and text.strip():
+                    item_parts.append(text)
+            visible = "".join(item_parts).strip()
+            if visible:
+                visible = self._strip_think_blocks(visible).strip()
+                visible = redact_sensitive_text(visible)
+            if visible:
+                messages.append(visible)
+        return messages
+
+    def _extract_codex_interim_visible_text(self, assistant_msg: Dict[str, Any]) -> str:
+        """Extract all visible Codex commentary for comparison/fallback."""
+        return "\n\n".join(
+            self._extract_codex_interim_visible_parts(assistant_msg)
+        ).strip()
+
+    def _interim_assistant_visible_text(self, assistant_msg: Dict[str, Any]) -> str:
+        """Return the exact assistant text eligible for interim delivery.
+
+        Prefer structured Codex commentary over top-level content. A Codex
+        response can contain both commentary and a partial/final-answer message
+        while tools are still pending; treating top-level content as progress
+        in that shape leaks the answer before the tool call runs.
+
+        Content may be a string or a structured parts list (e.g. after vision
+        turns or context compaction), so flatten it before stripping reasoning.
+        """
+        visible = self._extract_codex_interim_visible_text(assistant_msg)
+        if visible:
+            return visible
+        content = assistant_msg.get("content")
+        return self._strip_think_blocks(flatten_message_text(content)).strip()
+
+    def _interim_text_was_delivered(self, text: str) -> bool:
+        normalized = self._normalize_interim_visible_text(text)
+        if not normalized:
+            return False
+        return normalized in getattr(self, "_delivered_interim_texts", set())
+
+    def _record_delivered_interim_text(self, text: str) -> None:
+        normalized = self._normalize_interim_visible_text(text)
+        if normalized:
+            delivered = getattr(self, "_delivered_interim_texts", None)
+            if not isinstance(delivered, set):
+                delivered = set()
+                self._delivered_interim_texts = delivered
+            delivered.add(normalized)
+
+    def _fire_streamed_codex_commentary(self, text: str) -> None:
+        """Deliver a completed live Codex commentary message immediately."""
+        cb = getattr(self, "interim_assistant_callback", None)
+        if cb is None or not isinstance(text, str):
+            return
+        visible = self._strip_think_blocks(text).strip()
+        if visible:
+            visible = redact_sensitive_text(visible)
+        if not visible or visible == "(empty)" or self._interim_text_was_delivered(visible):
+            return
+        try:
+            cb(visible, already_streamed=False)
+            self._record_delivered_interim_text(visible)
+        except Exception:
+            logger.debug("interim_assistant_callback error", exc_info=True)
+
     def _emit_interim_assistant_message(self, assistant_msg: Dict[str, Any]) -> None:
         """Surface a real mid-turn assistant commentary message to the UI layer."""
         cb = getattr(self, "interim_assistant_callback", None)
         if cb is None or not isinstance(assistant_msg, dict):
             return
-        content = assistant_msg.get("content")
-        visible = self._strip_think_blocks(content or "").strip()
-        if not visible or visible == "(empty)":
+        commentary_parts = self._extract_codex_interim_visible_parts(assistant_msg)
+        undelivered_parts: List[str] = []
+        pending_keys: set[str] = set()
+        for part in commentary_parts:
+            key = self._normalize_interim_visible_text(part)
+            if (
+                not key
+                or key in pending_keys
+                or self._interim_text_was_delivered(part)
+            ):
+                continue
+            pending_keys.add(key)
+            undelivered_parts.append(part)
+        visible = (
+            "\n\n".join(undelivered_parts).strip()
+            if commentary_parts
+            else self._interim_assistant_visible_text(assistant_msg)
+        )
+        if (
+            not visible
+            or visible == "(empty)"
+            or self._interim_text_was_delivered(visible)
+        ):
             return
         already_streamed = self._interim_content_was_streamed(visible)
         try:
             cb(visible, already_streamed=already_streamed)
+            if undelivered_parts:
+                for part in undelivered_parts:
+                    self._record_delivered_interim_text(part)
+            else:
+                self._record_delivered_interim_text(visible)
         except Exception:
             logger.debug("interim_assistant_callback error", exc_info=True)
 
+    def _ensure_stream_writer_state(self) -> None:
+        """Lazily create the single-writer guard fields (#65991).
+
+        The fields are normally set in ``agent_init``, but agents constructed
+        via ``AIAgent.__new__`` (test doubles, legacy/partially-initialized
+        instances) skip that path. Claiming/checking the writer must not crash
+        those agents, so initialize the fields on first use.
+        """
+        if getattr(self, "_stream_writer_lock", None) is None:
+            self._stream_writer_lock = threading.Lock()
+        if not hasattr(self, "_stream_writer_token"):
+            self._stream_writer_token = 0
+        if getattr(self, "_stream_writer_tls", None) is None:
+            self._stream_writer_tls = threading.local()
+        if not hasattr(self, "_stream_writer_dropped"):
+            self._stream_writer_dropped = 0
+
+    def _claim_stream_writer(self) -> int:
+        """Claim exclusive ownership of the streaming delta sink for the calling
+        stream attempt and return its monotonic writer token (#65991).
+
+        Every streaming attempt (each provider path, each retry) calls this
+        right before it begins consuming its stream. Claiming bumps the shared
+        token, so any earlier attempt still alive on another thread is
+        immediately superseded: its cached token no longer matches and the sink
+        fences its late chunks out. The token is stored per-thread, so a thread
+        that never claimed (a non-streaming caller) is never treated as a
+        writer and can never be fenced.
+        """
+        self._ensure_stream_writer_state()
+        with self._stream_writer_lock:
+            self._stream_writer_token += 1
+            token = self._stream_writer_token
+        self._stream_writer_tls.token = token
+        return token
+
+    def _stream_writer_is_current(self, token: int) -> bool:
+        """True when ``token`` (from a prior _claim_stream_writer) is still the
+        active writer — i.e. no newer stream attempt has claimed the sink since
+        (#65991). Lets a stream loop bail out the instant it is superseded."""
+        return token == getattr(self, "_stream_writer_token", token)
+
+    def _stream_writer_superseded(self) -> bool:
+        """True when the calling thread claimed the delta sink but a newer
+        stream attempt has since claimed it — i.e. this thread is a stale
+        writer whose chunks must be dropped (#65991).
+
+        A thread that never claimed (``token is None``) is not a writer and is
+        never reported as superseded, so non-streaming delta callers are
+        unaffected.
+        """
+        tls = getattr(self, "_stream_writer_tls", None)
+        token = getattr(tls, "token", None) if tls is not None else None
+        if token is None:
+            return False
+        return token != getattr(self, "_stream_writer_token", token)
+
+    def _note_dropped_stream_writer(self, where: str) -> None:
+        """Record + log that a superseded stream's delta was discarded."""
+        try:
+            self._stream_writer_dropped = int(getattr(self, "_stream_writer_dropped", 0)) + 1
+        except Exception:
+            self._stream_writer_dropped = 1
+        # Log sparsely (first drop, then powers of two) so a chatty superseded
+        # stream can't flood the log, but a real provider problem is still
+        # visible. A silent discard would hide genuine failures.
+        _n = self._stream_writer_dropped
+        if _n == 1 or (_n & (_n - 1)) == 0:
+            logger.warning(
+                "Dropped delta from a superseded stream writer at %s "
+                "(discarded=%d this turn) — a stale stream tried to write into "
+                "the turn after a retry superseded it.",
+                where, _n,
+            )
+
     def _fire_stream_delta(self, text: str) -> None:
         """Fire all registered stream delta callbacks (display + TTS)."""
+        # Single-writer guard (#65991): a superseded stream must not interleave
+        # its tokens into the turn alongside the retry that replaced it.
+        if self._stream_writer_superseded():
+            self._note_dropped_stream_writer("_fire_stream_delta")
+            return
         # If a tool iteration set the break flag, prepend a single paragraph
         # break before the first real text delta.  This prevents the original
         # problem (text concatenation across tool boundaries) without stacking
@@ -4668,6 +5194,11 @@ class AIAgent:
 
     def _fire_reasoning_delta(self, text: str) -> None:
         """Fire reasoning callback if registered."""
+        # Single-writer guard (#65991): fence out a superseded stream's
+        # reasoning deltas the same way as content deltas.
+        if self._stream_writer_superseded():
+            self._note_dropped_stream_writer("_fire_reasoning_delta")
+            return
         cb = self.reasoning_callback
         if cb is not None:
             try:
@@ -4850,7 +5381,7 @@ class AIAgent:
         misclassified as non-vision and have their images stripped.
         """
         try:
-            from lucifex_cli.config import load_config
+            from hermes_cli.config import load_config
             from agent.image_routing import _lookup_supports_vision
             cfg = load_config()
             provider = (getattr(self, "provider", "") or "").strip()
@@ -5280,7 +5811,7 @@ class AIAgent:
             or base_url_host_matches(self._base_url_lower, "githubcopilot.com")
         ):
             try:
-                from lucifex_cli.models import github_model_reasoning_efforts
+                from hermes_cli.models import github_model_reasoning_efforts
 
                 return bool(github_model_reasoning_efforts(self.model))
             except Exception:
@@ -5289,6 +5820,12 @@ class AIAgent:
             opts = self._lmstudio_reasoning_options_cached()
             # "off-only" (or absent) means no real reasoning capability.
             return any(opt and opt != "off" for opt in opts)
+        # Ollama Cloud (and any Ollama-compatible server): the native
+        # /api/show capabilities list is authoritative — emit reasoning_effort
+        # only for models that declare the "thinking" capability. deepseek-v4
+        # has it; gemma3 / qwen3-coder don't. Cached per (model, base_url).
+        if base_url_host_matches(self._base_url_lower, "ollama.com"):
+            return self._ollama_supports_thinking_cached()
         if "openrouter" not in self._base_url_lower:
             return False
         if "api.mistral.ai" in self._base_url_lower:
@@ -5303,7 +5840,7 @@ class AIAgent:
             "google/gemini-2",
             "google/gemma-4",
             "qwen/qwen3",
-            "tencent/hy3-preview",
+            "tencent/hy3",
             "xiaomi/",
         )
         return any(model.startswith(prefix) for prefix in reasoning_model_prefixes)
@@ -5333,7 +5870,7 @@ class AIAgent:
             if opts or (_time.monotonic() - ts) < 60:
                 return opts
         try:
-            from lucifex_cli.models import lmstudio_model_reasoning_options
+            from hermes_cli.models import lmstudio_model_reasoning_options
             opts = lmstudio_model_reasoning_options(
                 self.model, self.base_url, getattr(self, "api_key", ""),
             )
@@ -5341,6 +5878,37 @@ class AIAgent:
             opts = []
         cache[key] = (opts, _time.monotonic())
         return opts
+
+    def _ollama_supports_thinking_cached(self) -> bool:
+        """Probe Ollama's ``/api/show`` capabilities once per (model, base_url).
+
+        Returns True only when the model declares the ``thinking`` capability.
+        Caching mirrors the LM Studio probe: a True/False result is permanent
+        (capabilities don't change), while a probe failure (None) is cached
+        with a 60-second TTL so a transient outage doesn't suppress reasoning
+        for the rest of the session but also doesn't round-trip every turn.
+        """
+        import time as _time
+
+        cache = getattr(self, "_ollama_thinking_cache", None)
+        if cache is None:
+            cache = self._ollama_thinking_cache = {}
+        key = (self.model, self.base_url)
+        cached = cache.get(key)
+        if cached is not None:
+            supported, ts = cached
+            # Definitive True/False → permanent. Unknown (None) → 60s TTL.
+            if supported is not None or (_time.monotonic() - ts) < 60:
+                return bool(supported)
+        try:
+            from hermes_cli.models import ollama_model_supports_thinking
+            supported = ollama_model_supports_thinking(
+                self.model, self.base_url, getattr(self, "api_key", "")
+            )
+        except Exception:
+            supported = None
+        cache[key] = (supported, _time.monotonic())
+        return bool(supported)
 
     def _resolve_lmstudio_summary_reasoning_effort(self) -> Optional[str]:
         """Resolve a safe top-level ``reasoning_effort`` for LM Studio.
@@ -5358,7 +5926,7 @@ class AIAgent:
     def _github_models_reasoning_extra_body(self) -> dict | None:
         """Format reasoning payload for GitHub Models/OpenAI-compatible routes."""
         try:
-            from lucifex_cli.models import github_model_reasoning_efforts
+            from hermes_cli.models import github_model_reasoning_efforts
         except Exception:
             return None
 
@@ -5375,7 +5943,7 @@ class AIAgent:
         else:
             requested_effort = "medium"
 
-        if requested_effort == "xhigh" and "high" in supported_efforts:
+        if requested_effort == "xhigh" and "xhigh" not in supported_efforts and "high" in supported_efforts:
             requested_effort = "high"
         elif requested_effort not in supported_efforts:
             if requested_effort == "minimal" and "low" in supported_efforts:
@@ -5597,22 +6165,43 @@ class AIAgent:
     def _execute_tool_calls(self, assistant_message, messages: list, effective_task_id: str, api_call_count: int = 0) -> None:
         """Execute tool calls from the assistant message and append results to messages.
 
-        Dispatches to concurrent execution only for batches that look
-        independent: read-only tools may always share the parallel path, while
-        file reads/writes may do so only when their target paths do not overlap.
+        The segment planner splits the batch into maximal contiguous runs of
+        parallel-safe calls (read-only tools, non-overlapping file targets,
+        opted-in MCP tools) separated by sequential barriers (interactive,
+        unsafe, or unrecognized tools). Homogeneous batches keep their
+        original single-path dispatch; mixed batches execute segment by
+        segment in emission order so safe subsets still run concurrently
+        while side-effect ordering is preserved.
         """
         tool_calls = assistant_message.tool_calls
 
         # Allow _vprint during tool execution even with stream consumers
         self._executing_tools = True
         try:
-            if not _should_parallelize_tool_batch(tool_calls):
+            if len(tool_calls) <= 1:
                 return self._execute_tool_calls_sequential(
                     assistant_message, messages, effective_task_id, api_call_count
                 )
 
-            return self._execute_tool_calls_concurrent(
-                assistant_message, messages, effective_task_id, api_call_count
+            from agent.tool_dispatch_helpers import _plan_tool_batch_segments
+            _active_env = get_active_env(effective_task_id)
+            _exec_cwd = Path(_active_env.cwd) if _active_env is not None and _active_env.cwd else None
+            segments = _plan_tool_batch_segments(tool_calls, execution_cwd=_exec_cwd)
+
+            if len(segments) == 1:
+                kind = segments[0][0]
+                if kind == "parallel":
+                    return self._execute_tool_calls_concurrent(
+                        assistant_message, messages, effective_task_id, api_call_count
+                    )
+                return self._execute_tool_calls_sequential(
+                    assistant_message, messages, effective_task_id, api_call_count
+                )
+
+            from agent.tool_executor import execute_tool_calls_segmented
+            return execute_tool_calls_segmented(
+                self, assistant_message, messages, effective_task_id, api_call_count,
+                segments=segments,
             )
         finally:
             self._executing_tools = False
@@ -5708,30 +6297,91 @@ class AIAgent:
         from agent.chat_completion_helpers import handle_max_iterations
         return handle_max_iterations(self, messages, api_call_count)
 
+    def _conversation_root_id(self) -> Optional[str]:
+        """Resolve the stable conversation id for Portal usage attribution.
+
+        Returns the session-lineage ROOT id rather than the current segment
+        id, so one user-facing conversation keeps a single ``conversation=``
+        tag across context-compression rotation (`/new` starts a genuinely
+        new lineage). Delegate subagents resolve through their
+        ``_parent_session_id`` so an entire delegation tree tags as the
+        parent conversation.
+
+        Best-effort: falls back to the raw session id when the session DB
+        is unavailable or the lineage walk fails.
+        """
+        sid = getattr(self, "session_id", None)
+        if not sid:
+            return None
+        # Subagents may not have a DB row yet on their first turn; walking
+        # from the parent id still lands on the right root.
+        start = getattr(self, "_parent_session_id", None) or sid
+        db = getattr(self, "_session_db", None)
+        if db is not None:
+            try:
+                root = db.get_conversation_root(start)
+                if root:
+                    return root
+            except Exception:
+                logger.debug("Conversation root lineage walk failed", exc_info=True)
+        return start
+
     def run_conversation(
         self,
-        user_message: str,
+        user_message: Any,
         system_message: str = None,
         conversation_history: List[Dict[str, Any]] = None,
         task_id: str = None,
         stream_callback: Optional[callable] = None,
-        persist_user_message: Optional[str] = None,
+        persist_user_message: Optional[Any] = None,
         persist_user_timestamp: Optional[float] = None,
         moa_config: Optional[dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Forwarder — see ``agent.conversation_loop.run_conversation``."""
-        from agent.conversation_loop import run_conversation
-        return run_conversation(
-            self,
-            user_message,
-            system_message,
-            conversation_history,
-            task_id,
-            stream_callback,
-            persist_user_message,
-            persist_user_timestamp=persist_user_timestamp,
-            moa_config=moa_config,
+        from agent.aux_accounting import (
+            reset_accounting_context,
+            set_accounting_context,
         )
+        from agent.conversation_loop import run_conversation
+        from agent.portal_tags import (
+            reset_conversation_context,
+            set_conversation_context,
+        )
+        # Publish the conversation id for ambient Nous Portal tagging. Every
+        # LLM call made inside this turn — main loop, compression, vision,
+        # web_extract, session_search, MoA slots, background-review forks
+        # (which copy this Context into their thread) — inherits the
+        # ``conversation=<root>`` tag with zero per-call-site plumbing.
+        token = set_conversation_context(self._conversation_root_id())
+        # Publish the session accounting handles the same way so auxiliary
+        # calls record their token usage into session_model_usage (task
+        # dimension) — the fix for aux spend being invisible in analytics
+        # (issue #23270).
+        acct_token = set_accounting_context(
+            getattr(self, "_session_db", None), getattr(self, "session_id", None)
+        )
+        from agent.auxiliary_client import scoped_runtime_main
+
+        # The outer token restores the caller's Context even though turn setup
+        # replaces the value with the live runtime after fallback restoration.
+        # Keep the scope local instead of storing ContextVar tokens on the agent,
+        # which may be observed from another thread.
+        with scoped_runtime_main({}):
+            try:
+                return run_conversation(
+                    self,
+                    user_message,
+                    system_message,
+                    conversation_history,
+                    task_id,
+                    stream_callback,
+                    persist_user_message,
+                    persist_user_timestamp=persist_user_timestamp,
+                    moa_config=moa_config,
+                )
+            finally:
+                reset_accounting_context(acct_token)
+                reset_conversation_context(token)
 
     def chat(self, message: str, stream_callback: Optional[callable] = None) -> str:
         """

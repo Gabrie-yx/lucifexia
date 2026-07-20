@@ -7,7 +7,7 @@ import { getUiState, patchUiState, resetUiState } from '../app/uiStore.js'
 import type * as EnvModule from '../config/env.js'
 import { TUI_SESSION_MODEL_FLAG } from '../domain/slash.js'
 
-// DASHBOARD_TUI_MODE resolves once at module load from LUCIFEX_TUI_DASHBOARD,
+// DASHBOARD_TUI_MODE resolves once at module load from HERMES_TUI_DASHBOARD,
 // so toggling process.env in a test body can't move it. Mock just that one
 // export (everything else stays real) and flip the holder per test.
 const envState = { dashboardTuiMode: false }
@@ -153,14 +153,14 @@ describe('createSlashHandler', () => {
 
   it('routes /status to live session.status instead of slash worker', async () => {
     patchUiState({ sid: 'sid-abc' })
-    const rpc = vi.fn(() => Promise.resolve({ output: 'Lucifex TUI Status' }))
+    const rpc = vi.fn(() => Promise.resolve({ output: 'Hermes TUI Status' }))
     const ctx = buildCtx({ gateway: { ...buildGateway(), rpc } })
 
     expect(createSlashHandler(ctx)('/status')).toBe(true)
     expect(rpc).toHaveBeenCalledWith('session.status', { session_id: 'sid-abc' })
     expect(ctx.gateway.gw.request).not.toHaveBeenCalled()
     await vi.waitFor(() => {
-      expect(ctx.transcript.page).toHaveBeenCalledWith('Lucifex TUI Status', 'Status')
+      expect(ctx.transcript.page).toHaveBeenCalledWith('Hermes TUI Status', 'Status')
     })
   })
 
@@ -183,6 +183,15 @@ describe('createSlashHandler', () => {
     })
   })
 
+  it('opens the model picker with refresh for /model --refresh', () => {
+    patchUiState({ sid: 'sid-abc' })
+    const ctx = buildCtx()
+
+    expect(createSlashHandler(ctx)('/model --refresh')).toBe(true)
+    expect(getOverlayState().modelPicker).toEqual({ refresh: true })
+    expect(ctx.gateway.rpc).not.toHaveBeenCalled()
+  })
+
   it('honors TUI picker session scope without adding --global', async () => {
     patchUiState({ sid: 'sid-abc' })
 
@@ -200,7 +209,7 @@ describe('createSlashHandler', () => {
       confirm_expensive_model: false,
       key: 'model',
       session_id: 'sid-abc',
-      value: 'anthropic/claude-sonnet-4.6 --provider openrouter'
+      value: 'anthropic/claude-sonnet-4.6 --provider openrouter --session'
     })
   })
 
@@ -255,6 +264,55 @@ describe('createSlashHandler', () => {
     await vi.waitFor(() => {
       expect(getUiState().showReasoning).toBe(true)
       expect(getUiState().sections.thinking).toBe('expanded')
+    })
+  })
+
+  it('reads /reasoning status for the active session', () => {
+    patchUiState({ sid: 'sid-abc' })
+    const ctx = buildCtx()
+
+    expect(createSlashHandler(ctx)('/reasoning')).toBe(true)
+    expect(ctx.gateway.rpc).toHaveBeenCalledWith('config.get', {
+      key: 'reasoning',
+      session_id: 'sid-abc'
+    })
+  })
+
+  it.each(['low', 'max', 'ultra'])('sends plain /reasoning %s without a scope (session default)', effort => {
+    patchUiState({ sid: 'sid-abc' })
+    const ctx = buildCtx()
+
+    expect(createSlashHandler(ctx)(`/reasoning ${effort}`)).toBe(true)
+    expect(ctx.gateway.rpc).toHaveBeenCalledWith('config.set', {
+      key: 'reasoning',
+      session_id: 'sid-abc',
+      value: effort
+    })
+  })
+
+  it('sends /reasoning <level> --global as global config.set', () => {
+    patchUiState({ sid: 'sid-abc' })
+    const ctx = buildCtx()
+
+    expect(createSlashHandler(ctx)('/reasoning high --global')).toBe(true)
+    expect(ctx.gateway.rpc).toHaveBeenCalledWith('config.set', {
+      key: 'reasoning',
+      scope: 'global',
+      session_id: 'sid-abc',
+      value: 'high'
+    })
+  })
+
+  it('strips /reasoning session flags before config.set', () => {
+    patchUiState({ sid: 'sid-abc' })
+    const ctx = buildCtx()
+
+    expect(createSlashHandler(ctx)('/reasoning low --session')).toBe(true)
+    expect(ctx.gateway.rpc).toHaveBeenCalledWith('config.set', {
+      key: 'reasoning',
+      scope: 'session',
+      session_id: 'sid-abc',
+      value: 'low'
     })
   })
 
@@ -356,6 +414,25 @@ describe('createSlashHandler', () => {
 
     expect(ctx.session.newSession).toHaveBeenCalledWith('new session started', 'sprint planning')
     expect(ctx.gateway.rpc).not.toHaveBeenCalled()
+  })
+
+  it('routes the /reset catalog alias through the local fresh-session lifecycle', () => {
+    const ctx = buildCtx({
+      local: {
+        catalog: {
+          canon: {
+            '/new': '/new',
+            '/reset': '/new'
+          }
+        }
+      }
+    })
+
+    createSlashHandler(ctx)('/reset')
+    getOverlayState().confirm?.onConfirm()
+
+    expect(ctx.session.newSession).toHaveBeenCalledWith('new session started', undefined)
+    expect(ctx.gateway.gw.request).not.toHaveBeenCalled()
   })
 
   it('keeps visible scrollback when branching a TUI session', async () => {
@@ -729,7 +806,7 @@ describe('createSlashHandler', () => {
             }
 
             if (method === 'command.dispatch') {
-              return Promise.resolve({ type: 'skill', message: skillMessage, name: 'lucifex-agent-dev' })
+              return Promise.resolve({ type: 'skill', message: skillMessage, name: 'hermes-agent-dev' })
             }
 
             return Promise.resolve({})
@@ -740,9 +817,9 @@ describe('createSlashHandler', () => {
     })
 
     const h = createSlashHandler(ctx)
-    expect(h('/lucifex-agent-dev')).toBe(true)
+    expect(h('/hermes-agent-dev')).toBe(true)
     await vi.waitFor(() => {
-      expect(ctx.transcript.sys).toHaveBeenCalledWith('⚡ loading skill: lucifex-agent-dev')
+      expect(ctx.transcript.sys).toHaveBeenCalledWith('⚡ loading skill: hermes-agent-dev')
     })
     expect(ctx.transcript.send).toHaveBeenCalledWith(skillMessage)
   })
@@ -804,7 +881,7 @@ describe('createSlashHandler', () => {
     expect(title).toBe('History')
     expect(body).toContain('[You #1]')
     expect(body).toContain('hello')
-    expect(body).toContain('[Lucifex #2]')
+    expect(body).toContain('[Hermes #2]')
     expect(body).toContain('hi there')
     expect(body).toContain('[You #3]')
     expect(body).not.toContain('ignore me')
@@ -822,7 +899,7 @@ describe('createSlashHandler', () => {
   it('/save forwards to session.save RPC and reports the returned file', async () => {
     patchUiState({ sid: 'sid-abc' })
 
-    const rpc = vi.fn(() => Promise.resolve({ file: '/tmp/lucifex_conversation_test.json' }))
+    const rpc = vi.fn(() => Promise.resolve({ file: '/tmp/hermes_conversation_test.json' }))
 
     const ctx = buildCtx({
       gateway: { ...buildGateway(), rpc },
@@ -842,7 +919,7 @@ describe('createSlashHandler', () => {
     expect(rpc).toHaveBeenCalledWith('session.save', { session_id: 'sid-abc' })
 
     await vi.waitFor(() => {
-      expect(ctx.transcript.sys).toHaveBeenCalledWith('conversation saved to: /tmp/lucifex_conversation_test.json')
+      expect(ctx.transcript.sys).toHaveBeenCalledWith('conversation saved to: /tmp/hermes_conversation_test.json')
     })
   })
 

@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest'
 
-import type { LucifexConfigRecord } from '@/types/lucifex'
+import type { HermesConfigRecord } from '@/types/hermes'
 
 import { voiceFieldVisible } from './config-settings'
 
-const cfg = (over: Record<string, unknown> = {}): LucifexConfigRecord =>
+const cfg = (over: Record<string, unknown> = {}): HermesConfigRecord =>
   ({
     tts: { provider: 'edge', edge: {}, openai: {} },
     stt: { enabled: true, provider: 'local', local: {}, groq: {} },
     ...over
-  }) as unknown as LucifexConfigRecord
+  }) as unknown as HermesConfigRecord
 
 describe('voiceFieldVisible', () => {
   it('always shows top-level + non-provider keys', () => {

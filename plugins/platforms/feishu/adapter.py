@@ -37,7 +37,7 @@ For bots specifically:
                         puts in ``mentions[].id.open_id`` when someone
                         @-mentions the bot.  Used for mention gating only.
 
-In single-bot mode (what Lucifex currently supports), open_id works as a
+In single-bot mode (what Hermes currently supports), open_id works as a
 de-facto unique user identifier since there is only one app context.
 
 Session-key participant isolation prefers ``union_id`` (via user_id_alt)
@@ -142,7 +142,7 @@ from gateway.platforms.base import (
     cache_image_from_bytes,
 )
 from gateway.status import acquire_scoped_lock, release_scoped_lock
-from lucifex_constants import get_lucifex_home
+from hermes_constants import get_hermes_home
 from utils import atomic_json_write, env_float, env_int
 
 logger = logging.getLogger(__name__)
@@ -228,6 +228,19 @@ _APPROVAL_LABEL_MAP: Dict[str, str] = {
     "always": "Approved permanently",
     "deny": "Denied",
 }
+
+
+async def _read_limited_feishu_webhook_body(request: Any, max_bytes: int) -> bytes:
+    """Read at most ``max_bytes`` from an aiohttp request body."""
+    try:
+        body = await request.content.readexactly(max_bytes + 1)
+    except asyncio.IncompleteReadError as exc:
+        body = exc.partial
+    if len(body) > max_bytes:
+        raise ValueError("payload too large")
+    return body
+
+
 _FEISHU_BOT_MSG_TRACK_SIZE = 512                   # LRU size for tracking sent message IDs
 _FEISHU_REPLY_FALLBACK_CODES = frozenset({230011, 231003})  # reply target withdrawn/missing → create fallback
 
@@ -1450,7 +1463,7 @@ class FeishuAdapter(BasePlatformAdapter):
         self._event_handler: Optional[Any] = None
         self._seen_message_ids: Dict[str, float] = {}  # message_id → seen_at (time.time())
         self._seen_message_order: List[str] = []
-        self._dedup_state_path = get_lucifex_home() / "feishu_seen_message_ids.json"
+        self._dedup_state_path = get_hermes_home() / "feishu_seen_message_ids.json"
         self._dedup_lock = threading.Lock()
         self._sender_name_cache: Dict[str, tuple[str, float]] = {}  # sender_id → (name, expire_at)
         self._webhook_rate_counts: Dict[str, tuple[int, float]] = {}  # rate_key → (count, window_start)
@@ -1547,24 +1560,24 @@ class FeishuAdapter(BasePlatformAdapter):
             bot_name=os.getenv("FEISHU_BOT_NAME", "").strip(),
             dedup_cache_size=max(
                 32,
-                env_int("LUCIFEX_FEISHU_DEDUP_CACHE_SIZE", _DEFAULT_DEDUP_CACHE_SIZE),
+                env_int("HERMES_FEISHU_DEDUP_CACHE_SIZE", _DEFAULT_DEDUP_CACHE_SIZE),
             ),
             text_batch_delay_seconds=env_float(
-                "LUCIFEX_FEISHU_TEXT_BATCH_DELAY_SECONDS", _DEFAULT_TEXT_BATCH_DELAY_SECONDS
+                "HERMES_FEISHU_TEXT_BATCH_DELAY_SECONDS", _DEFAULT_TEXT_BATCH_DELAY_SECONDS
             ),
             text_batch_split_delay_seconds=env_float(
-                "LUCIFEX_FEISHU_TEXT_BATCH_SPLIT_DELAY_SECONDS", 2.0
+                "HERMES_FEISHU_TEXT_BATCH_SPLIT_DELAY_SECONDS", 2.0
             ),
             text_batch_max_messages=max(
                 1,
-                env_int("LUCIFEX_FEISHU_TEXT_BATCH_MAX_MESSAGES", _DEFAULT_TEXT_BATCH_MAX_MESSAGES),
+                env_int("HERMES_FEISHU_TEXT_BATCH_MAX_MESSAGES", _DEFAULT_TEXT_BATCH_MAX_MESSAGES),
             ),
             text_batch_max_chars=max(
                 1,
-                env_int("LUCIFEX_FEISHU_TEXT_BATCH_MAX_CHARS", _DEFAULT_TEXT_BATCH_MAX_CHARS),
+                env_int("HERMES_FEISHU_TEXT_BATCH_MAX_CHARS", _DEFAULT_TEXT_BATCH_MAX_CHARS),
             ),
             media_batch_delay_seconds=env_float(
-                "LUCIFEX_FEISHU_MEDIA_BATCH_DELAY_SECONDS", _DEFAULT_MEDIA_BATCH_DELAY_SECONDS
+                "HERMES_FEISHU_MEDIA_BATCH_DELAY_SECONDS", _DEFAULT_MEDIA_BATCH_DELAY_SECONDS
             ),
             webhook_host=str(
                 extra.get("webhook_host") or os.getenv("FEISHU_WEBHOOK_HOST", _DEFAULT_WEBHOOK_HOST)
@@ -1671,7 +1684,7 @@ class FeishuAdapter(BasePlatformAdapter):
             if executor is None or getattr(executor, "_shutdown", False):
                 executor = concurrent.futures.ThreadPoolExecutor(
                     max_workers=10,
-                    thread_name_prefix="lucifex-feishu-sdk",
+                    thread_name_prefix="hermes-feishu-sdk",
                 )
                 self._sdk_executor = executor
             return executor
@@ -1730,7 +1743,7 @@ class FeishuAdapter(BasePlatformAdapter):
             if not acquired:
                 owner_pid = existing.get("pid") if isinstance(existing, dict) else None
                 message = (
-                    "Another local Lucifex gateway is already using this Feishu app_id"
+                    "Another local Hermes gateway is already using this Feishu app_id"
                     + (f" (PID {owner_pid})." if owner_pid else ".")
                     + " Stop the other gateway before starting a second Feishu websocket client."
                 )
@@ -1756,10 +1769,49 @@ class FeishuAdapter(BasePlatformAdapter):
         await self._cancel_pending_tasks(self._pending_text_batch_tasks)
         await self._cancel_pending_tasks(self._pending_media_batch_tasks)
         self._reset_batch_buffers()
+
+        # Send a WebSocket CLOSE frame to Feishu BEFORE tearing down the
+        # thread loop. Without this, Feishu's server never learns the
+        # connection is dead and continues routing messages to the stale
+        # endpoint — the channel goes silent until the server-side
+        # CLOSE-WAIT expires (minutes to hours). See issue #10202.
+        #
+        # ``_disable_websocket_auto_reconnect()`` nils ``self._ws_client``,
+        # so capture the client reference first.
+        ws_client = self._ws_client
+        ws_thread_loop = self._ws_thread_loop
         self._disable_websocket_auto_reconnect()
         await self._stop_webhook_server()
 
-        ws_thread_loop = self._ws_thread_loop
+        if (
+            ws_client is not None
+            and ws_thread_loop is not None
+            and not ws_thread_loop.is_closed()
+            and hasattr(ws_client, "_disconnect")
+        ):
+            try:
+                future = asyncio.run_coroutine_threadsafe(
+                    ws_client._disconnect(), ws_thread_loop
+                )
+                # 5s is generous — the CLOSE frame is a single WebSocket
+                # control frame. If it takes longer than that the
+                # connection is already wedged and we gain nothing by
+                # waiting further.
+                await asyncio.wait_for(asyncio.wrap_future(future), timeout=5.0)
+                logger.debug("[Feishu] Sent WebSocket CLOSE frame to Feishu")
+            except asyncio.TimeoutError:
+                logger.warning(
+                    "[Feishu] CLOSE frame not acknowledged within 5s — "
+                    "Feishu may briefly route messages to the stale "
+                    "connection until server-side timeout"
+                )
+            except Exception as exc:
+                logger.debug(
+                    "[Feishu] Could not send WebSocket CLOSE frame: %s",
+                    exc,
+                    exc_info=True,
+                )
+
         if ws_thread_loop is not None and not ws_thread_loop.is_closed():
             logger.debug("[Feishu] Cancelling websocket thread tasks and stopping loop")
 
@@ -1928,10 +1980,12 @@ class FeishuAdapter(BasePlatformAdapter):
         self, chat_id: str, command: str, session_key: str,
         description: str = "dangerous command",
         metadata: Optional[Dict[str, Any]] = None,
+        allow_permanent: bool = True,
+        smart_denied: bool = False,
     ) -> SendResult:
         """Send an interactive card with approval buttons.
 
-        The buttons carry ``lucifex_action`` in their value dict so that
+        The buttons carry ``hermes_action`` in their value dict so that
         ``_handle_card_action_event`` can intercept them and call
         ``resolve_gateway_approval()`` to unblock the waiting agent thread.
         """
@@ -1947,9 +2001,16 @@ class FeishuAdapter(BasePlatformAdapter):
                     "tag": "button",
                     "text": {"tag": "plain_text", "content": label},
                     "type": btn_type,
-                    "value": {"lucifex_action": action_name, "approval_id": approval_id},
+                    "value": {"hermes_action": action_name, "approval_id": approval_id},
                 }
 
+            actions = [_btn("✅ Allow Once", "approve_once", "primary")]
+            if not smart_denied:
+                actions.append(_btn("✅ Session", "approve_session"))
+                if allow_permanent:
+                    actions.append(_btn("✅ Always", "approve_always"))
+            actions.append(_btn("❌ Deny", "deny", "danger"))
+            scope_note = "\n\n**Smart DENY:** owner override applies to this one operation only." if smart_denied else ""
             card = {
                 "config": {"wide_screen_mode": True},
                 "header": {
@@ -1959,16 +2020,11 @@ class FeishuAdapter(BasePlatformAdapter):
                 "elements": [
                     {
                         "tag": "markdown",
-                        "content": f"```\n{cmd_preview}\n```\n**Reason:** {description}",
+                        "content": f"```\n{cmd_preview}\n```\n**Reason:** {description}{scope_note}",
                     },
                     {
                         "tag": "action",
-                        "actions": [
-                            _btn("✅ Allow Once", "approve_once", "primary"),
-                            _btn("✅ Session", "approve_session"),
-                            _btn("✅ Always", "approve_always"),
-                            _btn("❌ Deny", "deny", "danger"),
-                        ],
+                        "actions": actions,
                     },
                 ],
             }
@@ -2004,7 +2060,7 @@ class FeishuAdapter(BasePlatformAdapter):
                 "text": {"tag": "plain_text", "content": label},
                 "type": btn_type,
                 "value": {
-                    "lucifex_update_prompt_action": answer,
+                    "hermes_update_prompt_action": answer,
                     "update_prompt_id": prompt_id,
                 },
             }
@@ -2098,7 +2154,7 @@ class FeishuAdapter(BasePlatformAdapter):
 
     @staticmethod
     def _write_update_prompt_response(answer: str) -> None:
-        response_path = get_lucifex_home() / ".update_response"
+        response_path = get_hermes_home() / ".update_response"
         tmp_path = response_path.with_suffix(".tmp")
         tmp_path.write_text(answer)
         tmp_path.replace(response_path)
@@ -2497,7 +2553,7 @@ class FeishuAdapter(BasePlatformAdapter):
         )
 
     def _on_message_read_event(self, data: P2ImMessageMessageReadV1) -> None:
-        """Ignore read-receipt events that Lucifex does not act on."""
+        """Ignore read-receipt events that Hermes does not act on."""
         event = getattr(data, "event", None)
         message = getattr(event, "message", None)
         message_id = getattr(message, "message_id", None) or ""
@@ -2596,13 +2652,13 @@ class FeishuAdapter(BasePlatformAdapter):
         event = getattr(data, "event", None)
         action = getattr(event, "action", None)
         action_value = getattr(action, "value", {}) or {}
-        lucifex_action = action_value.get("lucifex_action") if isinstance(action_value, dict) else None
+        hermes_action = action_value.get("hermes_action") if isinstance(action_value, dict) else None
         update_prompt_action = (
-            action_value.get("lucifex_update_prompt_action")
+            action_value.get("hermes_update_prompt_action")
             if isinstance(action_value, dict) else None
         )
 
-        if lucifex_action:
+        if hermes_action:
             return self._handle_approval_card_action(event=event, action_value=action_value, loop=loop)
         if update_prompt_action:
             return self._handle_update_prompt_card_action(
@@ -2655,7 +2711,7 @@ class FeishuAdapter(BasePlatformAdapter):
         if not state:
             logger.debug("[Feishu] Approval %s already resolved or unknown", approval_id)
             return P2CardActionTriggerResponse() if P2CardActionTriggerResponse else None
-        choice = _APPROVAL_CHOICE_MAP.get(action_value.get("lucifex_action"), "deny")
+        choice = _APPROVAL_CHOICE_MAP.get(action_value.get("hermes_action"), "deny")
 
         operator = getattr(event, "operator", None)
         open_id = str(getattr(operator, "open_id", "") or "")
@@ -2712,7 +2768,7 @@ class FeishuAdapter(BasePlatformAdapter):
             logger.debug("[Feishu] Update prompt %s already resolved or unknown", prompt_id)
             return P2CardActionTriggerResponse() if P2CardActionTriggerResponse else None
 
-        answer = str(action_value.get("lucifex_update_prompt_action", "") or "").strip().lower()
+        answer = str(action_value.get("hermes_update_prompt_action", "") or "").strip().lower()
         if answer not in {"y", "n"}:
             logger.debug("[Feishu] Card action has invalid update prompt answer=%r", answer)
             return P2CardActionTriggerResponse() if P2CardActionTriggerResponse else None
@@ -3360,7 +3416,7 @@ class FeishuAdapter(BasePlatformAdapter):
             response = await client.get(
                 file_url,
                 headers={
-                    "User-Agent": "Mozilla/5.0 (compatible; LucifexAgent/1.0)",
+                    "User-Agent": "Mozilla/5.0 (compatible; HermesAgent/1.0)",
                     "Accept": "*/*",
                 },
             )
@@ -3428,9 +3484,16 @@ class FeishuAdapter(BasePlatformAdapter):
 
         try:
             body_bytes: bytes = await asyncio.wait_for(
-                request.read(),
+                _read_limited_feishu_webhook_body(
+                    request,
+                    _FEISHU_WEBHOOK_MAX_BODY_BYTES,
+                ),
                 timeout=_FEISHU_WEBHOOK_BODY_TIMEOUT_SECONDS,
             )
+        except ValueError:
+            logger.warning("[Feishu] Webhook body exceeds limit from %s", remote_ip)
+            self._record_webhook_anomaly(remote_ip, "413")
+            return web.Response(status=413, text="Request body too large")
         except asyncio.TimeoutError:
             logger.warning("[Feishu] Webhook body read timed out after %ds from %s", _FEISHU_WEBHOOK_BODY_TIMEOUT_SECONDS, remote_ip)
             self._record_webhook_anomaly(remote_ip, "408")
@@ -3438,11 +3501,6 @@ class FeishuAdapter(BasePlatformAdapter):
         except Exception:
             self._record_webhook_anomaly(remote_ip, "400")
             return web.json_response({"code": 400, "msg": "failed to read body"}, status=400)
-
-        if len(body_bytes) > _FEISHU_WEBHOOK_MAX_BODY_BYTES:
-            logger.warning("[Feishu] Webhook body exceeds limit (%d bytes) from %s", len(body_bytes), remote_ip)
-            self._record_webhook_anomaly(remote_ip, "413")
-            return web.Response(status=413, text="Request body too large")
 
         try:
             payload = json.loads(body_bytes.decode("utf-8"))
@@ -3454,7 +3512,11 @@ class FeishuAdapter(BasePlatformAdapter):
         if self._verification_token:
             header = payload.get("header") or {}
             incoming_token = str(header.get("token") or payload.get("token") or "")
-            if not incoming_token or not hmac.compare_digest(incoming_token, self._verification_token):
+            # Compare as bytes: compare_digest raises TypeError on a str with
+            # non-ASCII characters, and the token comes from the request body.
+            if not incoming_token or not hmac.compare_digest(
+                incoming_token.encode(), self._verification_token.encode()
+            ):
                 logger.warning("[Feishu] Webhook rejected: invalid verification token from %s", remote_ip)
                 self._record_webhook_anomaly(remote_ip, "401-token")
                 return web.Response(status=401, text="Invalid verification token")
@@ -3473,7 +3535,7 @@ class FeishuAdapter(BasePlatformAdapter):
             return web.Response(status=401, text="Invalid signature")
 
         if payload.get("encrypt"):
-            logger.error("[Feishu] Encrypted webhook payloads are not supported by Lucifex webhook mode")
+            logger.error("[Feishu] Encrypted webhook payloads are not supported by Hermes webhook mode")
             self._record_webhook_anomaly(remote_ip, "400-encrypted")
             return web.json_response({"code": 400, "msg": "encrypted webhook payloads are not supported"}, status=400)
 
@@ -3517,7 +3579,9 @@ class FeishuAdapter(BasePlatformAdapter):
             body_str = body_bytes.decode("utf-8", errors="replace")
             content = f"{timestamp}{nonce}{self._encrypt_key}{body_str}"
             computed = hashlib.sha256(content.encode("utf-8")).hexdigest()
-            return hmac.compare_digest(computed, signature)
+            # Compare as bytes: compare_digest raises TypeError on a str with
+            # non-ASCII characters, and the signature is a raw request header.
+            return hmac.compare_digest(computed.encode(), signature.encode())
         except Exception:
             logger.debug("[Feishu] Signature verification raised an exception", exc_info=True)
             return False
@@ -3575,6 +3639,7 @@ class FeishuAdapter(BasePlatformAdapter):
             event.source,
             group_sessions_per_user=self.config.extra.get("group_sessions_per_user", True),
             thread_sessions_per_user=self.config.extra.get("thread_sessions_per_user", False),
+            profile=event.source.profile,
         )
 
     @staticmethod
@@ -3981,7 +4046,7 @@ class FeishuAdapter(BasePlatformAdapter):
         *,
         is_bot: bool = False,
     ) -> Dict[str, Optional[str]]:
-        """Map Feishu's three-tier user IDs onto Lucifex' SessionSource fields.
+        """Map Feishu's three-tier user IDs onto Hermes' SessionSource fields.
 
         Preference order for the primary ``user_id`` field:
           1. user_id  (tenant-scoped, most stable — requires permission scope)
@@ -4676,6 +4741,12 @@ class FeishuAdapter(BasePlatformAdapter):
             log_level=lark.LogLevel.INFO,
             event_handler=self._event_handler,
             domain=domain,
+            # Channel SDK signaling tag: without this UA tag the Feishu
+            # server does not push group @mention events over the WebSocket
+            # transport.  The tag tells the server to use the Channel protocol
+            # which enables group-message routing in addition to P2P DM.
+            # See https://github.com/NousResearch/hermes-agent/issues/50656
+            extra_ua_tags=["channel"],
         )
         self._ws_future = loop.run_in_executor(
             None,
@@ -4693,7 +4764,10 @@ class FeishuAdapter(BasePlatformAdapter):
         if self._event_handler is None:
             raise RuntimeError("failed to build Feishu event handler")
         await self._hydrate_bot_identity()
-        app = web.Application()
+        # client_max_size backstops the bounded reader in
+        # _handle_webhook_request; aiohttp then enforces the same cap on
+        # every read path (#58536/#58902/#59180 pattern).
+        app = web.Application(client_max_size=_FEISHU_WEBHOOK_MAX_BODY_BYTES)
         app.router.add_post(self._webhook_path, self._handle_webhook_request)
         self._webhook_runner = web.AppRunner(app)
         await self._webhook_runner.setup()
@@ -4979,7 +5053,7 @@ class FeishuAdapter(BasePlatformAdapter):
 #
 # Device-code flow: user scans a QR code with Feishu/Lark mobile app and the
 # platform creates a fully configured bot application automatically.
-# Called by `lucifex gateway setup` via _setup_feishu() in lucifex_cli/gateway.py.
+# Called by `hermes gateway setup` via _setup_feishu() in hermes_cli/gateway.py.
 # =============================================================================
 
 
@@ -5043,9 +5117,9 @@ def _begin_registration(domain: str = "feishu") -> dict:
         raise RuntimeError("Feishu / Lark registration did not return a device_code")
     qr_url = res.get("verification_uri_complete", "")
     if "?" in qr_url:
-        qr_url += "&from=lucifex&tp=lucifex"
+        qr_url += "&from=hermes&tp=hermes"
     else:
-        qr_url += "?from=lucifex&tp=lucifex"
+        qr_url += "?from=hermes&tp=hermes"
     return {
         "device_code": device_code,
         "qr_url": qr_url,
@@ -5317,7 +5391,7 @@ def _qr_register_inner(
 # per-platform core touchpoints (the Platform.FEISHU elif in gateway/run.py,
 # the feishu_cfg YAML→env block + _PLATFORM_CONNECTED_CHECKERS entry in
 # gateway/config.py, the _setup_feishu wizard + _PLATFORMS["feishu"] static
-# dict in lucifex_cli/gateway.py, and the _send_feishu dispatch in
+# dict in hermes_cli/gateway.py, and the _send_feishu dispatch in
 # tools/send_message_tool.py).
 # ──────────────────────────────────────────────────────────────────────────
 
@@ -5344,7 +5418,7 @@ async def _standalone_send(
     (images, video, voice, documents). Replaces the legacy _send_feishu helper.
     """
     if not FEISHU_AVAILABLE:
-        return {"error": "Feishu dependencies not installed. Run: pip install 'lucifex-agent[feishu]'"}
+        return {"error": "Feishu dependencies not installed. Run: pip install 'hermes-agent[feishu]'"}
 
     media_files = media_files or []
     try:
@@ -5392,12 +5466,12 @@ async def _standalone_send(
 def interactive_setup() -> None:
     """Interactive setup for Feishu / Lark — scan-to-create or manual creds.
 
-    Replaces the central _setup_feishu in lucifex_cli/gateway.py and the static
+    Replaces the central _setup_feishu in hermes_cli/gateway.py and the static
     _PLATFORMS["feishu"] dict. CLI helpers are lazy-imported.
     """
-    from lucifex_cli.config import get_env_value, save_env_value
-    from lucifex_cli.setup import prompt_choice
-    from lucifex_cli.cli_output import (
+    from hermes_cli.config import get_env_value, save_env_value
+    from hermes_cli.setup import prompt_choice
+    from hermes_cli.cli_output import (
         prompt,
         prompt_yes_no,
         print_header,
@@ -5517,7 +5591,7 @@ def interactive_setup() -> None:
         save_env_value("FEISHU_ALLOW_ALL_USERS", "false")
         save_env_value("FEISHU_ALLOWED_USERS", "")
         print_success("DM pairing enabled.")
-        print_info("Unknown users can request access; approve with `lucifex pairing approve`.")
+        print_info("Unknown users can request access; approve with `hermes pairing approve`.")
     elif access_idx == 1:
         save_env_value("FEISHU_ALLOW_ALL_USERS", "true")
         save_env_value("FEISHU_ALLOWED_USERS", "")
@@ -5583,7 +5657,7 @@ def _build_adapter(config):
 
 
 def register(ctx) -> None:
-    """Plugin entry point — called by the Lucifex plugin system."""
+    """Plugin entry point — called by the Hermes plugin system."""
     ctx.register_platform(
         name="feishu",
         label="Feishu / Lark",
@@ -5592,7 +5666,7 @@ def register(ctx) -> None:
         is_connected=_is_connected,
         validate_config=_is_connected,
         required_env=["FEISHU_APP_ID", "FEISHU_APP_SECRET"],
-        install_hint="pip install 'lucifex-agent[feishu]'",
+        install_hint="pip install 'hermes-agent[feishu]'",
         setup_fn=interactive_setup,
         apply_yaml_config_fn=_apply_yaml_config,
         allowed_users_env="FEISHU_ALLOWED_USERS",

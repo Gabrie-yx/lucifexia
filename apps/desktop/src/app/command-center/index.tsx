@@ -7,8 +7,9 @@ import { Button } from '@/components/ui/button'
 import { SearchField } from '@/components/ui/search-field'
 import { SegmentedControl } from '@/components/ui/segmented-control'
 import { ResponsiveTabs } from '@/components/ui/tab-dropdown'
-import { getActionStatus, getLogs, getStatus, getUsageAnalytics, restartGateway, updateLucifex } from '@/lucifex'
-import type { ActionStatusResponse, AnalyticsResponse, StatusResponse } from '@/lucifex'
+import { Tip } from '@/components/ui/tooltip'
+import { getActionStatus, getLogs, getStatus, getUsageAnalytics, restartGateway, updateHermes } from '@/hermes'
+import type { ActionStatusResponse, AnalyticsResponse, StatusResponse } from '@/hermes'
 import { useI18n } from '@/i18n'
 import { sessionTitle } from '@/lib/chat-runtime'
 import { compactNumber } from '@/lib/format'
@@ -94,17 +95,18 @@ function RowIconButton({
   title: string
 }) {
   return (
-    <Button
-      aria-label={title}
-      className={cn('text-(--ui-text-tertiary) hover:bg-(--chrome-action-hover) hover:text-foreground', className)}
-      onClick={onClick}
-      size="icon-xs"
-      title={title}
-      type="button"
-      variant="ghost"
-    >
-      {children}
-    </Button>
+    <Tip label={title}>
+      <Button
+        aria-label={title}
+        className={cn('text-(--ui-text-tertiary) hover:bg-(--chrome-action-hover) hover:text-foreground', className)}
+        onClick={onClick}
+        size="icon-xs"
+        type="button"
+        variant="ghost"
+      >
+        {children}
+      </Button>
+    </Tip>
   )
 }
 
@@ -240,7 +242,7 @@ export function CommandCenterView({ initialSection, onClose, onDeleteSession, on
 
   const sessionListHasResults = filteredSessions.length > 0
 
-  // Client-side substring filter over the fetched tail (matches `lucifex logs --search`).
+  // Client-side substring filter over the fetched tail (matches `hermes logs --search`).
   const visibleLogs = useMemo(() => {
     const needle = logQuery.trim().toLowerCase()
 
@@ -256,7 +258,7 @@ export function CommandCenterView({ initialSection, onClose, onDeleteSession, on
       setSystemError('')
 
       try {
-        const started = kind === 'restart' ? await restartGateway() : await updateLucifex()
+        const started = kind === 'restart' ? await restartGateway() : await updateHermes()
         let nextStatus: ActionStatusResponse | null = null
 
         for (let attempt = 0; attempt < 18; attempt += 1) {
@@ -422,7 +424,7 @@ export function CommandCenterView({ initialSection, onClose, onDeleteSession, on
                           </span>
                         </div>
                         <div className="mt-1 text-[length:var(--conversation-caption-font-size)] text-(--ui-text-tertiary)">
-                          {cc.lucifexActiveSessions(status.version, status.active_sessions)}
+                          {cc.hermesActiveSessions(status.version, status.active_sessions)}
                         </div>
                       </div>
                       <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 whitespace-nowrap max-[47.5rem]:whitespace-normal">
@@ -430,7 +432,7 @@ export function CommandCenterView({ initialSection, onClose, onDeleteSession, on
                           {cc.restartGateway}
                         </Button>
                         <Button onClick={() => void runSystemAction('update')} size="xs" variant="textStrong">
-                          {cc.updateLucifex}
+                          {cc.updateHermes}
                         </Button>
                       </div>
                     </div>

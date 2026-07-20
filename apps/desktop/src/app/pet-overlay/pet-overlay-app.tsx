@@ -1,6 +1,7 @@
 import { useStore } from '@nanostores/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+import { PetHeartField, playVibeHearts } from '@/components/chat/vibe-hearts'
 import { PetBubble } from '@/components/pet/pet-bubble'
 import { PetSprite } from '@/components/pet/pet-sprite'
 import { type PetZoomAnchor, usePetZoomGesture } from '@/components/pet/use-pet-zoom-gesture'
@@ -72,6 +73,8 @@ export function PetOverlayApp() {
   const zoomAnchorRef = useRef<PetZoomAnchor | null>(null)
   const petRef = useRef<HTMLDivElement | null>(null)
   const inputRef = useRef<HTMLInputElement | null>(null)
+  // Last mirrored reaction id — a bump means the main window fired a reaction.
+  const lastReactionRef = useRef<number | null>(null)
   const ignoreRef = useRef(true)
   const composerOpenRef = useRef(false)
   const clickTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
@@ -79,23 +82,36 @@ export function PetOverlayApp() {
   const setIgnore = (ignore: boolean) => {
     if (ignoreRef.current !== ignore) {
       ignoreRef.current = ignore
-      window.lucifexDesktop?.petOverlay?.setIgnoreMouse(ignore)
+      window.hermesDesktop?.petOverlay?.setIgnoreMouse(ignore)
     }
   }
 
   // Mirror pushed state into the shared atoms so PetSprite/PetBubble just work.
   useEffect(() => {
-    const off = window.lucifexDesktop?.petOverlay?.onState(payload => {
+    const off = window.hermesDesktop?.petOverlay?.onState(payload => {
       setPetInfo(payload.info)
       $petActivity.set(payload.activity ?? {})
       setBusy(Boolean(payload.busy))
       setAwaitingResponse(Boolean(payload.awaiting))
       setUnread(Boolean(payload.unread))
+
+      // Play a reaction on a new id (ignore the first sync, which just primes it).
+      const reaction = payload.reaction ?? null
+
+      if (lastReactionRef.current === null) {
+        lastReactionRef.current = reaction?.id ?? 0
+      } else if (reaction && reaction.id > lastReactionRef.current) {
+        lastReactionRef.current = reaction.id
+
+        if (reaction.kind === 'vibe') {
+          playVibeHearts()
+        }
+      }
     })
 
     // Tell the main renderer we're mounted so it pushes the current frame (the
     // subscribe-time pushes during open() can land before this view exists).
-    window.lucifexDesktop?.petOverlay?.control({ type: 'ready' })
+    window.hermesDesktop?.petOverlay?.control({ type: 'ready' })
 
     return off
   }, [])
@@ -172,7 +188,7 @@ export function PetOverlayApp() {
   useEffect(() => {
     composerOpenRef.current = composerOpen
 
-    window.lucifexDesktop?.petOverlay?.setFocusable(composerOpen)
+    window.hermesDesktop?.petOverlay?.setFocusable(composerOpen)
 
     if (composerOpen) {
       setIgnore(false)
@@ -210,7 +226,7 @@ export function PetOverlayApp() {
       drag.moved = true
     }
 
-    window.lucifexDesktop?.petOverlay?.setBounds({
+    window.hermesDesktop?.petOverlay?.setBounds({
       height: drag.height,
       width: drag.width,
       x: e.screenX - drag.offX,
@@ -235,7 +251,7 @@ export function PetOverlayApp() {
 
       // Remember the spot on the desktop (screen coords) so the pet reopens here
       // next time / after a restart.
-      window.lucifexDesktop?.petOverlay?.control({
+      window.hermesDesktop?.petOverlay?.control({
         bounds: { height: drag.height, width: drag.width, x: e.screenX - drag.offX, y: e.screenY - drag.offY },
         type: 'bounds'
       })
@@ -245,7 +261,7 @@ export function PetOverlayApp() {
 
     // Shift-click always pops the pet back in (no double-click ambiguity).
     if (e.shiftKey) {
-      window.lucifexDesktop?.petOverlay?.control({ type: 'pop-in' })
+      window.hermesDesktop?.petOverlay?.control({ type: 'pop-in' })
 
       return
     }
@@ -255,7 +271,7 @@ export function PetOverlayApp() {
     if (clickTimerRef.current) {
       clearTimeout(clickTimerRef.current)
       clickTimerRef.current = undefined
-      window.lucifexDesktop?.petOverlay?.control({ type: 'toggle-app' })
+      window.hermesDesktop?.petOverlay?.control({ type: 'toggle-app' })
 
       return
     }
@@ -270,7 +286,7 @@ export function PetOverlayApp() {
     const text = draft.trim()
 
     if (text) {
-      window.lucifexDesktop?.petOverlay?.control({ text, type: 'submit' })
+      window.hermesDesktop?.petOverlay?.control({ text, type: 'submit' })
     }
 
     setDraft('')
@@ -280,7 +296,7 @@ export function PetOverlayApp() {
   const openApp = () => {
     // Hide the icon immediately; the main renderer also clears the source flag.
     setUnread(false)
-    window.lucifexDesktop?.petOverlay?.control({ type: 'open-app' })
+    window.hermesDesktop?.petOverlay?.control({ type: 'open-app' })
   }
 
   // Alt+wheel over the popped-out pet resizes it. The overlay has no gateway,
@@ -290,7 +306,7 @@ export function PetOverlayApp() {
   const onScale = useCallback((next: number, anchor: PetZoomAnchor) => {
     zoomAnchorRef.current = anchor
     setPetInfo({ ...$petInfo.get(), scale: next })
-    window.lucifexDesktop?.petOverlay?.control({ scale: next, type: 'scale' })
+    window.hermesDesktop?.petOverlay?.control({ scale: next, type: 'scale' })
   }, [])
 
   usePetZoomGesture(petRef, onScale, Boolean(info.enabled && info.spritesheetBase64))
@@ -338,8 +354,8 @@ export function PetOverlayApp() {
       y: Math.round(window.screenY + ay - (ay - (curH - PET_PADDING_BOTTOM)) * ratio - (height - PET_PADDING_BOTTOM))
     }
 
-    window.lucifexDesktop?.petOverlay?.setBounds(bounds)
-    window.lucifexDesktop?.petOverlay?.control({ bounds, type: 'bounds' })
+    window.hermesDesktop?.petOverlay?.setBounds(bounds)
+    window.hermesDesktop?.petOverlay?.control({ bounds, type: 'bounds' })
   }, [info.enabled, info.spritesheetBase64, info.scale, info.frameW, info.frameH])
 
   if (!info.enabled || !info.spritesheetBase64) {
@@ -416,13 +432,19 @@ export function PetOverlayApp() {
         <div style={{ lineHeight: 0, position: 'relative' }}>
           <PetSprite info={info} />
 
+          {/* Hearts on the popped-out pet — identical to in-window. */}
+          <PetHeartField
+            petH={(info.frameH ?? DEFAULT_FRAME_H) * (info.scale ?? DEFAULT_SCALE)}
+            petW={(info.frameW ?? DEFAULT_FRAME_W) * (info.scale ?? DEFAULT_SCALE)}
+          />
+
           {/* Mail icon: only when a finish landed while you were away. Jumps to
               the app's most recent thread. Anchored to the sprite (kept inside
               its box so the overlay's click-through hit-test still catches it);
               stopPropagation keeps a click from starting a window drag. */}
           {unread && (
             <button
-              aria-label="Open in Lucifex"
+              aria-label="Open in Hermes"
               onClick={openApp}
               onPointerDown={e => e.stopPropagation()}
               onPointerUp={e => e.stopPropagation()}
@@ -443,7 +465,7 @@ export function PetOverlayApp() {
                 top: 0,
                 width: 24
               }}
-              title="Open in Lucifex"
+              title="Open in Hermes"
               type="button"
             >
               <Mail style={{ height: 13, width: 13 }} />

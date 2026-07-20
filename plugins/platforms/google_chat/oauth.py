@@ -43,15 +43,15 @@ familiar with that flow can read this without surprises.
 Token storage layout
 --------------------
 - Per-user tokens (keyed by sender email):
-    ``${LUCIFEX_HOME}/google_chat_user_tokens/<sanitized_email>.json``
+    ``${HERMES_HOME}/google_chat_user_tokens/<sanitized_email>.json``
 - Legacy single-user token (fallback, untouched for backward compat):
-    ``${LUCIFEX_HOME}/google_chat_user_token.json``
+    ``${HERMES_HOME}/google_chat_user_token.json``
 - Per-user pending OAuth state during /setup-files start → exchange:
-    ``${LUCIFEX_HOME}/google_chat_user_oauth_pending/<sanitized_email>.json``
+    ``${HERMES_HOME}/google_chat_user_oauth_pending/<sanitized_email>.json``
 - Legacy pending state:
-    ``${LUCIFEX_HOME}/google_chat_user_oauth_pending.json``
+    ``${HERMES_HOME}/google_chat_user_oauth_pending.json``
 - OAuth client secret (profile-scoped — each profile registers its own):
-    ``${LUCIFEX_HOME}/google_chat_user_client_secret.json``
+    ``${HERMES_HOME}/google_chat_user_client_secret.json``
 """
 
 from __future__ import annotations
@@ -72,20 +72,20 @@ from typing import Any, List, Optional, Tuple
 # after the in-tree → plugin migration. See adapter.py for context.
 logger = logging.getLogger("gateway.platforms.google_chat_user_oauth")
 
-# Use the project's LUCIFEX_HOME helper so the token follows the user's
-# profile (e.g. tests can override via LUCIFEX_HOME=/tmp/...).
+# Use the project's HERMES_HOME helper so the token follows the user's
+# profile (e.g. tests can override via HERMES_HOME=/tmp/...).
 try:
-    from lucifex_constants import display_lucifex_home, get_lucifex_home
+    from hermes_constants import display_hermes_home, get_hermes_home
 except (ModuleNotFoundError, ImportError):
-    # Fallback for environments where lucifex_constants isn't importable
+    # Fallback for environments where hermes_constants isn't importable
     # (mirrors the same fallback used by the google-workspace skill's
-    # _lucifex_home.py shim).
-    def get_lucifex_home() -> Path:
-        val = os.environ.get("LUCIFEX_HOME", "").strip()
-        return Path(val) if val else Path.home() / ".lucifex"
+    # _hermes_home.py shim).
+    def get_hermes_home() -> Path:
+        val = os.environ.get("HERMES_HOME", "").strip()
+        return Path(val) if val else Path.home() / ".hermes"
 
-    def display_lucifex_home() -> str:
-        home = get_lucifex_home()
+    def display_hermes_home() -> str:
+        home = get_hermes_home()
         try:
             return "~/" + str(home.relative_to(Path.home()))
         except ValueError:
@@ -94,20 +94,20 @@ except (ModuleNotFoundError, ImportError):
 from utils import atomic_replace
 
 
-def _lucifex_home() -> Path:
-    """Resolve LUCIFEX_HOME at call time (NOT module import).
+def _hermes_home() -> Path:
+    """Resolve HERMES_HOME at call time (NOT module import).
 
-    Tests and ``LUCIFEX_HOME=...`` env overrides need this to be late-
+    Tests and ``HERMES_HOME=...`` env overrides need this to be late-
     binding. If we cached the path at import time, switching profiles
     or tweaking env vars in tests would silently keep using the old
     path."""
-    return get_lucifex_home()
+    return get_hermes_home()
 
 
 # Filesystem-safe key: lowercase, allow ``[a-z0-9._-@]``, replace anything
 # else with ``_``. ``ramon.fernandez@nttdata.com`` stays human-readable
 # (``ramon.fernandez@nttdata.com.json``) which makes admin debugging by
-# ``ls ~/.lucifex/google_chat_user_tokens/`` trivial.
+# ``ls ~/.hermes/google_chat_user_tokens/`` trivial.
 _EMAIL_FS_RE = re.compile(r"[^a-z0-9._@-]+")
 
 
@@ -117,19 +117,19 @@ def _sanitize_email(email: str) -> str:
 
 
 def _legacy_token_path() -> Path:
-    return _lucifex_home() / "google_chat_user_token.json"
+    return _hermes_home() / "google_chat_user_token.json"
 
 
 def _user_tokens_dir() -> Path:
-    return _lucifex_home() / "google_chat_user_tokens"
+    return _hermes_home() / "google_chat_user_tokens"
 
 
 def _legacy_pending_path() -> Path:
-    return _lucifex_home() / "google_chat_user_oauth_pending.json"
+    return _hermes_home() / "google_chat_user_oauth_pending.json"
 
 
 def _user_pending_dir() -> Path:
-    return _lucifex_home() / "google_chat_user_oauth_pending"
+    return _hermes_home() / "google_chat_user_oauth_pending"
 
 
 def _token_path(email: Optional[str] = None) -> Path:
@@ -140,7 +140,7 @@ def _token_path(email: Optional[str] = None) -> Path:
 
 
 def _client_secret_path() -> Path:
-    return _lucifex_home() / "google_chat_user_client_secret.json"
+    return _hermes_home() / "google_chat_user_client_secret.json"
 
 
 def _pending_auth_path(email: Optional[str] = None) -> Path:
@@ -199,7 +199,7 @@ def load_user_credentials(email: Optional[str] = None) -> Optional[Any]:
     except ImportError:
         logger.warning(
             "[google_chat_user_oauth] google-auth not installed; user-OAuth "
-            "attachment delivery is disabled. Install lucifex-agent[google_chat]."
+            "attachment delivery is disabled. Install hermes-agent[google_chat]."
         )
         return None
 
@@ -379,16 +379,17 @@ def install_deps() -> bool:
 
     print("Installing Google Chat OAuth dependencies...")
     try:
-        subprocess.check_call(
-            [sys.executable, "-m", "pip", "install", "--quiet"] + _REQUIRED_PACKAGES,
-            stdout=subprocess.DEVNULL,
-        )
+        from hermes_cli.tools_config import _pip_install
+
+        result = _pip_install(["--quiet"] + _REQUIRED_PACKAGES)
+        if result.returncode != 0:
+            raise RuntimeError((result.stderr or "install failed").strip()[:300])
         print("Dependencies installed.")
         return True
-    except subprocess.CalledProcessError as exc:
+    except Exception as exc:
         print(f"ERROR: Failed to install dependencies: {exc}")
         print("Or install via the optional extra:")
-        print("  pip install 'lucifex-agent[google_chat]'")
+        print("  pip install 'hermes-agent[google_chat]'")
         return False
 
 
@@ -412,7 +413,7 @@ def check_auth(email: Optional[str] = None) -> bool:
 
 
 def store_client_secret(path: str) -> None:
-    """Validate and copy the user's OAuth client_secret.json into LUCIFEX_HOME."""
+    """Validate and copy the user's OAuth client_secret.json into HERMES_HOME."""
     src = Path(path).expanduser().resolve()
     if not src.exists():
         print(f"ERROR: File not found: {src}")
@@ -582,9 +583,9 @@ def exchange_auth_code(code: str, email: Optional[str] = None) -> None:
 
     print(f"OK: Authenticated. Token saved to {token_path}")
     rel_label = (
-        f"{display_lucifex_home()}/google_chat_user_tokens/{_sanitize_email(email)}.json"
+        f"{display_hermes_home()}/google_chat_user_tokens/{_sanitize_email(email)}.json"
         if email
-        else f"{display_lucifex_home()}/google_chat_user_token.json"
+        else f"{display_hermes_home()}/google_chat_user_token.json"
     )
     print(f"Profile path: {rel_label}")
 
@@ -628,7 +629,7 @@ def revoke(email: Optional[str] = None) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Google Chat user-OAuth setup for Lucifex (native attachment delivery)"
+        description="Google Chat user-OAuth setup for Hermes (native attachment delivery)"
     )
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--check", action="store_true",

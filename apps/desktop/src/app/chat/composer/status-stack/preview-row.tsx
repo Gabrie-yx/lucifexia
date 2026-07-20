@@ -61,7 +61,7 @@ export const PreviewStatusRow = memo(function PreviewStatusRow({ item, onDismiss
 
   const openInBrowser = async () => {
     try {
-      const bridge = window.lucifexDesktop?.openPreviewInBrowser
+      const bridge = window.hermesDesktop?.openPreviewInBrowser
 
       if (!bridge) {
         throw new Error('Desktop preview browser bridge is unavailable')
@@ -113,7 +113,9 @@ export const PreviewStatusRow = memo(function PreviewStatusRow({ item, onDismiss
     >
       <Tip
         label={
-          <span className="flex flex-col gap-0.5">
+          // inline-flex (not flex): a block child collapses Tip's decoration
+          // wrapper geometry and mis-positions the tooltip (#62022).
+          <span className="inline-flex flex-col gap-0.5">
             <span>{item.target}</span>
             <span className="opacity-70">{t.preview.linkHint}</span>
           </span>

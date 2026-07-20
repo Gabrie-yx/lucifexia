@@ -158,8 +158,8 @@ function circularDistance(a: number, b: number): number {
   return Math.min(distance, 1 - distance)
 }
 
-// Mirrors @lucifex/ink's colorize.ts. Keep local: app code compiles from
-// ui-tui/src, while @lucifex/ink is bundled separately from packages/.
+// Mirrors @hermes/ink's colorize.ts. Keep local: app code compiles from
+// ui-tui/src, while @hermes/ink is bundled separately from packages/.
 function richEightBitColorNumber(red: number, green: number, blue: number): number {
   const [, saturation, lightness] = rgbToHsl(red, green, blue)
 
@@ -234,11 +234,11 @@ function normalizeAnsiForeground(color: string): string {
 // ── Defaults ─────────────────────────────────────────────────────────
 
 const BRAND: ThemeBrand = {
-  name: 'Lucifex Agent',
-  icon: '✦',
+  name: 'Hermes Agent',
+  icon: '⚕',
   prompt: '❯',
   welcome: 'Type your message or /help for commands.',
-  goodbye: 'Goodbye! ✦',
+  goodbye: 'Goodbye! ⚕',
   tool: '┊',
   helpHeader: '(^_^)? Commands'
 }
@@ -253,40 +253,40 @@ const cleanPromptSymbol = (s: string | undefined, fallback: string) => {
 
 export const DARK_THEME: Theme = {
   color: {
-    primary: '#FF3333',
-    accent: '#FF5C5C',
-    border: '#990000',
-    text: '#FFF0F0',
-    muted: '#B32424',
+    primary: '#FFD700',
+    accent: '#FFBF00',
+    border: '#CD7F32',
+    text: '#FFF8DC',
+    muted: '#CC9B1F',
     // Bumped from the old `#B8860B` darkgoldenrod (~53% luminance) which
     // read as barely-visible on dark terminals for long body text.  The
     // new value sits ~60% luminance — readable without losing the "muted /
     // secondary" semantic.  Field labels still use `label` (65%) which
     // stays brighter so hierarchy holds.
-    completionBg: '#1e0a0a',
-    completionCurrentBg: '#4a1515',
-    completionMetaBg: '#1e0a0a',
-    completionMetaCurrentBg: '#4a1515',
+    completionBg: '#1a1a2e',
+    completionCurrentBg: '#333355',
+    completionMetaBg: '#1a1a2e',
+    completionMetaCurrentBg: '#333355',
 
-    label: '#D93636',
+    label: '#DAA520',
     ok: '#4caf50',
     error: '#ef5350',
     warn: '#ffa726',
 
-    prompt: '#FFF0F0',
+    prompt: '#FFF8DC',
     // sessionLabel/sessionBorder intentionally track the `dim` value — they
     // are "same role, same colour" by design.  fromSkin's banner_dim fallback
     // relies on this pairing (#11300).
-    sessionLabel: '#B32424',
-    sessionBorder: '#B32424',
+    sessionLabel: '#CC9B1F',
+    sessionBorder: '#CC9B1F',
 
-    statusBg: '#1e0a0a',
+    statusBg: '#1a1a2e',
     statusFg: '#C0C0C0',
     statusGood: '#8FBC8F',
-    statusWarn: '#FFA726',
+    statusWarn: '#FFD700',
     statusBad: '#FF8C00',
     statusCritical: '#FF6B6B',
-    selectionBg: '#4a1515',
+    selectionBg: '#3a3a55',
 
     diffAdded: 'rgb(220,255,220)',
     diffRemoved: 'rgb(255,220,220)',
@@ -306,32 +306,32 @@ export const DARK_THEME: Theme = {
 // cleanly (#11300).
 export const LIGHT_THEME: Theme = {
   color: {
-    primary: '#990000',
-    accent: '#B31A1A',
-    border: '#800000',
-    text: '#330000',
-    muted: '#801A1A',
-    completionBg: '#FFF0F0',
-    completionCurrentBg: mix('#FFF0F0', '#B31A1A', 0.25),
-    completionMetaBg: '#FFF0F0',
-    completionMetaCurrentBg: mix('#FFF0F0', '#B31A1A', 0.25),
+    primary: '#8B6914',
+    accent: '#A0651C',
+    border: '#7A4F1F',
+    text: '#3D2F13',
+    muted: '#7A5A0F',
+    completionBg: '#F5F5F5',
+    completionCurrentBg: mix('#F5F5F5', '#A0651C', 0.25),
+    completionMetaBg: '#F5F5F5',
+    completionMetaCurrentBg: mix('#F5F5F5', '#A0651C', 0.25),
 
-    label: '#801A1A',
+    label: '#7A5A0F',
     ok: '#2E7D32',
     error: '#C62828',
     warn: '#E65100',
 
-    prompt: '#330000',
-    sessionLabel: '#801A1A',
-    sessionBorder: '#801A1A',
+    prompt: '#2B2014',
+    sessionLabel: '#7A5A0F',
+    sessionBorder: '#7A5A0F',
 
-    statusBg: '#FFF0F0',
+    statusBg: '#F5F5F5',
     statusFg: '#333333',
     statusGood: '#2E7D32',
-    statusWarn: '#B26A00',
+    statusWarn: '#8B6914',
     statusBad: '#D84315',
     statusCritical: '#B71C1C',
-    selectionBg: '#FFD1D1',
+    selectionBg: '#D4E4F7',
 
     diffAdded: 'rgb(200,240,200)',
     diffRemoved: 'rgb(240,200,200)',
@@ -351,13 +351,13 @@ const FALSE_RE = /^(?:0|false|no|off)$/
 
 // TERM_PROGRAM fallback allow-list for terminals whose default profile is
 // light and which may not expose COLORFGBG. This currently includes Apple
-// Terminal. Explicit LUCIFEX_TUI_THEME / COLORFGBG signals above still win,
+// Terminal. Explicit HERMES_TUI_THEME / COLORFGBG signals above still win,
 // so dark Apple Terminal profiles that advertise a dark background stay dark.
 const LIGHT_DEFAULT_TERM_PROGRAMS = new Set<string>(['Apple_Terminal'])
 
 // Best-effort RGB → luminance check.  Currently only accepts a 3- or
 // 6-digit hex value (with or without a leading `#`); the env var name
-// `LUCIFEX_TUI_BACKGROUND` is intentionally generic so a future OSC11
+// `HERMES_TUI_BACKGROUND` is intentionally generic so a future OSC11
 // query helper can cache its answer there too, but additional formats
 // (rgb()/hsl()/named colours) would need explicit parsing here first.
 const LUMA_LIGHT_THRESHOLD = 0.6
@@ -394,12 +394,12 @@ function backgroundLuminance(raw: string): null | number {
 
 // Pick light vs dark with ordered, explainable signals (#11300):
 //
-//   1. `LUCIFEX_TUI_LIGHT` boolean — `1`/`true`/`yes`/`on` → light;
+//   1. `HERMES_TUI_LIGHT` boolean — `1`/`true`/`yes`/`on` → light;
 //      `0`/`false`/`no`/`off` → dark.  Either explicit value wins
 //      regardless of any later signal.
-//   2. `LUCIFEX_TUI_THEME` named override — `light` / `dark` win over
+//   2. `HERMES_TUI_THEME` named override — `light` / `dark` win over
 //      every signal below.
-//   3. `LUCIFEX_TUI_BACKGROUND` hex hint (3- or 6-digit) — luminance
+//   3. `HERMES_TUI_BACKGROUND` hex hint (3- or 6-digit) — luminance
 //      ≥ LUMA_LIGHT_THRESHOLD → light.
 //   4. `COLORFGBG` last field — XFCE / rxvt / Terminal.app emit
 //      slot 7 or 15 on light profiles; 0–15 ranges are otherwise
@@ -407,7 +407,7 @@ function backgroundLuminance(raw: string): null | number {
 //      allow-list below cannot override an explicit dark profile.
 //   5. `TERM_PROGRAM` light-default allow-list.
 //
-// Anything we can't decide stays dark — the default Lucifex palette
+// Anything we can't decide stays dark — the default Hermes palette
 // is the dark one.
 export function detectLightMode(
   env: NodeJS.ProcessEnv = process.env,
@@ -415,7 +415,7 @@ export function detectLightMode(
   // precedence rule even though the production allow-list is empty.
   lightDefaultTermPrograms: ReadonlySet<string> = LIGHT_DEFAULT_TERM_PROGRAMS
 ): boolean {
-  const lightFlag = (env.LUCIFEX_TUI_LIGHT ?? '').trim().toLowerCase()
+  const lightFlag = (env.HERMES_TUI_LIGHT ?? '').trim().toLowerCase()
 
   if (TRUE_RE.test(lightFlag)) {
     return true
@@ -425,7 +425,7 @@ export function detectLightMode(
     return false
   }
 
-  const themeFlag = (env.LUCIFEX_TUI_THEME ?? '').trim().toLowerCase()
+  const themeFlag = (env.HERMES_TUI_THEME ?? '').trim().toLowerCase()
 
   if (themeFlag === 'light') {
     return true
@@ -435,7 +435,7 @@ export function detectLightMode(
     return false
   }
 
-  const bgHint = backgroundLuminance(env.LUCIFEX_TUI_BACKGROUND ?? '')
+  const bgHint = backgroundLuminance(env.HERMES_TUI_BACKGROUND ?? '')
 
   if (bgHint !== null) {
     return bgHint >= LUMA_LIGHT_THRESHOLD

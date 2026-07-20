@@ -16,9 +16,9 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 
 def _make_cli(config_overrides=None, env_overrides=None, **kwargs):
-    """Create a LucifexCLI instance with minimal mocking."""
+    """Create a HermesCLI instance with minimal mocking."""
     import cli as _cli_mod
-    from cli import LucifexCLI
+    from cli import HermesCLI
 
     _clean_config = {
         "model": {
@@ -37,7 +37,7 @@ def _make_cli(config_overrides=None, env_overrides=None, **kwargs):
             else:
                 _clean_config[k] = v
 
-    clean_env = {"LLM_MODEL": "", "LUCIFEX_MAX_ITERATIONS": ""}
+    clean_env = {"LLM_MODEL": "", "HERMES_MAX_ITERATIONS": ""}
     if env_overrides:
         clean_env.update(env_overrides)
     with (
@@ -45,7 +45,7 @@ def _make_cli(config_overrides=None, env_overrides=None, **kwargs):
         patch.dict("os.environ", clean_env, clear=False),
         patch.dict(_cli_mod.__dict__, {"CLI_CONFIG": _clean_config}),
     ):
-        return LucifexCLI(**kwargs)
+        return HermesCLI(**kwargs)
 
 
 # ── Sample conversation histories for tests ──────────────────────────
@@ -132,7 +132,7 @@ class TestDisplayResumedHistory:
         output = self._capture_display(cli)
 
         assert "You:" in output
-        assert "Lucifex:" in output
+        assert "Hermes:" in output
         assert "What is Python?" in output
         assert "Python is a high-level programming language." in output
         assert "How do I install it?" in output
@@ -333,7 +333,7 @@ class TestDisplayResumedHistory:
 
         # The assistant entry should be skipped, only the user message shown
         assert "You:" in output
-        assert "Lucifex:" not in output
+        assert "Hermes:" not in output
 
     def test_only_system_messages_no_output(self):
         cli = _make_cli()
@@ -649,7 +649,7 @@ class TestHandleResumeCommandRecap:
         cli._session_db = mock_db
 
         with (
-            patch("lucifex_cli.main._resolve_session_by_name_or_id", return_value="target_session"),
+            patch("hermes_cli.main._resolve_session_by_name_or_id", return_value="target_session"),
             patch.object(cli, "_display_resumed_history") as display_mock,
         ):
             cli._handle_resume_command("/resume test session")
@@ -671,7 +671,7 @@ class TestHandleResumeCommandRecap:
         cli._session_db = mock_db
 
         with (
-            patch("lucifex_cli.main._resolve_session_by_name_or_id", return_value="target_session"),
+            patch("hermes_cli.main._resolve_session_by_name_or_id", return_value="target_session"),
             patch.object(cli, "_display_resumed_history") as display_mock,
         ):
             cli._handle_resume_command("/resume target_session")
@@ -710,8 +710,8 @@ class TestResumeDisplayConfig:
     """resume_display config option defaults and behavior."""
 
     def test_default_config_has_resume_display(self):
-        """DEFAULT_CONFIG in lucifex_cli/config.py includes resume_display."""
-        from lucifex_cli.config import DEFAULT_CONFIG
+        """DEFAULT_CONFIG in hermes_cli/config.py includes resume_display."""
+        from hermes_cli.config import DEFAULT_CONFIG
         display = DEFAULT_CONFIG.get("display", {})
         assert "resume_display" in display
         assert display["resume_display"] == "full"
@@ -728,3 +728,47 @@ class TestResumeDisplayConfig:
 
         display = config.get("display", {})
         assert display.get("resume_display") == "full"
+
+
+class TestResumeDisplaySanitization:
+    """Stored history replayed by /resume must not carry raw terminal
+    escapes or control chars (openai/codex#31494 bug class)."""
+
+    def _capture_display(self, cli_obj):
+        buf = StringIO()
+        cli_obj.console.file = buf
+        cli_obj._display_resumed_history()
+        return buf.getvalue()
+
+    def test_escape_sequences_stripped_from_user_and_assistant(self):
+        cli = _make_cli()
+        cli.conversation_history = [
+            {"role": "user", "content": "hi \x1b[2J\x1b]0;pwned\x07 there"},
+            {"role": "assistant", "content": "ok \x9b31m fine\x07"},
+        ]
+        output = self._capture_display(cli)
+        # Rich adds its own SGR styling escapes when force_terminal is on;
+        # what must NOT survive are the injected non-SGR sequences.
+        assert "\x1b[2J" not in output
+        assert "\x1b]0;pwned" not in output
+        assert "\x9b" not in output
+        assert "\x07" not in output
+        assert "hi" in output and "there" in output
+        assert "fine" in output
+
+    def test_multimodal_text_part_sanitized(self):
+        cli = _make_cli()
+        cli.conversation_history = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": "look \x1b[3J\x1b[H at this"},
+                    {"type": "image_url", "image_url": {"url": "https://x/y.png"}},
+                ],
+            },
+            {"role": "assistant", "content": "sure"},
+        ]
+        output = self._capture_display(cli)
+        assert "\x1b[3J" not in output
+        assert "\x1b[H" not in output
+        assert "[image]" in output

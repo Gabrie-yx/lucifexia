@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 
-import type { LucifexGateway } from '@/lucifex'
-import type { ComposerAttachment } from '@/store/composer'
+import type { SubmitTextOptions } from '@/app/session/hooks/use-prompt-actions/utils'
+import type { HermesGateway } from '@/hermes'
 
 import type { DroppedFile } from '../hooks/use-composer-actions'
 
@@ -37,7 +37,7 @@ export interface ChatBarProps {
   focusKey?: string | null
   maxRecordingSeconds?: number
   state: ChatBarState
-  gateway?: LucifexGateway | null
+  gateway?: HermesGateway | null
   queueSessionKey?: string | null
   sessionId?: string | null
   cwd?: string | null
@@ -52,10 +52,7 @@ export interface ChatBarProps {
   onPickImages?: () => void
   onRemoveAttachment?: (id: string) => void
   onSteer?: (text: string) => Promise<boolean> | boolean
-  onSubmit: (
-    value: string,
-    options?: { attachments?: ComposerAttachment[]; fromQueue?: boolean }
-  ) => Promise<boolean> | boolean
+  onSubmit: (value: string, options?: SubmitTextOptions) => Promise<boolean> | boolean
   onTranscribeAudio?: (audio: Blob) => Promise<string>
 }
 

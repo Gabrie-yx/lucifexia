@@ -12,7 +12,7 @@ export interface PaneRegisterDefaults {
   widthOverride?: number
 }
 
-const STORAGE_KEY = 'lucifex.desktop.paneStates.v1'
+const STORAGE_KEY = 'hermes.desktop.paneStates.v1'
 
 function isSnapshot(value: unknown): value is PaneStateSnapshot {
   if (!value || typeof value !== 'object') {
@@ -71,11 +71,7 @@ function persist(states: Record<string, PaneStateSnapshot>) {
   }
 
   try {
-    const clean: Record<string, { open: boolean }> = {}
-    for (const [id, value] of Object.entries(states)) {
-      clean[id] = { open: value.open }
-    }
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(clean))
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(states))
   } catch {
     // Storage failures are nonfatal.
   }
@@ -162,4 +158,26 @@ export function setPaneHeightOverride(id: string, height: number | undefined) {
 
 export const clearPaneWidthOverride = (id: string) => setPaneWidthOverride(id, undefined)
 export const clearPaneHeightOverride = (id: string) => setPaneHeightOverride(id, undefined)
+
+/** Drop every pane's drag-resize override (open state untouched). Layout
+ *  reset / preset application: zones return to their declared sizes. */
+export function clearAllPaneSizeOverrides() {
+  const current = $paneStates.get()
+  let changed = false
+  const next: Record<string, PaneStateSnapshot> = {}
+
+  for (const [id, state] of Object.entries(current)) {
+    if (state.widthOverride !== undefined || state.heightOverride !== undefined) {
+      changed = true
+      next[id] = { open: state.open }
+    } else {
+      next[id] = state
+    }
+  }
+
+  if (changed) {
+    $paneStates.set(next)
+  }
+}
+
 export const getPaneStateSnapshot = (id: string) => $paneStates.get()[id]

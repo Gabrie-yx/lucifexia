@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import type { LucifexGitWorktree } from '@/global'
-import type { ProjectInfo, SessionInfo } from '@/types/lucifex'
+import type { HermesGitWorktree } from '@/global'
+import type { ProjectInfo, SessionInfo } from '@/types/hermes'
 
 import {
   baseName,
@@ -10,6 +10,7 @@ import {
   mergeRepoWorktreeGroups,
   overlayLiveLanes,
   overlayLivePreviews,
+  sessionProjectColor,
   type SidebarProjectTree,
   type SidebarSessionGroup,
   sortWorktreeGroups
@@ -50,7 +51,7 @@ const lane = (over: Partial<SidebarSessionGroup> & Pick<SidebarSessionGroup, 'id
 
 describe('baseName', () => {
   it('returns the final path segment, ignoring trailing slashes and separators', () => {
-    expect(baseName('/www/lucifex-agent/')).toBe('lucifex-agent')
+    expect(baseName('/www/hermes-agent/')).toBe('hermes-agent')
     expect(baseName('C:\\repos\\app')).toBe('app')
     expect(baseName('')).toBeUndefined()
   })
@@ -111,7 +112,7 @@ describe('mergeRepoWorktreeGroups (visual enhancer)', () => {
       groups: [lane({ id: '/repo::branch::main', label: 'main', isMain: true, path: '/repo' })]
     }
 
-    const discovered: LucifexGitWorktree[] = [
+    const discovered: HermesGitWorktree[] = [
       { branch: 'feature', detached: false, isMain: false, locked: false, path: '/repo-wt-feature' }
     ]
 
@@ -129,7 +130,7 @@ describe('mergeRepoWorktreeGroups (visual enhancer)', () => {
       groups: [lane({ id: '/repo::branch::main', label: 'main', isMain: true, path: '/repo' })]
     }
 
-    const discovered: LucifexGitWorktree[] = [
+    const discovered: HermesGitWorktree[] = [
       { branch: 'wt/t_aaaaaaaa', detached: false, isMain: false, locked: false, path: '/repo/.worktrees/t_aaaaaaaa' },
       { branch: 'wt/t_bbbbbbbb', detached: false, isMain: false, locked: false, path: '/repo/.worktrees/t_bbbbbbbb' }
     ]
@@ -152,7 +153,7 @@ describe('mergeRepoWorktreeGroups (visual enhancer)', () => {
       ]
     }
 
-    const discovered: LucifexGitWorktree[] = [
+    const discovered: HermesGitWorktree[] = [
       { branch: 'main', detached: false, isMain: true, locked: false, path: '/repo' }
     ]
 
@@ -176,7 +177,7 @@ describe('mergeRepoWorktreeGroups (visual enhancer)', () => {
       lane({ id: '/repo::branch::main', label: 'main', isMain: true, path: '/repo', sessions: [makeSession('/repo')] })
     ]
 
-    const discovered: LucifexGitWorktree[] = [
+    const discovered: HermesGitWorktree[] = [
       { branch: 'main', detached: false, isMain: false, locked: false, path: '/repo/.worktrees/main-mirror' }
     ]
 
@@ -186,9 +187,9 @@ describe('mergeRepoWorktreeGroups (visual enhancer)', () => {
   })
 
   it('surfaces a user-named "New worktree" under .worktrees/ as its own lane', () => {
-    const discovered: LucifexGitWorktree[] = [
+    const discovered: HermesGitWorktree[] = [
       {
-        branch: 'lucifex/test-gui-stuff',
+        branch: 'hermes/test-gui-stuff',
         detached: false,
         isMain: false,
         locked: false,
@@ -198,11 +199,11 @@ describe('mergeRepoWorktreeGroups (visual enhancer)', () => {
 
     const merged = mergeRepoWorktreeGroups({ id: '/repo', path: '/repo', groups: [] }, discovered)
 
-    expect(merged.map(g => g.label)).toContain('lucifex/test-gui-stuff')
+    expect(merged.map(g => g.label)).toContain('hermes/test-gui-stuff')
   })
 
   it('relabels a dir-named linked worktree lane to its live checked-out branch', () => {
-    // Backend labels the lane by the worktree dir (`lucifex-agent-ci`); the live
+    // Backend labels the lane by the worktree dir (`hermes-agent-ci`); the live
     // `git worktree list` says HEAD there is `bb/ci-affected-only` → branch wins.
     const repo = {
       id: '/repo',
@@ -217,7 +218,7 @@ describe('mergeRepoWorktreeGroups (visual enhancer)', () => {
         }),
         lane({
           id: '/repo-ci',
-          label: 'lucifex-agent-ci',
+          label: 'hermes-agent-ci',
           isMain: false,
           path: '/repo-ci',
           sessions: [makeSession('/repo-ci')]
@@ -225,7 +226,7 @@ describe('mergeRepoWorktreeGroups (visual enhancer)', () => {
       ]
     }
 
-    const discovered: LucifexGitWorktree[] = [
+    const discovered: HermesGitWorktree[] = [
       { branch: 'main', detached: false, isMain: true, locked: false, path: '/repo' },
       { branch: 'bb/ci-affected-only', detached: false, isMain: false, locked: false, path: '/repo-ci' }
     ]
@@ -259,7 +260,7 @@ describe('mergeRepoWorktreeGroups (visual enhancer)', () => {
     }
 
     // git now has `bb/attempts` at a sibling dir, not the stale `.worktrees` one.
-    const discovered: LucifexGitWorktree[] = [
+    const discovered: HermesGitWorktree[] = [
       { branch: 'bb/attempts', detached: false, isMain: false, locked: false, path: '/repo-pr-attempts' }
     ]
 
@@ -293,7 +294,7 @@ describe('mergeRepoWorktreeGroups (visual enhancer)', () => {
       ]
     }
 
-    const discovered: LucifexGitWorktree[] = [
+    const discovered: HermesGitWorktree[] = [
       { branch: 'bb/feature', detached: false, isMain: false, locked: false, path: '/repo-feature' }
     ]
 
@@ -314,7 +315,7 @@ describe('mergeRepoWorktreeGroups (visual enhancer)', () => {
       ]
     }
 
-    const discovered: LucifexGitWorktree[] = [
+    const discovered: HermesGitWorktree[] = [
       { branch: null, detached: true, isMain: false, locked: false, path: '/repo-ci' }
     ]
 
@@ -339,7 +340,7 @@ describe('mergeRepoWorktreeGroups (visual enhancer)', () => {
     // The repo root is switched to a feature branch. The historical "main"
     // sessions fold into ONE home lane labeled by the live branch — no stale
     // "main" lane lingering beside it.
-    const discovered: LucifexGitWorktree[] = [
+    const discovered: HermesGitWorktree[] = [
       { branch: 'some-feature', detached: false, isMain: true, locked: false, path: '/repo' }
     ]
 
@@ -368,7 +369,7 @@ describe('mergeRepoWorktreeGroups (visual enhancer)', () => {
       ]
     }
 
-    const discovered: LucifexGitWorktree[] = [
+    const discovered: HermesGitWorktree[] = [
       { branch: 'main', detached: false, isMain: true, locked: false, path: '/repo' }
     ]
 
@@ -400,7 +401,7 @@ describe('mergeRepoWorktreeGroups (visual enhancer)', () => {
       ]
     }
 
-    const discovered: LucifexGitWorktree[] = [
+    const discovered: HermesGitWorktree[] = [
       { branch: 'bb/live', detached: false, isMain: true, locked: false, path: '/repo' }
     ]
 
@@ -470,6 +471,15 @@ describe('liveSessionProjectId', () => {
     expect(id).toBe('p_app')
   })
 
+  it('anchors a cwd-less session on its git_repo_root (backend groups it there too)', () => {
+    // Older/imported rows carry only a repo root; the sidebar files them under
+    // the repo's project, so membership (and color) must resolve from the root.
+    expect(liveSessionProjectId(makeSession(null, { git_repo_root: '/www/app' }), [])).toBe('/www/app')
+    expect(
+      liveSessionProjectId(makeSession(null, { git_repo_root: '/www/app' }), [makeProject('p_app', ['/www/app'])])
+    ).toBe('p_app')
+  })
+
   it('skips cwd-less, kanban-task, and out-of-tree (sibling) worktree sessions', () => {
     expect(liveSessionProjectId(makeSession(null), [])).toBeNull()
     // Kanban task worktree → folds into the kanban bucket, not a project preview.
@@ -493,6 +503,75 @@ describe('liveSessionProjectId', () => {
     ])
 
     expect(id).toBe('p_app')
+  })
+
+  it('matches a mixed-case/separator Windows cwd to its explicit project in the live overlay', () => {
+    // The bug: a fresh Windows session drops into the overlay before the next
+    // backend refresh; case-sensitive matching missed its project until then.
+    const id = liveSessionProjectId(makeSession('c:/work/notes/SUB'), [makeProject('p_notes', ['C:\\Work\\Notes'])])
+
+    expect(id).toBe('p_notes')
+  })
+
+  it('matches a root-relative WSL cwd (single backslash) case-insensitively', () => {
+    const id = liveSessionProjectId(makeSession('//wsl.localhost/Ubuntu/home/alice/PROJ'), [
+      makeProject('p_proj', ['\\wsl.localhost\\Ubuntu\\home\\alice\\proj'])
+    ])
+
+    expect(id).toBe('p_proj')
+  })
+
+  it('keeps POSIX cwd matching case-sensitive (no false project match)', () => {
+    // Distinct case on POSIX is a distinct path → falls back to its own auto id.
+    expect(liveSessionProjectId(makeSession('/work/notes'), [makeProject('p_notes', ['/Work/Notes'])])).toBe(
+      '/work/notes'
+    )
+  })
+})
+
+describe('sessionProjectColor', () => {
+  const colored = (id: string, folders: string[], color: string): ProjectInfo => ({
+    ...makeProject(id, folders),
+    color
+  })
+
+  it('inherits the color of the explicit project the session belongs to', () => {
+    const session = makeSession('/www/app/src', { git_repo_root: '/www/app' })
+
+    expect(sessionProjectColor(session, [colored('p_app', ['/www/app'], '#4a9eff')])).toBe('#4a9eff')
+  })
+
+  it('returns null when the owning project has no color set', () => {
+    const session = makeSession('/www/app/src', { git_repo_root: '/www/app' })
+
+    expect(sessionProjectColor(session, [makeProject('p_app', ['/www/app'])])).toBeNull()
+  })
+
+  it('colors a cwd-less session by its git_repo_root project (the grouped-but-grey fix)', () => {
+    const session = makeSession(null, { git_repo_root: '/www/app' })
+
+    expect(sessionProjectColor(session, [colored('p_app', ['/www/app'], '#4a9eff')])).toBe('#4a9eff')
+  })
+
+  it('returns null for a session that only maps to an auto repo root (no explicit project)', () => {
+    // liveSessionProjectId falls back to the repo root id, which is not a
+    // project row and therefore carries no color.
+    expect(sessionProjectColor(makeSession('/www/app'), [])).toBeNull()
+  })
+
+  it('returns null for an unplaceable (cwd-less) session', () => {
+    expect(sessionProjectColor(makeSession(null), [colored('p_app', ['/www/app'], '#4a9eff')])).toBeNull()
+  })
+
+  it('uses the longest-prefix project when nested projects both match', () => {
+    const session = makeSession('/www/app/packages/api/src', { git_repo_root: '/www/app' })
+
+    const projects = [
+      colored('p_root', ['/www/app'], '#111111'),
+      colored('p_api', ['/www/app/packages/api'], '#222222')
+    ]
+
+    expect(sessionProjectColor(session, projects)).toBe('#222222')
   })
 })
 
@@ -607,7 +686,7 @@ describe('overlayLiveLanes', () => {
   })
 
   it('places a session into an out-of-tree (sibling) worktree lane by its path', () => {
-    // `lucifex-agent-ci` is a linked worktree living BESIDE the repo, not under
+    // `hermes-agent-ci` is a linked worktree living BESIDE the repo, not under
     // it — repo-root nesting fails, but the existing lane carries its real path.
     const existing = makeSession('/www/app-ci', { id: 'old' })
 

@@ -61,7 +61,7 @@ def _seed(db, sid, title, n=8):
 class TestInPlaceCompaction:
     def test_in_place_keeps_same_session_id(self):
         """In-place mode: id unchanged, no child row, no rename, history kept."""
-        from lucifex_state import SessionDB
+        from hermes_state import SessionDB
         from agent.conversation_compression import compress_context
 
         with tempfile.TemporaryDirectory() as tmp:
@@ -126,7 +126,7 @@ class TestInPlaceCompaction:
 
     def test_in_place_alternation_preserved(self):
         """The compacted list must not introduce consecutive same-role messages."""
-        from lucifex_state import SessionDB
+        from hermes_state import SessionDB
         from agent.conversation_compression import compress_context
 
         with tempfile.TemporaryDirectory() as tmp:
@@ -146,7 +146,7 @@ class TestInPlaceCompaction:
         rewrites the whole row, so a flush would INSERT rows it immediately
         deletes (wasted writes). The current-turn tail survives via the
         compressor's `compressed` output, not the flush."""
-        from lucifex_state import SessionDB
+        from hermes_state import SessionDB
         from agent.conversation_compression import compress_context
 
         with tempfile.TemporaryDirectory() as tmp:
@@ -166,7 +166,7 @@ class TestInPlaceCompaction:
     def test_rotation_still_preflushes(self):
         """Rotation MUST pre-flush so current-turn messages survive in the
         preserved old (parent) session before it is ended (#47202)."""
-        from lucifex_state import SessionDB
+        from hermes_state import SessionDB
         from agent.conversation_compression import compress_context
 
         with tempfile.TemporaryDirectory() as tmp:
@@ -189,7 +189,7 @@ class TestRotationFallbackWhenFlagOff:
         """Rotation is now the OPT-OUT fallback (default flipped to in-place in
         #38763). With in_place=False explicitly set, legacy rotation is
         unchanged — forks a renamed continuation session."""
-        from lucifex_state import SessionDB
+        from hermes_state import SessionDB
         from agent.conversation_compression import compress_context
 
         with tempfile.TemporaryDirectory() as tmp:
@@ -213,8 +213,14 @@ class TestRotationFallbackWhenFlagOff:
             ).fetchall()
             assert len(child) == 1
             assert child[0]["title"] == "my-research #2"
-            # Flush cursor reset for the new row.
-            assert agent._last_flushed_db_idx == 0
+            # The compacted child is persisted atomically at the rotation
+            # boundary, so a headless process killed before finalization can
+            # still resume it without duplicating the two handoff messages.
+            assert agent._last_flushed_db_idx == 2
+            assert [m.get("content") for m in db.get_messages_as_conversation(agent.session_id)] == [
+                "[CONTEXT COMPACTION] summary of prior turns",
+                "recent reply",
+            ]
             # Rotation mode does NOT set the in-place signal.
             assert getattr(agent, "_last_compaction_in_place", False) is False
 
@@ -224,7 +230,7 @@ class TestInPlaceSignalForGateway:
     read (instead of an id-change diff) to re-baseline transcript handling."""
 
     def test_signal_set_on_in_place_unset_on_rotation(self):
-        from lucifex_state import SessionDB
+        from hermes_state import SessionDB
         from agent.conversation_compression import compress_context
 
         with tempfile.TemporaryDirectory() as tmp:
@@ -252,7 +258,7 @@ class TestInPlaceConfigDefault:
     def test_flag_defaults_on(self):
         """In-place is the default as of #38763 (rotation is now opt-out via
         compression.in_place: false)."""
-        from lucifex_cli.config import DEFAULT_CONFIG
+        from hermes_cli.config import DEFAULT_CONFIG
 
         assert DEFAULT_CONFIG["compression"].get("in_place") is True
 
@@ -265,7 +271,7 @@ class TestCompactedTurnsStaySearchable:
     the active flag but are distinguished by the compacted flag."""
 
     def test_compacted_turns_found_by_default_search(self):
-        from lucifex_state import SessionDB
+        from hermes_state import SessionDB
 
         with tempfile.TemporaryDirectory() as tmp:
             db = SessionDB(db_path=Path(tmp) / "t.db")
@@ -302,7 +308,7 @@ class TestCompactedTurnsStaySearchable:
     def test_rewound_turns_stay_hidden(self):
         """Rewind/undo (active=0, compacted=0) must NOT leak into default
         search — the distinction the compacted flag preserves."""
-        from lucifex_state import SessionDB
+        from hermes_state import SessionDB
 
         with tempfile.TemporaryDirectory() as tmp:
             db = SessionDB(db_path=Path(tmp) / "t.db")
@@ -317,4 +323,3 @@ class TestCompactedTurnsStaySearchable:
                 "ZEBRAWORD", role_filter=["user", "assistant"], include_inactive=True
             )
             assert len(recovered) == 1
-

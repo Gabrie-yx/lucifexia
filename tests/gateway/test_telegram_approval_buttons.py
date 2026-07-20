@@ -106,6 +106,49 @@ class TestTelegramExecApproval:
         assert kwargs["reply_markup"] is not None  # InlineKeyboardMarkup
 
     @pytest.mark.asyncio
+    async def test_smart_deny_owner_override_only_offers_once_and_deny(self, monkeypatch):
+        adapter = _make_adapter()
+        adapter._bot.send_message = AsyncMock(return_value=SimpleNamespace(message_id=42))
+        buttons = []
+        monkeypatch.setattr(
+            "plugins.platforms.telegram.adapter.InlineKeyboardButton",
+            lambda text, callback_data: buttons.append((text, callback_data)) or (text, callback_data),
+        )
+        monkeypatch.setattr(
+            "plugins.platforms.telegram.adapter.InlineKeyboardMarkup", lambda rows: rows
+        )
+
+        await adapter.send_exec_approval(
+            chat_id="12345", command="rm -rf /", session_key="s",
+            allow_permanent=False, smart_denied=True,
+        )
+
+        labels = [label for label, _ in buttons]
+        assert labels == ["✅ Allow Once", "❌ Deny"]
+        text = adapter._bot.send_message.call_args.kwargs["text"]
+        assert "one operation" in text.lower()
+
+    @pytest.mark.asyncio
+    async def test_non_smart_allow_permanent_false_keeps_session(self, monkeypatch):
+        adapter = _make_adapter()
+        adapter._bot.send_message = AsyncMock(return_value=SimpleNamespace(message_id=42))
+        buttons = []
+        monkeypatch.setattr(
+            "plugins.platforms.telegram.adapter.InlineKeyboardButton",
+            lambda text, callback_data: buttons.append(text) or text,
+        )
+        monkeypatch.setattr(
+            "plugins.platforms.telegram.adapter.InlineKeyboardMarkup", lambda rows: rows
+        )
+
+        await adapter.send_exec_approval(
+            chat_id="12345", command="curl example.test", session_key="s",
+            allow_permanent=False,
+        )
+
+        assert buttons == ["✅ Allow Once", "✅ Session", "❌ Deny"]
+
+    @pytest.mark.asyncio
     async def test_stores_approval_state(self):
         adapter = _make_adapter()
         mock_msg = MagicMock()
@@ -491,7 +534,7 @@ class TestTelegramApprovalCallback:
         context = MagicMock()
 
         with patch("tools.approval.resolve_gateway_approval") as mock_resolve:
-            with patch("lucifex_constants.get_lucifex_home", return_value=tmp_path):
+            with patch("hermes_constants.get_hermes_home", return_value=tmp_path):
                 # Allow the caller — the new fail-closed allowlist gate
                 # (#24457) rejects empty TELEGRAM_ALLOWED_USERS, but this
                 # test isn't exercising that gate; it's verifying the
@@ -521,7 +564,7 @@ class TestTelegramApprovalCallback:
         update.callback_query = query
         context = MagicMock()
 
-        with patch("lucifex_constants.get_lucifex_home", return_value=tmp_path):
+        with patch("hermes_constants.get_hermes_home", return_value=tmp_path):
             with patch.dict(os.environ, {"TELEGRAM_ALLOWED_USERS": "111"}):
                 await adapter._handle_callback_query(update, context)
 
@@ -551,7 +594,7 @@ class TestTelegramApprovalCallback:
         update.callback_query = query
         context = MagicMock()
 
-        with patch("lucifex_constants.get_lucifex_home", return_value=tmp_path):
+        with patch("hermes_constants.get_hermes_home", return_value=tmp_path):
             with patch.dict(os.environ, {"TELEGRAM_ALLOWED_USERS": ""}):
                 await adapter._handle_callback_query(update, context)
 
@@ -581,7 +624,7 @@ class TestTelegramApprovalCallback:
         update.callback_query = query
         context = MagicMock()
 
-        with patch("lucifex_constants.get_lucifex_home", return_value=tmp_path):
+        with patch("hermes_constants.get_hermes_home", return_value=tmp_path):
             with patch.dict(os.environ, {"TELEGRAM_ALLOWED_USERS": "111"}):
                 await adapter._handle_callback_query(update, context)
 

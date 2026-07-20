@@ -1,4 +1,4 @@
-"""``lucifex lsp`` CLI subcommand.
+"""``hermes lsp`` CLI subcommand.
 
 Subcommands:
 
@@ -10,7 +10,7 @@ Subcommands:
 - ``list`` — print the registry of supported servers.
 
 The handlers are kept here (rather than in
-``lucifex_cli/main.py``) so the LSP module ships self-contained.
+``hermes_cli/main.py``) so the LSP module ships self-contained.
 """
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ import sys
 
 
 def register_subparser(subparsers: argparse._SubParsersAction) -> None:
-    """Wire the ``lucifex lsp`` subcommand tree into the main argparse."""
+    """Wire the ``hermes lsp`` subcommand tree into the main argparse."""
     parser = subparsers.add_parser(
         "lsp",
         help="Language Server Protocol management",
@@ -67,7 +67,7 @@ def register_subparser(subparsers: argparse._SubParsersAction) -> None:
 
 
 def run_lsp_command(args: argparse.Namespace) -> int:
-    """Top-level dispatcher for ``lucifex lsp <subcommand>``."""
+    """Top-level dispatcher for ``hermes lsp <subcommand>``."""
     sub = getattr(args, "lsp_command", None) or "status"
     try:
         if sub == "status":

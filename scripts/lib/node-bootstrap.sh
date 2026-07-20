@@ -7,10 +7,10 @@
 #
 # Strategy (first hit wins — respects the user's existing tooling):
 #   1. modern `node` already on PATH
-#   2. ~/.lucifex/node/ from a prior Lucifex-managed install
+#   2. ~/.hermes/node/ from a prior Hermes-managed install
 #   3. fnm, proto, nvm (in that order) if the user already uses a version manager
 #   4. Termux `pkg`, macOS Homebrew
-#   5. pinned nodejs.org tarball into ~/.lucifex/node/ (always works, zero shell rc edits)
+#   5. pinned nodejs.org tarball into ~/.hermes/node/ (always works, zero shell rc edits)
 #
 # Usage:
 #   source scripts/lib/node-bootstrap.sh
@@ -20,12 +20,12 @@
 # Env inputs (set before sourcing to override defaults):
 #   HERMES_NODE_MIN_VERSION   (default: 20)   — accepted on PATH
 #   HERMES_NODE_TARGET_MAJOR  (default: 22)   — installed when we install
-#   LUCIFEX_HOME               (default: $HOME/.lucifex)
+#   HERMES_HOME               (default: $HOME/.hermes)
 # ============================================================================
 
 HERMES_NODE_MIN_VERSION="${HERMES_NODE_MIN_VERSION:-20}"
 HERMES_NODE_TARGET_MAJOR="${HERMES_NODE_TARGET_MAJOR:-22}"
-LUCIFEX_HOME="${LUCIFEX_HOME:-$HOME/.lucifex}"
+HERMES_HOME="${HERMES_HOME:-$HOME/.hermes}"
 HERMES_NODE_AVAILABLE=false
 
 # ---------------------------------------------------------------------------
@@ -57,17 +57,17 @@ _nb_get_link_dir() {
     fi
 }
 
-# Redirect a Lucifex-managed Node's `npm install -g` to the command link dir
-# (already on PATH) instead of the default $LUCIFEX_HOME/node/bin, which is off
+# Redirect a Hermes-managed Node's `npm install -g` to the command link dir
+# (already on PATH) instead of the default $HERMES_HOME/node/bin, which is off
 # PATH and wiped on every Node upgrade. Scoped to the managed Node via its
 # prefix-local global npmrc; the user's other Node installs / ~/.npmrc are
 # untouched. Idempotent no-op when there's no managed npm.
 _nb_configure_npm_prefix() {
-    [ -x "$LUCIFEX_HOME/node/bin/npm" ] || return 0
+    [ -x "$HERMES_HOME/node/bin/npm" ] || return 0
     local _link_dir
     _link_dir="$(_nb_get_link_dir)"
-    mkdir -p "$LUCIFEX_HOME/node/etc"
-    printf 'prefix=%s\n' "$(dirname "$_link_dir")" > "$LUCIFEX_HOME/node/etc/npmrc"
+    mkdir -p "$HERMES_HOME/node/etc"
+    printf 'prefix=%s\n' "$(dirname "$_link_dir")" > "$HERMES_HOME/node/etc/npmrc"
 }
 
 _nb_node_major() {
@@ -193,7 +193,7 @@ _nb_install_bundled_node() {
         _nb_warn "Download failed"; rm -rf "$tmp"; return 1
     }
 
-    _nb_log "Extracting to $LUCIFEX_HOME/node/..."
+    _nb_log "Extracting to $HERMES_HOME/node/..."
     if [[ "$tarball" == *.tar.xz ]]; then
         tar xf  "$tmp/$tarball" -C "$tmp" || { rm -rf "$tmp"; return 1; }
     else
@@ -208,38 +208,38 @@ _nb_install_bundled_node() {
         return 1
     fi
 
-    mkdir -p "$LUCIFEX_HOME"
-    rm -rf "$LUCIFEX_HOME/node"
-    mv "$extracted" "$LUCIFEX_HOME/node"
+    mkdir -p "$HERMES_HOME"
+    rm -rf "$HERMES_HOME/node"
+    mv "$extracted" "$HERMES_HOME/node"
     rm -rf "$tmp"
 
     local _link_dir
     _link_dir="$(_nb_get_link_dir)"
     mkdir -p "$_link_dir"
-    ln -sf "$LUCIFEX_HOME/node/bin/node" "$_link_dir/node"
-    ln -sf "$LUCIFEX_HOME/node/bin/npm"  "$_link_dir/npm"
-    ln -sf "$LUCIFEX_HOME/node/bin/npx"  "$_link_dir/npx"
+    ln -sf "$HERMES_HOME/node/bin/node" "$_link_dir/node"
+    ln -sf "$HERMES_HOME/node/bin/npm"  "$_link_dir/npm"
+    ln -sf "$HERMES_HOME/node/bin/npx"  "$_link_dir/npx"
 
     _nb_configure_npm_prefix
 
-    export PATH="$LUCIFEX_HOME/node/bin:$PATH"
+    export PATH="$HERMES_HOME/node/bin:$PATH"
 
     _nb_have_modern_node || return 1
-    _nb_ok "Node $(node --version) installed to $LUCIFEX_HOME/node/"
+    _nb_ok "Node $(node --version) installed to $HERMES_HOME/node/"
     return 0
 }
 
 # ---------------------------------------------------------------------------
-# Heal a broken Lucifex-managed Node tree (partial upgrade / missing lib/)
+# Heal a broken Hermes-managed Node tree (partial upgrade / missing lib/)
 # ---------------------------------------------------------------------------
 
 _nb_managed_tool_broken() {
     local tool="$1"
     local probe
     for probe in \
-        "$LUCIFEX_HOME/node/bin/$tool" \
-        "$LUCIFEX_HOME/node/${tool}.exe" \
-        "$LUCIFEX_HOME/node/$tool"; do
+        "$HERMES_HOME/node/bin/$tool" \
+        "$HERMES_HOME/node/${tool}.exe" \
+        "$HERMES_HOME/node/$tool"; do
         if [ -x "$probe" ] || [ -f "$probe" ]; then
             if ! "$probe" --version >/dev/null 2>&1; then
                 return 0
@@ -261,14 +261,14 @@ _nb_managed_node_needs_heal() {
 
 # Redownload the pinned nodejs.org tarball when a managed tree exists but
 # node/npm/npx fail a --version probe. No-op when the tree is healthy or
-# absent. Used by lucifex_constants.find_lucifex_node_executable() and safe
+# absent. Used by hermes_constants.find_hermes_node_executable() and safe
 # to call from install reruns.
 heal_managed_node() {
-    [ -d "$LUCIFEX_HOME/node" ] || return 1
+    [ -d "$HERMES_HOME/node" ] || return 1
     if ! _nb_managed_node_needs_heal; then
         return 0
     fi
-    _nb_log "Lucifex-managed Node is broken — redownloading to $LUCIFEX_HOME/node/..."
+    _nb_log "Hermes-managed Node is broken — redownloading to $HERMES_HOME/node/..."
     _nb_install_bundled_node
 }
 
@@ -289,10 +289,10 @@ ensure_node() {
         return 0
     fi
 
-    if [ -x "$LUCIFEX_HOME/node/bin/node" ]; then
-        export PATH="$LUCIFEX_HOME/node/bin:$PATH"
+    if [ -x "$HERMES_HOME/node/bin/node" ]; then
+        export PATH="$HERMES_HOME/node/bin:$PATH"
         if _nb_have_modern_node; then
-            _nb_ok "Node $(node --version) found (Lucifex-managed)"
+            _nb_ok "Node $(node --version) found (Hermes-managed)"
             HERMES_NODE_AVAILABLE=true
             return 0
         fi

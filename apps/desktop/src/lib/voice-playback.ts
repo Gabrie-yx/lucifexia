@@ -1,4 +1,4 @@
-import { speakText } from '@/lucifex'
+import { speakText } from '@/hermes'
 import {
   $voicePlayback,
   setVoicePlaybackState,

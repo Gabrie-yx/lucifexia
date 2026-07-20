@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "dulcet-theory-408218",
+  "private_key_id": "156bc93ca48d5d97d0d34eb547d681dda7790f75",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDoqL2Qj/I3y1lK\neVjw+78S+E2RgWoY7OWsDW9o+n/KkGhaqEvWF3aVf/wUZZ8wWqFjAOHHx3A0UMMd\n/tXmMSjpgAUrEajYGYuwrmqtQAg0Ev+LulbUaN2P88pylGdC8dlpnbqdDr2Sn0oO\nSlydJYl0GYGsOcYqSr3kN+MLV/5rD/s5EmKeBnfmeemT4P4MWW8c1ERCs/fcHx9D\nxdAhFfmoEZnWyXF4mAEsZ6uPHwxpZ8KU/F3cLztAvtPaEtvSjcVzKdb5TVl1KhBa\n6BIeKL96iLigBY7oBjQNN+Rocjc5XwqbTmP2xd2Vqa9JQWEFX6qa/bqVnLLQ7RDM\nDcphFwI3AgMBAAECggEAFhNKBqPHMsi7odezuwyCoRUoSaxthGHt745IH5OCeUDh\ny0BOucijes9C/C3MQJ/zfNus5fIkJlfyENreMXzr9IPYzwZaQ+7glJS9Zc+T4lpZ\nyZ3roTSLWUj40OMIjTnkts29fYDUN0uf5jfjY7xtDLQNhr7l8PCt5dqbqLbiWrFi\nKVXrwKPtui/+1+RrXj/j4lKJRDe+nj9CQg3voX5u5Lk9WssvPvoSQaKierP2On+K\nZNT2/cTAvBgW3NoUnShLvHLyLfJJTgUZK5846masPYjRhKuc6hSYUjg7E6sKmnZC\nMTzCEv3hEixu2M+LzB1ep08tdSvA6iuJSAcdgcCVAQKBgQD8NqKJxpVZnBq6MX03\nGpLx77dIydE80xv+r2VyZWKp/qf4imgUIHkKxOe0G0oUaRw3urx0XMlKkRwsmnWd\nx9960wAyCf3fjrqSqsokCu4m1MFNPr/KtwFQIo7PM1bvpp4eB8HYmQytfnqTwxO6\npRtioy5ydlrWP0jXyPin+3VZgQKBgQDsJvM2XgH2M4VcX1wi8UHIjBJkNxkJ6iCK\nwRPYwTNe5sMWEJhWNyVD81cfZkhzEARr1lZsxI7o3s7ewohdSuhUcq85ZKYxvxbV\nXHI4mxMhX6cZldbjlpoqL3G2bYQxg3xZ+2fZsVo5GrQp3kNOl1Rmu/GcuRFxnbZ4\nILGipIGHtwKBgHSqJRdMB4uy3N4hxET4At7svsBpsmLLWFi/81IuOaxewn4CL9CX\nkMX9fRxfvy2fzVCuDTxaKzZV101+iUdZzDM5ZQ7AdnGxyPXNEMIJWE4X/e5oRzlS\n28WgpqSLn/ws+1jyx6UUbrvWFIdDJl4gv4Ep8HM78hrGnUBLk1HIzGiBAoGADV87\nQGXcWJOcRpnDvtrIbdG4rOIN0ejnBNRgClMOVJ5eh55S8fbXblyWH1oMWi+bAHw3\nkpsiuH79WdHMJPQ76aRA1dAkNQbsBRLiCOCHGcmvzZwVefeqLR9YogrbhG48mV/K\nBqKrSDaB4ykJyKZ7CgI0cTptiXBzx6OaS2pjR0sCgYBce/0ZlBr5btz2FBWg11/B\ntSl0TdB0+a8lHDQdsIlq30m5zgvF/46bb6uL0Wbs73Ak/kIZoHzzE01pT+oDvlbp\n9Jg0DMO4EHwVcgyRbUQpYqV/Wd6BYwY9zLUUY4sA4V8RPU5yEQ0GAMSD6L8xaiqy\nfb4TU8oxGU5+IClOKvC5XQ==\n-----END PRIVATE KEY-----\n",
+  "client_email": "lucifex@dulcet-theory-408218.iam.gserviceaccount.com",
+  "client_id": "100406021628064470749",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/lucifex%40dulcet-theory-408218.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

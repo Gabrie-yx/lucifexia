@@ -2,12 +2,12 @@
 
 from unittest.mock import patch
 
-from cli import LucifexCLI
+from cli import HermesCLI
 
 
 class TestCLILoadingIndicator:
     def _make_cli(self):
-        cli_obj = LucifexCLI.__new__(LucifexCLI)
+        cli_obj = HermesCLI.__new__(HermesCLI)
         cli_obj._app = None
         cli_obj._last_invalidate = 0.0
         cli_obj._command_running = False

@@ -1,6 +1,6 @@
 """OpenAI-compatible facade over Google AI Studio's native Gemini API.
 
-Lucifex keeps ``api_mode='chat_completions'`` for the ``gemini`` provider so the
+Hermes keeps ``api_mode='chat_completions'`` for the ``gemini`` provider so the
 main agent loop can keep using its existing OpenAI-shaped message flow.
 This adapter is the transport shim that converts those OpenAI-style
 ``messages[]`` / ``tools[]`` requests into Gemini's native
@@ -8,7 +8,7 @@ This adapter is the transport shim that converts those OpenAI-style
 
 Why this exists
 ---------------
-Google's OpenAI-compatible endpoint has been brittle for Lucifex's multi-turn
+Google's OpenAI-compatible endpoint has been brittle for Hermes's multi-turn
 agent/tool loop (auth churn, tool-call replay quirks, thought-signature
 requirements).  The native Gemini API is the canonical path and avoids the
 OpenAI-compat layer entirely.
@@ -27,9 +27,17 @@ from typing import Any, Dict, Iterator, List, Optional
 
 import httpx
 
+from agent.bounded_response import read_streaming_error_body
 from agent.gemini_schema import sanitize_gemini_tool_parameters
 
 logger = logging.getLogger(__name__)
+
+try:
+    import hermes_cli as _hermes_cli
+
+    _HERMES_VERSION = str(_hermes_cli.__version__)
+except Exception:
+    _HERMES_VERSION = "0.0.0"
 
 DEFAULT_GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta"
 
@@ -72,7 +80,7 @@ def probe_gemini_tier(
 
     Returns one of:
 
-    - ``"free"``    -- key is on the free tier (unusable with Lucifex)
+    - ``"free"``    -- key is on the free tier (unusable with Hermes)
     - ``"paid"``    -- key is on a paid tier
     - ``"unknown"`` -- probe failed; callers should proceed without blocking.
     """
@@ -98,7 +106,10 @@ def probe_gemini_tier(
                 url,
                 params={"key": key},
                 json=payload,
-                headers={"Content-Type": "application/json"},
+                headers={
+                    "Content-Type": "application/json",
+                    "X-Goog-Api-Client": f"hermes-agent/{_HERMES_VERSION}",
+                },
             )
     except Exception as exc:
         logger.debug("probe_gemini_tier: network error: %s", exc)
@@ -144,7 +155,7 @@ def is_free_tier_quota_error(error_message: str) -> bool:
 
 _FREE_TIER_GUIDANCE = (
     "\n\nYour Google API key is on the free tier (<= 250 requests/day for "
-    "gemini-2.5-flash). Lucifex typically makes 3-10 API calls per user turn, "
+    "gemini-2.5-flash). Hermes typically makes 3-10 API calls per user turn, "
     "so the free tier is exhausted in a handful of messages and cannot sustain "
     "an agent session. Enable billing on your Google Cloud project and "
     "regenerate the key in a billing-enabled project: "
@@ -153,7 +164,7 @@ _FREE_TIER_GUIDANCE = (
 
 
 class GeminiAPIError(Exception):
-    """Error shape compatible with Lucifex retry/error classification."""
+    """Error shape compatible with Hermes retry/error classification."""
 
     def __init__(
         self,
@@ -305,26 +316,15 @@ def _build_gemini_contents(messages: List[Dict[str, Any]]) -> tuple[List[Dict[st
             continue
 
         if role in {"tool", "function"}:
-            parts = [
-                _translate_tool_result_to_gemini(
-                    msg,
-                    tool_name_by_call_id=tool_name_by_call_id,
-                )
-            ]
-            content = msg.get("content")
-            if isinstance(content, dict) and content.get("_multimodal"):
-                raw_parts = _extract_multimodal_parts(content.get("content"))
-                image_parts = [p for p in raw_parts if "inlineData" in p]
-                parts.extend(image_parts)
-            elif isinstance(content, list):
-                raw_parts = _extract_multimodal_parts(content)
-                image_parts = [p for p in raw_parts if "inlineData" in p]
-                parts.extend(image_parts)
-
             contents.append(
                 {
                     "role": "user",
-                    "parts": parts,
+                    "parts": [
+                        _translate_tool_result_to_gemini(
+                            msg,
+                            tool_name_by_call_id=tool_name_by_call_id,
+                        )
+                    ],
                 }
             )
             continue
@@ -462,7 +462,7 @@ def build_gemini_request(
         # Gemini's native generateContent does NOT treat an omitted
         # maxOutputTokens as "use the model's full output budget" — it applies
         # a low internal default and the model stops early with
-        # finishReason=MAX_TOKENS, truncating tool calls mid-stream (Lucifex
+        # finishReason=MAX_TOKENS, truncating tool calls mid-stream (Hermes
         # then retries 3× and refuses the incomplete call). Every current
         # Gemini text model (2.5 + 3.x, flash / flash-lite / pro) caps at
         # 65,535 output tokens, so default to that ceiling when the caller
@@ -753,14 +753,17 @@ def translate_stream_event(event: Dict[str, Any], model: str, tool_call_indices:
     return chunks
 
 
-def gemini_http_error(response: httpx.Response) -> GeminiAPIError:
+def gemini_http_error(
+    response: httpx.Response, *, body_text: Optional[str] = None
+) -> GeminiAPIError:
     status = response.status_code
-    body_text = ""
     body_json: Dict[str, Any] = {}
-    try:
-        body_text = response.text
-    except Exception:
-        body_text = ""
+    if body_text is None:
+        try:
+            body_text = response.text
+        except Exception:
+            body_text = ""
+    body_text = body_text or ""
     if body_text:
         try:
             parsed = json.loads(body_text)
@@ -874,8 +877,8 @@ class GeminiNativeClient:
         if not (api_key or "").strip():
             raise RuntimeError(
                 "Gemini native client requires an API key, but none was provided. "
-                "Set GOOGLE_API_KEY or GEMINI_API_KEY in your environment / ~/.lucifex/.env "
-                "(get one at https://aistudio.google.com/app/apikey), or run `lucifex setup` "
+                "Set GOOGLE_API_KEY or GEMINI_API_KEY in your environment / ~/.hermes/.env "
+                "(get one at https://aistudio.google.com/app/apikey), or run `hermes setup` "
                 "to configure the Google provider."
             )
         self.api_key = api_key
@@ -908,7 +911,11 @@ class GeminiNativeClient:
             "Content-Type": "application/json",
             "Accept": "application/json",
             "x-goog-api-key": self.api_key,
-            "User-Agent": "lucifex-agent (gemini-native)",
+            # Include Hermes client context following Gemini's partner
+            # integration guidance.
+            # See https://ai.google.dev/gemini-api/docs/partner-integration
+            "User-Agent": f"hermes-agent/{_HERMES_VERSION} (gemini-native)",
+            "X-Goog-Api-Client": f"hermes-agent/{_HERMES_VERSION}",
         }
         headers.update(self._default_headers)
         return headers
@@ -979,8 +986,8 @@ class GeminiNativeClient:
             try:
                 with self._http.stream("POST", url, json=request, headers=stream_headers, timeout=timeout) as response:
                     if response.status_code != 200:
-                        response.read()
-                        raise gemini_http_error(response)
+                        body_text = read_streaming_error_body(response)
+                        raise gemini_http_error(response, body_text=body_text)
                     tool_call_indices: Dict[str, Dict[str, Any]] = {}
                     for event in _iter_sse_events(response):
                         for chunk in translate_stream_event(event, model, tool_call_indices):

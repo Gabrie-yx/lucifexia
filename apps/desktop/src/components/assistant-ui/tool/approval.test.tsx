@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
-import type { LucifexGateway } from '@/lucifex'
+import type { HermesGateway } from '@/hermes'
 import { $gateway } from '@/store/gateway'
 import { $approvalRequest, clearAllPrompts, setApprovalRequest } from '@/store/prompts'
 import { $activeSessionId } from '@/store/session'
@@ -30,14 +30,18 @@ function part(toolName: string): ToolPart {
   return { toolName, type: `tool-${toolName}` } as unknown as ToolPart
 }
 
-function setRequest(command = 'rm -rf /tmp/x', allowPermanent?: boolean) {
+function setRequest(
+  command = 'rm -rf /tmp/x',
+  allowPermanent?: boolean,
+  extra: { choices?: string[]; smartDenied?: boolean } = {}
+) {
   $activeSessionId.set('sess-1')
-  setApprovalRequest({ allowPermanent, command, description: 'dangerous command', sessionId: 'sess-1' })
+  setApprovalRequest({ allowPermanent, command, description: 'dangerous command', sessionId: 'sess-1', ...extra })
 }
 
 function mockGateway() {
   const request = vi.fn().mockResolvedValue({ resolved: true })
-  $gateway.set({ request } as unknown as LucifexGateway)
+  $gateway.set({ request } as unknown as HermesGateway)
 
   return request
 }
@@ -131,8 +135,28 @@ describe('PendingToolApproval', () => {
     expect(screen.queryByRole('menuitem', { name: /Always allow/ })).toBeNull()
   })
 
+  it('renders only Once and Deny for a Smart DENY owner override', () => {
+    setRequest('rm -rf /tmp/x', true, { smartDenied: true })
+    render(<PendingToolApproval part={part('terminal')} />)
+
+    expect(screen.getByRole('button', { name: /Run/ })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /Reject/ })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: /More approval options/ })).toBeNull()
+    expect(screen.queryByText(/Allow this session/)).toBeNull()
+    expect(screen.queryByText(/Always allow/)).toBeNull()
+  })
+
+  it('renders only choices explicitly supplied by the gateway event', () => {
+    setRequest('rm -rf /tmp/x', true, { choices: ['once', 'deny'] })
+    render(<PendingToolApproval part={part('terminal')} />)
+
+    expect(screen.getByRole('button', { name: /Run/ })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /Reject/ })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: /More approval options/ })).toBeNull()
+  })
+
   it('renders a floating fallback when no pending tool row is mounted', () => {
-    setRequest('rm /tmp/lucifex_approval_test.txt')
+    setRequest('rm /tmp/hermes_approval_test.txt')
     const { container } = render(<PendingApprovalFallback />)
     const fallback = container.querySelector('[data-slot="tool-approval-fallback"]')
 
@@ -142,7 +166,7 @@ describe('PendingToolApproval', () => {
   })
 
   it('hides the floating fallback once the inline approval bar is mounted', async () => {
-    setRequest('rm /tmp/lucifex_approval_test.txt')
+    setRequest('rm /tmp/hermes_approval_test.txt')
 
     const { container } = render(
       <>

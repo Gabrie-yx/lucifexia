@@ -1,1 +1,1 @@
-# Lucifex plugins package
+# Hermes plugins package

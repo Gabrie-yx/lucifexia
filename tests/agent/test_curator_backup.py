@@ -15,16 +15,16 @@ import pytest
 
 @pytest.fixture
 def backup_env(monkeypatch, tmp_path):
-    """Isolate LUCIFEX_HOME + reload modules so every test starts clean."""
-    home = tmp_path / ".lucifex"
+    """Isolate HERMES_HOME + reload modules so every test starts clean."""
+    home = tmp_path / ".hermes"
     home.mkdir()
     (home / "skills").mkdir()
-    monkeypatch.setenv("LUCIFEX_HOME", str(home))
+    monkeypatch.setenv("HERMES_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
-    # Reload so get_lucifex_home picks up the env var fresh.
-    import lucifex_constants
-    importlib.reload(lucifex_constants)
+    # Reload so get_hermes_home picks up the env var fresh.
+    import hermes_constants
+    importlib.reload(hermes_constants)
     from agent import curator_backup
     importlib.reload(curator_backup)
     return {"home": home, "skills": home / "skills", "cb": curator_backup}
@@ -270,7 +270,7 @@ def test_real_run_takes_pre_snapshot(backup_env, monkeypatch):
     skills = backup_env["skills"]
     _write_skill(skills, "alpha")
 
-    # Reload curator module against the freshly-env'd lucifex_constants
+    # Reload curator module against the freshly-env'd hermes_constants
     from agent import curator
     importlib.reload(curator)
 
@@ -322,7 +322,7 @@ def test_dry_run_skips_snapshot(backup_env, monkeypatch):
 
 
 def _write_cron_jobs(home: Path, jobs: list) -> Path:
-    """Write a synthetic cron/jobs.json under LUCIFEX_HOME. Returns the path.
+    """Write a synthetic cron/jobs.json under HERMES_HOME. Returns the path.
     Mirrors cron.jobs.save_jobs() wrapper shape: `{"jobs": [...], "updated_at": ...}`.
     """
     cron_dir = home / "cron"
@@ -336,9 +336,9 @@ def _write_cron_jobs(home: Path, jobs: list) -> Path:
 
 
 def _reload_cron_jobs(home: Path):
-    """Reload cron.jobs so its module-level LUCIFEX_DIR picks up the tmp HOME."""
-    import lucifex_constants
-    importlib.reload(lucifex_constants)
+    """Reload cron.jobs so its module-level HERMES_DIR picks up the tmp HOME."""
+    import hermes_constants
+    importlib.reload(hermes_constants)
     if "cron.jobs" in sys.modules:
         import cron.jobs as _cj
         importlib.reload(_cj)
@@ -370,7 +370,7 @@ def test_snapshot_without_cron_jobs_file_still_succeeds(backup_env):
     """No cron/jobs.json on disk → snapshot succeeds, manifest records absence."""
     cb = backup_env["cb"]
     _write_skill(backup_env["skills"], "alpha")
-    # Deliberately do not create ~/.lucifex/cron/jobs.json
+    # Deliberately do not create ~/.hermes/cron/jobs.json
 
     snap = cb.snapshot_skills(reason="test")
     assert snap is not None
@@ -398,6 +398,31 @@ def test_snapshot_cron_jobs_malformed_json_still_captured(backup_env):
     assert mf["cron_jobs"]["backed_up"] is True
     assert mf["cron_jobs"]["jobs_count"] == 0
     assert "parse_warning" in mf["cron_jobs"]
+
+
+def test_snapshot_cron_jobs_utf8_bom_counted_and_backup_bomless(backup_env):
+    """A UTF-8 BOM on jobs.json (Windows editors) must not break the job
+    count, and the snapshot copy is written BOM-less so rollback restores a
+    file cron/jobs.load_jobs can read."""
+    cb = backup_env["cb"]
+    _write_skill(backup_env["skills"], "alpha")
+    cron_dir = backup_env["home"] / "cron"
+    cron_dir.mkdir()
+    payload = json.dumps({"jobs": [{"id": "job-a"}, {"id": "job-b"}]})
+    (cron_dir / "jobs.json").write_bytes(b"\xef\xbb\xbf" + payload.encode())
+
+    snap = cb.snapshot_skills(reason="test")
+    assert snap is not None
+
+    mf = json.loads((snap / "manifest.json").read_text(encoding="utf-8"))
+    assert mf["cron_jobs"]["backed_up"] is True
+    assert mf["cron_jobs"]["jobs_count"] == 2
+    assert "parse_warning" not in mf["cron_jobs"]
+
+    # Backup copy is decoded text — no BOM survives into the snapshot.
+    backup_bytes = (snap / cb.CRON_JOBS_FILENAME).read_bytes()
+    assert not backup_bytes.startswith(b"\xef\xbb\xbf")
+    assert json.loads(backup_bytes) == json.loads(payload)
 
 
 def test_rollback_restores_cron_skill_links(backup_env):

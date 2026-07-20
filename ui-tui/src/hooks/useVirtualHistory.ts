@@ -1,4 +1,4 @@
-import type { ScrollBoxHandle } from '@lucifex/ink'
+import type { ScrollBoxHandle } from '@hermes/ink'
 import {
   type RefObject,
   useCallback,

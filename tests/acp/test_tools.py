@@ -25,13 +25,13 @@ from acp.schema import (
 # ---------------------------------------------------------------------------
 
 
-COMMON_LUCIFEX_TOOLS = ["read_file", "search_files", "terminal", "patch", "write_file", "process"]
+COMMON_HERMES_TOOLS = ["read_file", "search_files", "terminal", "patch", "write_file", "process"]
 
 
 class TestToolKindMap:
-    def test_all_lucifex_tools_have_kind(self):
-        """Every common lucifex tool should appear in TOOL_KIND_MAP."""
-        for tool in COMMON_LUCIFEX_TOOLS:
+    def test_all_hermes_tools_have_kind(self):
+        """Every common hermes tool should appear in TOOL_KIND_MAP."""
+        for tool in COMMON_HERMES_TOOLS:
             assert tool in TOOL_KIND_MAP, f"{tool} missing from TOOL_KIND_MAP"
 
     def test_tool_kind_read_file(self):
@@ -116,6 +116,18 @@ class TestBuildToolTitle:
         title = build_tool_title("web_search", {"query": "python asyncio"})
         assert "python asyncio" in title
 
+    def test_web_extract_title_unwraps_search_result_object(self):
+        title = build_tool_title("web_extract", {
+            "urls": [
+                {"url": "https://example.com/a", "title": "A"},
+                {"href": "https://example.org/b"},
+            ]
+        })
+        assert title == "extract: https://example.com/a (+1)"
+
+    def test_web_extract_title_handles_malformed_object(self):
+        assert build_tool_title("web_extract", {"urls": [{"title": "missing"}]}) == "extract: ?"
+
     def test_skill_view_title_includes_skill_name(self):
         title = build_tool_title("skill_view", {"name": "github-pitfalls"})
         assert title == "skill view (github-pitfalls)"
@@ -125,15 +137,15 @@ class TestBuildToolTitle:
         assert title == "skill view (github-pitfalls/references/api.md)"
 
     def test_execute_code_title_includes_first_code_line(self):
-        title = build_tool_title("execute_code", {"code": "\nfrom lucifex_tools import terminal\nprint('done')"})
-        assert title == "python: from lucifex_tools import terminal"
+        title = build_tool_title("execute_code", {"code": "\nfrom hermes_tools import terminal\nprint('done')"})
+        assert title == "python: from hermes_tools import terminal"
 
     def test_skill_manage_title_includes_action_and_target(self):
         title = build_tool_title(
             "skill_manage",
-            {"action": "patch", "name": "lucifex-agent-operations", "file_path": "references/acp.md"},
+            {"action": "patch", "name": "hermes-agent-operations", "file_path": "references/acp.md"},
         )
-        assert title == "skill patch: lucifex-agent-operations/references/acp.md"
+        assert title == "skill patch: hermes-agent-operations/references/acp.md"
 
     def test_unknown_tool_uses_name(self):
         title = build_tool_title("some_new_tool", {"foo": "bar"})
@@ -215,6 +227,26 @@ class TestBuildToolStart:
         assert result.content is None
         assert result.raw_input is None
 
+    def test_build_tool_start_survives_non_string_command(self):
+        """A malformed (non-string) terminal command previously raised
+        TypeError in build_tool_title (len(None)) and aborted the render."""
+        result = build_tool_start("tc-bad-cmd", "terminal", {"command": None})
+        assert isinstance(result, ToolCallStart)
+        assert result.kind == "execute"  # tool identity preserved in the fallback
+
+    def test_build_tool_start_survives_non_string_path(self):
+        """A non-string read_file path previously raised a ToolCallLocation
+        pydantic ValidationError in extract_locations and aborted the render."""
+        result = build_tool_start("tc-bad-path", "read_file", {"path": {"p": "x"}})
+        assert isinstance(result, ToolCallStart)
+        assert result.kind == "read"
+
+    def test_build_tool_start_survives_non_string_goal(self):
+        """A non-string delegate_task goal previously raised TypeError
+        (len(123)) in build_tool_title and aborted the render."""
+        result = build_tool_start("tc-bad-goal", "delegate_task", {"goal": 123})
+        assert isinstance(result, ToolCallStart)
+
     def test_build_tool_start_for_web_extract_is_compact(self):
         """web_extract start should stay compact; title identifies URLs."""
         args = {"urls": ["https://example.com/docs"]}
@@ -271,16 +303,16 @@ class TestBuildToolStart:
             "skill_manage",
             {
                 "action": "patch",
-                "name": "lucifex-agent-operations",
+                "name": "hermes-agent-operations",
                 "file_path": "references/acp.md",
                 "old_string": "old advice",
                 "new_string": "new advice",
             },
         )
         assert result.kind == "edit"
-        assert result.title == "skill patch: lucifex-agent-operations/references/acp.md"
+        assert result.title == "skill patch: hermes-agent-operations/references/acp.md"
         assert isinstance(result.content[0], FileEditToolCallContent)
-        assert result.content[0].path == "skills/lucifex-agent-operations/references/acp.md"
+        assert result.content[0].path == "skills/hermes-agent-operations/references/acp.md"
         assert result.content[0].old_text == "old advice"
         assert result.content[0].new_text == "new advice"
         assert result.raw_input is None
@@ -344,6 +376,27 @@ class TestBuildToolComplete:
         assert "hello" in text
         assert result.raw_output is None
 
+    def test_build_tool_complete_for_execute_code_shows_truncation_metadata(self):
+        result = build_tool_complete(
+            "tc-code-truncated",
+            "execute_code",
+            (
+                '{"output":"HEAD\\n... [OUTPUT TRUNCATED - 10 bytes omitted out of 60 total] ...\\nTAIL",'
+                '"exit_code":0,'
+                '"stdout_truncated":true,'
+                '"stdout_bytes_captured":50,'
+                '"stdout_bytes_total":60,'
+                '"stdout_bytes_omitted":10,'
+                '"warning":"execute_code stdout was truncated; the script did run."}'
+            ),
+        )
+        text = result.content[0].content.text
+        assert "Exit code: 0" in text
+        assert "Output truncated: captured 50 of 60 bytes (10 omitted)." in text
+        assert "Warning:" in text
+        assert "the script did run" in text
+        assert result.raw_output is None
+
     def test_build_tool_complete_marks_success_false_as_failed(self):
         result = build_tool_complete("tc-fail", "skill_manage", '{"success": false, "error": "boom"}')
         assert result.status == "failed"
@@ -401,18 +454,18 @@ class TestBuildToolComplete:
         result = build_tool_complete(
             "tc-skill-manage",
             "skill_manage",
-            '{"success":true,"message":"Patched references/lucifex-acp-zed-rendering.md in skill \'lucifex-agent-operations\' (1 replacement)."}',
+            '{"success":true,"message":"Patched references/hermes-acp-zed-rendering.md in skill \'hermes-agent-operations\' (1 replacement)."}',
             function_args={
                 "action": "patch",
-                "name": "lucifex-agent-operations",
-                "file_path": "references/lucifex-acp-zed-rendering.md",
+                "name": "hermes-agent-operations",
+                "file_path": "references/hermes-acp-zed-rendering.md",
             },
         )
         text = result.content[0].content.text
         assert "**✅ Skill updated**" in text
         assert "`patch`" in text
-        assert "`lucifex-agent-operations`" in text
-        assert "references/lucifex-acp-zed-rendering.md" in text
+        assert "`hermes-agent-operations`" in text
+        assert "references/hermes-acp-zed-rendering.md" in text
         assert "{\"success\"" not in text
         assert result.raw_output is None
 
@@ -560,12 +613,12 @@ class TestBuildToolComplete:
         result = build_tool_complete(
             "tc-search-files",
             "search_files",
-            '{"total_count":36,"files":["/home/nour/.lucifex/config.yaml","/home/nour/.lucifex/profiles/recall-test/config.yaml"],"truncated":true}',
+            '{"total_count":36,"files":["/home/nour/.hermes/config.yaml","/home/nour/.hermes/profiles/recall-test/config.yaml"],"truncated":true}',
         )
         text = result.content[0].content.text
         assert "File search results" in text
         assert "Found 36 files; showing 2." in text
-        assert "/home/nour/.lucifex/config.yaml" in text
+        assert "/home/nour/.hermes/config.yaml" in text
         assert "use offset to page" in text
         assert "{\"total_count\"" not in text
         assert result.raw_output is None
@@ -601,13 +654,13 @@ class TestBuildToolComplete:
     def test_build_tool_complete_for_write_file_summarizes_without_repeating_diff(self, tmp_path):
         target = tmp_path / "diff-test.txt"
         snapshot = type("Snapshot", (), {"paths": [target], "before": {str(target): None}})()
-        target.write_text("hello from lucifex\n", encoding="utf-8")
+        target.write_text("hello from hermes\n", encoding="utf-8")
 
         result = build_tool_complete(
             "tc-wf1",
             "write_file",
             '{"bytes_written": 18, "dirs_created": false}',
-            function_args={"path": str(target), "content": "hello from lucifex\n"},
+            function_args={"path": str(target), "content": "hello from hermes\n"},
             snapshot=snapshot,
         )
         assert isinstance(result, ToolCallProgress)

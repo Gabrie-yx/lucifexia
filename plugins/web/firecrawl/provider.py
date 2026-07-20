@@ -122,8 +122,10 @@ Firecrawl = _FirecrawlProxy()
 
 def _get_direct_firecrawl_config() -> Optional[tuple]:
     """Return explicit direct Firecrawl kwargs + cache key, or None when unset."""
-    api_key = os.getenv("FIRECRAWL_API_KEY", "").strip()
-    api_url = os.getenv("FIRECRAWL_API_URL", "").strip().rstrip("/")
+    from hermes_cli.config import get_env_value
+
+    api_key = (get_env_value("FIRECRAWL_API_KEY") or "").strip()
+    api_url = (get_env_value("FIRECRAWL_API_URL") or "").strip().rstrip("/")
 
     if not api_key and not api_url:
         return None
@@ -169,7 +171,7 @@ def check_firecrawl_api_key() -> bool:
     """Return True when Firecrawl backend (direct or gateway) is usable.
 
     Re-exported by :mod:`tools.web_tools` for backward compatibility with
-    existing tests and the ``lucifex tools`` setup flow.
+    existing tests and the ``hermes tools`` setup flow.
     """
     return _has_direct_firecrawl_config() or _is_tool_gateway_ready()
 
@@ -198,7 +200,7 @@ def _raise_web_backend_configuration_error() -> None:
     if _wt.managed_nous_tools_enabled():
         message += (
             " With your Nous subscription you can also use the Tool Gateway. "
-            "run `lucifex tools` and select Nous Subscription as the web provider."
+            "run `hermes tools` and select Nous Subscription as the web provider."
         )
     else:
         message += " " + _wt.nous_tool_gateway_unavailable_message(

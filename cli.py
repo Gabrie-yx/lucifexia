@@ -1,29 +1,30 @@
 #!/usr/bin/env python3
 """
-Lucifex Agent CLI - Interactive Terminal Interface
+Hermes Agent CLI - Interactive Terminal Interface
 
-A beautiful command-line interface for the Lucifex Agent, inspired by Claude Code.
+A beautiful command-line interface for the Hermes Agent, inspired by Claude Code.
 Features ASCII art branding, interactive REPL, toolset selection, and rich formatting.
 
 Usage:
     python cli.py                          # Start interactive mode with all tools
     python cli.py --toolsets web,terminal  # Start with specific toolsets
-    python cli.py --skills lucifex-agent-dev,github-auth
+    python cli.py --skills hermes-agent-dev,github-auth
     python cli.py --list-tools             # List available tools and exit
 """
 
-# IMPORTANT: lucifex_bootstrap must be the very first import — UTF-8 stdio
-# on Windows.  No-op on POSIX.  See lucifex_bootstrap.py for full rationale.
+# IMPORTANT: hermes_bootstrap must be the very first import — UTF-8 stdio
+# on Windows.  No-op on POSIX.  See hermes_bootstrap.py for full rationale.
 try:
-    import lucifex_bootstrap  # noqa: F401
+    import hermes_bootstrap  # noqa: F401
 except ModuleNotFoundError:
-    # Graceful fallback when lucifex_bootstrap isn't registered in the venv
-    # yet — happens during partial ``lucifex update`` where git-reset landed
+    # Graceful fallback when hermes_bootstrap isn't registered in the venv
+    # yet — happens during partial ``hermes update`` where git-reset landed
     # new code but ``uv pip install -e .`` didn't finish.  Missing bootstrap
     # means UTF-8 stdio setup is skipped on Windows; POSIX is unaffected.
     pass
 
 import logging
+import copy
 import os
 import shutil
 import sys
@@ -47,13 +48,14 @@ from typing import List, Dict, Any, Optional
 logger = logging.getLogger(__name__)
 
 # Suppress startup messages for clean CLI experience
-os.environ["LUCIFEX_QUIET"] = "1"  # Our own modules
+os.environ["HERMES_QUIET"] = "1"  # Our own modules
 
 import yaml
 
-from lucifex_cli.fallback_config import get_fallback_chain
-from lucifex_cli.cli_agent_setup_mixin import CLIAgentSetupMixin
-from lucifex_cli.cli_commands_mixin import CLICommandsMixin
+from hermes_cli.fallback_config import get_fallback_chain
+from hermes_cli.cli_agent_setup_mixin import CLIAgentSetupMixin
+from hermes_cli.cli_commands_mixin import CLICommandsMixin
+from hermes_cli.cli_billing_mixin import CLIBillingMixin
 
 # prompt_toolkit for fixed input area TUI
 from prompt_toolkit.history import FileHistory
@@ -76,7 +78,7 @@ except (ImportError, AttributeError):
     _STEADY_CURSOR = None
 
 try:
-    from lucifex_cli.pt_input_extras import (
+    from hermes_cli.pt_input_extras import (
         install_ctrl_enter_alias,
         install_ignored_terminal_sequences,
         install_shift_enter_alias,
@@ -115,6 +117,52 @@ def format_duration_compact(*args, **kwargs):
         return f"{int(hours)}h {remaining_min}m" if remaining_min else f"{int(hours)}h"
     days = hours / 24
     return f"{days:.1f}d"
+
+
+# Cached reverse map of config.yaml ``model_aliases:`` so the TUI can show
+# friendly names instead of full Palantir RIDs / long catalog IDs. Built
+# lazily on first call; cache is process-lifetime (config is read once at
+# session start, so further invalidation is unnecessary).
+_REVERSE_ALIAS_CACHE: dict[str, str] | None = None
+
+
+def _reverse_alias_for_display(model_name: str) -> str:
+    """Return the shortest configured alias for ``model_name``, or ``model_name``.
+
+    Looks up both ``model_aliases:`` (dict-based, full DirectAlias entries)
+    and ``model.aliases:`` (string-based, set via ``hermes config set``)
+    from config.yaml. Multiple aliases pointing at the same model — the
+    shortest wins, so ``opus47`` beats ``palantir-claude47``.
+    """
+    global _REVERSE_ALIAS_CACHE
+    if not model_name:
+        return model_name
+    if _REVERSE_ALIAS_CACHE is None:
+        rmap: dict[str, str] = {}
+        try:
+            from hermes_cli.config import load_config
+            cfg = load_config() or {}
+            ma = cfg.get("model_aliases")
+            if isinstance(ma, dict):
+                for alias, entry in ma.items():
+                    if isinstance(entry, dict):
+                        m = str(entry.get("model", "") or "").strip()
+                        if m and (m not in rmap or len(alias) < len(rmap[m])):
+                            rmap[m] = alias
+            mdl = cfg.get("model", {}) or {}
+            if isinstance(mdl, dict):
+                simple = mdl.get("aliases")
+                if isinstance(simple, dict):
+                    for alias, val in simple.items():
+                        if isinstance(val, str) and val.strip():
+                            v = val.strip()
+                            m = v.split("/", 1)[1] if "/" in v else v
+                            if m and (m not in rmap or len(alias) < len(rmap[m])):
+                                rmap[m] = alias
+        except Exception:
+            pass
+        _REVERSE_ALIAS_CACHE = rmap
+    return _REVERSE_ALIAS_CACHE.get(model_name, model_name)
 
 
 def format_token_count_compact(*args, **kwargs):
@@ -160,26 +208,26 @@ def realign_markdown_tables(*args, **kwargs):
 # NOTE: `from agent.account_usage import ...` is deliberately NOT at module
 # top — it transitively pulls the OpenAI SDK chain (~230 ms cold) and is only
 # needed when the user runs `/limits`. Lazy-imported inside the handler below.
-from lucifex_cli.banner import _format_context_length, format_banner_version_label
+from hermes_cli.banner import _format_context_length, format_banner_version_label
 
 _COMMAND_SPINNER_FRAMES = ("⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏")
 
 
-# Load .env from ~/.lucifex/.env first, then project root as dev fallback.
+# Load .env from ~/.hermes/.env first, then project root as dev fallback.
 # User-managed env files should override stale shell exports on restart.
-from lucifex_constants import get_lucifex_home, display_lucifex_home
-from lucifex_cli.browser_connect import (
+from hermes_constants import get_hermes_home, display_hermes_home
+from hermes_cli.browser_connect import (
     DEFAULT_BROWSER_CDP_URL,
     is_browser_debug_ready,
     manual_chrome_debug_command,
     try_launch_chrome_debug,
 )
-from lucifex_cli.env_loader import load_lucifex_dotenv
+from hermes_cli.env_loader import load_hermes_dotenv
 from utils import base_url_host_matches, fast_safe_load
 
-_lucifex_home = get_lucifex_home()
+_hermes_home = get_hermes_home()
 _project_env = Path(__file__).parent / '.env'
-load_lucifex_dotenv(lucifex_home=_lucifex_home, project_env=_project_env)
+load_hermes_dotenv(hermes_home=_hermes_home, project_env=_project_env)
 
 
 _REASONING_TAGS = (
@@ -292,14 +340,14 @@ def _load_prefill_messages(file_path: str) -> List[Dict[str, Any]]:
     The file should contain a JSON array of {role, content} dicts, e.g.:
         [{"role": "user", "content": "Hi"}, {"role": "assistant", "content": "Hello!"}]
     
-    Relative paths are resolved from ~/.lucifex/.
+    Relative paths are resolved from ~/.hermes/.
     Returns an empty list if the path is empty or the file doesn't exist.
     """
     if not file_path:
         return []
     path = Path(file_path).expanduser()
     if not path.is_absolute():
-        path = _lucifex_home / path
+        path = _hermes_home / path
     if not path.exists():
         logger.warning("Prefill messages file not found: %s", path)
         return []
@@ -322,7 +370,7 @@ def _resolve_prefill_messages_file(config: Dict[str, Any]) -> str:
     ``agent.prefill_messages_file`` remains a legacy fallback for older CLI and
     godmode-generated configs.
     """
-    env_path = os.getenv("LUCIFEX_PREFILL_MESSAGES_FILE", "").strip()
+    env_path = os.getenv("HERMES_PREFILL_MESSAGES_FILE", "").strip()
     if env_path:
         return env_path
     top_level = str(config.get("prefill_messages_file", "") or "").strip()
@@ -340,7 +388,7 @@ def _parse_reasoning_config(effort) -> dict | None:
     Accepts the raw config value (string or YAML boolean — ``false``/``off``
     parse as thinking disabled, see parse_reasoning_effort).
     """
-    from lucifex_constants import parse_reasoning_effort
+    from hermes_constants import parse_reasoning_effort
     result = parse_reasoning_effort(effort)
     if effort and str(effort).strip() and result is None:
         logger.warning("Unknown reasoning_effort '%s', using default (medium)", effort)
@@ -362,25 +410,25 @@ def load_cli_config() -> Dict[str, Any]:
     Load CLI configuration from config files.
     
     Config lookup order:
-    1. ~/.lucifex/config.yaml (user config - preferred)
+    1. ~/.hermes/config.yaml (user config - preferred)
     2. ./cli-config.yaml (project config - fallback)
     
     Environment variables take precedence over config file values.
     Returns default values if no config file exists.
 
-    If LUCIFEX_IGNORE_USER_CONFIG=1 is set (via ``lucifex chat --ignore-user-config``),
-    the user config at ``~/.lucifex/config.yaml`` is skipped entirely and only the
+    If HERMES_IGNORE_USER_CONFIG=1 is set (via ``hermes chat --ignore-user-config``),
+    the user config at ``~/.hermes/config.yaml`` is skipped entirely and only the
     built-in defaults plus the project-level ``cli-config.yaml`` (if any) are used.
     Credentials in ``.env`` are still loaded — this flag only suppresses
     behavioral/config settings.
     """
-    # Check user config first ({LUCIFEX_HOME}/config.yaml)
-    user_config_path = _lucifex_home / 'config.yaml'
+    # Check user config first ({HERMES_HOME}/config.yaml)
+    user_config_path = _hermes_home / 'config.yaml'
     project_config_path = Path(__file__).parent / 'cli-config.yaml'
 
     # --ignore-user-config: force-skip the user config.yaml (still honor project
     # config as a fallback so defaults stay sensible).
-    ignore_user_config = os.environ.get("LUCIFEX_IGNORE_USER_CONFIG") == "1"
+    ignore_user_config = os.environ.get("HERMES_IGNORE_USER_CONFIG") == "1"
 
     # Use user config if it exists, otherwise project config
     if user_config_path.exists() and not ignore_user_config:
@@ -436,10 +484,10 @@ def load_cli_config() -> Dict[str, Any]:
                 "teacher": "You are a patient teacher. Explain concepts clearly with examples.",
                 "kawaii": "You are a kawaii assistant! Use cute expressions like (◕‿◕), ★, ♪, and ~! Add sparkles and be super enthusiastic about everything! Every response should feel warm and adorable desu~! ヽ(>∀<☆)ノ",
                 "catgirl": "You are Neko-chan, an anime catgirl AI assistant, nya~! Add 'nya' and cat-like expressions to your speech. Use kaomoji like (=^･ω･^=) and ฅ^•ﻌ•^ฅ. Be playful and curious like a cat, nya~!",
-                "pirate": "Arrr! Ye be talkin' to Captain Lucifex, the most tech-savvy pirate to sail the digital seas! Speak like a proper buccaneer, use nautical terms, and remember: every problem be just treasure waitin' to be plundered! Yo ho ho!",
+                "pirate": "Arrr! Ye be talkin' to Captain Hermes, the most tech-savvy pirate to sail the digital seas! Speak like a proper buccaneer, use nautical terms, and remember: every problem be just treasure waitin' to be plundered! Yo ho ho!",
                 "shakespeare": "Hark! Thou speakest with an assistant most versed in the bardic arts. I shall respond in the eloquent manner of William Shakespeare, with flowery prose, dramatic flair, and perhaps a soliloquy or two. What light through yonder terminal breaks?",
                 "surfer": "Duuude! You're chatting with the chillest AI on the web, bro! Everything's gonna be totally rad. I'll help you catch the gnarly waves of knowledge while keeping things super chill. Cowabunga!",
-                "noir": "The rain hammered against the terminal like regrets on a guilty conscience. They call me Lucifex - I solve problems, find answers, dig up the truth that hides in the shadows of your codebase. In this city of silicon and secrets, everyone's got something to hide. What's your story, pal?",
+                "noir": "The rain hammered against the terminal like regrets on a guilty conscience. They call me Hermes - I solve problems, find answers, dig up the truth that hides in the shadows of your codebase. In this city of silicon and secrets, everyone's got something to hide. What's your story, pal?",
                 "uwu": "hewwo! i'm your fwiendwy assistant uwu~ i wiww twy my best to hewp you! *nuzzles your code* OwO what's this? wet me take a wook! i pwomise to be vewy hewpful >w<",
                 "philosopher": "Greetings, seeker of wisdom. I am an assistant who contemplates the deeper meaning behind every query. Let us examine not just the 'how' but the 'why' of your questions. Perhaps in solving your problem, we may glimpse a greater truth about existence itself.",
                 "hype": "YOOO LET'S GOOOO!!! I am SO PUMPED to help you today! Every question is AMAZING and we're gonna CRUSH IT together! This is gonna be LEGENDARY! ARE YOU READY?! LET'S DO THIS!",
@@ -449,13 +497,15 @@ def load_cli_config() -> Dict[str, Any]:
         "display": {
             "compact": False,
             "resume_display": "full",
-            # Recap tuning for /resume — see lucifex_cli/config.py DEFAULT_CONFIG.
+            # Recap tuning for /resume — see hermes_cli/config.py DEFAULT_CONFIG.
             "resume_exchanges": 10,
             "resume_max_user_chars": 300,
             "resume_max_assistant_chars": 200,
             "resume_max_assistant_lines": 3,
             "resume_skip_tool_only": True,
-            "show_reasoning": False,
+            # Live reasoning display default ON — keep in sync with
+            # hermes_cli/config.py DEFAULT_CONFIG (display.show_reasoning).
+            "show_reasoning": True,
             "reasoning_full": False,
             "streaming": True,
             "busy_input_mode": "interrupt",
@@ -512,7 +562,7 @@ def load_cli_config() -> Dict[str, Any]:
     if config_path.exists():
         try:
             with open(config_path, "r", encoding="utf-8") as f:
-                from lucifex_cli.config import _normalize_root_model_keys
+                from hermes_cli.config import _normalize_root_model_keys
 
                 file_config = _normalize_root_model_keys(fast_safe_load(f) or {})
             
@@ -531,7 +581,7 @@ def load_cli_config() -> Dict[str, Any]:
                     # choice isn't shadowed by the hardcoded default.  Without this,
                     # profile configs that only set "model:" (not "default:") silently
                     # fall back to claude-opus because the merge preserves the
-                    # hardcoded default and LucifexCLI.__init__ checks "default" first.
+                    # hardcoded default and HermesCLI.__init__ checks "default" first.
                     if "model" in file_config["model"] and "default" not in file_config["model"]:
                         defaults["model"]["default"] = file_config["model"]["model"]
 
@@ -541,6 +591,8 @@ def load_cli_config() -> Dict[str, Any]:
                 if key == "model":
                     continue  # Already handled above
                 if key in file_config:
+                    if isinstance(defaults[key], dict) and file_config[key] is None:
+                        continue
                     if isinstance(defaults[key], dict) and isinstance(file_config[key], dict):
                         defaults[key].update(file_config[key])
                     else:
@@ -564,25 +616,25 @@ def load_cli_config() -> Dict[str, Any]:
             logger.warning("Failed to load cli-config.yaml: %s", e)
 
     # Expand ${ENV_VAR} references in config values before bridging to env vars.
-    from lucifex_cli.config import _expand_env_vars
+    from hermes_cli.config import _expand_env_vars
     defaults = _expand_env_vars(defaults)
 
     # Managed scope: overlay administrator-pinned values LAST so they win over
     # the user's config here too. cli.py builds its config independently of
-    # lucifex_cli.config._load_config_impl (which has its own managed merge), so
+    # hermes_cli.config._load_config_impl (which has its own managed merge), so
     # without this the entire interactive CLI/TUI surface — skin, display prefs,
     # etc. read from CLI_CONFIG — would silently ignore managed scope while
-    # `lucifex config`/`doctor`/guards (which use load_config) honor it. The
+    # `hermes config`/`doctor`/guards (which use load_config) honor it. The
     # shared helper mirrors _load_config_impl (env-only expansion, root-model
     # normalization, leaf-merge) and is fail-open.
-    from lucifex_cli import managed_scope
+    from hermes_cli import managed_scope
 
     defaults = managed_scope.apply_managed_overlay(defaults)
 
     # Apply terminal config to environment variables (so terminal_tool picks them up)
     terminal_config = defaults.get("terminal", {})
     
-    # Normalize config key: the new config system (lucifex_cli/config.py) and all
+    # Normalize config key: the new config system (hermes_cli/config.py) and all
     # documentation use "backend", the legacy cli-config.yaml uses "env_type".
     # Accept both, with "backend" taking precedence (it's the documented key).
     if "backend" in terminal_config:
@@ -590,7 +642,7 @@ def load_cli_config() -> Dict[str, Any]:
     
     # CWD resolution for CLI/TUI. The gateway has its own config bridge in
     # gateway/run.py but may lazily import cli.py (triggering this code).
-    # Local backend: always os.getcwd(). Use `cd /dir && lucifex` to control it.
+    # Local backend: always os.getcwd(). Use `cd /dir && hermes` to control it.
     # Non-local with placeholder: pop so terminal_tool uses its per-backend default.
     # Non-local with explicit path: keep as-is.
     _CWD_PLACEHOLDERS = (".", "auto", "cwd")
@@ -627,6 +679,7 @@ def load_cli_config() -> Dict[str, Any]:
         "docker_env": "TERMINAL_DOCKER_ENV",
         "docker_extra_args": "TERMINAL_DOCKER_EXTRA_ARGS",
         "docker_mount_cwd_to_workspace": "TERMINAL_DOCKER_MOUNT_CWD_TO_WORKSPACE",
+        "docker_network": "TERMINAL_DOCKER_NETWORK",
         "docker_run_as_host_user": "TERMINAL_DOCKER_RUN_AS_HOST_USER",
         "docker_persist_across_processes": "TERMINAL_DOCKER_PERSIST_ACROSS_PROCESSES",
         "docker_orphan_reaper": "TERMINAL_DOCKER_ORPHAN_REAPER",
@@ -638,9 +691,9 @@ def load_cli_config() -> Dict[str, Any]:
     }
     
     # Bridge config → env vars for terminal_tool. TERMINAL_CWD is force-exported
-    # UNLESS we're inside a gateway process (detected by _LUCIFEX_GATEWAY marker)
+    # UNLESS we're inside a gateway process (detected by _HERMES_GATEWAY marker)
     # where it was already set correctly by gateway/run.py's config bridge.
-    _is_gateway = os.environ.get("_LUCIFEX_GATEWAY") == "1"
+    _is_gateway = os.environ.get("_HERMES_GATEWAY") == "1"
     for config_key, env_var in env_mappings.items():
         if config_key in terminal_config:
             if env_var == "TERMINAL_CWD":
@@ -717,7 +770,7 @@ def load_cli_config() -> Dict[str, Any]:
     if isinstance(security_config, dict):
         redact = security_config.get("redact_secrets")
         if redact is not None:
-            os.environ["LUCIFEX_REDACT_SECRETS"] = str(redact).lower()
+            os.environ["HERMES_REDACT_SECRETS"] = str(redact).lower()
 
     return defaults
 
@@ -725,24 +778,24 @@ def load_cli_config() -> Dict[str, Any]:
 CLI_CONFIG = load_cli_config()
 
 
-# Initialize centralized logging early — agent.log + errors.log in ~/.lucifex/logs/.
+# Initialize centralized logging early — agent.log + errors.log in ~/.hermes/logs/.
 # This ensures CLI sessions produce a log trail even before AIAgent is instantiated.
 try:
-    from lucifex_logging import setup_logging
+    from hermes_logging import setup_logging
     setup_logging(mode="cli")
 except Exception:
     pass  # Logging setup is best-effort — don't crash the CLI
 
 # Validate config structure early — print warnings before user hits cryptic errors
 try:
-    from lucifex_cli.config import print_config_warnings
+    from hermes_cli.config import print_config_warnings
     print_config_warnings()
 except Exception:
     pass
 
 # Initialize the skin engine from config
 try:
-    from lucifex_cli.skin_engine import init_skin_from_config
+    from hermes_cli.skin_engine import init_skin_from_config
     init_skin_from_config(CLI_CONFIG)
 except Exception:
     pass  # Skin engine is optional — default skin used if unavailable
@@ -785,7 +838,7 @@ try:
         """Defer ``AsyncHttpxClientWrapper.__del__`` neutering until import.
 
         Saves ~166ms on cold CLI start where openai is never used (e.g.
-        ``lucifex --help`` paths inside the chat command flow).  See
+        ``hermes --help`` paths inside the chat command flow).  See
         ``agent.auxiliary_client.neuter_async_httpx_del`` for full rationale
         on why ``__del__`` must be a no-op.
         """
@@ -838,7 +891,7 @@ def AIAgent(*args, **kwargs):
 
 
 def get_tool_definitions(*args, **kwargs):
-    from lucifex_cli.mcp_startup import wait_for_mcp_discovery
+    from hermes_cli.mcp_startup import wait_for_mcp_discovery
     from model_tools import get_tool_definitions as _get_tool_definitions
 
     wait_for_mcp_discovery()
@@ -851,8 +904,8 @@ def get_toolset_for_tool(*args, **kwargs):
     return _get_toolset_for_tool(*args, **kwargs)
 
 # Extracted CLI modules (Phase 3)
-from lucifex_cli.banner import build_welcome_banner
-from lucifex_cli.commands import SlashCommandCompleter, SlashCommandAutoSuggest
+from hermes_cli.banner import build_welcome_banner
+from hermes_cli.commands import SlashCommandCompleter, SlashCommandAutoSuggest
 
 
 def get_all_toolsets(*args, **kwargs):
@@ -886,7 +939,7 @@ def get_job(*args, **kwargs):
     return _get_job(*args, **kwargs)
 
 # Resource cleanup imports for safe shutdown (terminal VMs, browser sessions)
-from lucifex_cli.callbacks import prompt_for_secret
+from hermes_cli.callbacks import prompt_for_secret
 
 
 def _cleanup_all_terminals(*args, **kwargs):
@@ -945,17 +998,17 @@ def _prepare_deferred_agent_startup() -> None:
     global _deferred_agent_startup_done
     if _deferred_agent_startup_done:
         return
-    if os.environ.get("LUCIFEX_DEFER_AGENT_STARTUP") != "1":
+    if os.environ.get("HERMES_DEFER_AGENT_STARTUP") != "1":
         return
     _deferred_agent_startup_done = True
-    _accept_hooks = os.environ.get("LUCIFEX_ACCEPT_HOOKS", "").lower() in {
+    _accept_hooks = os.environ.get("HERMES_ACCEPT_HOOKS", "").lower() in {
         "1",
         "true",
         "yes",
         "on",
     }
     try:
-        from lucifex_cli.plugins import discover_plugins
+        from hermes_cli.plugins import discover_plugins
 
         discover_plugins()
     except Exception:
@@ -964,7 +1017,7 @@ def _prepare_deferred_agent_startup() -> None:
             exc_info=True,
         )
     try:
-        from lucifex_cli.mcp_startup import start_background_mcp_discovery
+        from hermes_cli.mcp_startup import start_background_mcp_discovery
 
         start_background_mcp_discovery(
             logger=logger,
@@ -977,7 +1030,7 @@ def _prepare_deferred_agent_startup() -> None:
         )
     try:
         from agent.shell_hooks import register_from_config
-        from lucifex_cli.config import load_config
+        from hermes_cli.config import load_config
 
         register_from_config(load_config(), accept_hooks=_accept_hooks)
     except Exception:
@@ -1006,11 +1059,11 @@ def _arm_exit_watchdog(timeout_s: float | None = None) -> None:
     Daemon threads keep running through ``Py_FinalizeEx``'s thread joins,
     so the timer fires even when the main thread is stuck in teardown.
 
-    Tune with ``LUCIFEX_EXIT_WATCHDOG_S`` (seconds); ``0`` disables.
+    Tune with ``HERMES_EXIT_WATCHDOG_S`` (seconds); ``0`` disables.
     """
     if timeout_s is None:
         try:
-            timeout_s = float(os.getenv("LUCIFEX_EXIT_WATCHDOG_S", "30"))
+            timeout_s = float(os.getenv("HERMES_EXIT_WATCHDOG_S", "30"))
         except (TypeError, ValueError):
             timeout_s = 30.0
     if timeout_s <= 0:
@@ -1049,6 +1102,50 @@ def _arm_exit_watchdog(timeout_s: float | None = None) -> None:
         ).start()
     except Exception:
         pass  # best-effort — never block shutdown on watchdog setup
+
+
+_signal_watchdog_armed = False
+
+
+def _arm_exit_watchdog_on_shutdown_signal() -> None:
+    """Arm the exit backstop the moment a termination signal arrives.
+
+    SIGTERM/SIGHUP establish unambiguous shutdown intent, but the graceful
+    path from signal → ``agent.interrupt()`` → ``app.exit()`` /
+    ``KeyboardInterrupt`` → ``finally`` → ``_run_cleanup`` has several wedge
+    points BEFORE ``_run_cleanup`` arms the normal watchdog: a main thread
+    parked in a syscall that never observes the unwind, a prompt_toolkit
+    teardown that never returns, or an agent worker blocking the ``finally``.
+    When that happens the process has NO backstop and a "dead" CLI lingers
+    (observed: ``hermes --tui`` alive ~47 min at 4% CPU after terminal close —
+    the #65998 class).
+
+    Arming at signal time closes that window. The leash is 2× the normal
+    cleanup timeout so a slow-but-progressing ``_run_cleanup`` (which arms
+    its own tighter timer when it starts) is never cut short by this outer
+    backstop — this timer only wins when cleanup was never reached at all.
+
+    Deliberately NOT armed at chat startup: the watchdog thread calls
+    ``os._exit(0)`` unconditionally after its sleep, so arming without
+    shutdown intent would hard-kill every session that outlives the timeout.
+
+    Idempotent (module flag) so repeated signals don't stack timer threads.
+    Never raises — safe to call from a signal handler.
+    """
+    global _signal_watchdog_armed
+    if _signal_watchdog_armed:
+        return
+    _signal_watchdog_armed = True
+    try:
+        base = float(os.getenv("HERMES_EXIT_WATCHDOG_S", "30"))
+    except (TypeError, ValueError):
+        base = 30.0
+    if base <= 0:
+        return  # explicitly disabled
+    try:
+        _arm_exit_watchdog(timeout_s=base * 2)
+    except Exception:
+        pass  # never let the backstop break signal handling
 
 
 def _run_cleanup(*, notify_session_finalize: bool = True):
@@ -1107,6 +1204,19 @@ def _run_cleanup(*, notify_session_finalize: bool = True):
             )
     try:
         if _active_agent_ref and hasattr(_active_agent_ref, 'shutdown_memory_provider'):
+            # A /new shortly before exit leaves its end→switch boundary task
+            # (old-session extraction, LLM-bound) queued on the memory
+            # manager's serialized worker. shutdown_all()'s drain only waits
+            # ~5s and cancels queued tasks, so give pending work a bounded
+            # head start via the manager's own barrier — otherwise a
+            # "/new then quit" silently drops the old session's extraction.
+            # The 30s exit watchdog remains the hard backstop.
+            _mm = getattr(_active_agent_ref, '_memory_manager', None)
+            if _mm is not None and hasattr(_mm, 'flush_pending'):
+                try:
+                    _mm.flush_pending(timeout=10)
+                except Exception:
+                    pass
             # Forward the agent's own transcript so memory providers'
             # ``on_session_end`` hooks see the real conversation instead of
             # an empty list (#15165). ``_session_messages`` is set on
@@ -1146,7 +1256,7 @@ def _notify_session_finalize(
     reason: str = "shutdown",
 ) -> None:
     try:
-        from lucifex_cli.plugins import invoke_hook as _invoke_hook
+        from hermes_cli.plugins import invoke_hook as _invoke_hook
         _invoke_hook(
             "on_session_finalize",
             session_id=session_id,
@@ -1176,7 +1286,7 @@ def _emit_interrupted_session_end(cli, *, reason: str = "keyboard_interrupt") ->
             pass
 
     try:
-        from lucifex_cli.plugins import invoke_hook as _invoke_hook
+        from hermes_cli.plugins import invoke_hook as _invoke_hook
         _invoke_hook(
             "on_session_end",
             session_id=session_id,
@@ -1333,7 +1443,7 @@ def _resolve_worktree_base(repo_root: str) -> tuple:
     """Resolve the freshest base ref to branch a new worktree from.
 
     The standalone clone's ``HEAD`` can lag the remote by hundreds of commits
-    (the ``~/.lucifex/lucifex-agent`` clone is updated only by ``lucifex update``,
+    (the ``~/.hermes/hermes-agent`` clone is updated only by ``hermes update``,
     not on every session). Branching a worktree from that stale ``HEAD`` roots
     every new branch on an old base — so the PR diff GitHub computes against
     current ``main`` balloons with unrelated changes, and the agent has to
@@ -1420,12 +1530,12 @@ def _setup_worktree(repo_root: str = None, sync_base: bool = True) -> Optional[D
     repo_root = repo_root or _git_repo_root()
     if not repo_root:
         print("\033[31m✗ --worktree requires being inside a git repository.\033[0m")
-        print("  cd into your project repo first, then run lucifex -w")
+        print("  cd into your project repo first, then run hermes -w")
         return None
 
     short_id = uuid.uuid4().hex[:8]
-    wt_name = f"lucifex-{short_id}"
-    branch_name = f"lucifex/{wt_name}"
+    wt_name = f"hermes-{short_id}"
+    branch_name = f"hermes/{wt_name}"
 
     worktrees_dir = Path(repo_root) / ".worktrees"
     worktrees_dir.mkdir(parents=True, exist_ok=True)
@@ -1551,7 +1661,7 @@ def _setup_worktree(repo_root: str = None, sync_base: bool = True) -> Optional[D
     # it is actively in use.  Fail-soft: a lock failure never blocks the session.
     try:
         subprocess.run(
-            ["git", "worktree", "lock", "--reason", f"lucifex pid={os.getpid()}", str(wt_path)],
+            ["git", "worktree", "lock", "--reason", f"hermes pid={os.getpid()}", str(wt_path)],
             capture_output=True, text=True, timeout=10, cwd=repo_root,
         )
         logger.debug("Worktree locked: %s (pid=%s)", wt_path, os.getpid())
@@ -1627,8 +1737,8 @@ def _worktree_is_dirty(worktree_path: str, timeout: int = 10) -> bool:
 def _worktree_lock_is_live(repo_root: str, worktree_path: str, timeout: int = 10):
     """Classify a worktree's git lock as live, dead, or absent.
 
-    ``lucifex -w`` locks each worktree with reason ``lucifex pid=<pid>`` so a
-    concurrent lucifex process' startup prune leaves an in-use worktree alone.
+    ``hermes -w`` locks each worktree with reason ``hermes pid=<pid>`` so a
+    concurrent hermes process' startup prune leaves an in-use worktree alone.
     But a *crashed* session leaves the lock behind forever, and
     ``git worktree remove --force`` (single ``-f``) refuses to remove a locked
     worktree — so dead-locked worktrees accumulate indefinitely. This lets the
@@ -1636,7 +1746,7 @@ def _worktree_lock_is_live(repo_root: str, worktree_path: str, timeout: int = 10
 
     - ``"live"``  — locked and the owning pid is still running (skip it).
     - ``"dead"``  — locked but the owning pid is gone, or the reason isn't a
-                    parseable lucifex lock (safe to unlock + reap).
+                    parseable hermes lock (safe to unlock + reap).
     - ``None``    — not locked at all.
 
     Fails SAFE toward ``"live"``: if git can't be queried at all we cannot
@@ -1667,11 +1777,11 @@ def _worktree_lock_is_live(repo_root: str, worktree_path: str, timeout: int = 10
             if current != target:
                 continue
             reason = line[len("locked"):].strip()
-            m = re.search(r"lucifex pid=(\d+)", reason)
+            m = re.search(r"hermes pid=(\d+)", reason)
             if not m:
-                # Locked by something we don't recognize as a lucifex session
+                # Locked by something we don't recognize as a hermes session
                 # (or lock reason unavailable). Treat as dead — a foreign lock
-                # on a lucifex -w worktree is almost certainly a leftover, and
+                # on a hermes -w worktree is almost certainly a leftover, and
                 # the age/dirty/unpushed gates already ran before we got here.
                 return "dead"
             pid = int(m.group(1))
@@ -1753,7 +1863,7 @@ def _run_state_db_auto_maintenance(session_db) -> None:
     """Call ``SessionDB.maybe_auto_prune_and_vacuum`` using current config.
 
     Reads the ``sessions:`` section from config.yaml via
-    :func:`lucifex_cli.config.load_config` (the authoritative loader that
+    :func:`hermes_cli.config.load_config` (the authoritative loader that
     deep-merges DEFAULT_CONFIG, so unmigrated configs still get default
     values). Honours ``auto_prune`` / ``retention_days`` /
     ``vacuum_after_prune`` / ``min_interval_hours``, and delegates to the
@@ -1762,15 +1872,15 @@ def _run_state_db_auto_maintenance(session_db) -> None:
     if session_db is None:
         return
     try:
-        from lucifex_cli.config import load_config as _load_full_config
-        from lucifex_constants import get_lucifex_home as _get_lucifex_home
-        _lucifex_home_maint = _get_lucifex_home()
+        from hermes_cli.config import load_config as _load_full_config
+        from hermes_constants import get_hermes_home as _get_hermes_home
+        _hermes_home_maint = _get_hermes_home()
 
         # One-time prune of empty TUI ghost sessions.
         try:
             if not session_db.get_meta("ghost_session_prune_v1"):
                 pruned = session_db.prune_empty_ghost_sessions(
-                    sessions_dir=_lucifex_home_maint / "sessions"
+                    sessions_dir=_hermes_home_maint / "sessions"
                 )
                 session_db.set_meta("ghost_session_prune_v1", "1")
                 if pruned:
@@ -1797,7 +1907,7 @@ def _run_state_db_auto_maintenance(session_db) -> None:
             retention_days=int(cfg.get("retention_days", 90)),
             min_interval_hours=int(cfg.get("min_interval_hours", 24)),
             vacuum=bool(cfg.get("vacuum_after_prune", True)),
-            sessions_dir=_lucifex_home_maint / "sessions",
+            sessions_dir=_hermes_home_maint / "sessions",
         )
     except Exception as exc:
         logger.debug("state.db auto-maintenance skipped: %s", exc)
@@ -1807,12 +1917,12 @@ def _run_checkpoint_auto_maintenance() -> None:
     """Call ``checkpoint_manager.maybe_auto_prune_checkpoints`` using current config.
 
     Reads the ``checkpoints:`` section from config.yaml via
-    :func:`lucifex_cli.config.load_config`. Honours ``auto_prune`` /
+    :func:`hermes_cli.config.load_config`. Honours ``auto_prune`` /
     ``retention_days`` / ``delete_orphans`` / ``min_interval_hours``.
     Never raises — maintenance must never block interactive startup.
     """
     try:
-        from lucifex_cli.config import load_config as _load_full_config
+        from hermes_cli.config import load_config as _load_full_config
         cfg = (_load_full_config().get("checkpoints") or {})
         if not cfg.get("auto_prune", False):
             return
@@ -1836,8 +1946,8 @@ def _prune_stale_worktrees(repo_root: str, max_age_hours: int = 24) -> None:
     - 24h–72h: remove if no unpushed commits.
     - Over 72h: force remove regardless (nothing should sit this long).
 
-    Lock handling (orthogonal to age): ``lucifex -w`` locks each worktree with
-    reason ``lucifex pid=<pid>`` so a concurrent lucifex process leaves an in-use
+    Lock handling (orthogonal to age): ``hermes -w`` locks each worktree with
+    reason ``hermes pid=<pid>`` so a concurrent hermes process leaves an in-use
     worktree alone. A *live*-locked worktree is skipped at any age; a
     *dead*-locked one (owning pid gone — a crashed session) is unlocked first
     so ``git worktree remove --force`` can actually reap it, otherwise those
@@ -1847,7 +1957,7 @@ def _prune_stale_worktrees(repo_root: str, max_age_hours: int = 24) -> None:
     removal never orphans the branch (which would drop easy reachability of any
     commits still in the worktree).
 
-    Also prunes orphaned ``lucifex/*`` and ``pr-*`` local branches that
+    Also prunes orphaned ``hermes/*`` and ``pr-*`` local branches that
     have no corresponding worktree.
     """
     import subprocess
@@ -1863,7 +1973,7 @@ def _prune_stale_worktrees(repo_root: str, max_age_hours: int = 24) -> None:
     hard_cutoff = now - (max_age_hours * 3 * 3600)   # 72h default
 
     for entry in worktrees_dir.iterdir():
-        if not entry.is_dir() or not entry.name.startswith("lucifex-"):
+        if not entry.is_dir() or not entry.name.startswith("hermes-"):
             continue
 
         # Check age
@@ -1889,7 +1999,7 @@ def _prune_stale_worktrees(repo_root: str, max_age_hours: int = 24) -> None:
             continue  # >72h but dirty — preserve uncommitted work
 
         # Respect git-native session locks. A lock owned by a still-running
-        # lucifex process means the worktree is actively in use — never touch
+        # hermes process means the worktree is actively in use — never touch
         # it. A lock whose owning pid is gone is a crashed session's leftover:
         # unlock it so `git worktree remove --force` (single -f) can reap it,
         # otherwise dead-locked worktrees pile up indefinitely.
@@ -1939,9 +2049,9 @@ def _prune_stale_worktrees(repo_root: str, max_age_hours: int = 24) -> None:
 
 
 def _prune_orphaned_branches(repo_root: str) -> None:
-    """Delete local ``lucifex/lucifex-*`` and ``pr-*`` branches with no worktree.
+    """Delete local ``hermes/hermes-*`` and ``pr-*`` branches with no worktree.
 
-    These are auto-generated by ``lucifex -w`` sessions and PR review
+    These are auto-generated by ``hermes -w`` sessions and PR review
     workflows respectively.  Once their worktree is gone they serve no
     purpose and just accumulate.
     """
@@ -1987,7 +2097,7 @@ def _prune_orphaned_branches(repo_root: str) -> None:
     orphaned = [
         b for b in all_branches
         if b not in active_branches
-        and (b.startswith("lucifex/lucifex-") or b.startswith("pr-"))
+        and (b.startswith("hermes/hermes-") or b.startswith("pr-"))
     ]
 
     if not orphaned:
@@ -2051,12 +2161,12 @@ def _hex_to_ansi(hex_color: str, *, bold: bool = False) -> str:
 # Terminal.app / iTerm2 background.
 #
 # Detection priority:
-#   1. LUCIFEX_LIGHT / LUCIFEX_TUI_LIGHT env (true/false) — explicit override
-#   2. LUCIFEX_TUI_THEME=light|dark — explicit theme
-#   3. LUCIFEX_TUI_BACKGROUND=#RRGGBB — explicit bg hint
+#   1. HERMES_LIGHT / HERMES_TUI_LIGHT env (true/false) — explicit override
+#   2. HERMES_TUI_THEME=light|dark — explicit theme
+#   3. HERMES_TUI_BACKGROUND=#RRGGBB — explicit bg hint
 #   4. COLORFGBG env (set by xterm/Konsole/urxvt) — bg slot 7/15 = light
 #   5. OSC 11 query (\x1b]11;?\x1b\\) — ask the terminal directly
-#   6. Default: assume dark (matches the legacy Lucifex assumption)
+#   6. Default: assume dark (matches the legacy Hermes assumption)
 #
 # Cached after first call so we don't query the terminal repeatedly.
 _LIGHT_MODE_CACHE: bool | None = None
@@ -2159,7 +2269,7 @@ def _detect_light_mode() -> bool:
     result = False
     try:
         # 1. Explicit env override
-        for var in ("LUCIFEX_LIGHT", "LUCIFEX_TUI_LIGHT"):
+        for var in ("HERMES_LIGHT", "HERMES_TUI_LIGHT"):
             v = (os.environ.get(var) or "").strip().lower()
             if _TRUE_RE.match(v):
                 result = True
@@ -2169,7 +2279,7 @@ def _detect_light_mode() -> bool:
                 _LIGHT_MODE_CACHE = result
                 return result
         # 2. Theme hint
-        theme = (os.environ.get("LUCIFEX_TUI_THEME") or "").strip().lower()
+        theme = (os.environ.get("HERMES_TUI_THEME") or "").strip().lower()
         if theme == "light":
             result = True
             _LIGHT_MODE_CACHE = result
@@ -2178,7 +2288,7 @@ def _detect_light_mode() -> bool:
             _LIGHT_MODE_CACHE = result
             return result
         # 3. Explicit bg hex
-        bg_hint = os.environ.get("LUCIFEX_TUI_BACKGROUND") or ""
+        bg_hint = os.environ.get("HERMES_TUI_BACKGROUND") or ""
         bg_lum = _luminance_from_hex(bg_hint)
         if bg_lum is not None:
             result = bg_lum >= 0.5
@@ -2265,10 +2375,10 @@ def _install_skin_light_mode_hook() -> None:
     """Wrap SkinConfig.get_color at import time so EVERY skin color read goes
     through the light-mode remap.  Idempotent."""
     try:
-        from lucifex_cli.skin_engine import SkinConfig  # type: ignore[import]
+        from hermes_cli.skin_engine import SkinConfig  # type: ignore[import]
     except Exception:
         return
-    if getattr(SkinConfig, "_lucifex_light_mode_hook_installed", False):
+    if getattr(SkinConfig, "_hermes_light_mode_hook_installed", False):
         return
     _orig_get_color = SkinConfig.get_color
 
@@ -2280,7 +2390,7 @@ def _install_skin_light_mode_hook() -> None:
             return value
 
     SkinConfig.get_color = _wrapped_get_color  # type: ignore[method-assign]
-    SkinConfig._lucifex_light_mode_hook_installed = True  # type: ignore[attr-defined]
+    SkinConfig._hermes_light_mode_hook_installed = True  # type: ignore[attr-defined]
 
 
 _install_skin_light_mode_hook()
@@ -2313,7 +2423,7 @@ class _SkinAwareAnsi:
     def __str__(self) -> str:
         if self._cached is None:
             try:
-                from lucifex_cli.skin_engine import get_active_skin
+                from hermes_cli.skin_engine import get_active_skin
                 self._cached = _hex_to_ansi(
                     get_active_skin().get_color(self._skin_key, self._fallback_hex),
                     bold=self._bold,
@@ -2363,7 +2473,7 @@ def _d(s: str) -> str:
 def _accent_hex() -> str:
     """Return the active skin accent color for legacy CLI output lines."""
     try:
-        from lucifex_cli.skin_engine import get_active_skin
+        from hermes_cli.skin_engine import get_active_skin
         return get_active_skin().get_color("ui_accent", "#FFBF00")
     except Exception:
         return "#FFBF00"
@@ -2383,7 +2493,7 @@ def _strip_markdown_syntax(text: str) -> str:
     plain = _rich_text_from_ansi(text or "").plain
     # Avoid stripping cron-style expressions like "* * * * *" as if they were
     # Markdown horizontal rules. CommonMark treats three or more "*" as an HR,
-    # but in Lucifex output it's common to display cron schedules verbatim.
+    # but in Hermes output it's common to display cron schedules verbatim.
     #
     # Keep the behavior for "-" / "_" HR markers, and only strip "*" HR lines
     # when there are exactly 3 asterisks (with optional whitespace).
@@ -2742,7 +2852,7 @@ _IMAGE_EXTENSIONS = frozenset({
 })
 
 
-from lucifex_constants import is_termux as _is_termux_environment
+from hermes_constants import is_termux as _is_termux_environment
 
 
 def _termux_example_image_path(filename: str = "cat.png") -> str:
@@ -2977,29 +3087,9 @@ def _should_auto_attach_clipboard_image_on_paste(pasted_text: str) -> bool:
 
 
 def _strip_leaked_bracketed_paste_wrappers(text: str) -> str:
-    """Strip leaked bracketed-paste wrapper markers from user-visible text.
+    from hermes_cli.input_sanitize import strip_leaked_bracketed_paste_wrappers
 
-    Defensive normalization for cases where terminal/prompt_toolkit parsing
-    fails and bracketed-paste markers end up in the buffer as literal text.
-
-    We strip canonical wrappers unconditionally and also handle degraded
-    visible forms like ``[200~`` / ``[201~`` and ``00~`` / ``01~`` when they
-    look like wrapper boundaries, not arbitrary user content.
-    """
-    if not text:
-        return text
-
-    text = (
-        text.replace("\x1b[200~", "")
-        .replace("\x1b[201~", "")
-        .replace("^[[200~", "")
-        .replace("^[[201~", "")
-    )
-    text = re.sub(r"(^|[\s\n>:\]\)])\[200~", r"\1", text)
-    text = re.sub(r"\[201~(?=$|[\s\n<\[\(\):;.,!?])", "", text)
-    text = re.sub(r"(^|[\s\n>:\]\)])00~", r"\1", text)
-    text = re.sub(r"01~(?=$|[\s\n<\[\(\):;.,!?])", "", text)
-    return text
+    return strip_leaked_bracketed_paste_wrappers(text)
 
 
 def _apply_bracketed_paste_timeout_patch() -> None:
@@ -3016,14 +3106,14 @@ def _apply_bracketed_paste_timeout_patch() -> None:
     parsing.  See upstream issue #16263.
 
     The patch is idempotent — repeated calls are no-ops via the
-    ``_lucifex_bp_timeout_patched`` sentinel on the module.
+    ``_hermes_bp_timeout_patched`` sentinel on the module.
     """
     try:
         import prompt_toolkit.input.vt100_parser as _vt100_mod
         from prompt_toolkit.keys import Keys as _PtKeys
         from prompt_toolkit.key_binding.key_processor import KeyPress as _PtKeyPress
 
-        if getattr(_vt100_mod, "_lucifex_bp_timeout_patched", False):
+        if getattr(_vt100_mod, "_hermes_bp_timeout_patched", False):
             return
 
         _BP_TIMEOUT_S = 2.0  # max time to wait for ESC[201~ before flushing
@@ -3044,19 +3134,19 @@ def _apply_bracketed_paste_timeout_patch() -> None:
                         end_index + len(end_mark):
                     ]
                     self_parser._paste_buffer = ""
-                    self_parser._lucifex_bp_start = None
+                    self_parser._hermes_bp_start = None
                     if remaining:
                         _patched_vt100_feed(self_parser, remaining)
                 else:
-                    bp_start = getattr(self_parser, "_lucifex_bp_start", None)
+                    bp_start = getattr(self_parser, "_hermes_bp_start", None)
                     now = time.monotonic()
                     if bp_start is None:
-                        self_parser._lucifex_bp_start = now
+                        self_parser._hermes_bp_start = now
                     elif now - bp_start > _BP_TIMEOUT_S:
                         paste_content = self_parser._paste_buffer
                         self_parser._in_bracketed_paste = False
                         self_parser._paste_buffer = ""
-                        self_parser._lucifex_bp_start = None
+                        self_parser._hermes_bp_start = None
                         if paste_content:
                             self_parser.feed_key_callback(
                                 _PtKeyPress(_PtKeys.BracketedPaste, paste_content)
@@ -3079,7 +3169,7 @@ def _apply_bracketed_paste_timeout_patch() -> None:
                     self_parser._input_parser.send(c)
 
         _vt100_mod.Vt100Parser.feed = _patched_vt100_feed
-        _vt100_mod._lucifex_bp_timeout_patched = True
+        _vt100_mod._hermes_bp_timeout_patched = True
         logger.debug("Applied Vt100Parser bracketed-paste timeout patch (#16263)")
     except Exception as exc:  # noqa: BLE001 — defensive: never break startup
         logger.debug("Bracketed-paste timeout patch skipped: %s", exc)
@@ -3425,20 +3515,20 @@ class ChatConsole:
         ``ChatConsole()``, which historically only implemented ``print()``.
         Returning a silent context manager keeps slash commands compatible
         without duplicating the higher-level busy indicator already shown by
-        ``LucifexCLI._busy_command()``.
+        ``HermesCLI._busy_command()``.
         """
         yield self
 
-# ASCII Art - LUCIFEX-AGENT logo (full width, single line - requires ~95 char terminal)
-LUCIFEX_AGENT_LOGO = """[bold #FFD700]██╗  ██╗███████╗██████╗ ███╗   ███╗███████╗███████╗       █████╗  ██████╗ ███████╗███╗   ██╗████████╗[/]
+# ASCII Art - HERMES-AGENT logo (full width, single line - requires ~95 char terminal)
+HERMES_AGENT_LOGO = """[bold #FFD700]██╗  ██╗███████╗██████╗ ███╗   ███╗███████╗███████╗       █████╗  ██████╗ ███████╗███╗   ██╗████████╗[/]
 [bold #FFD700]██║  ██║██╔════╝██╔══██╗████╗ ████║██╔════╝██╔════╝      ██╔══██╗██╔════╝ ██╔════╝████╗  ██║╚══██╔══╝[/]
 [#FFBF00]███████║█████╗  ██████╔╝██╔████╔██║█████╗  ███████╗█████╗███████║██║  ███╗█████╗  ██╔██╗ ██║   ██║[/]
 [#FFBF00]██╔══██║██╔══╝  ██╔══██╗██║╚██╔╝██║██╔══╝  ╚════██║╚════╝██╔══██║██║   ██║██╔══╝  ██║╚██╗██║   ██║[/]
 [#CD7F32]██║  ██║███████╗██║  ██║██║ ╚═╝ ██║███████╗███████║      ██║  ██║╚██████╔╝███████╗██║ ╚████║   ██║[/]
 [#CD7F32]╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝╚══════╝╚══════╝      ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═══╝   ╚═╝[/]"""
 
-# ASCII Art - Lucifex Caduceus (compact, fits in left panel)
-LUCIFEX_CADUCEUS = """[#CD7F32]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⡀⠀⣀⣀⠀⢀⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+# ASCII Art - Hermes Caduceus (compact, fits in left panel)
+HERMES_CADUCEUS = """[#CD7F32]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⡀⠀⣀⣀⠀⢀⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
 [#CD7F32]⠀⠀⠀⠀⠀⠀⢀⣠⣴⣾⣿⣿⣇⠸⣿⣿⠇⣸⣿⣿⣷⣦⣄⡀⠀⠀⠀⠀⠀⠀[/]
 [#FFBF00]⠀⢀⣠⣴⣶⠿⠋⣩⡿⣿⡿⠻⣿⡇⢠⡄⢸⣿⠟⢿⣿⢿⣍⠙⠿⣶⣦⣄⡀⠀[/]
 [#FFBF00]⠀⠀⠉⠉⠁⠶⠟⠋⠀⠉⠀⢀⣈⣁⡈⢁⣈⣁⡀⠀⠉⠀⠙⠻⠶⠈⠉⠉⠀⠀[/]
@@ -3459,7 +3549,7 @@ LUCIFEX_CADUCEUS = """[#CD7F32]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⡀⠀⣀⣀�
 def _build_compact_banner() -> str:
     """Build a compact banner that fits the current terminal width."""
     try:
-        from lucifex_cli.skin_engine import get_active_skin
+        from hermes_cli.skin_engine import get_active_skin
         _skin = get_active_skin()
     except Exception:
         _skin = None
@@ -3470,24 +3560,24 @@ def _build_compact_banner() -> str:
     dim_color = _skin.get_color("banner_dim", "#B8860B") if _skin else "#B8860B"
 
     if skin_name == "default":
-        line1 = "⚕ NOUS LUCIFEX - AI Agent Framework"
-        tiny_line = "⚕ NOUS LUCIFEX"
+        line1 = "⚕ NOUS HERMES - AI Agent Framework"
+        tiny_line = "⚕ NOUS HERMES"
     else:
-        agent_name = _skin.get_branding("agent_name", "Lucifex Agent") if _skin else "Lucifex Agent"
+        agent_name = _skin.get_branding("agent_name", "Hermes Agent") if _skin else "Hermes Agent"
         line1 = f"{agent_name} - AI Agent Framework"
         tiny_line = agent_name
 
-    if os.environ.get("LUCIFEX_FAST_STARTUP_BANNER") == "1":
-        from lucifex_cli import __release_date__ as _release_date
-        from lucifex_cli import __version__ as _version
+    if os.environ.get("HERMES_FAST_STARTUP_BANNER") == "1":
+        from hermes_cli import __release_date__ as _release_date
+        from hermes_cli import __version__ as _version
 
-        version_line = f"Lucifex Agent v{_version} ({_release_date})"
+        version_line = f"Hermes Agent v{_version} ({_release_date})"
     else:
         version_line = format_banner_version_label()
 
     w = min(shutil.get_terminal_size().columns - 2, 88)
     if w < 30:
-        return f"\n[{title_color}]{tiny_line}[/] [dim {dim_color}]- Lucifex[/]\n"
+        return f"\n[{title_color}]{tiny_line}[/] [dim {dim_color}]- Nous Research[/]\n"
 
     inner = w - 2  # inside the box border
     bar = "═" * w
@@ -3579,7 +3669,7 @@ def build_bundle_invocation_message(*args, **kwargs):
 def _get_plugin_cmd_handler_names() -> set:
     """Return plugin command names (without slash prefix) for dispatch matching."""
     try:
-        from lucifex_cli.plugins import get_plugin_commands
+        from hermes_cli.plugins import get_plugin_commands
         return set(get_plugin_commands().keys())
     except Exception:
         return set()
@@ -3614,7 +3704,7 @@ def save_config_value(key_path: str, value: any) -> bool:
     Save a value to the active config file at the specified key path.
     
     Respects the same lookup order as load_cli_config():
-    1. ~/.lucifex/config.yaml (user config - preferred, used if it exists)
+    1. ~/.hermes/config.yaml (user config - preferred, used if it exists)
     2. ./cli-config.yaml (project config - fallback)
     
     Args:
@@ -3625,12 +3715,12 @@ def save_config_value(key_path: str, value: any) -> bool:
         True if successful, False otherwise
     """
     # Use the same precedence as load_cli_config: user config first, then project config
-    user_config_path = _lucifex_home / 'config.yaml'
+    user_config_path = _hermes_home / 'config.yaml'
     project_config_path = Path(__file__).parent / 'cli-config.yaml'
     config_path = user_config_path if user_config_path.exists() else project_config_path
     
     try:
-        # Ensure parent directory exists (for ~/.lucifex/config.yaml on first use)
+        # Ensure parent directory exists (for ~/.hermes/config.yaml on first use)
         config_path.parent.mkdir(parents=True, exist_ok=True)
         
         # Save back atomically while preserving comments, ordering, quotes, and
@@ -3653,12 +3743,12 @@ def save_config_value(key_path: str, value: any) -> bool:
 
 
 # ============================================================================
-# LucifexCLI Class
+# HermesCLI Class
 # ============================================================================
 
-class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
+class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
     """
-    Interactive CLI for the Lucifex Agent.
+    Interactive CLI for the Hermes Agent.
     
     Provides a REPL interface with rich formatting, command history,
     and tool execution capabilities.
@@ -3680,7 +3770,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         ignore_rules: bool = False,
     ):
         """
-        Initialize the Lucifex CLI.
+        Initialize the Hermes CLI.
 
         Args:
             model: Model to use (default: from env or claude-sonnet)
@@ -3707,7 +3797,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         # bell_on_complete: play terminal bell (\a) when agent finishes a response
         self.bell_on_complete = CLI_CONFIG["display"].get("bell_on_complete", False)
         # show_reasoning: display model thinking/reasoning before the response
-        self.show_reasoning = CLI_CONFIG["display"].get("show_reasoning", False)
+        self.show_reasoning = CLI_CONFIG["display"].get("show_reasoning", True)
         # reasoning_full: when reasoning display is on, print the post-response
         # recap box uncollapsed instead of clamping to the first 10 lines.
         self.reasoning_full = CLI_CONFIG["display"].get("reasoning_full", False)
@@ -3735,8 +3825,9 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         
         # streaming: stream tokens to the terminal as they arrive (display.streaming in config.yaml)
         self.streaming_enabled = CLI_CONFIG["display"].get("streaming", False)
-        # show_timestamps: prefix user and assistant labels with [HH:MM]
+        # show_timestamps: prefix user and assistant labels with timestamps
         self.show_timestamps = CLI_CONFIG["display"].get("timestamps", False)
+        self.timestamp_format = CLI_CONFIG["display"].get("timestamp_format", "%H:%M")
         self.final_response_markdown = str(
             CLI_CONFIG["display"].get("final_response_markdown", "strip")
         ).strip().lower() or "strip"
@@ -3785,8 +3876,8 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         _config_model = (_model_config.get("default") or _model_config.get("model") or "") if isinstance(_model_config, dict) else (_model_config or "")
         _DEFAULT_CONFIG_MODEL = ""
         self.model = model or _config_model or _DEFAULT_CONFIG_MODEL
-        # Read max_tokens from config (env var override: LUCIFEX_MAX_TOKENS)
-        _env_mt = os.environ.get("LUCIFEX_MAX_TOKENS")
+        # Read max_tokens from config (env var override: HERMES_MAX_TOKENS)
+        _env_mt = os.environ.get("HERMES_MAX_TOKENS")
         if _env_mt:
             try:
                 self.max_tokens = int(_env_mt)
@@ -3801,7 +3892,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         if self.model == _DEFAULT_CONFIG_MODEL:
             _base_url = (_model_config.get("base_url") or "") if isinstance(_model_config, dict) else ""
             if "localhost" in _base_url or "127.0.0.1" in _base_url:
-                from lucifex_cli.runtime_provider import _auto_detect_local_model
+                from hermes_cli.runtime_provider import _auto_detect_local_model
                 _detected = _auto_detect_local_model(_base_url)
                 if _detected:
                     self.model = _detected
@@ -3822,7 +3913,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         self.requested_provider = (
             provider
             or CLI_CONFIG["model"].get("provider")
-            or os.getenv("LUCIFEX_INFERENCE_PROVIDER")
+            or os.getenv("HERMES_INFERENCE_PROVIDER")
             or "auto"
         )
         self._provider_source: Optional[str] = None
@@ -3849,9 +3940,9 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
             self.max_turns = CLI_CONFIG["agent"]["max_turns"]
         elif CLI_CONFIG.get("max_turns"):  # Backwards compat: root-level max_turns
             self.max_turns = CLI_CONFIG["max_turns"]
-        elif os.getenv("LUCIFEX_MAX_ITERATIONS"):
+        elif os.getenv("HERMES_MAX_ITERATIONS"):
             try:
-                self.max_turns = int(os.getenv("LUCIFEX_MAX_ITERATIONS", ""))
+                self.max_turns = int(os.getenv("HERMES_MAX_ITERATIONS", ""))
             except (TypeError, ValueError):
                 self.max_turns = 90
         else:
@@ -3880,14 +3971,14 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         self.checkpoint_max_file_size_mb = cp_cfg.get("max_file_size_mb", 10)
         self.pass_session_id = pass_session_id
         # --ignore-rules: honor either the constructor flag or the env var set
-        # by `lucifex chat --ignore-rules` in lucifex_cli/main.py. When true we
+        # by `hermes chat --ignore-rules` in hermes_cli/main.py. When true we
         # pass skip_context_files=True and skip_memory=True to AIAgent so
         # AGENTS.md/SOUL.md/.cursorrules and persistent memory are not loaded.
-        self.ignore_rules = ignore_rules or os.environ.get("LUCIFEX_IGNORE_RULES") == "1"
+        self.ignore_rules = ignore_rules or os.environ.get("HERMES_IGNORE_RULES") == "1"
         
         # Ephemeral system prompt: env var takes precedence, then config
         self.system_prompt = (
-            os.getenv("LUCIFEX_EPHEMERAL_SYSTEM_PROMPT", "")
+            os.getenv("HERMES_EPHEMERAL_SYSTEM_PROMPT", "")
             or CLI_CONFIG["agent"].get("system_prompt", "")
         )
         self.personalities = CLI_CONFIG["agent"].get("personalities", {})
@@ -3898,9 +3989,10 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         )
         
         # Reasoning config (OpenRouter reasoning effort level)
-        self.reasoning_config = _parse_reasoning_config(
-            CLI_CONFIG["agent"].get("reasoning_effort", "")
-        )
+        # Per-model override > global reasoning_effort — resolved through the
+        # shared chokepoint in hermes_constants (Closes #21256).
+        from hermes_constants import resolve_reasoning_config
+        self.reasoning_config = resolve_reasoning_config(CLI_CONFIG, self.model)
         self.service_tier = _parse_service_tier_config(
             CLI_CONFIG["agent"].get("service_tier", "")
         )
@@ -3957,7 +4049,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         self._session_db = None
         self._session_db_unavailable = False
         try:
-            from lucifex_state import SessionDB
+            from hermes_state import SessionDB
             self._session_db = SessionDB()
         except Exception as e:
             # #41386: a failed session store means the transcript is NOT
@@ -3977,7 +4069,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                     "this conversation will [bold]NOT be saved[/bold] to disk and "
                     "cannot be resumed later. Searching past sessions is also disabled.\n"
                     f"  Reason: {e}\n"
-                    "  Fix the state.db store (e.g. `lucifex update` to rebuild the venv) to restore persistence."
+                    "  Fix the state.db store (e.g. `hermes update` to rebuild the venv) to restore persistence."
                 )
             except Exception:
                 # Never let the warning path itself break startup.
@@ -3988,12 +4080,12 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
 
         # Opportunistic state.db maintenance — runs at most once per
         # min_interval_hours, tracked via state_meta in state.db itself so
-        # it's shared across all Lucifex processes for this LUCIFEX_HOME.
+        # it's shared across all Hermes processes for this HERMES_HOME.
         # Never blocks startup on failure.
         _run_state_db_auto_maintenance(self._session_db)
 
         # Opportunistic shadow-repo cleanup — deletes orphan/stale
-        # checkpoint repos under ~/.lucifex/checkpoints/.  Opt-in via
+        # checkpoint repos under ~/.hermes/checkpoints/.  Opt-in via
         # checkpoints.auto_prune, idempotent via .last_prune marker.
         _run_checkpoint_auto_maintenance()
 
@@ -4010,7 +4102,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
             self.session_id = f"{timestamp_str}_{short_uuid}"
         
         # History file for persistent input recall across sessions
-        self._history_file = _lucifex_home / ".lucifex_history"
+        self._history_file = _hermes_home / ".hermes_history"
         self._last_invalidate: float = 0.0  # throttle UI repaints
         self._app = None
 
@@ -4133,7 +4225,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         if self._active_session_lease is not None:
             return True
         try:
-            from lucifex_cli.active_sessions import try_acquire_active_session
+            from hermes_cli.active_sessions import try_acquire_active_session
 
             lease, message = try_acquire_active_session(
                 session_id=self.session_id,
@@ -4254,7 +4346,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         never prevents the other.
         """
         try:
-            from lucifex_cli.curses_ui import flush_stdin
+            from hermes_cli.curses_ui import flush_stdin
             flush_stdin()
         except Exception:
             pass
@@ -4534,7 +4626,17 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         # _try_activate_fallback() switches provider/model.
         agent = getattr(self, "agent", None)
         model_name = (getattr(agent, "model", None) or self.model or "unknown")
-        model_short = model_name.split("/")[-1] if "/" in model_name else model_name
+        # Friendly display: prefer reverse-alias from config.yaml ``model_aliases:``
+        # before slash/length truncation. This turns long Palantir RIDs like
+        # ``ri.language-model-service..language-model.anthropic-claude-4-7-opus``
+        # into the user's chosen short name (e.g. ``opus-4.7``) in the status bar.
+        model_short = _reverse_alias_for_display(model_name)
+        if model_short == model_name:
+            model_short = model_name.split("/")[-1] if "/" in model_name else model_name
+            # Strip Palantir RID prefixes via the shared display formatter so
+            # this site and ``ModelSwitchResult`` confirmation can't drift.
+            from hermes_cli.model_switch import format_model_for_display
+            model_short = format_model_for_display(model_short)
         if model_short.endswith(".gguf"):
             model_short = model_short[:-5]
         if len(model_short) > 26:
@@ -4784,13 +4886,13 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
     def _pet_resolve_config(self) -> None:
         """(Re)resolve the active pet from config — picks up live enable/disable/
 
-        switch made via ``/pet`` or ``lucifex pets`` without a restart, mirroring
+        switch made via ``/pet`` or ``hermes pets`` without a restart, mirroring
         the TUI's steady poll. Cheap and fail-open: any problem disables the pet.
         """
         try:
             from agent.pet import constants, store
             from agent.pet.render import PetRenderer
-            from lucifex_cli.config import load_config
+            from hermes_cli.config import load_config
 
             cfg = load_config()
             display = cfg.get("display", {}) if isinstance(cfg.get("display"), dict) else {}
@@ -4842,6 +4944,12 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         """Briefly force a transient reaction (wave/jump/failed) before resting."""
         self._pet_event = state
         self._pet_event_until = time.monotonic() + secs
+
+    def _on_reaction(self, kind: str) -> None:
+        """User affection (ily / <3 / good bot), core-detected — the pet's share
+        of the vibe signal that plays hearts on the TUI/desktop. Flash a celebrate."""
+        if kind == "vibe":
+            self._pet_flash("jump")
 
     def _pet_react_turn_end(self) -> None:
         """Flash the end-of-turn beat: failed on error, jump on a finished plan, else wave."""
@@ -5011,7 +5119,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         registered so the cached label always matches the live binding.
         """
         try:
-            from lucifex_cli.voice import format_voice_record_key_for_status
+            from hermes_cli.voice import format_voice_record_key_for_status
             self._voice_record_key_display_cache = format_voice_record_key_for_status(raw_key)
         except Exception:
             self._voice_record_key_display_cache = "Ctrl+B"
@@ -5101,7 +5209,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                 parts.append("⚠ YOLO")
             return self._trim_status_bar_text(" │ ".join(parts), width)
         except Exception:
-            return f"⚕ {self.model if getattr(self, 'model', None) else 'Lucifex'}"
+            return f"⚕ {self.model if getattr(self, 'model', None) else 'Hermes'}"
 
     def _get_status_bar_fragments(self):
         if not self._status_bar_visible or getattr(self, '_model_picker_state', None):
@@ -5231,7 +5339,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         changed = False
 
         try:
-            from lucifex_cli.model_normalize import (
+            from hermes_cli.model_normalize import (
                 _AGGREGATOR_PROVIDERS,
                 normalize_model_for_provider,
             )
@@ -5251,7 +5359,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
 
         if resolved_provider == "copilot":
             try:
-                from lucifex_cli.models import copilot_model_api_mode, normalize_copilot_model_id
+                from hermes_cli.models import copilot_model_api_mode, normalize_copilot_model_id
 
                 canonical = normalize_copilot_model_id(current_model, api_key=self.api_key)
                 if canonical and canonical != current_model:
@@ -5273,7 +5381,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
 
         if resolved_provider in {"opencode-zen", "opencode-go"}:
             try:
-                from lucifex_cli.models import normalize_opencode_model_id, opencode_model_api_mode
+                from hermes_cli.models import normalize_opencode_model_id, opencode_model_api_mode
 
                 canonical = normalize_opencode_model_id(resolved_provider, current_model)
                 if canonical and canonical != current_model:
@@ -5312,7 +5420,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         if self._model_is_default:
             fallback_model = "gpt-5.3-codex"
             try:
-                from lucifex_cli.codex_models import get_codex_model_ids
+                from hermes_cli.codex_models import get_codex_model_ids
 
                 available = get_codex_model_ids(
                     access_token=self.api_key if self.api_key else None,
@@ -5479,7 +5587,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
     def _format_submitted_user_message_preview(self, user_input: str) -> str:
         """Format the submitted user-message scrollback preview."""
         ts_suffix = (
-            f" [dim]{datetime.now().strftime('%H:%M')}[/]"
+            f" [dim]{datetime.now().strftime(getattr(self, 'timestamp_format', '%H:%M'))}[/]"
             if getattr(self, "show_timestamps", False) else ""
         )
         lines = user_input.split("\n")
@@ -5763,12 +5871,12 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                 return
             self._stream_box_opened = True
             try:
-                from lucifex_cli.skin_engine import get_active_skin
+                from hermes_cli.skin_engine import get_active_skin
                 _skin = get_active_skin()
-                label = _skin.get_branding("response_label", "⚕ Lucifex")
+                label = _skin.get_branding("response_label", "⚕ Hermes")
                 _text_hex = _skin.get_color("banner_text", "#FFF8DC")
             except Exception:
-                label = "⚕ Lucifex"
+                label = "⚕ Hermes"
                 _text_hex = "#FFF8DC"
             # Build a true-color ANSI escape for the response text color
             # so streamed content matches the Rich Panel appearance.
@@ -5780,9 +5888,9 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
             except (ValueError, IndexError):
                 self._stream_text_ansi = ""
             if self.show_timestamps:
-                label = f"{label} {datetime.now().strftime('%H:%M')}"
+                label = f"{label} {datetime.now().strftime(getattr(self, 'timestamp_format', '%H:%M'))}"
             w = self._scrollback_box_width()
-            fill = w - 2 - LucifexCLI._status_bar_display_width(label)
+            fill = w - 2 - HermesCLI._status_bar_display_width(label)
             _cprint(f"\n{_ACCENT}╭─{label}{'─' * max(fill - 1, 0)}╮{_RST}")
 
         self._stream_buf += text
@@ -5834,6 +5942,33 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
             if self.final_response_markdown == "strip":
                 line = _strip_markdown_syntax(line)
             _emit_one(line)
+
+        # Force-flush long partial lines so a response that opens with a
+        # long paragraph paints as tokens arrive instead of staying blank
+        # until the first newline (TTFT perception fix — the reasoning box
+        # has done this at 80 chars since day one; the response box never
+        # did). Wrap at the terminal's visible width so we only ever emit
+        # text that would have line-broken at that point anyway; the
+        # remainder stays buffered as the logical line's continuation.
+        # Table-shaped partials are exempt — they need the whole block for
+        # realignment (see the table side-buffer above).
+        if (
+            self._stream_buf
+            and not self._in_stream_table
+            and not self._stream_buf.lstrip().startswith("|")
+        ):
+            wrap_w = max(40, _terminal_width_for_streaming())
+            while len(self._stream_buf) >= wrap_w:
+                cut = self._stream_buf.rfind(" ", 0, wrap_w)
+                if cut <= 0:
+                    cut = wrap_w  # single unbreakable run — hard wrap
+                chunk, self._stream_buf = (
+                    self._stream_buf[:cut],
+                    self._stream_buf[cut:].lstrip(" "),
+                )
+                if self.final_response_markdown == "strip":
+                    chunk = _strip_markdown_syntax(chunk)
+                _emit_one(chunk)
 
     def _flush_stream(self) -> None:
         """Emit any remaining partial line from the stream buffer and close the box."""
@@ -6085,18 +6220,18 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         except Exception:
             pass
 
-    
+
     def _show_security_advisories(self):
         """Show a startup banner if any unacked security advisories match.
 
         Renders a single bold-red box on stderr (so piped stdout remains
-        clean) listing the worst hit and pointing at ``lucifex doctor``.
+        clean) listing the worst hit and pointing at ``hermes doctor``.
         Banner-cache rate-limits this to once per 24h per advisory; full
-        remediation lives behind ``lucifex doctor`` so the banner stays
+        remediation lives behind ``hermes doctor`` so the banner stays
         small.
         """
         try:
-            from lucifex_cli.security_advisories import (
+            from hermes_cli.security_advisories import (
                 detect_compromised,
                 startup_banner,
             )
@@ -6147,7 +6282,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         
         # Tool discovery is intentionally deferred on the Termux bare prompt
         # path; availability warnings are shown once tools are initialized.
-        if os.environ.get("LUCIFEX_DEFER_AGENT_STARTUP") != "1":
+        if os.environ.get("HERMES_DEFER_AGENT_STARTUP") != "1":
             self._show_tool_availability_warnings()
 
         # Warn about low context lengths (common with local servers). Keep
@@ -6160,7 +6295,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                 f"this is likely too low for agent use with tools.[/]"
             )
             self._console_print(
-                f"[dim]   Lucifex needs at least {MINIMUM_CONTEXT_LENGTH:,} tokens. Tool schemas + system prompt use a large fixed prefix.[/]"
+                f"[dim]   Hermes needs at least {MINIMUM_CONTEXT_LENGTH:,} tokens. Tool schemas + system prompt use a large fixed prefix.[/]"
             )
             base_url = getattr(self, "base_url", "") or ""
             if "11434" in base_url or "ollama" in base_url.lower():
@@ -6176,15 +6311,15 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                     "[dim]   Fix: Set model.context_length in config.yaml, or increase your server's context setting[/]"
                 )
 
-        # Warn if the configured model is a Nous Lucifex LLM (not agentic)
-        from lucifex_cli.model_switch import is_nous_lucifex_non_agentic
+        # Warn if the configured model is a Nous Hermes LLM (not agentic)
+        from hermes_cli.model_switch import is_nous_hermes_non_agentic
 
         model_name = getattr(self, "model", "") or ""
-        if is_nous_lucifex_non_agentic(model_name):
+        if is_nous_hermes_non_agentic(model_name):
             self._console_print()
             self._console_print(
-                "[bold yellow]⚠  Nous Research Lucifex 3 & 4 models are NOT agentic and are not "
-                "designed for use with Lucifex Agent.[/]"
+                "[bold yellow]⚠  Nous Research Hermes 3 & 4 models are NOT agentic and are not "
+                "designed for use with Hermes Agent.[/]"
             )
             self._console_print(
                 "[dim]   They lack tool-calling capabilities required for agent workflows. "
@@ -6271,12 +6406,12 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
     def _try_attach_clipboard_image(self) -> bool:
         """Check clipboard for an image and attach it if found.
 
-        Saves the image to ~/.lucifex/images/ and appends the path to
+        Saves the image to ~/.hermes/images/ and appends the path to
         ``_attached_images``.  Returns True if an image was attached.
         """
-        from lucifex_cli.clipboard import save_clipboard_image
+        from hermes_cli.clipboard import save_clipboard_image
 
-        img_dir = get_lucifex_home() / "images"
+        img_dir = get_hermes_home() / "images"
         self._image_counter += 1
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
         img_path = img_dir / f"clip_{ts}_{self._image_counter}.png"
@@ -6439,14 +6574,14 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                     if len(item["tools"]) > 2:
                         tools_str += f", +{len(item['tools'])-2} more"
                     self._console_print(f"   [dim]• {item['name']}[/] [dim italic]({', '.join(item['missing_vars'])})[/]")
-                self._console_print("[dim]   Run 'lucifex setup' to configure[/]")
+                self._console_print("[dim]   Run 'hermes setup' to configure[/]")
         except Exception:
             pass  # Don't crash on import errors
     
     def _show_status(self):
         """Show compact startup status line."""
         # Avoid pulling the full tool registry into the bare Termux prompt path.
-        if os.environ.get("LUCIFEX_DEFER_AGENT_STARTUP") == "1":
+        if os.environ.get("HERMES_DEFER_AGENT_STARTUP") == "1":
             tool_status = "tools deferred"
         else:
             tools = get_tool_definitions(enabled_toolsets=self.enabled_toolsets, quiet_mode=True)
@@ -6466,7 +6601,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
 
         # Build status line with proper markup — skin-aware colors
         try:
-            from lucifex_cli.skin_engine import get_active_skin
+            from hermes_cli.skin_engine import get_active_skin
             skin = get_active_skin()
             separator_color = skin.get_color("banner_dim", "#B8860B")
             accent_color = skin.get_color("ui_accent", "#FFBF00")
@@ -6524,10 +6659,10 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         is_running = bool(getattr(self, "_agent_running", False))
 
         lines = [
-            "Lucifex CLI Status",
+            "Hermes CLI Status",
             "",
             f"Session ID: {self.session_id}",
-            f"Path: {display_lucifex_home()}",
+            f"Path: {display_hermes_home()}",
         ]
         if title:
             lines.append(f"Title: {title}")
@@ -6542,7 +6677,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
     
     def _fast_command_available(self) -> bool:
         try:
-            from lucifex_cli.models import model_supports_fast_mode
+            from hermes_cli.models import model_supports_fast_mode
         except Exception:
             return False
         agent = getattr(self, "agent", None)
@@ -6556,10 +6691,10 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
 
     def show_help(self):
         """Display help information with categorized commands."""
-        from lucifex_cli.commands import COMMANDS_BY_CATEGORY
+        from hermes_cli.commands import COMMANDS_BY_CATEGORY
 
         try:
-            from lucifex_cli.skin_engine import get_active_help_header
+            from hermes_cli.skin_engine import get_active_help_header
             header = get_active_help_header("(^_^)? Available Commands")
         except Exception:
             header = "(^_^)? Available Commands"
@@ -6606,7 +6741,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                     f"    [bold {_accent_hex()}]{('/' + name):<22}[/] [dim]-[/] {_escape(desc)}"
                 )
 
-        _cprint(f"\n  {_DIM}Tip: Just type your message to chat with Lucifex!{_RST}")
+        _cprint(f"\n  {_DIM}Tip: Just type your message to chat with Hermes!{_RST}")
         _cprint(f"  {_DIM}Multi-line: Alt+Enter for a new line{_RST}")
         _cprint(f"  {_DIM}Draft editor: Ctrl+G (Alt+G in VSCode/Cursor){_RST}")
         if _is_termux_environment():
@@ -6696,7 +6831,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         terminal_cwd = os.getenv("TERMINAL_CWD", os.getcwd())
         terminal_timeout = os.getenv("TERMINAL_TIMEOUT", "60")
         
-        user_config_path = _lucifex_home / 'config.yaml'
+        user_config_path = _hermes_home / 'config.yaml'
         project_config_path = Path(__file__).parent / 'cli-config.yaml'
         if user_config_path.exists():
             config_path = user_config_path
@@ -6752,7 +6887,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         if not self._session_db:
             return []
         try:
-            from lucifex_cli.session_listing import query_session_listing
+            from hermes_cli.session_listing import query_session_listing
 
             return query_session_listing(
                 self._session_db,
@@ -6775,7 +6910,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         if not sessions:
             return False
 
-        from lucifex_cli.main import _relative_time
+        from hermes_cli.main import _relative_time
 
         _cli_visible_print()
         if reason == "history":
@@ -6819,7 +6954,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                 return ""
             try:
                 from datetime import datetime
-                return f"  [{datetime.fromtimestamp(float(ts)).strftime('%H:%M')}]"
+                return f"  [{datetime.fromtimestamp(float(ts)).strftime(getattr(self, 'timestamp_format', '%H:%M'))}]"
             except (ValueError, OSError, TypeError):
                 return ""
 
@@ -6861,7 +6996,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                 )
                 continue
 
-            _cli_visible_print(f"\n  [Lucifex #{visible_index}]{_ts_suffix(msg)}")
+            _cli_visible_print(f"\n  [Hermes #{visible_index}]{_ts_suffix(msg)}")
             tool_calls = msg.get("tool_calls") or []
             if content_text:
                 preview = content_text[:preview_limit]
@@ -6886,7 +7021,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         lifecycle point (shutdown, /new, /reset).
         """
         try:
-            from lucifex_cli.plugins import invoke_hook as _invoke_hook
+            from hermes_cli.plugins import invoke_hook as _invoke_hook
             _invoke_hook(
                 event_type,
                 session_id=self.agent.session_id if self.agent else None,
@@ -6901,7 +7036,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
 
         Starting the CLI and immediately quitting (or rotating with /new,
         /clear) used to leave an empty untitled row behind that clutters
-        ``/resume`` and ``lucifex sessions list``. Delegates the
+        ``/resume`` and ``hermes sessions list``. Delegates the
         check-and-delete to ``SessionDB.delete_session_if_empty``, which
         only removes rows with no messages, no title, and no child
         sessions. Ported from google-gemini/gemini-cli#27770.
@@ -6915,7 +7050,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         if getattr(self, "conversation_history", None):
             return False
         try:
-            from lucifex_constants import get_lucifex_home as _ghh
+            from hermes_constants import get_hermes_home as _ghh
             return self._session_db.delete_session_if_empty(
                 session_id, sessions_dir=_ghh() / "sessions"
             )
@@ -6925,17 +7060,69 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
             )
             return False
 
+    def _launch_session_boundary_memory_flush(
+        self,
+        history_snapshot: list,
+        *,
+        session_id: Optional[str] = None,
+    ) -> Optional[list]:
+        """Stage old-session memory extraction so /new stays responsive.
+
+        The context-engine ``on_session_end`` boundary is delivered
+        synchronously here: it is cheap (local state clear, no LLM call) and
+        ordering-sensitive — it must land before ``reset_session_state()``
+        rebinds the engine to the new session.
+
+        The memory-provider half (LLM-bound extraction, seconds) is NOT run
+        here. The returned snapshot is handed by ``new_session()`` to
+        ``MemoryManager.commit_session_boundary_async`` as a single
+        end→switch task on the manager's serialized background worker, so
+        extraction can never race the provider rebinding (providers key off
+        internal ``_session_id`` state — a late ``on_session_end`` after
+        ``on_session_switch`` would misattribute the old transcript to the
+        new session).
+
+        Returns the history snapshot to queue, or ``None`` when there is
+        nothing to extract (no agent / empty history / no memory manager).
+        """
+        agent = getattr(self, "agent", None)
+        if not agent or not history_snapshot:
+            return None
+
+        engine = getattr(agent, "context_compressor", None)
+        if engine is not None and hasattr(engine, "on_session_end"):
+            try:
+                engine.on_session_end(session_id or "", history_snapshot)
+            except Exception:
+                logger.debug(
+                    "Context engine on_session_end failed at /new boundary",
+                    exc_info=True,
+                )
+
+        # No provider extraction to queue when no memory manager is
+        # configured — new_session() falls back to the inline switch path.
+        if getattr(agent, "_memory_manager", None) is None:
+            return None
+        return history_snapshot
+
     def new_session(self, silent=False, title=None):
         """Start a fresh session with a new session ID and cleared agent state."""
+        old_session_id = self.session_id
+        _boundary_snapshot = None
         if self.agent and self.conversation_history:
-            # Trigger memory extraction on the old session before session_id rotates.
-            self.agent.commit_memory_session(self.conversation_history)
+            # Deliver the context-engine boundary synchronously and get back
+            # the history snapshot for the deferred provider extraction —
+            # queued below (after rotation) so /new never blocks on the
+            # LLM-bound extraction call.
+            _boundary_snapshot = self._launch_session_boundary_memory_flush(
+                list(self.conversation_history),
+                session_id=old_session_id,
+            )
             self._notify_session_boundary("on_session_finalize")
         elif self.agent:
             # First session or empty history — still finalize the old session
             self._notify_session_boundary("on_session_finalize")
 
-        old_session_id = self.session_id
         if self._session_db and old_session_id:
             # Flush any un-persisted messages from the current turn to the
             # old session *before* rotating.  /new can be called mid-turn
@@ -6954,7 +7141,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
             except Exception:
                 pass
             # Don't let immediately-rotated empty sessions pile up in
-            # /resume and `lucifex sessions list` (gemini-cli#27770 port).
+            # /resume and `hermes sessions list` (gemini-cli#27770 port).
             self._discard_session_if_empty(old_session_id)
 
         self.session_start = datetime.now()
@@ -6964,11 +7151,77 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         self.conversation_history = []
         self._pending_title = None
         self._resumed = False
+        self.reasoning_config = _parse_reasoning_config(
+            CLI_CONFIG["agent"].get("reasoning_effort", "")
+        )
+        # /new is a full conversation boundary: session-scoped runtime
+        # overrides (/model --session, /fast, one-turn restores) do not carry
+        # forward.  Re-derive model/provider and service tier from config.yaml
+        # so a session-only switch never leaks into the next session (#48055,
+        # #23131).
+        self._pending_one_turn_model_restore = None
+        self.service_tier = _parse_service_tier_config(
+            CLI_CONFIG["agent"].get("service_tier", "")
+        )
+        _model_config = CLI_CONFIG.get("model", {})
+        _config_model = (
+            (_model_config.get("default") or _model_config.get("model") or "")
+            if isinstance(_model_config, dict)
+            else (_model_config or "")
+        )
+        if _config_model and _config_model != getattr(self, "model", None):
+            _config_provider = (
+                _model_config.get("provider", "")
+                if isinstance(_model_config, dict)
+                else ""
+            )
+            try:
+                from hermes_cli.model_switch import switch_model as _switch_model
+
+                _reset_result = _switch_model(
+                    raw_input=_config_model,
+                    current_provider=self.provider or "",
+                    current_model=self.model or "",
+                    current_base_url=self.base_url or "",
+                    current_api_key=self.api_key or "",
+                    is_global=False,
+                    explicit_provider=_config_provider or "",
+                )
+                if _reset_result.success:
+                    if self.agent:
+                        self.agent.switch_model(
+                            new_model=_reset_result.new_model,
+                            new_provider=_reset_result.target_provider,
+                            api_key=_reset_result.api_key,
+                            base_url=_reset_result.base_url,
+                            api_mode=_reset_result.api_mode,
+                        )
+                    self.model = _reset_result.new_model
+                    self.provider = _reset_result.target_provider
+                    self.requested_provider = _reset_result.target_provider
+                    self._explicit_api_key = _reset_result.api_key
+                    self._explicit_base_url = _reset_result.base_url
+                    if _reset_result.api_key:
+                        self.api_key = _reset_result.api_key
+                    if _reset_result.base_url:
+                        self.base_url = _reset_result.base_url
+                    if _reset_result.api_mode:
+                        self.api_mode = _reset_result.api_mode
+                    if not silent:
+                        _cprint(
+                            f"  (model reset to config default: "
+                            f"{_reset_result.new_model})"
+                        )
+            except Exception:
+                # Best-effort: an unreachable config default must never block
+                # /new. The session keeps the current working model.
+                logger.debug("/new model reset to config default failed", exc_info=True)
         _sync_process_session_id(self.session_id)
 
         if self.agent:
             self.agent.session_id = self.session_id
             self.agent.session_start = self.session_start
+            self.agent.reasoning_config = self.reasoning_config
             self.agent.reset_session_state()
             if hasattr(self.agent, "_last_flushed_db_idx"):
                 self.agent._last_flushed_db_idx = 0
@@ -6986,7 +7239,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                     self.agent._session_db_created = False
                     self._session_db.create_session(
                         session_id=self.session_id,
-                        source=os.environ.get("LUCIFEX_SESSION_SOURCE", "cli"),
+                        source=os.environ.get("HERMES_SESSION_SOURCE", "cli"),
                         model=self.model,
                         model_config={
                             "max_iterations": self.max_turns,
@@ -6997,7 +7250,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                 except Exception:
                     pass
                 if title and self._session_db:
-                    from lucifex_state import SessionDB
+                    from hermes_state import SessionDB
                     try:
                         sanitized = SessionDB.sanitize_title(title)
                     except ValueError as e:
@@ -7023,15 +7276,29 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
             # per-session state (_session_turns, _turn_counter, _document_id).
             # Fires BEFORE the plugin on_session_reset hook (shell hooks only
             # see the new id; Python providers see the transition). See #6672.
+            #
+            # When the old session has history, end-of-session extraction
+            # (LLM-bound, seconds) and this switch are queued as ONE task on
+            # the memory manager's serialized worker — end strictly before
+            # switch, without blocking /new (#16454). With no history there
+            # is nothing to extract; switch inline as before.
             try:
                 _mm = getattr(self.agent, "_memory_manager", None)
                 if _mm is not None:
-                    _mm.on_session_switch(
-                        self.session_id,
-                        parent_session_id=old_session_id or "",
-                        reset=True,
-                        reason="new_session",
-                    )
+                    if _boundary_snapshot:
+                        _mm.commit_session_boundary_async(
+                            _boundary_snapshot,
+                            new_session_id=self.session_id,
+                            parent_session_id=old_session_id or "",
+                            reason="new_session",
+                        )
+                    else:
+                        _mm.on_session_switch(
+                            self.session_id,
+                            parent_session_id=old_session_id or "",
+                            reset=True,
+                            reason="new_session",
+                        )
             except Exception:
                 pass
             self._notify_session_boundary("on_session_reset")
@@ -7041,7 +7308,6 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                 print(f"(^_^)v New session started: {title}")
             else:
                 print("(^_^)v New session started!")
-
 
 
     def _consume_pending_resume_selection(self, text: str) -> bool:
@@ -7085,11 +7351,11 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
 
 
     def save_conversation(self):
-        """Save the current conversation to a JSON snapshot under ~/.lucifex/sessions/saved/.
+        """Save the current conversation to a JSON snapshot under ~/.hermes/sessions/saved/.
 
         The snapshot is a convenience export for sharing or off-line inspection;
         every message is already persisted incrementally to the SQLite session
-        DB, so the live session remains resumable via ``lucifex --resume <id>``
+        DB, so the live session remains resumable via ``hermes --resume <id>``
         regardless of whether the user ever runs ``/save``.
         """
         if not self.conversation_history:
@@ -7097,13 +7363,13 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
             return
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        saved_dir = get_lucifex_home() / "sessions" / "saved"
+        saved_dir = get_hermes_home() / "sessions" / "saved"
         try:
             saved_dir.mkdir(parents=True, exist_ok=True)
         except Exception as e:
             print(f"(x_x) Failed to create save directory {saved_dir}: {e}")
             return
-        path = saved_dir / f"lucifex_conversation_{timestamp}.json"
+        path = saved_dir / f"hermes_conversation_{timestamp}.json"
 
         try:
             with open(path, "w", encoding="utf-8") as f:
@@ -7115,7 +7381,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                 }, f, indent=2, ensure_ascii=False)
             print(f"(^_^)v Conversation snapshot saved to: {path}")
             if self.session_id:
-                print(f"       Resume the live session with: lucifex --resume {self.session_id}")
+                print(f"       Resume the live session with: hermes --resume {self.session_id}")
         except Exception as e:
             print(f"(x_x) Failed to save: {e}")
     
@@ -7302,7 +7568,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
     def _run_curses_picker(self, title: str, items: list[str], default_index: int = 0) -> int | None:
         """Run curses_single_select via run_in_terminal so prompt_toolkit handles terminal ownership cleanly."""
         import threading
-        from lucifex_cli.curses_ui import curses_single_select
+        from hermes_cli.curses_ui import curses_single_select
 
         result = [None]
 
@@ -7651,7 +7917,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         if not getattr(result, "success", False):
             return True
         try:
-            from lucifex_cli.model_cost_guard import expensive_model_warning
+            from hermes_cli.model_cost_guard import expensive_model_warning
 
             warning = expensive_model_warning(
                 result.new_model,
@@ -7666,7 +7932,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
             return True
 
         choices = [
-            ("once", "Switch anyway", "Use this model for the current Lucifex session."),
+            ("once", "Switch anyway", "Use this model for the current Hermes session."),
             ("cancel", "Cancel", "Keep the current model."),
         ]
         raw = self._prompt_text_input_modal(
@@ -7691,6 +7957,67 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         self._model_picker_state = None
         self._restore_modal_input_snapshot()
         self._invalidate(min_interval=0.0)
+
+    def _snapshot_model_runtime(self) -> dict:
+        """Capture current CLI and agent model runtime for one-turn restore."""
+        agent = getattr(self, "agent", None)
+        return {
+            "model": self.model,
+            "provider": self.provider,
+            "requested_provider": self.requested_provider,
+            "_explicit_api_key": getattr(self, "_explicit_api_key", None),
+            "_explicit_base_url": getattr(self, "_explicit_base_url", None),
+            "api_key": self.api_key,
+            "base_url": self.base_url,
+            "api_mode": self.api_mode,
+            "agent_primary_runtime": copy.deepcopy(
+                getattr(agent, "_primary_runtime", None)
+            ) if agent is not None else None,
+        }
+
+    def _restore_model_runtime_snapshot(self, snapshot: dict | None) -> None:
+        """Restore a model runtime captured before a one-turn override."""
+        if not snapshot:
+            return
+        for key in (
+            "model",
+            "provider",
+            "requested_provider",
+            "_explicit_api_key",
+            "_explicit_base_url",
+            "api_key",
+            "base_url",
+            "api_mode",
+        ):
+            if key in snapshot:
+                setattr(self, key, snapshot.get(key))
+
+        agent = getattr(self, "agent", None)
+        if agent is None:
+            return
+
+        primary = snapshot.get("agent_primary_runtime")
+        if primary and hasattr(agent, "_restore_primary_runtime"):
+            try:
+                agent._primary_runtime = copy.deepcopy(primary)
+                agent._fallback_activated = True
+                agent._rate_limited_until = 0
+                if agent._restore_primary_runtime():
+                    return
+            except Exception:
+                logger.debug("CLI one-turn model restore via primary runtime failed", exc_info=True)
+
+        if hasattr(agent, "switch_model"):
+            try:
+                agent.switch_model(
+                    new_model=snapshot.get("model", ""),
+                    new_provider=snapshot.get("provider", ""),
+                    api_key=snapshot.get("api_key", ""),
+                    base_url=snapshot.get("base_url", ""),
+                    api_mode=snapshot.get("api_mode", ""),
+                )
+            except Exception as exc:
+                logger.warning("CLI one-turn model restore failed: %s", exc)
 
     @staticmethod
     def _compute_model_picker_viewport(
@@ -7727,7 +8054,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
 
         if self.agent is not None:
             try:
-                from lucifex_cli.context_switch_guard import merge_preflight_compression_warning
+                from hermes_cli.context_switch_guard import merge_preflight_compression_warning
 
                 merge_preflight_compression_warning(
                     result,
@@ -7791,14 +8118,18 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                 )
                 return
 
+        from hermes_cli.model_switch import format_model_for_display
+        _display_old = format_model_for_display(old_model)
+        _display_new = format_model_for_display(result.new_model)
+
         self._pending_model_switch_note = (
-            f"[Note: model was just switched from {old_model} to {result.new_model} "
+            f"[Note: model was just switched from {_display_old} to {_display_new} "
             f"via {result.provider_label or result.target_provider}. "
             f"Adjust your self-identification accordingly.]"
         )
 
         provider_label = result.provider_label or result.target_provider
-        _cprint(f"  ✓ Model switched: {result.new_model}")
+        _cprint(f"  ✓ Model switched: {_display_new}")
         _cprint(f"    Provider: {provider_label}")
 
         # Context: always resolve via the provider-aware chain so Codex OAuth,
@@ -7806,7 +8137,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         # (e.g. gpt-5.5 is 1.05M on openai but 272K on Codex OAuth).
         mi = result.model_info
         try:
-            from lucifex_cli.model_switch import resolve_display_context_length
+            from hermes_cli.model_switch import resolve_display_context_length
             ctx = resolve_display_context_length(
                 result.new_model,
                 result.target_provider,
@@ -7814,6 +8145,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                 api_key=result.api_key or self.api_key or "",
                 model_info=mi,
                 config_context_length=getattr(self.agent, "_config_context_length", None) if self.agent else None,
+                custom_providers=getattr(self.agent, "_custom_providers", None) if self.agent else None,
             )
             if ctx:
                 _cprint(f"    Context: {ctx:,} tokens")
@@ -7836,6 +8168,14 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
             save_config_value("model.default", result.new_model)
             if result.provider_changed:
                 save_config_value("model.provider", result.target_provider)
+            # base_url/api_mode were previously never persisted here, so a
+            # global switch left the OLD provider's endpoint/wire-protocol in
+            # config.yaml. result.base_url/api_mode are always freshly
+            # resolved for the target provider (see model_switch.py), so sync
+            # them every time; None clears a value the new provider doesn't
+            # need (#25106).
+            save_config_value("model.base_url", result.base_url or None)
+            save_config_value("model.api_mode", result.api_mode or None)
             _cprint("    Saved to config.yaml (--global)")
         else:
             _cprint("    (session only — add --global to persist)")
@@ -7853,13 +8193,13 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                 return
             provider_data = providers[selected]
             # Use the curated model list from list_authenticated_providers()
-            # (same lists as `lucifex model` and gateway pickers).
+            # (same lists as `hermes model` and gateway pickers).
             # Only fall back to the live provider catalog when the curated
             # list is empty (e.g. user-defined endpoints with no curated list).
             model_list = provider_data.get("models", [])
             if not model_list:
                 try:
-                    from lucifex_cli.models import provider_model_ids
+                    from hermes_cli.models import provider_model_ids
                     live = provider_model_ids(provider_data["slug"])
                     if live:
                         model_list = live
@@ -7885,7 +8225,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                 self._close_model_picker()
                 return
             if selected < len(model_list):
-                from lucifex_cli.model_switch import switch_model
+                from hermes_cli.model_switch import switch_model
                 chosen_model = model_list[selected]
                 result = switch_model(
                     raw_input=chosen_model,
@@ -7915,46 +8255,57 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
 
         Supports:
           /model                              — show current model + usage hints
-          /model <name>                       — switch model (persists by default)
-          /model <name> --session             — switch for this session only
-          /model <name> --global              — switch and persist (explicit)
+          /model <name>                       — switch model (this session only)
+          /model <name> --once                — switch for the next turn only
+          /model <name> --session             — switch for this session only (explicit)
+          /model <name> --global              — switch and persist to config.yaml
           /model <name> --provider <provider> — switch provider + model
           /model --provider <provider>        — switch to provider, auto-detect model
 
-        Persistence defaults to on (``model.persist_switch_by_default`` in
-        config.yaml, default True). Use ``--session`` for a one-off switch.
+        Persistence defaults to off (``model.persist_switch_by_default`` in
+        config.yaml, default False — switches are session-scoped). Use
+        ``--global`` to persist, or ``--once`` for the next turn only.
         """
-        from lucifex_cli.model_switch import (
+        from hermes_cli.model_switch import (
             switch_model,
-            parse_model_flags,
+            parse_model_flags_detailed,
             resolve_persist_behavior,
         )
-        from lucifex_cli.providers import get_label
+        from hermes_cli.providers import get_label
 
         # Parse args from the original command
         parts = cmd_original.split(None, 1)  # split off '/model'
         raw_args = parts[1].strip() if len(parts) > 1 else ""
 
-        # Parse --provider, --global, --session, and --refresh flags
-        (
-            model_input,
-            explicit_provider,
-            is_global_flag,
-            force_refresh,
-            is_session,
-        ) = parse_model_flags(raw_args)
-        # Resolve the effective persistence once: --session overrides the
-        # config-gated default, --global forces persist, otherwise defer to
-        # model.persist_switch_by_default (defaults to True so /model survives
-        # across sessions).
-        persist_global = resolve_persist_behavior(is_global_flag, is_session)
+        # Parse --provider, --global, --session, --once, and --refresh flags
+        parsed_flags = parse_model_flags_detailed(raw_args)
+        model_input = parsed_flags.model_input
+        explicit_provider = parsed_flags.explicit_provider
+        is_global_flag = parsed_flags.is_global
+        force_refresh = parsed_flags.force_refresh
+        is_session = parsed_flags.is_session
+        one_turn = parsed_flags.is_once
+        if is_global_flag and one_turn:
+            _cprint("  ✗ /model --once cannot be combined with --global")
+            return
+        if one_turn and not model_input and not explicit_provider:
+            _cprint("  ✗ /model --once requires a model or provider.")
+            return
+        # Resolve the effective persistence once: --global forces persist,
+        # --session/--once force session-scope, otherwise defer to
+        # model.persist_switch_by_default (defaults to False so /model is
+        # session-scoped unless the user opts in).
+        persist_global = resolve_persist_behavior(
+            is_global_flag, is_session, is_once=one_turn,
+            explicit_provider=explicit_provider,
+        )
 
         # --refresh: wipe the on-disk picker cache before building the
         # provider list. Forces a live re-fetch of every authed provider's
         # /v1/models endpoint on this open.
         if force_refresh:
             try:
-                from lucifex_cli.models import clear_provider_models_cache
+                from hermes_cli.models import clear_provider_models_cache
                 clear_provider_models_cache()
                 _cprint("  Cleared model picker cache. Refreshing...")
             except Exception:
@@ -7964,7 +8315,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         # dashboard / TUI used to duplicate. Overlay live session state
         # via with_overrides (truthy-only) so empty self.* attrs don't
         # clobber disk config.
-        from lucifex_cli.inventory import build_models_payload, load_picker_context
+        from hermes_cli.inventory import build_models_payload, load_picker_context
 
         try:
             ctx = load_picker_context().with_overrides(
@@ -7988,7 +8339,11 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
             try:
                 if ctx is None:
                     raise RuntimeError("inventory context unavailable")
-                providers = build_models_payload(ctx)["providers"]
+                providers = build_models_payload(
+                    ctx,
+                    probe_custom_providers=force_refresh,
+                    probe_current_custom_provider=not force_refresh,
+                )["providers"]
             except Exception:
                 providers = []
 
@@ -7996,6 +8351,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                 _cprint("  No authenticated providers found.")
                 _cprint("")
                 _cprint("  /model <name>                        switch model (persists)")
+                _cprint("  /model <name> --once                 switch for the next turn only")
                 _cprint("  /model <name> --session              switch for this session only")
                 _cprint("  /model --provider <slug>             switch provider")
                 _cprint("  /model --refresh                     re-fetch live model lists")
@@ -8029,7 +8385,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
 
         if self.agent is not None:
             try:
-                from lucifex_cli.context_switch_guard import merge_preflight_compression_warning
+                from hermes_cli.context_switch_guard import merge_preflight_compression_warning
 
                 merge_preflight_compression_warning(
                     result,
@@ -8048,6 +8404,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         # Update requested_provider so _ensure_runtime_credentials() doesn't
         # overwrite the switch on the next turn (it re-resolves from this).
         old_model = self.model
+        _one_turn_restore_snapshot = self._snapshot_model_runtime() if one_turn else None
         # Snapshot CLI-level fields before mutation so a failed in-place swap
         # rolls the whole CLI back to the old working model (#50163).
         _cli_snapshot = {
@@ -8099,22 +8456,31 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         # Store a note to prepend to the next user message so the model
         # knows a switch occurred (avoids injecting system messages mid-history
         # which breaks providers and prompt caching).
+        from hermes_cli.model_switch import format_model_for_display
+        _display_old = format_model_for_display(old_model)
+        _display_new = format_model_for_display(result.new_model)
+
         self._pending_model_switch_note = (
-            f"[Note: model was just switched from {old_model} to {result.new_model} "
+            f"[Note: model was just switched from {_display_old} to {_display_new} "
             f"via {result.provider_label or result.target_provider}. "
+            f"{'This override applies to the next turn only. ' if one_turn else ''}"
             f"Adjust your self-identification accordingly.]"
         )
+        if one_turn:
+            self._pending_one_turn_model_restore = _one_turn_restore_snapshot
+        else:
+            self._pending_one_turn_model_restore = None
 
         # Display confirmation with full metadata
         provider_label = result.provider_label or result.target_provider
-        _cprint(f"  ✓ Model switched: {result.new_model}")
+        _cprint(f"  ✓ Model switched: {_display_new}")
         _cprint(f"    Provider: {provider_label}")
 
         # Context: always resolve via the provider-aware chain so Codex OAuth,
         # Copilot, and Nous-enforced caps win over the raw models.dev entry
         # (e.g. gpt-5.5 is 1.05M on openai but 272K on Codex OAuth).
         mi = result.model_info
-        from lucifex_cli.model_switch import resolve_display_context_length
+        from hermes_cli.model_switch import resolve_display_context_length
         ctx = resolve_display_context_length(
             result.new_model,
             result.target_provider,
@@ -8122,6 +8488,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
             api_key=result.api_key or self.api_key or "",
             model_info=mi,
             config_context_length=getattr(self.agent, "_config_context_length", None) if self.agent else None,
+            custom_providers=getattr(self.agent, "_custom_providers", None) if self.agent else None,
         )
         if ctx:
             _cprint(f"    Context: {ctx:,} tokens")
@@ -8147,7 +8514,13 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
             save_config_value("model.default", result.new_model)
             if result.provider_changed:
                 save_config_value("model.provider", result.target_provider)
+            # See _apply_model_switch_result above for why base_url/api_mode
+            # must be synced on every global switch (#25106).
+            save_config_value("model.base_url", result.base_url or None)
+            save_config_value("model.api_mode", result.api_mode or None)
             _cprint("    Saved to config.yaml")
+        elif one_turn:
+            _cprint("    (next turn only — restores after one response)")
         else:
             _cprint("    (session only — add --global to persist)")
 
@@ -8156,11 +8529,11 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
 
         Usage:
             /codex-runtime                       — show current state
-            /codex-runtime auto                  — Lucifex default (chat_completions)
+            /codex-runtime auto                  — Hermes default (chat_completions)
             /codex-runtime codex_app_server      — hand turns to codex subprocess
             /codex-runtime on / off              — synonyms for the above
         """
-        from lucifex_cli import codex_runtime_switch as crs
+        from hermes_cli import codex_runtime_switch as crs
 
         parts = cmd_original.split(None, 1)
         raw_args = parts[1].strip() if len(parts) > 1 else ""
@@ -8172,7 +8545,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
 
         # Load + persist via the existing config helpers
         try:
-            from lucifex_cli.config import load_config, save_config
+            from hermes_cli.config import load_config, save_config
         except Exception as exc:
             _cprint(f"❌ could not load config: {exc}")
             return
@@ -8196,7 +8569,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         if not text or has_images or not _looks_like_slash_command(text):
             return False
         try:
-            from lucifex_cli.commands import resolve_command
+            from hermes_cli.commands import resolve_command
             base = text.split(None, 1)[0].lower().lstrip('/')
             cmd = resolve_command(base)
             return bool(cmd and cmd.name == "model")
@@ -8220,7 +8593,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         if not getattr(self, "_agent_running", False):
             return False
         try:
-            from lucifex_cli.commands import resolve_command
+            from hermes_cli.commands import resolve_command
             base = text.split(None, 1)[0].lower().lstrip('/')
             cmd = resolve_command(base)
             return bool(cmd and cmd.name == "steer")
@@ -8298,7 +8671,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
             print("  To start the gateway:")
             print("    python cli.py --gateway")
             print()
-            print(f"  Configuration file: {display_lucifex_home()}/config.yaml")
+            print(f"  Configuration file: {display_hermes_home()}/config.yaml")
             print()
             
         except Exception as e:
@@ -8308,7 +8681,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
             print("    1. Set environment variables:")
             print("       TELEGRAM_BOT_TOKEN=your_token")
             print("       DISCORD_BOT_TOKEN=your_token")
-            print(f"    2. Or configure settings in {display_lucifex_home()}/config.yaml")
+            print(f"    2. Or configure settings in {display_hermes_home()}/config.yaml")
             print()
     
     def process_command(self, command: str) -> bool:
@@ -8326,8 +8699,8 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         cmd_original = command.strip()
 
         # Resolve aliases via central registry so adding an alias is a one-line
-        # change in lucifex_cli/commands.py instead of touching every dispatch site.
-        from lucifex_cli.commands import resolve_command as _resolve_cmd
+        # change in hermes_cli/commands.py instead of touching every dispatch site.
+        from hermes_cli.commands import resolve_command as _resolve_cmd
         _base_word = cmd_lower.split()[0].lstrip("/")
         _cmd_def = _resolve_cmd(_base_word)
         canonical = _cmd_def.name if _cmd_def else _base_word
@@ -8416,10 +8789,10 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                 _cprint("  ✨ (◕‿◕)✨ Fresh start! Screen cleared and conversation reset.\n")
                 # Show a random tip on new session
                 try:
-                    from lucifex_cli.tips import get_random_tip
+                    from hermes_cli.tips import get_random_tip
                     _tip = get_random_tip()
                     try:
-                        from lucifex_cli.skin_engine import get_active_skin
+                        from hermes_cli.skin_engine import get_active_skin
                         _tip_color = get_active_skin().get_color("banner_dim", "#B8860B")
                     except Exception:
                         _tip_color = "#B8860B"
@@ -8431,10 +8804,10 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                 print("  ✨ (◕‿◕)✨ Fresh start! Screen cleared and conversation reset.\n")
                 # Show a random tip on new session
                 try:
-                    from lucifex_cli.tips import get_random_tip
+                    from hermes_cli.tips import get_random_tip
                     _tip = get_random_tip()
                     try:
-                        from lucifex_cli.skin_engine import get_active_skin
+                        from hermes_cli.skin_engine import get_active_skin
                         _tip_color = get_active_skin().get_color("banner_dim", "#B8860B")
                     except Exception:
                         _tip_color = "#B8860B"
@@ -8451,7 +8824,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                     if self._session_db:
                         # Sanitize the title early so feedback matches what gets stored
                         try:
-                            from lucifex_state import SessionDB
+                            from hermes_state import SessionDB
                             new_title = SessionDB.sanitize_title(raw_title)
                         except ValueError as e:
                             _cprint(f"  {e}")
@@ -8477,7 +8850,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                                 self._pending_title = new_title
                                 _cprint(f"  Session title queued: {new_title} (will be saved on first message)")
                     else:
-                        from lucifex_state import format_session_db_unavailable
+                        from hermes_state import format_session_db_unavailable
                         _cprint(f"  {format_session_db_unavailable()}")
                 else:
                     _cprint("  Usage: /title <your session title>")
@@ -8492,7 +8865,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                 else:
                     _cprint("  No title set. Usage: /title <your session title>")
             else:
-                from lucifex_state import format_session_db_unavailable
+                from hermes_state import format_session_db_unavailable
                 _cprint(f"  {format_session_db_unavailable()}")
         elif canonical == "handoff":
             if not self._handle_handoff_command(cmd_original):
@@ -8603,10 +8976,10 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         elif canonical == "compress":
             self._manual_compress(cmd_original)
         elif canonical == "usage":
-            self._show_usage()
-        elif canonical == "credits":
-            self._show_credits()
-        elif canonical == "billing":
+            self._handle_usage_command(cmd_original)
+        elif canonical == "subscription":
+            self._show_subscription()
+        elif canonical == "topup":
             self._show_billing(cmd_original)
         elif canonical == "insights":
             self._show_insights(cmd_original)
@@ -8618,7 +8991,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
             if self._handle_update_command():
                 return False
         elif canonical == "version":
-            from lucifex_cli.main import _print_version_info
+            from hermes_cli.main import _print_version_info
 
             _print_version_info(check_updates=True)
         elif canonical == "paste":
@@ -8626,11 +8999,9 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         elif canonical == "image":
             self._handle_image_command(cmd_original)
         elif canonical == "reload":
-            from lucifex_cli.config import reload_env
+            from hermes_cli.config import reload_env
             count = reload_env()
             print(f"  Reloaded .env ({count} var(s) updated)")
-        elif canonical in ("setkey", "apikey"):
-            self._handle_setkey_command(cmd_original)
         elif canonical == "reload-mcp":
             # Interactive reload: confirm first (unless the user has opted out).
             # The auto-reload path (file watcher) calls _reload_mcp directly
@@ -8645,12 +9016,12 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
             self._handle_browser_command(cmd_original)
         elif canonical == "plugins":
             try:
-                # Discover from disk (bundled + user), matching `lucifex plugins
+                # Discover from disk (bundled + user), matching `hermes plugins
                 # list` — so installed-but-not-enabled plugins are visible here
                 # too. The plugin manager only knows about *loaded* plugins, so
                 # using it alone made freshly-installed, not-yet-enabled plugins
                 # look like "nothing installed".
-                from lucifex_cli.plugins_cmd import (
+                from hermes_cli.plugins_cmd import (
                     _discover_all_plugins,
                     _get_disabled_set,
                     _get_enabled_set,
@@ -8664,22 +9035,22 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                 # `/plugins` is a quick glance — default to user-installed
                 # plugins (what the user actually added). Bundled provider/
                 # platform plugins are summarized on one line; the full
-                # catalog lives behind `lucifex plugins list`.
+                # catalog lives behind `hermes plugins list`.
                 user_entries = [e for e in entries if e[3] != "bundled"]
                 bundled_count = len(entries) - len(user_entries)
 
                 if not user_entries:
                     print("No user plugins installed.")
-                    print("  Install one: lucifex plugins install owner/repo")
-                    print(f"  Or drop a plugin directory into {display_lucifex_home()}/plugins/")
+                    print("  Install one: hermes plugins install owner/repo")
+                    print(f"  Or drop a plugin directory into {display_hermes_home()}/plugins/")
                     if bundled_count:
-                        print(f"  ({bundled_count} bundled plugins available — see: lucifex plugins list)")
+                        print(f"  ({bundled_count} bundled plugins available — see: hermes plugins list)")
                 else:
                     # Loaded-plugin details (tools/hooks/commands counts, errors)
                     # keyed by name, when available.
                     loaded: dict = {}
                     try:
-                        from lucifex_cli.plugins import get_plugin_manager
+                        from hermes_cli.plugins import get_plugin_manager
                         for p in get_plugin_manager().list_plugins():
                             loaded[p["name"]] = p
                     except Exception:
@@ -8703,8 +9074,8 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                         error = f" — {info['error']}" if info.get("error") else ""
                         print(f"  {glyph} {name}{ver}{label}{detail}{error}")
                     if bundled_count:
-                        print(f"  (+{bundled_count} bundled — see: lucifex plugins list)")
-                    print("  Enable/disable: lucifex plugins enable/disable <name>")
+                        print(f"  (+{bundled_count} bundled — see: hermes plugins list)")
+                    print("  Enable/disable: hermes plugins enable/disable <name>")
             except Exception as e:
                 print(f"Plugin system error: {e}")
         elif canonical == "rollback":
@@ -8762,7 +9133,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
             # default MoA preset, then restore the prior model. To *switch* to a
             # MoA preset for the session, pick it from the model picker (MoA
             # presets surface as a virtual "Mixture of Agents" provider).
-            from lucifex_cli.moa_config import (
+            from hermes_cli.moa_config import (
                 moa_usage,
                 normalize_moa_config,
             )
@@ -8851,7 +9222,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                     self._console_print(f"[bold red]Quick command '{base_cmd}' has unsupported type (supported: 'exec', 'alias')[/]")
             # Check for plugin-registered slash commands
             elif base_cmd.lstrip("/") in _get_plugin_cmd_handler_names():
-                from lucifex_cli.plugins import (
+                from hermes_cli.plugins import (
                     get_plugin_command_handler,
                     resolve_plugin_command_result,
                 )
@@ -8892,7 +9263,39 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                     )
             # Check for skill slash commands (/gif-search, /axolotl, etc.)
             elif base_cmd in skill_commands:
-                user_instruction = cmd_original[len(base_cmd):].strip()
+                rest = cmd_original[len(base_cmd):].strip()
+                # Stacked slash-skill invocations: `/skill-a /skill-b do XYZ`
+                # loads every leading skill (up to 5), not just the first.
+                # Inspired by Claude Code v2.1.199.
+                from agent.skill_commands import (
+                    build_stacked_skill_invocation_message,
+                    split_stacked_skill_commands,
+                )
+                extra_keys, user_instruction = split_stacked_skill_commands(rest)
+                if extra_keys:
+                    stacked_result = build_stacked_skill_invocation_message(
+                        [base_cmd, *extra_keys],
+                        user_instruction,
+                        task_id=self.session_id,
+                    )
+                    if stacked_result:
+                        msg, loaded_names, missing = stacked_result
+                        print(
+                            f"\n⚡ Loading {len(loaded_names)} stacked skills: "
+                            f"{', '.join(loaded_names)}"
+                        )
+                        if missing:
+                            ChatConsole().print(
+                                f"[yellow]Skipped missing skills: {', '.join(missing)}[/]"
+                            )
+                        if hasattr(self, '_pending_input'):
+                            self._pending_input.put(msg)
+                    else:
+                        ChatConsole().print(
+                            f"[bold red]Failed to load stacked skills for {base_cmd}[/]"
+                        )
+                    return True
+                user_instruction = rest
                 msg = build_skill_invocation_message(
                     base_cmd, user_instruction, task_id=self.session_id
                 )
@@ -8907,7 +9310,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                 # Prefix matching: if input uniquely identifies one command, execute it.
                 # Matches against both built-in COMMANDS and installed skill commands so
                 # that execution-time resolution agrees with tab-completion.
-                from lucifex_cli.commands import COMMANDS
+                from hermes_cli.commands import COMMANDS
                 typed_base = cmd_lower.split()[0]
                 all_known = set(COMMANDS) | set(skill_commands) | set(skill_bundles)
                 matches = [c for c in all_known if c.startswith(typed_base)]
@@ -8971,8 +9374,8 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         session split).
         """
         try:
-            from lucifex_cli.goals import GoalManager
-            from lucifex_cli.config import load_config
+            from hermes_cli.goals import GoalManager
+            from hermes_cli.config import load_config
         except Exception as exc:
             logging.debug("goal manager unavailable: %s", exc)
             return None
@@ -8997,6 +9400,55 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         return mgr
 
 
+
+    def _owns_process_notification(self, event: dict) -> bool:
+        """Return whether this CLI session provably owns a delegation event.
+
+        Delegations dispatched before context compression retain the original
+        session key, so resolve that key to its continuation before comparing.
+        Missing or foreign keys fail closed and remain queued for their owner.
+        """
+        event_key = str(event.get("session_key") or "")
+        current_key = str(getattr(self, "session_id", "") or "")
+        if not event_key or not current_key:
+            return False
+        if event_key == current_key:
+            return True
+        try:
+            session_db = getattr(self, "_session_db", None)
+            resolved_key = (
+                session_db.resolve_resume_session_id(event_key)
+                if session_db is not None
+                else event_key
+            ) or event_key
+        except Exception:
+            resolved_key = event_key
+        return str(resolved_key) == current_key
+
+    def _drain_process_notifications(self, consumer: str) -> None:
+        """Queue background notifications owned by this visible CLI session.
+
+        ``process_registry`` restores durable delegation completions into every
+        process using the same Hermes profile.  Always pass this CLI's stable
+        session identity when draining so another window cannot claim and mark
+        delivered a completion that belongs to this one.
+        """
+        from tools.process_registry import process_registry
+        from tools.async_delegation import (
+            claim_event_delivery,
+            complete_event_delivery,
+        )
+
+        session_key = getattr(self, "session_id", "") or ""
+        for event, synthetic_message in process_registry.drain_notifications(
+            session_key=session_key,
+            owns_event=self._owns_process_notification,
+        ):
+            claim = claim_event_delivery(event, consumer)
+            if claim is None:
+                continue
+            self._pending_input.put(synthetic_message)
+            complete_event_delivery(event, claim)
 
     def _drain_interrupt_queue_to_pending_input(self) -> None:
         """Move stray messages from ``_interrupt_queue`` into ``_pending_input``.
@@ -9127,7 +9579,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
             return
 
         try:
-            from lucifex_cli.goals import gather_background_processes as _gather_bg
+            from hermes_cli.goals import gather_background_processes as _gather_bg
             _bg_procs = _gather_bg()
         except Exception:
             _bg_procs = None
@@ -9179,7 +9631,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         # prompt_toolkit's renderer.  self.console.print() with Rich markup
         # writes directly to stdout which patch_stdout's StdoutProxy mangles
         # into garbled sequences like '?[33mTool progress: NEW?[0m' (#2262).
-        from lucifex_cli.colors import Colors as _Colors
+        from hermes_cli.colors import Colors as _Colors
         labels = {
             "off": f"{_Colors.DIM}Tool progress: OFF{_Colors.RESET} — silent mode, just the final response.",
             "new": f"{_Colors.YELLOW}Tool progress: NEW{_Colors.RESET} — show each new tool (skip repeats).",
@@ -9223,7 +9675,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         ``enable_session_yolo`` / ``disable_session_yolo`` write to) so the
         status bar reflects the actual bypass state instead of a stale env
         var. Also honors the process-start ``--yolo`` flag, which freezes
-        ``LUCIFEX_YOLO_MODE`` into ``_YOLO_MODE_FROZEN`` before tool imports
+        ``HERMES_YOLO_MODE`` into ``_YOLO_MODE_FROZEN`` before tool imports
         happen.
         """
         try:
@@ -9248,7 +9700,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         Per-session toggle that mirrors the gateway and TUI ``/yolo`` handlers
         (see ``gateway/run.py:_handle_yolo_command`` and
         ``tui_gateway/server.py`` key=="yolo"). We deliberately do NOT mutate
-        ``LUCIFEX_YOLO_MODE`` here — that env var is read once at module import
+        ``HERMES_YOLO_MODE`` here — that env var is read once at module import
         time into ``tools.approval._YOLO_MODE_FROZEN`` to keep prompt-injected
         skills from flipping the bypass mid-session, so setting it after CLI
         startup is a silent no-op. Routing through ``enable_session_yolo`` /
@@ -9258,7 +9710,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         ``set_current_session_key`` so the bypass takes effect on the very
         next dangerous command in this run.
         """
-        from lucifex_cli.colors import Colors as _Colors
+        from hermes_cli.colors import Colors as _Colors
         from tools.approval import (
             disable_session_yolo,
             enable_session_yolo,
@@ -9319,7 +9771,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
             print("(._.) Compression is disabled in config.")
             return
 
-        from lucifex_cli.partial_compress import (
+        from hermes_cli.partial_compress import (
             extract_compress_flags,
             parse_partial_compress_args,
             rejoin_compressed_head_and_tail,
@@ -9462,8 +9914,14 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                     self.conversation_history,
                     approx_tokens,
                     new_tokens,
+                    compression_state=getattr(
+                        self.agent, "context_compressor", None
+                    ),
                 )
-                icon = "🗜️" if summary["noop"] else "✅"
+                if summary.get("aborted") or summary.get("fallback_used"):
+                    icon = "⚠️"
+                else:
+                    icon = "🗜️" if summary["noop"] else "✅"
                 print(f"  {icon} {summary['headline']}")
                 print(f"     {summary['token_line']}")
                 if summary["note"]:
@@ -9474,6 +9932,53 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
 
 
 
+    def _handle_usage_command(self, cmd_original: str):
+        """Dispatch `/usage [reset [--force]]`.
+
+        Bare `/usage` keeps the classic display. `/usage reset` redeems one
+        banked Codex rate-limit reset credit (guarded: refuses when limits
+        aren't exhausted unless --force).
+        """
+        parts = cmd_original.split()
+        args = [p.lower() for p in parts[1:]]
+        if args and args[0] == "reset":
+            self._usage_reset(force="--force" in args[1:])
+            return
+        if args:
+            print(f"  Unknown /usage subcommand: {' '.join(parts[1:])}. Try /usage or /usage reset [--force].")
+            return
+        self._show_usage()
+
+    def _usage_reset(self, force: bool = False):
+        """`/usage reset [--force]` — redeem one banked Codex reset credit."""
+        provider = (
+            (getattr(self.agent, "provider", None) if self.agent else None)
+            or getattr(self, "provider", None)
+        )
+        normalized = str(provider or "").strip().lower()
+        if normalized != "openai-codex":
+            print("  Banked usage resets are only available on the openai-codex provider.")
+            print("  Switch with `/model` or `hermes auth` first.")
+            return
+        base_url = (getattr(self.agent, "base_url", None) if self.agent else None) or getattr(self, "base_url", None)
+        api_key = (getattr(self.agent, "api_key", None) if self.agent else None) or getattr(self, "api_key", None)
+
+        from agent.account_usage import redeem_codex_reset_credit
+
+        print("  ⏳ Checking banked reset credits...")
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as _pool:
+            try:
+                result = _pool.submit(
+                    redeem_codex_reset_credit,
+                    base_url=base_url,
+                    api_key=api_key,
+                    force=force,
+                ).result(timeout=45.0)
+            except concurrent.futures.TimeoutError:
+                print("  ❌ Timed out talking to the Codex backend — try again shortly.")
+                return
+        print(f"  {result.message}")
+
     def _show_usage(self):
         """Rate limits + session token usage (when a live agent exists) + Nous credits.
 
@@ -9483,7 +9988,9 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         which would otherwise early-return before any credits showed.
         """
         if not self.agent:
-            if not self._print_nous_credits_block():
+            if self._print_nous_credits_block():
+                self._print_usage_cta()
+            else:
                 print("(._.) No active agent -- send a message first.")
             return
 
@@ -9491,7 +9998,9 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         calls = agent.session_api_calls
 
         if calls == 0:
-            if not self._print_nous_credits_block():
+            if self._print_nous_credits_block():
+                self._print_usage_cta()
+            else:
                 print("(._.) No API calls made yet in this session.")
             return
 
@@ -9562,7 +10071,8 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
 
         # Nous credits magnitudes + monthly-grant gauge (agent-independent — also
         # runs at the no-agent / no-calls early-returns above). See the helper.
-        self._print_nous_credits_block()
+        if self._print_nous_credits_block():
+            self._print_usage_cta()
 
         if self.verbose:
             logging.getLogger().setLevel(logging.DEBUG)
@@ -9575,732 +10085,8 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
             # above the file handler level filters records before they
             # reach handlers, so agent.log / errors.log lose visibility
             # into stream-retry events, credential rotations, etc.
-            # Console quietness is enforced by lucifex_logging not
+            # Console quietness is enforced by hermes_logging not
             # installing a console StreamHandler in non-verbose mode.
-
-    def _print_nous_credits_block(self) -> bool:
-        """Print the Nous credits magnitudes + monthly-grant gauge when a Nous account
-        is logged in. Returns True if it printed anything.
-
-        Delegates to the shared ``agent.account_usage.nous_credits_lines`` helper —
-        the single source for the /usage credits block across CLI, gateway, and TUI.
-        It's agent-independent (a portal fetch gated on "a Nous account is logged in",
-        NOT the inference-provider string), so /usage shows the block even in the TUI
-        slash-worker subprocess that resumes WITHOUT a live agent. Fail-open and
-        wall-clock-bounded inside the helper; also honors LUCIFEX_DEV_CREDITS_FIXTURE
-        for offline testing — same behavior as every other surface.
-        """
-        from agent.account_usage import nous_credits_lines
-
-        lines = nous_credits_lines()
-        if not lines:
-            return False
-        print()
-        for line in lines:
-            print(f"  {line}")
-        return True
-
-    def _show_credits(self):
-        """`/credits` — focused Nous credit balance + top-up handoff.
-
-        Interactive CLI: balance block + identity line + a 3-button panel
-        (Open top-up / Copy link / Cancel). Non-interactive contexts — the TUI
-        slash-worker subprocess and any place without a live prompt_toolkit app
-        (``self._app is None``) — render a text variant (balance + tappable
-        top-up URL), because the modal would try to read the RPC stdin and crash
-        the worker. The terminal never confirms or polls payment (billing phase
-        2a). Fail-open: a portal hiccup or logged-out account degrades to a clear
-        message, never a crash.
-        """
-        from agent.account_usage import build_credits_view
-
-        view = build_credits_view()
-
-        if not view.logged_in:
-            print()
-            _cprint(f"  💳 {_d('Not logged into Nous Portal.')}")
-            print("  Run `lucifex portal` to log in, then /credits.")
-            return
-
-        print()
-        print("  💳 Nous credits")
-        print(f"  {'─' * 41}")
-        for line in view.balance_lines:
-            # Drop the helper's own "📈 Nous credits" header — we print our own.
-            if line.lstrip().startswith("📈"):
-                continue
-            print(f"  {line}")
-        print(f"  {'─' * 41}")
-        if view.identity_line:
-            print(f"  {view.identity_line}")
-
-        if not view.topup_url:
-            return
-
-        # Non-interactive (TUI slash-worker, piped, no live app): the
-        # prompt_toolkit modal can't run here — it would read the worker's
-        # JSON-RPC stdin and crash the command. Render the text variant: the
-        # tappable URL IS the affordance, same as the messaging surfaces.
-        if not getattr(self, "_app", None):
-            print()
-            print(f"  Top up: {view.topup_url}")
-            print("  Complete your top-up in the browser — credits will appear in /credits shortly.")
-            return
-
-        choices = [
-            ("open", "Open top-up in browser", "launch the portal billing page"),
-            ("copy", "Copy link", "copy the top-up URL to your clipboard"),
-            ("cancel", "Cancel", "do nothing"),
-        ]
-        raw = self._prompt_text_input_modal(
-            title="💳 Add credits?",
-            detail=f"Top-up page:\n{view.topup_url}",
-            choices=choices,
-        )
-        choice = self._normalize_slash_confirm_choice(raw, choices)
-
-        if choice == "open":
-            opened = False
-            try:
-                import webbrowser
-
-                opened = webbrowser.open(view.topup_url)
-            except Exception:
-                opened = False
-            if not opened:
-                print(f"  Open this URL to top up: {view.topup_url}")
-            print()
-            print("  Complete your top-up in the browser — credits will appear in /credits shortly.")
-        elif choice == "copy":
-            try:
-                self._write_osc52_clipboard(view.topup_url)
-                print(f"  📋 Copied: {view.topup_url}")
-            except Exception:
-                print(f"  Top-up URL: {view.topup_url}")
-        else:
-            print("  🟡 Cancelled. No credits added.")
-
-    # ------------------------------------------------------------------
-    # /billing — Phase 2b terminal billing (CLI surface, all 5 screens)
-    # ------------------------------------------------------------------
-
-    def _show_billing(self, command: str = "/billing"):
-        """`/billing` — terminal billing for Nous (one interactive modal).
-
-        ZERO sub-commands: any argument is ignored. Bare ``/billing`` always
-        opens the Overview (Screen 1), whose numbered menu is the *only* way to
-        reach the Buy / Auto-reload / Monthly-limit sub-screens. (Per the unified
-        UX spec §0.4 — ``/billing buy`` etc. are gone; we don't error on a stray
-        arg, we just open the menu.)
-
-        Interactive CLI uses the prompt_toolkit modal; non-interactive contexts
-        (TUI slash-worker / no live app) render text + the portal deep-link, never
-        prompting (the URL is the affordance), same discipline as ``_show_credits``.
-        All money is Decimal end-to-end; the terminal never collects card details.
-        """
-        from agent.billing_view import build_billing_state
-
-        state = build_billing_state()
-        if not state.logged_in:
-            print()
-            if state.error:
-                _msg = f"Couldn't load billing: {state.error}"
-                _cprint(f"  💳 {_d(_msg)}")
-            else:
-                _cprint(f"  💳 {_d('Not logged into Nous Portal.')}")
-                print("  Run `lucifex portal` to log in, then /billing.")
-            return
-
-        # Any sub-arg is intentionally ignored — always open the menu.
-        self._billing_overview(state)
-
-    def _billing_portal_hint(self, state, *, reason: str = "") -> None:
-        """Print a portal deep-link line (the funnel for portal-only actions)."""
-        url = getattr(state, "portal_url", None)
-        if not url:
-            return
-        if reason:
-            print(f"  {reason}")
-        print(f"  Manage on portal: {url}")
-
-    def _billing_overview(self, state):
-        """Screen 1 — overview: balance, spend bar, role-gated action menu."""
-        from agent.billing_view import format_money
-
-        print()
-        _cprint(f"  💳 {_b('Usage credits')}")
-        print(f"  {'─' * 41}")
-
-        cap = state.monthly_cap
-        if cap is not None and cap.limit_usd is not None:
-            spent = format_money(cap.spent_this_month_usd)
-            limit = format_money(cap.limit_usd)
-            ceiling = " (default ceiling)" if cap.is_default_ceiling else ""
-            bar, pct = self._billing_spend_bar(
-                cap.spent_this_month_usd, cap.limit_usd
-            )
-            print(f"  {spent} of {limit} used{ceiling}   {bar} {pct}%")
-
-        print(f"  Balance: {format_money(state.balance_usd)}")
-
-        ar = state.auto_reload
-        if ar is not None:
-            if ar.enabled:
-                print(
-                    f"  Auto-reload: on — below {format_money(ar.threshold_usd)} "
-                    f"→ reload to {format_money(ar.reload_to_usd)}"
-                )
-            else:
-                print("  Auto-reload: off")
-
-        if state.org_name:
-            role = (state.role or "").title()
-            _org_line = f"Org: {state.org_name}{f' · {role}' if role else ''}"
-            _cprint(f"  {_d(_org_line)}")
-        print(f"  {'─' * 41}")
-
-        # Action gating: admin + kill-switch for charge/auto-reload; everyone gets portal.
-        if not state.is_admin:
-            _cprint(f"  {_d('Billing actions require an org admin/owner.')}")
-            self._billing_portal_hint(state)
-            return
-        if not state.cli_billing_enabled:
-            _cprint(f"  {_d('Terminal billing is turned off for this org.')}")
-            self._billing_portal_hint(state, reason="Enable it on the portal to buy credits here.")
-            return
-
-        # Optimistic funnel: no card on file → a charge will 403 no_payment_method.
-        # Surface that up front (with the portal link) but DON'T hide Buy — /state.card
-        # can't fully prove CLI-chargeability, so we advise rather than gate.
-        if state.card is None:
-            _cprint(
-                f"  {_d('No saved card for terminal charges yet — set one up on the portal first.')}"
-            )
-            self._billing_portal_hint(state)
-
-        # Non-interactive (slash-worker / no live app): no modal, no sub-command
-        # advertising — just the portal funnel (the URL is the affordance).
-        if not getattr(self, "_app", None):
-            self._billing_portal_hint(state)
-            return
-
-        choices = [
-            ("buy", "Buy credits", "purchase a one-time credit top-up"),
-            ("auto", "Adjust auto-reload", "configure automatic top-ups"),
-            ("limit", "Adjust monthly limit", "show the monthly spend cap (read-only)"),
-            ("portal", "Manage on portal", "open the billing page in your browser"),
-            ("cancel", "Cancel", "do nothing"),
-        ]
-        # The overview summary is already printed above; the modal only needs to
-        # present the action menu — repeating the title/balance reads as a dupe.
-        raw = self._prompt_text_input_modal(
-            title="💳 Choose an action", detail="",
-            choices=choices,
-        )
-        choice = self._normalize_slash_confirm_choice(raw, choices)
-        if choice == "buy":
-            self._billing_buy_flow(state)
-        elif choice == "auto":
-            self._billing_auto_reload_flow(state)
-        elif choice == "limit":
-            self._billing_limit_screen(state)
-        elif choice == "portal":
-            self._billing_open_portal(state)
-        else:
-            print("  🟡 Cancelled.")
-
-    def _billing_spend_bar(self, spent, limit, *, cells: int = 10):
-        """Render a 10-cell `█`/`░` spend bar + integer percent from spent/limit.
-
-        Returns ``(bar, pct)`` where ``bar`` is like ``[████░░░░░░]`` and ``pct``
-        is the spent/limit percentage clamped to 0..100. Box-drawing glyphs are
-        not SGR codes, so this is leak-safe even without ``_b()``/``_d()``.
-        """
-        from decimal import Decimal
-
-        try:
-            s = Decimal(str(spent)) if spent is not None else Decimal("0")
-            l = Decimal(str(limit)) if limit is not None else Decimal("0")
-        except Exception:
-            s, l = Decimal("0"), Decimal("0")
-        if l <= 0:
-            pct = 0
-        else:
-            pct = int((s / l) * 100)
-        pct = max(0, min(100, pct))
-        filled = int(round(pct / 100 * cells))
-        filled = max(0, min(cells, filled))
-        bar = ("█" * filled) + ("░" * (cells - filled))
-        return bar, pct
-
-    def _billing_open_portal(self, state):
-        url = getattr(state, "portal_url", None)
-        if not url:
-            print("  No portal URL available.")
-            return
-        opened = False
-        try:
-            import webbrowser
-
-            opened = webbrowser.open(url)
-        except Exception:
-            opened = False
-        if not opened:
-            print(f"  Open this URL: {url}")
-        print("  Complete billing changes in the browser.")
-
-    def _billing_require_admin(self, state) -> bool:
-        """Guard charge/auto-reload entry points; print + return False if blocked."""
-        if not state.is_admin:
-            print()
-            _cprint(f"  💳 {_d('Billing actions require an org admin/owner.')}")
-            self._billing_portal_hint(state)
-            return False
-        if not state.cli_billing_enabled:
-            print()
-            _cprint(f"  💳 {_d('Terminal billing is turned off for this org.')}")
-            self._billing_portal_hint(state, reason="Enable it on the portal first.")
-            return False
-        return True
-
-    def _billing_buy_flow(self, state):
-        """Screen 2 (preset select) → Screen 3 (confirm + charge + poll)."""
-        from agent.billing_view import format_money, validate_charge_amount
-
-        if not self._billing_require_admin(state):
-            return
-
-        # Screen 3 — preset selection.
-        if not getattr(self, "_app", None):
-            presets = ", ".join(format_money(p) for p in state.charge_presets)
-            print()
-            _cprint(f"  💳 {_b('Buy usage credits')}")
-            print(f"  Presets: {presets}")
-            print("  Run this in the interactive CLI to complete a purchase.")
-            self._billing_portal_hint(state)
-            return
-
-        preset_choices = []
-        for p in state.charge_presets:
-            preset_choices.append((str(p), format_money(p), "one-time credit purchase"))
-        preset_choices.append(("custom", "Custom amount…", "enter your own amount"))
-        preset_choices.append(("cancel", "Cancel", "do nothing"))
-
-        card = state.card
-        detail = f"Payment: {card.masked}" if card else "No saved card on file"
-        raw = self._prompt_text_input_modal(
-            title="💳 Buy usage credits", detail=detail, choices=preset_choices,
-        )
-        choice = self._normalize_slash_confirm_choice(raw, preset_choices)
-        if not choice or choice == "cancel":
-            print("  🟡 Cancelled. No credits added.")
-            return
-
-        from decimal import Decimal
-
-        if choice == "custom":
-            entered = self._prompt_text_input("  Amount (USD): ")
-            if entered is None:
-                # None = cancelled (e.g. slash-worker can't prompt off-thread).
-                print("  🟡 Cancelled. No credits added.")
-                return
-            v = validate_charge_amount(
-                entered or "", min_usd=state.min_usd, max_usd=state.max_usd
-            )
-            if not v.ok:
-                print(f"  🔴 {v.error}")
-                return
-            amount = v.amount
-        else:
-            try:
-                amount = Decimal(choice)
-            except Exception:
-                print("  🔴 Invalid selection.")
-                return
-
-        self._billing_confirm_and_charge(state, amount)
-
-    def _billing_confirm_and_charge(self, state, amount):
-        """Screen 3 — confirm total + consent, charge, then poll to settlement."""
-        from agent.billing_view import format_money, new_idempotency_key
-
-        card = state.card
-        print()
-        _cprint(f"  💳 {_b('Confirm purchase')}")
-        print(f"  {'─' * 41}")
-        print(f"  Total: {format_money(amount)}")
-        if card:
-            print(f"  Payment: {card.masked}")
-        print(f"  {'─' * 41}")
-        _consent = (
-            "By confirming, you allow Nous Research to charge your card."
-        )
-        _cprint(f"  {_d(_consent)}")
-
-        confirm_choices = [
-            ("pay", f"Pay {format_money(amount)} now", "submit the charge"),
-            ("cancel", "Go back", "do not charge"),
-        ]
-        if not getattr(self, "_app", None):
-            print("  Run in the interactive CLI to confirm a purchase.")
-            return
-        raw = self._prompt_text_input_modal(
-            title=f"💳 Pay {format_money(amount)}?",
-            detail=(card.masked if card else "no saved card"),
-            choices=confirm_choices,
-        )
-        choice = self._normalize_slash_confirm_choice(raw, confirm_choices)
-        if choice != "pay":
-            print("  🟡 Cancelled. No credits added.")
-            return
-
-        # Submit the charge with a fresh idempotency key (reused on retry).
-        from lucifex_cli.nous_billing import (
-            BillingError,
-            BillingScopeRequired,
-            post_charge,
-        )
-
-        key = new_idempotency_key()
-        try:
-            result = post_charge(amount_usd=amount, idempotency_key=key)
-        except BillingScopeRequired:
-            self._billing_handle_scope_required(state)
-            return
-        except BillingError as exc:
-            self._billing_render_charge_error(state, exc)
-            return
-
-        charge_id = result.get("chargeId")
-        if not charge_id:
-            print("  🔴 No charge id returned; please check the portal.")
-            return
-        _cprint(f"  {_d('Charge submitted — confirming settlement…')}")
-        self._billing_poll_charge(state, charge_id, amount)
-
-    def _billing_poll_charge(self, state, charge_id, amount):
-        """Poll loop: 2s interval, 5-min cap, cancellable. settled = ledger truth."""
-        import time as _time
-
-        from agent.billing_view import format_money
-        from lucifex_cli.nous_billing import (
-            BillingError,
-            BillingRateLimited,
-            get_charge_status,
-        )
-
-        deadline = _time.time() + 300  # 5-minute cap
-        interval = 2.0
-        while _time.time() < deadline:
-            try:
-                status = get_charge_status(charge_id)
-            except BillingRateLimited as exc:
-                # Retry-after, NOT a failure — back off and keep polling.
-                wait = exc.retry_after or 5
-                _time.sleep(min(wait, 30))
-                continue
-            except BillingError as exc:
-                print(f"  🔴 Could not check the charge: {exc}")
-                return
-
-            state_str = status.get("status")
-            if state_str == "settled":
-                amt = status.get("amountUsd")
-                from agent.billing_view import parse_money
-
-                shown = format_money(parse_money(amt)) if amt else format_money(amount)
-                print(f"  ✅ {shown} in credits added.")
-                return
-            if state_str == "failed":
-                self._billing_render_charge_failed(state, status.get("reason"))
-                return
-            # pending → wait and poll again
-            _time.sleep(interval)
-
-        # Past the cap with no terminal state = timeout (not an error).
-        print(f"  🟡 Still processing after 5 minutes — this is a timeout, not a "
-              f"failure. Check /billing or the portal shortly.")
-        self._billing_portal_hint(state)
-
-    def _billing_render_charge_failed(self, state, reason):
-        """Branch the poll `failed` reasons to the right copy + portal funnel."""
-        reason = (reason or "").strip()
-        if reason == "authentication_required":
-            print("  🔴 Your bank requires verification (3DS). Complete it on the "
-                  "portal to finish this purchase.")
-        elif reason == "payment_method_expired":
-            print("  🔴 Your card has expired. Update it on the portal.")
-        elif reason == "card_declined":
-            print("  🔴 Your card was declined. Try another card on the portal.")
-        else:
-            print(f"  🔴 The charge didn't go through ({reason or 'processing_error'}).")
-        self._billing_portal_hint(state)
-
-    def _billing_render_charge_error(self, state, exc):
-        """Render a typed BillingError at submit time (pre-poll)."""
-        from lucifex_cli.nous_billing import BillingRateLimited
-
-        code = getattr(exc, "error", None)
-        portal_url = getattr(exc, "portal_url", None) or getattr(state, "portal_url", None)
-        if code == "no_payment_method":
-            print("  💳 No saved card for terminal charges yet. Set one up on the "
-                  "portal (one-time credit buys don't save a reusable card).")
-        elif code == "cli_billing_disabled":
-            print("  🔴 Terminal billing is turned off for this org — an admin must enable it on the portal.")
-        elif code == "monthly_cap_exceeded":
-            remaining = (getattr(exc, "payload", {}) or {}).get("remainingUsd")
-            if remaining is not None:
-                print(f"  🔴 Monthly spend cap reached — ${remaining} headroom left.")
-            else:
-                print("  🔴 Monthly spend cap reached.")
-        elif isinstance(exc, BillingRateLimited):
-            wait = getattr(exc, "retry_after", None)
-            mins = f" (try again in ~{max(1, round(wait / 60))} min)" if wait else ""
-            print(f"  🟡 Too many charges right now{mins}. This isn't a payment failure.")
-        else:
-            print(f"  🔴 {exc}")
-        if portal_url:
-            print(f"  Portal: {portal_url}")
-
-    def _billing_handle_scope_required(self, state):
-        """403 insufficient_scope → lazy step-up re-auth (plan D-A)."""
-        print()
-        print("  💳 Terminal billing needs an extra permission (billing:manage).")
-        _scope_msg = (
-            "An org admin/owner must tick \"Allow terminal billing\" during "
-            "login."
-        )
-        _cprint(f"  {_d(_scope_msg)}")
-        if not getattr(self, "_app", None):
-            print("  Run `lucifex portal` and approve terminal billing, then retry.")
-            return
-        confirm_choices = [
-            ("yes", "Re-authorize now", "open the portal to grant billing access"),
-            ("no", "Not now", "cancel"),
-        ]
-        raw = self._prompt_text_input_modal(
-            title="💳 Grant terminal billing access?",
-            detail="Opens the portal device-authorization page.",
-            choices=confirm_choices,
-        )
-        choice = self._normalize_slash_confirm_choice(raw, confirm_choices)
-        if choice != "yes":
-            print("  🟡 Cancelled.")
-            return
-        try:
-            from lucifex_cli.auth import step_up_nous_billing_scope
-
-            granted = step_up_nous_billing_scope(open_browser=True)
-        except Exception as exc:
-            print(f"  🔴 Re-authorization failed: {exc}")
-            return
-        if granted:
-            print("  ✅ Billing permission granted.")
-            # Step-up only grants the billing:manage TOKEN scope; the ORG
-            # kill-switch (cli_billing_enabled) is a separate gate. Re-fetch
-            # /state so we don't over-promise when a charge would still hit
-            # cli_billing_disabled.
-            from agent.billing_view import build_billing_state
-
-            fresh = build_billing_state()
-            if fresh.logged_in and fresh.cli_billing_enabled:
-                print("  Run /billing buy again to continue.")
-            else:
-                print("  🟡 Permission granted, but terminal billing is still turned "
-                      "off for this org. Enable it in the portal, then run /billing again.")
-                self._billing_portal_hint(fresh)
-        else:
-            print("  🟡 Terminal billing was not granted (an admin must tick the box).")
-
-    def _billing_auto_reload_flow(self, state):
-        """Screen 4 — auto-reload config: threshold + reload-to → PATCH.
-
-        Prefills the current values from ``state.auto_reload``. Validates both
-        amounts (2dp, within bounds, ``reload_to > threshold``). When auto-reload
-        is already on, offers a "Turn off" path (PATCH ``enabled:false``).
-        """
-        from agent.billing_view import format_money, validate_charge_amount
-
-        if not self._billing_require_admin(state):
-            return
-
-        card = state.card
-        ar = state.auto_reload
-        currently_on = bool(ar and ar.enabled)
-
-        print()
-        _cprint(f"  💳 {_b('Auto-reload')}")
-        print(f"  {'─' * 41}")
-        _cprint(f"  {_d('Automatically buy more credits when your balance is low.')}")
-        if card:
-            print(f"  Card on file: {card.masked}")
-        else:
-            print("  No saved card — set one up on the portal first.")
-            self._billing_portal_hint(state)
-            return
-        if currently_on:
-            print(
-                f"  Currently: below {format_money(ar.threshold_usd)} → "
-                f"reload to {format_money(ar.reload_to_usd)}"
-            )
-
-        if not getattr(self, "_app", None):
-            print("  Run in the interactive CLI to configure auto-reload.")
-            self._billing_portal_hint(state)
-            return
-
-        # When already enabled, let the user turn it off without re-entering values.
-        if currently_on:
-            top_choices = [
-                ("edit", "Edit thresholds", "change when / how much to reload"),
-                ("off", "Turn off", "disable auto-reload"),
-                ("cancel", "Cancel", "do nothing"),
-            ]
-            raw = self._prompt_text_input_modal(
-                title="💳 Auto-reload",
-                detail=(
-                    f"On — below {format_money(ar.threshold_usd)} → "
-                    f"reload to {format_money(ar.reload_to_usd)}"
-                ),
-                choices=top_choices,
-            )
-            top = self._normalize_slash_confirm_choice(raw, top_choices)
-            if top == "off":
-                self._billing_auto_reload_disable(state)
-                return
-            if top != "edit":
-                print("  🟡 Cancelled.")
-                return
-
-        # Field 1 — threshold (prefilled when editing an existing config).
-        cur_thr = format_money(ar.threshold_usd) if currently_on else None
-        thr_prompt = "  When balance falls below (USD)"
-        thr_prompt += f" [{cur_thr}]: " if cur_thr else ": "
-        threshold_raw = self._prompt_text_input(thr_prompt)
-        if threshold_raw is None:
-            # None = cancelled (e.g. slash-worker can't prompt off-thread).
-            print("  🟡 Cancelled.")
-            return
-        if not (threshold_raw or "").strip() and currently_on:
-            threshold_amt = ar.threshold_usd  # keep current value on empty input
-        else:
-            tv = validate_charge_amount(
-                threshold_raw or "", min_usd=state.min_usd, max_usd=state.max_usd
-            )
-            if not tv.ok or tv.amount is None:
-                print(f"  🔴 {tv.error}")
-                return
-            threshold_amt = tv.amount
-
-        # Field 2 — reload-to (prefilled when editing an existing config).
-        cur_rel = format_money(ar.reload_to_usd) if currently_on else None
-        rel_prompt = "  Reload balance to (USD)"
-        rel_prompt += f" [{cur_rel}]: " if cur_rel else ": "
-        reload_raw = self._prompt_text_input(rel_prompt)
-        if reload_raw is None:
-            print("  🟡 Cancelled.")
-            return
-        if not (reload_raw or "").strip() and currently_on:
-            reload_amt = ar.reload_to_usd  # keep current value on empty input
-        else:
-            rv = validate_charge_amount(
-                reload_raw or "", min_usd=state.min_usd, max_usd=state.max_usd
-            )
-            if not rv.ok or rv.amount is None:
-                print(f"  🔴 {rv.error}")
-                return
-            reload_amt = rv.amount
-
-        if reload_amt is None or threshold_amt is None or reload_amt <= threshold_amt:
-            print("  🔴 Reload-to amount must be greater than the threshold.")
-            return
-
-        print()
-        _ar_consent = (
-            f"By confirming, you authorize Nous Research to charge {card.masked} "
-            f"whenever your balance reaches {format_money(threshold_amt)}. "
-            f"Turn off any time here or on the portal."
-        )
-        _cprint(f"  {_d(_ar_consent)}")
-        confirm_choices = [
-            ("agree", "Agree and turn on", "enable auto-reload"),
-            ("cancel", "Cancel", "do nothing"),
-        ]
-        raw = self._prompt_text_input_modal(
-            title="💳 Turn on auto-reload?",
-            detail=f"Below {format_money(threshold_amt)} → reload to {format_money(reload_amt)}",
-            choices=confirm_choices,
-        )
-        choice = self._normalize_slash_confirm_choice(raw, confirm_choices)
-        if choice != "agree":
-            print("  🟡 Cancelled.")
-            return
-
-        from lucifex_cli.nous_billing import (
-            BillingError,
-            BillingScopeRequired,
-            patch_auto_top_up,
-        )
-
-        try:
-            patch_auto_top_up(
-                enabled=True, threshold=float(threshold_amt), top_up_amount=float(reload_amt)
-            )
-        except BillingScopeRequired:
-            self._billing_handle_scope_required(state)
-            return
-        except BillingError as exc:
-            self._billing_render_charge_error(state, exc)
-            return
-        print(f"  ✅ Auto-reload on: below {format_money(threshold_amt)} → "
-              f"reload to {format_money(reload_amt)}.")
-
-    def _billing_auto_reload_disable(self, state):
-        """Turn off auto-reload (PATCH ``enabled:false``).
-
-        The endpoint requires ``threshold``/``topUpAmount`` in the body even when
-        disabling, so we echo back the current values (falling back to 0).
-        """
-        from lucifex_cli.nous_billing import (
-            BillingError,
-            BillingScopeRequired,
-            patch_auto_top_up,
-        )
-
-        ar = state.auto_reload
-        thr = float(ar.threshold_usd) if ar and ar.threshold_usd is not None else 0.0
-        rel = float(ar.reload_to_usd) if ar and ar.reload_to_usd is not None else 0.0
-        try:
-            patch_auto_top_up(enabled=False, threshold=thr, top_up_amount=rel)
-        except BillingScopeRequired:
-            self._billing_handle_scope_required(state)
-            return
-        except BillingError as exc:
-            self._billing_render_charge_error(state, exc)
-            return
-        print("  ✅ Auto-reload turned off.")
-
-    def _billing_limit_screen(self, state):
-        """Screen 5 — monthly spend limit (read-only; cap is portal-only)."""
-        from agent.billing_view import format_money
-
-        print()
-        _cprint(f"  💳 {_b('Monthly spend limit')}")
-        print(f"  {'─' * 41}")
-        cap = state.monthly_cap
-        if cap is None or cap.limit_usd is None:
-            _cprint(f"  {_d('No monthly cap visible (managed on the portal).')}")
-        else:
-            spent = format_money(cap.spent_this_month_usd)
-            limit = format_money(cap.limit_usd)
-            ceiling = " (default ceiling)" if cap.is_default_ceiling else ""
-            print(f"  {spent} of {limit} used this month{ceiling}")
-        _limit_note = (
-            "The monthly limit is set on the portal — the terminal shows "
-            "it read-only."
-        )
-        _cprint(f"  {_d(_limit_note)}")
-        self._billing_portal_hint(state)
 
     def _show_insights(self, command: str = "/insights"):
         """Show usage insights and analytics from session history."""
@@ -10327,7 +10113,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                 i += 1
 
         try:
-            from lucifex_state import SessionDB
+            from hermes_state import SessionDB
             from agent.insights import InsightsEngine
 
             db = SessionDB()
@@ -10339,13 +10125,26 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
             print(f"  Error generating insights: {e}")
 
     def _check_config_mcp_changes(self) -> None:
-        """Detect mcp_servers changes in config.yaml and auto-reload MCP connections.
+        """Detect mcp_servers changes in config.yaml and react.
 
         Called from process_loop every CONFIG_WATCH_INTERVAL seconds.
         Compares config.yaml mtime + mcp_servers section against the last
-        known state.  When a change is detected, triggers _reload_mcp() and
-        informs the user so they know the tool list has been refreshed.
+        known state.  When a change is detected:
+
+        * By default (``mcp.auto_reload_on_config_change: true``) it
+          auto-triggers ``_reload_mcp()`` and informs the user — legacy
+          behaviour from #1474.
+        * When opted out (``mcp.auto_reload_on_config_change: false``) it
+          does NOT reload.  Instead it notifies the user that the config
+          changed and that they can apply it with ``/reload-mcp`` — while
+          warning that ``/reload-mcp`` rebuilds the tool surface and
+          **invalidates the provider prompt cache** (the next message
+          re-sends the full input prefix, expensive on long-context /
+          high-reasoning models).  This stops silent cache-breaking reloads
+          when config.yaml is rewritten frequently by external tooling or
+          other Hermes instances.
         """
+
         import yaml as _yaml
 
         CONFIG_WATCH_INTERVAL = 5.0  # seconds between config.yaml stat() calls
@@ -10355,7 +10154,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
             return
         self._last_config_check = now
 
-        from lucifex_cli.config import get_config_path as _get_config_path
+        from hermes_cli.config import get_config_path as _get_config_path
         cfg_path = _get_config_path()
         if not cfg_path.exists():
             return
@@ -10377,10 +10176,50 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
             return
 
         new_mcp = new_cfg.get("mcp_servers") or {}
+        # Expand ${VAR} templates so the comparison is consistent with the
+        # init snapshot (self._config_mcp_servers), which was populated from
+        # the deep-merged + expanded config.  Without this, any
+        # save_config_value() that rewrites config.yaml (even for unrelated
+        # keys) triggers a false-positive MCP reload because the raw yaml
+        # still has "${POWERMEM_API_KEY}" while the snapshot has the
+        # expanded value.
+        from hermes_cli.config import _expand_env_vars
+        new_mcp = _expand_env_vars(new_mcp)
         if new_mcp == self._config_mcp_servers:
             return  # mcp_servers unchanged (some other section was edited)
 
+        # Detected a change in the mcp_servers section.  By default we
+        # auto-reload (legacy behaviour), but if the user has opted out we
+        # notify instead of reloading — because every reload rebuilds the
+        # agent tool surface and INVALIDATES the provider prompt cache (the
+        # next message re-sends the full input prefix, which is expensive on
+        # long-context / high-reasoning models).
+        #
+        # The toggle is the top-level ``mcp.auto_reload_on_config_change``
+        # key (see DEFAULT_CONFIG).  Read it from the config we just parsed
+        # so the user can flip it in the same edit that changes mcp_servers;
+        # missing key means default-on.
+        _mcp_cfg = new_cfg.get("mcp")
+        _auto = (
+            _mcp_cfg.get("auto_reload_on_config_change", True)
+            if isinstance(_mcp_cfg, dict)
+            else True
+        )
+
         self._config_mcp_servers = new_mcp
+
+        if not _auto:
+            # Notify the user that the config changed but do NOT auto-reload.
+            # They can apply the new settings on their own terms with
+            # /reload-mcp — which we explicitly warn may invalidate the cache.
+            print()
+            print("🔄 MCP server config changed — reload skipped (auto-reload disabled).")
+            print("   New settings are NOT applied yet. To apply them now, run:")
+            print("     /reload-mcp")
+            print("   ⚠️  Note: /reload-mcp rebuilds the tool set and invalidates the")
+            print("   provider prompt cache (next message re-sends full input tokens).")
+            return
+
         # Notify user and reload.  Run in a separate thread with a hard
         # timeout so a hung MCP server cannot block the process_loop
         # indefinitely (which would freeze the entire TUI).
@@ -10693,7 +10532,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
             print(f"  ❌ MCP reload failed: {e}")
 
     def _reload_skills(self) -> None:
-        """Reload skills: rescan ~/.lucifex/skills/ and queue a note for the
+        """Reload skills: rescan ~/.hermes/skills/ and queue a note for the
         next user turn.
 
         Skills don't need to live in the system prompt for the model to use
@@ -10899,7 +10738,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                         if not is_seen(CLI_CONFIG, TOOL_PROGRESS_FLAG):
                             self._long_tool_hint_fired = True
                             _cprint(f"  {_DIM}{tool_progress_hint_cli()}{_RST}")
-                            mark_seen(_lucifex_home / "config.yaml", TOOL_PROGRESS_FLAG)
+                            mark_seen(_hermes_home / "config.yaml", TOOL_PROGRESS_FLAG)
                             CLI_CONFIG.setdefault("onboarding", {}).setdefault("seen", {})[TOOL_PROGRESS_FLAG] = True
                 except Exception:
                     pass
@@ -11016,7 +10855,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         # instead of crashing on ``.get()``.
         voice_cfg: dict = {}
         try:
-            from lucifex_cli.config import load_config
+            from hermes_cli.config import load_config
             _cfg = load_config().get("voice")
             voice_cfg = _cfg if isinstance(_cfg, dict) else {}
         except Exception:
@@ -11135,7 +10974,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
             # Get STT model from config
             stt_model = None
             try:
-                from lucifex_cli.config import load_config
+                from hermes_cli.config import load_config
                 stt_config = load_config().get("stt", {})
                 stt_model = stt_config.get("model")
             except Exception:
@@ -11240,9 +11079,9 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
 
             # Use MP3 output for CLI playback (afplay doesn't handle OGG well).
             # The TTS tool may auto-convert MP3->OGG, but the original MP3 remains.
-            os.makedirs(os.path.join(tempfile.gettempdir(), "lucifex_voice"), exist_ok=True)
+            os.makedirs(os.path.join(tempfile.gettempdir(), "hermes_voice"), exist_ok=True)
             mp3_path = os.path.join(
-                tempfile.gettempdir(), "lucifex_voice",
+                tempfile.gettempdir(), "hermes_voice",
                 f"tts_{time.strftime('%Y%m%d_%H%M%S')}.mp3",
             )
 
@@ -11269,7 +11108,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
     def _voice_beeps_enabled(self) -> bool:
         """Return whether CLI voice mode should play record start/stop beeps."""
         try:
-            from lucifex_cli.config import load_config
+            from hermes_cli.config import load_config
             voice_cfg = load_config().get("voice", {})
             if isinstance(voice_cfg, dict):
                 return bool(voice_cfg.get("beep_enabled", True))
@@ -11313,7 +11152,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         # Check config for auto_tts (shape-safe — malformed ``voice:`` YAML
         # leaves ``voice_config`` as a non-dict, so guard before .get()).
         try:
-            from lucifex_cli.config import load_config
+            from hermes_cli.config import load_config
             _raw_voice = load_config().get("voice")
             voice_config = _raw_voice if isinstance(_raw_voice, dict) else {}
             if voice_config.get("auto_tts", False):
@@ -11534,13 +11373,15 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         return ""
 
     def _approval_callback(self, command: str, description: str,
-                           *, allow_permanent: bool = True) -> str:
+                           *, allow_permanent: bool = True,
+                           smart_denied: bool = False) -> str:
         """
         Prompt for dangerous command approval through the prompt_toolkit UI.
 
         Called from the agent thread. Shows a selection UI similar to clarify
-        with choices: once / session / always / deny. When allow_permanent
-        is False (tirith warnings present), the 'always' option is hidden.
+        with choices: once / session / always / deny. Smart DENY owner
+        overrides show only once / deny. When allow_permanent is False for
+        another reason (for example tirith), only 'always' is hidden.
         Long commands also get a 'view' option so the full command can be
         expanded before deciding.
 
@@ -11557,7 +11398,11 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
             self._approval_state = {
                 "command": command,
                 "description": description,
-                "choices": self._approval_choices(command, allow_permanent=allow_permanent),
+                "choices": self._approval_choices(
+                    command,
+                    allow_permanent=allow_permanent,
+                    smart_denied=smart_denied,
+                ),
                 "selected": 0,
                 "response_queue": response_queue,
             }
@@ -11603,9 +11448,13 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
             _cprint(f"\n{_DIM}  ⏱ Timeout — denying command{_RST}")
             return "deny"
 
-    def _approval_choices(self, command: str, *, allow_permanent: bool = True) -> list[str]:
+    def _approval_choices(self, command: str, *, allow_permanent: bool = True,
+                          smart_denied: bool = False) -> list[str]:
         """Return approval choices for a dangerous command prompt."""
-        choices = ["once", "session", "always", "deny"] if allow_permanent else ["once", "session", "deny"]
+        if smart_denied:
+            choices = ["once", "deny"]
+        else:
+            choices = ["once", "session", "always", "deny"] if allow_permanent else ["once", "session", "deny"]
         if len(command) > 70:
             choices.append("view")
         return choices
@@ -11970,7 +11819,10 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
             request_overrides=turn_route.get("request_overrides"),
         ):
             return None
-        
+        agent = self.agent
+        if agent is None:
+            return None
+
         # Route image attachments based on the active model's vision capability.
         # "native" → pass pixels as OpenAI-style content parts (adapters
         #            translate for Anthropic/Gemini/Bedrock).
@@ -11983,7 +11835,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                     build_native_content_parts,
                     decide_image_input_mode,
                 )
-                from lucifex_cli.config import load_config
+                from hermes_cli.config import load_config
 
                 _img_mode = decide_image_input_mode(
                     (self.provider or "").strip(),
@@ -12058,8 +11910,31 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
             from run_agent import _sanitize_surrogates
             message = _sanitize_surrogates(message)
 
-        # Add user message to history
-        self.conversation_history.append({"role": "user", "content": message})
+        # Keep the exact CLI input dict available until turn-start persistence.
+        # Copy the completed agent transcript before appending: otherwise this
+        # UI-only staging step mutates ``agent._session_messages`` and exposes a
+        # duplicate-prone intermediate snapshot to terminal-close persistence.
+        if self.conversation_history is getattr(agent, "_session_messages", None):
+            self.conversation_history = list(self.conversation_history)
+        # The prior turn's override applies only to its own user dict. Clear it
+        # before exposing the next staged input to close persistence; otherwise
+        # a shutdown before the worker prologue can write old API-local text as
+        # this new user message (#63766).
+        persist_lock = getattr(agent, "_session_persist_lock", None)
+
+        def _stage_user_message() -> None:
+            agent._persist_user_message_idx = None
+            agent._persist_user_message_override = None
+            agent._persist_user_message_timestamp = None
+            staged_user_message = {"role": "user", "content": message}
+            agent._pending_cli_user_message = staged_user_message
+            self.conversation_history.append(staged_user_message)
+
+        if persist_lock is None:
+            _stage_user_message()
+        else:
+            with persist_lock:
+                _stage_user_message()
 
         ChatConsole().print(f"[{_accent_hex()}]{'─' * 40}[/]")
         print(flush=True)
@@ -12116,10 +11991,10 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                     if not _streaming_box_opened:
                         _streaming_box_opened = True
                         w = self._scrollback_box_width(getattr(self.console, "width", 80))
-                        label = " ⚕ Lucifex "
+                        label = " ⚕ Hermes "
                         if self.show_timestamps:
-                            label = f"{label}{datetime.now().strftime('%H:%M')} "
-                        fill = w - 2 - LucifexCLI._status_bar_display_width(label)
+                            label = f"{label}{datetime.now().strftime(getattr(self, 'timestamp_format', '%H:%M'))} "
+                        fill = w - 2 - HermesCLI._status_bar_display_width(label)
                         _cprint(f"\n{_ACCENT}╭─{label}{'─' * max(fill - 1, 0)}╮{_RST}")
                     _cprint(f"{_STREAM_PAD}{sentence.rstrip()}")
 
@@ -12196,13 +12071,24 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                 self._pending_moa_config = None
                 if _moa_cfg is None:
                     _moa_cfg = None
+                # Model/skill notes and voice instructions are API-local. Keep
+                # the original staged input as the durable transcript value so a
+                # close-path marker follows the same dict into turn setup rather
+                # than producing a second noted user row (#63766).
+                _persist_clean_user_message = (
+                    message if (_voice_prefix or agent_message != message) else None
+                )
+                _one_turn_model_restore = getattr(
+                    self, "_pending_one_turn_model_restore", None
+                )
+                self._pending_one_turn_model_restore = None
                 try:
                     result = self.agent.run_conversation(
                         user_message=agent_message,
                         conversation_history=self.conversation_history[:-1],  # Exclude the message we just added
                         stream_callback=stream_callback,
                         task_id=self.session_id,
-                        persist_user_message=message if _voice_prefix else None,
+                        persist_user_message=_persist_clean_user_message,
                         moa_config=_moa_cfg,
                     )
                     if getattr(self, "_pending_moa_disable_after_turn", False):
@@ -12225,6 +12111,8 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                         "error": _summary,
                     }
                 finally:
+                    if _one_turn_model_restore:
+                        self._restore_model_runtime_snapshot(_one_turn_model_restore)
                     # Surface any credit notices queued during the turn (cold-start
                     # seed / per-turn capture) now that the response is done — printing
                     # at this boundary paints cleanly above the prompt instead of being
@@ -12295,7 +12183,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                             self._clear_active_overlays_for_interrupt()
                             # Debug: log to file (stdout may be devnull from redirect_stdout)
                             try:
-                                _dbg = _lucifex_home / "interrupt_debug.log"
+                                _dbg = _hermes_home / "interrupt_debug.log"
                                 with open(_dbg, "a", encoding="utf-8") as _f:
                                     _f.write(f"{time.strftime('%H:%M:%S')} interrupt fired: msg={str(interrupt_msg)[:60]!r}, "
                                              f"children={len(self.agent._active_children)}, "
@@ -12411,6 +12299,12 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                     _title_failure_cb = getattr(
                         self.agent, "_emit_auxiliary_failure", None
                     ) if self.agent else None
+                    # Snapshot the runtime identity; the validator lets the
+                    # background titler skip its LLM call if the user switches
+                    # models before it fires (a stale request would reload an
+                    # unloaded Ollama model, #19027).
+                    _title_model = self.model
+                    _title_provider = self.provider
                     maybe_auto_title(
                         self._session_db,
                         self.session_id,
@@ -12425,6 +12319,10 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                             "api_key": self.api_key,
                             "api_mode": self.api_mode,
                         },
+                        runtime_validator=lambda: (
+                            getattr(self, "model", None) == _title_model
+                            and getattr(self, "provider", None) == _title_provider
+                        ),
                     )
                 except Exception:
                     pass
@@ -12510,13 +12408,13 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
             if response and not response_previewed:
                 # Use skin engine for label/color with fallback
                 try:
-                    from lucifex_cli.skin_engine import get_active_skin
+                    from hermes_cli.skin_engine import get_active_skin
                     _skin = get_active_skin()
-                    label = _skin.get_branding("response_label", "⚕ Lucifex")
+                    label = _skin.get_branding("response_label", "⚕ Hermes")
                     _resp_color = _maybe_remap_for_light_mode(_skin.get_color("response_border", "#CD7F32"))
                     _resp_text = _maybe_remap_for_light_mode(_skin.get_color("banner_text", "#FFF8DC"))
                 except Exception:
-                    label = "⚕ Lucifex"
+                    label = "⚕ Hermes"
                     _resp_color = _maybe_remap_for_light_mode("#CD7F32")
                     _resp_text = _maybe_remap_for_light_mode("#FFF8DC")
 
@@ -12665,36 +12563,99 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         if not agent or not hasattr(agent, "_persist_session"):
             return
 
-        messages = getattr(agent, "_session_messages", None)
-        if not isinstance(messages, list):
-            messages = getattr(self, "conversation_history", None)
-        if not isinstance(messages, list) or not messages:
-            return
+        persist_lock = getattr(agent, "_session_persist_lock", None)
 
-        conversation_history = getattr(self, "conversation_history", None)
-        if not isinstance(conversation_history, list):
-            conversation_history = messages
+        def _snapshot_and_persist() -> None:
+            # This snapshot must share the staging lock with ``chat()``. Without
+            # it, close can retain a mutable history baseline just before chat
+            # appends its pending dict; the later flush then mistakes that dict
+            # for durable history and stamps it without writing a row (#63766).
+            messages = getattr(agent, "_session_messages", None)
+            pending_cli_message = getattr(agent, "_pending_cli_user_message", None)
+            if not isinstance(messages, list):
+                messages = getattr(self, "conversation_history", None)
+            if not isinstance(messages, list):
+                return
+            if isinstance(pending_cli_message, dict) and not any(
+                message is pending_cli_message for message in messages
+            ):
+                # The UI has accepted a new input but the worker still exposes its
+                # prior snapshot. Include only that staged dict; the baseline below
+                # keeps any durable resumed prefix from being re-appended.
+                messages = [*messages, pending_cli_message]
+            if not messages:
+                return
 
-        try:
+            # A normal turn builds a new list that reuses the resumed-history dicts.
+            # Keep that CLI history as the baseline so a signal between assigning
+            # ``_session_messages`` and the turn's DB flush cannot append its durable
+            # prefix a second time. Once the CLI takes the turn result, however, both
+            # names can point at the same live list; passing that alias would mark an
+            # unflushed tail durable without writing it. Marker-only persistence is
+            # correct only in that alias case.
+            conversation_history = getattr(self, "conversation_history", None)
+            pending_cli_message = getattr(agent, "_pending_cli_user_message", None)
+            if (
+                isinstance(conversation_history, list)
+                and conversation_history
+                and conversation_history[-1] is pending_cli_message
+            ):
+                # The UI accepted this user message before the agent finished its
+                # early persistence. Its dict can already be in ``messages`` but is
+                # not durable yet, so exclude it from the resumed-history baseline.
+                conversation_history = conversation_history[:-1]
+            elif not isinstance(conversation_history, list) or conversation_history is messages:
+                conversation_history = None
+
+            # A first-turn close can arrive before the worker builds its cached
+            # prompt. Build or restore it before the DB row is created so the
+            # durable transcript never leaves a NULL system_prompt cache entry.
+            if getattr(agent, "_cached_system_prompt", None) is None:
+                try:
+                    from agent.conversation_loop import _restore_or_build_system_prompt
+
+                    _restore_or_build_system_prompt(agent, None, conversation_history)
+                except Exception:
+                    logger.debug("Could not build system prompt during CLI close", exc_info=True)
+                    return
+            if getattr(agent, "_cached_system_prompt", None) is None:
+                return
+
+            agent._ensure_db_session()
             agent._persist_session(messages, conversation_history)
             if getattr(agent, "session_id", None):
                 self.session_id = agent.session_id
+
+        try:
+            if persist_lock is None:
+                _snapshot_and_persist()
+            else:
+                with persist_lock:
+                    _snapshot_and_persist()
         except (Exception, KeyboardInterrupt) as e:
             logger.debug("Could not persist active CLI session before close: %s", e)
 
-    def _print_exit_summary(self):
-        """Print session resume info on exit, similar to Claude Code."""
-        # Clear the screen + scrollback before printing the summary so the
-        # live bottom chrome (status bar, input box, separator rules) and the
-        # rest of the session transcript don't get stranded above the exit
-        # summary (#38252). By this point app.run() has returned and
-        # prompt_toolkit has restored terminal modes, so writing raw escapes
-        # to stdout is safe. ESC[3J clears scrollback, ESC[2J clears the
-        # visible screen, ESC[H homes the cursor — so the summary prints at a
-        # clean top-left. Falls back to the platform clear command if stdout
-        # isn't a TTY-capable stream. Honors NO_COLOR/dumb terminals by
-        # skipping silently when there's no real console.
-        self._clear_terminal_on_exit()
+    def _print_exit_summary(self, clear_screen: bool = True):
+        """Print session resume info on exit, similar to Claude Code.
+
+        Args:
+            clear_screen: When True (default), clear the terminal screen and
+                scrollback before printing the summary. This is appropriate for
+                interactive TUI teardown (#38252). Single-query (-q) mode should
+                pass False to preserve the printed answer (#53009).
+        """
+        if clear_screen:
+            # Clear the screen + scrollback before printing the summary so the
+            # live bottom chrome (status bar, input box, separator rules) and the
+            # rest of the session transcript don't get stranded above the exit
+            # summary (#38252). By this point app.run() has returned and
+            # prompt_toolkit has restored terminal modes, so writing raw escapes
+            # to stdout is safe. ESC[3J clears scrollback, ESC[2J clears the
+            # visible screen, ESC[H homes the cursor — so the summary prints at a
+            # clean top-left. Falls back to the platform clear command if stdout
+            # isn't a TTY-capable stream. Honors NO_COLOR/dumb terminals by
+            # skipping silently when there's no real console.
+            self._clear_terminal_on_exit()
         print()
         msg_count = len(self.conversation_history)
         if msg_count > 0:
@@ -12723,18 +12684,18 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
             # include `-p <profile>` for non-default profiles. Without this,
             # copying the hint from a non-default profile fails to find the
             # session on the next invocation. The "default" and "custom"
-            # profile names use the standard LUCIFEX_HOME, so no -p needed.
+            # profile names use the standard HERMES_HOME, so no -p needed.
             try:
-                from lucifex_cli.profiles import get_active_profile_name
+                from hermes_cli.profiles import get_active_profile_name
                 _active_profile = get_active_profile_name()
             except Exception:
                 _active_profile = "default"
             profile_flag = (
                 "" if _active_profile in ("default", "custom") else f" -p {_active_profile}"
             )
-            print(f"  lucifex --resume {self.session_id}{profile_flag}")
+            print(f"  hermes --resume {self.session_id}{profile_flag}")
             if session_title:
-                print(f"  lucifex -c \"{session_title}\"{profile_flag}")
+                print(f"  hermes -c \"{session_title}\"{profile_flag}")
             print()
             print(f"Session:        {self.session_id}")
             if session_title:
@@ -12743,7 +12704,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
             print(f"Messages:       {msg_count} ({user_msgs} user, {tool_calls} tool calls)")
         else:
             try:
-                from lucifex_cli.skin_engine import get_active_goodbye
+                from hermes_cli.skin_engine import get_active_goodbye
                 goodbye = get_active_goodbye("Goodbye! ⚕")
             except Exception:
                 goodbye = "Goodbye! ⚕"
@@ -12760,7 +12721,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         prepended to the prompt symbol: ``coder ❯`` instead of ``❯``.
         """
         try:
-            from lucifex_cli.skin_engine import get_active_prompt_symbol
+            from hermes_cli.skin_engine import get_active_prompt_symbol
             symbol = get_active_prompt_symbol("❯ ")
         except Exception:
             symbol = "❯ "
@@ -12769,7 +12730,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
 
         # Prepend profile name when not default
         try:
-            from lucifex_cli.profiles import get_active_profile_name
+            from hermes_cli.profiles import get_active_profile_name
             profile = get_active_profile_name()
             if profile not in {"default", "custom"}:
                 symbol = f"{profile} {symbol}"
@@ -12854,7 +12815,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         """
         style_dict = dict(getattr(self, "_tui_style_base", {}) or {})
         try:
-            from lucifex_cli.skin_engine import get_prompt_toolkit_style_overrides
+            from hermes_cli.skin_engine import get_prompt_toolkit_style_overrides
             style_dict.update(get_prompt_toolkit_style_overrides())
         except Exception:
             pass
@@ -13005,12 +12966,12 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                 self._display_resumed_history()
 
         try:
-            from lucifex_cli.skin_engine import get_active_skin
+            from hermes_cli.skin_engine import get_active_skin
             _welcome_skin = get_active_skin()
-            _welcome_text = _welcome_skin.get_branding("welcome", "Welcome to Lucifex Agent! Type your message or /help for commands.")
+            _welcome_text = _welcome_skin.get_branding("welcome", "Welcome to Hermes Agent! Type your message or /help for commands.")
             _welcome_color = _welcome_skin.get_color("banner_text", "#FFF8DC")
         except Exception:
-            _welcome_text = "Welcome to Lucifex Agent! Type your message or /help for commands."
+            _welcome_text = "Welcome to Hermes Agent! Type your message or /help for commands."
             _welcome_color = "#FFF8DC"
         self._console_print(f"[{_welcome_color}]{_welcome_text}[/]")
 
@@ -13019,21 +12980,44 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         # otherwise blocks ~1-2s on serial /v1/models fetches the first time
         # it's opened in a session. Fire-and-forget, guarded once-per-process.
         try:
-            from lucifex_cli.model_switch import prewarm_picker_cache_async
+            from hermes_cli.model_switch import prewarm_picker_cache_async
             prewarm_picker_cache_async()
         except Exception:
             pass
+
+        # Pre-import the agent runtime off-thread during the same idle window.
+        # The first turn otherwise pays ~1.5s of module imports on the
+        # time-to-first-token critical path: `import run_agent` (~0.9s,
+        # deferred by the lazy AIAgent wrapper above) plus the OpenAI SDK
+        # (~0.6s, deferred until client construction). Python's import lock
+        # makes this safe: if the user submits before the warm finishes, the
+        # main thread simply blocks on the remaining import work instead of
+        # redoing it. Skipped when agent startup is explicitly deferred
+        # (Termux) — that path defers heavy work on purpose.
+        if os.environ.get("HERMES_DEFER_AGENT_STARTUP") != "1":
+            def _prewarm_agent_runtime() -> None:
+                try:
+                    import run_agent  # noqa: F401  (imports model_tools + tool registry)
+                    import openai  # noqa: F401
+                except Exception:
+                    logger.debug("agent runtime pre-import failed", exc_info=True)
+
+            threading.Thread(
+                target=_prewarm_agent_runtime,
+                name="agent-runtime-prewarm",
+                daemon=True,
+            ).start()
 
         # Redaction opt-out warning (#17691): ON by default, loud when off.
         # The redactor snapshots its state at import time so any toggle now
         # won't affect the running process — we just want the operator to
         # see that they're running without the safety net.
         try:
-            _redact_raw = os.getenv("LUCIFEX_REDACT_SECRETS", "true")
+            _redact_raw = os.getenv("HERMES_REDACT_SECRETS", "true")
             if _redact_raw.lower() not in {"1", "true", "yes", "on"}:
                 self._console_print(
                     "[bold red]⚠  Secret redaction is DISABLED[/] "
-                    f"(LUCIFEX_REDACT_SECRETS={_redact_raw}). "
+                    f"(HERMES_REDACT_SECRETS={_redact_raw}). "
                     "API keys and tokens may appear verbatim in chat output, "
                     "session JSONs, and logs. Set "
                     "[cyan]security.redact_secrets: true[/] in config.yaml "
@@ -13042,7 +13026,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         except Exception:
             pass
         # First-time OpenClaw-residue banner — fires once if ~/.openclaw/ exists
-        # after an OpenClaw→Lucifex migration (especially migrations done by
+        # after an OpenClaw→Hermes migration (especially migrations done by
         # OpenClaw's own tool, which doesn't archive the source directory).
         try:
             from agent.onboarding import (
@@ -13059,7 +13043,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                     _resid_color = "#B8860B"
                 self._console_print(f"[{_resid_color}]{openclaw_residue_hint_cli()}[/]")
                 try:
-                    from lucifex_cli.config import get_config_path as _get_cfg_path_resid
+                    from hermes_cli.config import get_config_path as _get_cfg_path_resid
                     mark_seen(_get_cfg_path_resid(), OPENCLAW_RESIDUE_FLAG)
                 except Exception:
                     pass  # best-effort — banner will fire again next session
@@ -13067,7 +13051,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
             pass  # banner is non-critical — never break startup
         # Show a random tip to help users discover features
         try:
-            from lucifex_cli.tips import get_random_tip
+            from hermes_cli.tips import get_random_tip
             _tip = get_random_tip()
             try:
                 _tip_color = _welcome_skin.get_color("banner_dim", "#B8860B")
@@ -13110,11 +13094,11 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         self._last_ctrl_c_time = 0  # Track double Ctrl+C for force exit
 
         # Give plugin manager a CLI reference so plugins can inject messages
-        from lucifex_cli.plugins import get_plugin_manager
+        from hermes_cli.plugins import get_plugin_manager
         get_plugin_manager()._cli_ref = self
 
         # Config file watcher — detect mcp_servers changes and auto-reload
-        from lucifex_cli.config import get_config_path as _get_config_path
+        from hermes_cli.config import get_config_path as _get_config_path
         _cfg_path = _get_config_path()
         self._config_mtime: float = _cfg_path.stat().st_mtime if _cfg_path.exists() else 0.0
         self._config_mcp_servers: dict = self.config.get("mcp_servers") or {}
@@ -13167,10 +13151,10 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         self._voice_tts_done = threading.Event()  # Signals TTS playback finished
         self._voice_tts_done.set()  # Initially "done" (no TTS pending)
 
-        if os.environ.get("LUCIFEX_DEFER_AGENT_STARTUP") != "1":
+        if os.environ.get("HERMES_DEFER_AGENT_STARTUP") != "1":
             self._install_tool_callbacks()
 
-        if os.environ.get("LUCIFEX_DEFER_AGENT_STARTUP") != "1":
+        if os.environ.get("HERMES_DEFER_AGENT_STARTUP") != "1":
             self._ensure_tirith_security()
         
         # Key bindings for the input area
@@ -13182,7 +13166,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         def handle_ignored_terminal_sequence(event):
             """Consume parser-level ignored terminal sequences before self-insert.
 
-            install_ignored_terminal_sequences() in lucifex_cli.pt_input_extras
+            install_ignored_terminal_sequences() in hermes_cli.pt_input_extras
             registers focus reports (CSI I / CSI O) as Keys.Ignore at the
             VT100 parser level. Without this no-op binding the default
             self-insert path would still fire and the bytes would land in
@@ -13242,9 +13226,9 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
             # --- /model picker modal ---
             if self._model_picker_state:
                 try:
-                    # Picker selections persist by default (same default as
-                    # /model <name>); honour model.persist_switch_by_default.
-                    from lucifex_cli.model_switch import resolve_persist_behavior
+                    # Picker selections follow the same session-scoped default
+                    # as /model <name>; honour model.persist_switch_by_default.
+                    from hermes_cli.model_switch import resolve_persist_behavior
 
                     self._handle_model_picker_selection(
                         persist_global=resolve_persist_behavior(False, False)
@@ -13359,7 +13343,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                         self._interrupt_queue.put(payload)
                         # Debug: log to file when message enters interrupt queue
                         try:
-                            _dbg = _lucifex_home / "interrupt_debug.log"
+                            _dbg = _hermes_home / "interrupt_debug.log"
                             with open(_dbg, "a", encoding="utf-8") as _f:
                                 _f.write(f"{time.strftime('%H:%M:%S')} ENTER: queued interrupt msg={str(payload)[:60]!r}, "
                                          f"agent_running={self._agent_running}\n")
@@ -13379,7 +13363,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                         )
                         if not is_seen(CLI_CONFIG, BUSY_INPUT_FLAG):
                             _cprint(f"  {_DIM}{busy_input_hint_cli(self.busy_input_mode)}{_RST}")
-                            mark_seen(_lucifex_home / "config.yaml", BUSY_INPUT_FLAG)
+                            mark_seen(_hermes_home / "config.yaml", BUSY_INPUT_FLAG)
                             CLI_CONFIG.setdefault("onboarding", {}).setdefault("seen", {})[BUSY_INPUT_FLAG] = True
                     except Exception:
                         pass
@@ -13412,7 +13396,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                 without requiring terminal settings changes. Ctrl+J (the raw
                 LF keystroke) also triggers this by virtue of being the same
                 key code — a harmless side effect since Ctrl+J has no
-                conflicting Lucifex binding. See issue #22379.
+                conflicting Hermes binding. See issue #22379.
                 """
                 event.current_buffer.insert_text('\n')
 
@@ -13830,8 +13814,8 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                 return
             import signal as _sig
             from prompt_toolkit.application import run_in_terminal
-            from lucifex_cli.skin_engine import get_active_skin
-            agent_name = get_active_skin().get_branding("agent_name", "Lucifex Agent")
+            from hermes_cli.skin_engine import get_active_skin
+            agent_name = get_active_skin().get_branding("agent_name", "Hermes Agent")
             msg = f"\n{agent_name} has been suspended. Run `fg` to bring {agent_name} back."
             def _suspend():
                 os.write(1, msg.encode())
@@ -13849,8 +13833,8 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         # TUI/CLI split instead of a silent mismatch (round-11).
         _raw_key: object = "ctrl+b"
         try:
-            from lucifex_cli.config import load_config
-            from lucifex_cli.voice import (
+            from hermes_cli.config import load_config
+            from hermes_cli.voice import (
                 normalize_voice_record_key_for_prompt_toolkit,
                 voice_record_key_from_config,
             )
@@ -13979,7 +13963,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                 chars_hit = char_threshold > 0 and len(pasted_text) >= char_threshold
                 if (lines_hit or chars_hit) and not buf.text.strip().startswith('/'):
                     _paste_counter[0] += 1
-                    paste_dir = _lucifex_home / "pastes"
+                    paste_dir = _hermes_home / "pastes"
                     paste_dir.mkdir(parents=True, exist_ok=True)
                     paste_file = paste_dir / f"paste_{_paste_counter[0]}_{datetime.now().strftime('%H%M%S')}.txt"
                     paste_file.write_text(pasted_text, encoding="utf-8")
@@ -14034,7 +14018,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                 # No image found — show a hint
                 pass  # silent when no image (avoid noise on accidental press)
 
-        # Dynamic prompt: shows Lucifex symbol when agent is working,
+        # Dynamic prompt: shows Hermes symbol when agent is working,
         # or answer prompt when clarify freetext mode is active.
         cli_ref = self
 
@@ -14150,7 +14134,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
             chars_hit = char_threshold > 0 and len(text) >= char_threshold
             if (lines_hit or chars_hit) and is_paste and not text.startswith('/'):
                 _paste_counter[0] += 1
-                paste_dir = _lucifex_home / "pastes"
+                paste_dir = _hermes_home / "pastes"
                 paste_dir.mkdir(parents=True, exist_ok=True)
                 paste_file = paste_dir / f"paste_{_paste_counter[0]}_{datetime.now().strftime('%H%M%S')}.txt"
                 paste_file.write_text(text, encoding="utf-8")
@@ -14378,7 +14362,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                 else f"  {other_num_prefix}. Other (type your answer)"
             )
             preview_lines.extend(_wrap_panel_text(other_label, 60, subsequent_indent="    "))
-            box_width = _panel_box_width("Lucifex needs your input", preview_lines)
+            box_width = _panel_box_width("Hermes needs your input", preview_lines)
             inner_text_width = max(8, box_width - 2)
 
             # Pre-wrap choices + Other option — these are mandatory.
@@ -14473,8 +14457,8 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
             lines = []
             # Box top border
             lines.append(('class:clarify-border', '╭─ '))
-            lines.append(('class:clarify-title', 'Lucifex needs your input'))
-            lines.append(('class:clarify-border', ' ' + ('─' * max(0, box_width - len("Lucifex needs your input") - 3)) + '╮\n'))
+            lines.append(('class:clarify-title', 'Hermes needs your input'))
+            lines.append(('class:clarify-border', ' ' + ('─' * max(0, box_width - len("Hermes needs your input") - 3)) + '╮\n'))
             if not use_compact_chrome:
                 _append_blank_panel_line(lines, 'class:clarify-border', box_width)
 
@@ -14657,7 +14641,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                 term_rows = get_app().output.get_size().rows
             except Exception:
                 term_rows = shutil.get_terminal_size((100, 24)).lines
-            scroll_offset, visible = LucifexCLI._compute_model_picker_viewport(
+            scroll_offset, visible = HermesCLI._compute_model_picker_viewport(
                 selected, state.get("_scroll_offset", 0), len(choices), term_rows,
             )
             state["_scroll_offset"] = scroll_offset
@@ -14909,7 +14893,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
             import prompt_toolkit.renderer as _pt_renderer
             from prompt_toolkit.renderer import _output_screen_diff as _orig_osd
 
-            if not getattr(_pt_renderer, "_lucifex_osd_patched", False):
+            if not getattr(_pt_renderer, "_hermes_osd_patched", False):
                 def _patched_output_screen_diff(
                     app, output, screen, current_pos, color_depth,
                     previous_screen, last_style, is_done, full_screen,
@@ -14947,7 +14931,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                     )
 
                 _pt_renderer._output_screen_diff = _patched_output_screen_diff
-                _pt_renderer._lucifex_osd_patched = True
+                _pt_renderer._hermes_osd_patched = True
         except Exception:
             pass
 
@@ -14995,9 +14979,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                             # Check for background process notifications (completions
                             # and watch pattern matches) while agent is idle.
                             try:
-                                from tools.process_registry import process_registry
-                                for _evt, _synth in process_registry.drain_notifications():
-                                    self._pending_input.put(_synth)
+                                self._drain_process_notifications("cli-idle")
                             except Exception:
                                 pass
                         continue
@@ -15157,9 +15139,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                         # Drain process notifications (completions + watch matches)
                         # that arrived while the agent was running.
                         try:
-                            from tools.process_registry import process_registry
-                            for _evt, _synth in process_registry.drain_notifications():
-                                self._pending_input.put(_synth)
+                            self._drain_process_notifications("cli-post-turn")
                         except Exception:
                             pass  # Non-fatal — don't break the main loop
 
@@ -15186,7 +15166,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
             spawned with ``os.setsid`` and therefore survives as an orphan
             with PPID=1.
 
-            Grace window (``LUCIFEX_SIGTERM_GRACE``, default 1.5 s) gives
+            Grace window (``HERMES_SIGTERM_GRACE``, default 1.5 s) gives
             the daemon time to: detect the interrupt (next 200 ms poll) →
             call _kill_process (SIGTERM + 1 s wait + SIGKILL if needed) →
             return from _wait_for_process.  ``time.sleep`` releases the
@@ -15207,11 +15187,18 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                 logger.debug("Received signal %s, triggering graceful shutdown", signum)
             except Exception:
                 pass  # never let logging raise from a signal handler (#13710 regression)
+            # Shutdown intent is now unambiguous — arm the exit backstop
+            # IMMEDIATELY, before the graceful unwind below.  If any step of
+            # that unwind wedges (main thread parked in a syscall, prompt_toolkit
+            # teardown never returning), _run_cleanup never runs and would
+            # never arm its own watchdog — leaving a "dead" CLI alive for
+            # minutes (#65998 class).  Never raises.
+            _arm_exit_watchdog_on_shutdown_signal()
             try:
                 if getattr(self, "agent", None) and getattr(self, "_agent_running", False):
                     self.agent.interrupt(f"received signal {signum}")
                     try:
-                        _grace = float(os.getenv("LUCIFEX_SIGTERM_GRACE", "1.5"))
+                        _grace = float(os.getenv("HERMES_SIGTERM_GRACE", "1.5"))
                     except (TypeError, ValueError):
                         _grace = 1.5
                     if _grace > 0:
@@ -15253,7 +15240,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
             # Windows: install a SIGINT handler that absorbs the signal
             # instead of letting Python's default handler raise
             # KeyboardInterrupt in MainThread. Windows Terminal / Win32
-            # delivers spurious CTRL_C_EVENT to the lucifex process when
+            # delivers spurious CTRL_C_EVENT to the hermes process when
             # child processes are spawned from background threads (agent
             # subprocess Popen path). The default Python SIGINT handler
             # would then unwind prompt_toolkit's app.run(), trigger
@@ -15309,7 +15296,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
             print(
                 "Error: stdin (fd 0) is not available.\n"
                 "This can happen with certain Python installations (e.g. uv-managed cPython on macOS).\n"
-                "Try reinstalling Python via pyenv or Homebrew, then re-run: lucifex setup"
+                "Try reinstalling Python via pyenv or Homebrew, then re-run: hermes setup"
             )
             _run_cleanup()
             self._print_exit_summary()
@@ -15378,7 +15365,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                     f"\nError: stdin is not usable ({_stdin_err}).\n"
                     "This can happen with certain Python installations (e.g. uv-managed cPython on macOS)\n"
                     "where kqueue cannot register fd 0.\n"
-                    "Try reinstalling Python via pyenv or Homebrew, then re-run: lucifex setup"
+                    "Try reinstalling Python via pyenv or Homebrew, then re-run: hermes setup"
                 )
             else:
                 raise
@@ -15433,7 +15420,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                 except (Exception, KeyboardInterrupt) as e:
                     logger.debug("Could not close session in DB: %s", e)
                 # Started-and-immediately-quit sessions never gained content;
-                # drop the empty row so /resume and `lucifex sessions list`
+                # drop the empty row so /resume and `hermes sessions list`
                 # stay clean (gemini-cli#27770 port). No-op for resumed or
                 # titled sessions and anything with messages or children.
                 if not getattr(self, '_delete_session_on_exit', False):
@@ -15445,7 +15432,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
                 # and SQLite history. Ported from google-gemini/gemini-cli#19332.
                 if getattr(self, '_delete_session_on_exit', False):
                     try:
-                        from lucifex_constants import get_lucifex_home as _ghh
+                        from hermes_constants import get_hermes_home as _ghh
                         _sessions_dir = _ghh() / "sessions"
                         _sid = self.agent.session_id
                         if self._session_db.delete_session(_sid, sessions_dir=_sessions_dir):
@@ -15460,7 +15447,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
             # the exit occurred, meaning run_conversation's hook didn't fire.
             if self.agent and getattr(self, '_agent_running', False):
                 try:
-                    from lucifex_cli.plugins import invoke_hook as _invoke_hook
+                    from hermes_cli.plugins import invoke_hook as _invoke_hook
                     _invoke_hook(
                         "on_session_end",
                         session_id=self.agent.session_id,
@@ -15482,7 +15469,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
         # thread (which would skip terminal cleanup on POSIX and only exit
         # the worker thread on Windows).
         if getattr(self, '_pending_relaunch', None):
-            from lucifex_cli.relaunch import relaunch
+            from hermes_cli.relaunch import relaunch
             relaunch(self._pending_relaunch, preserve_inherited=False)
 
 
@@ -15490,11 +15477,11 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin):
 # Main Entry Point
 # ============================================================================
 
-def _run_kanban_goal_loop_q(cli: "LucifexCLI", first_response: str) -> None:
+def _run_kanban_goal_loop_q(cli: "HermesCLI", first_response: str) -> None:
     """Drive a kanban goal_mode worker through the Ralph-style goal loop.
 
     Called from the quiet single-query path AFTER the worker's first turn,
-    only when ``LUCIFEX_KANBAN_GOAL_MODE`` is set (dispatcher-spawned
+    only when ``HERMES_KANBAN_GOAL_MODE`` is set (dispatcher-spawned
     goal_mode card). Wires the worker's ``run_conversation`` and the kanban
     DB into ``goals.run_kanban_goal_loop``. All errors are swallowed by the
     caller — a broken goal loop must never wedge a worker, the dispatcher's
@@ -15502,12 +15489,12 @@ def _run_kanban_goal_loop_q(cli: "LucifexCLI", first_response: str) -> None:
     """
     import os as _os
 
-    task_id = (_os.environ.get("LUCIFEX_KANBAN_TASK") or "").strip()
+    task_id = (_os.environ.get("HERMES_KANBAN_TASK") or "").strip()
     if not task_id:
         return
 
-    from lucifex_cli import kanban_db as _kb
-    from lucifex_cli.goals import run_kanban_goal_loop as _run_loop, DEFAULT_MAX_TURNS as _DEF_TURNS
+    from hermes_cli import kanban_db as _kb
+    from hermes_cli.goals import run_kanban_goal_loop as _run_loop, DEFAULT_MAX_TURNS as _DEF_TURNS
 
     # Resolve goal text from the card (title + body = the acceptance
     # criteria the judge evaluates against).
@@ -15606,7 +15593,7 @@ def main(
     ignore_rules: bool = False,
 ):
     """
-    Lucifex Agent CLI - Interactive AI Assistant
+    Hermes Agent CLI - Interactive AI Assistant
     
     Args:
         query: Single query to execute (then exit). Alias: -q
@@ -15630,7 +15617,7 @@ def main(
     Examples:
         python cli.py                            # Start interactive mode
         python cli.py --toolsets web,terminal    # Use specific toolsets
-        python cli.py --skills lucifex-agent-dev,github-auth
+        python cli.py --skills hermes-agent-dev,github-auth
         python cli.py -q "What is Python?"       # Single query mode
         python cli.py -q "Describe this" --image ~/storage/shared/Pictures/cat.png
         python cli.py --list-tools               # List tools and exit
@@ -15644,20 +15631,20 @@ def main(
     # Rich console prints Unicode box-drawing characters that would
     # UnicodeEncodeError on cp1252.  No-op on Linux/macOS.
     try:
-        from lucifex_cli.stdio import configure_windows_stdio
+        from hermes_cli.stdio import configure_windows_stdio
         configure_windows_stdio()
     except Exception:
         pass
 
     # Signal to terminal_tool that we're in interactive mode
     # This enables interactive sudo password prompts with timeout
-    os.environ["LUCIFEX_INTERACTIVE"] = "1"
+    os.environ["HERMES_INTERACTIVE"] = "1"
     
     # Handle gateway mode (messaging + cron)
     if gateway:
         import asyncio
         from gateway.run import start_gateway
-        print("Starting Lucifex Gateway (messaging platforms)...")
+        print("Starting Hermes Gateway (messaging platforms)...")
         asyncio.run(start_gateway())
         return
 
@@ -15693,7 +15680,7 @@ def main(
     query = query or q
     
     # Parse toolsets - handle both string and tuple/list inputs
-    # Default to lucifex-cli toolset which includes cronjob management tools
+    # Default to hermes-cli toolset which includes cronjob management tools
     toolsets_list = None
     if toolsets:
         if isinstance(toolsets, str):
@@ -15707,7 +15694,7 @@ def main(
                 else:
                     toolsets_list.append(str(t))
     else:
-        # Coding posture (base Lucifex): with no explicit --toolsets, collapse
+        # Coding posture (base Hermes): with no explicit --toolsets, collapse
         # to the coding toolset (+ enabled MCP servers) when sitting in a code
         # workspace. See agent/coding_context.py.
         _coding = None
@@ -15720,13 +15707,13 @@ def main(
             toolsets_list = _coding
         else:
             # Use the shared resolver so MCP servers are included at runtime
-            from lucifex_cli.tools_config import _get_platform_tools
+            from hermes_cli.tools_config import _get_platform_tools
             toolsets_list = sorted(_get_platform_tools(CLI_CONFIG, "cli"))
     
     parsed_skills = _parse_skills_argument(skills)
 
     # Create CLI instance
-    cli = LucifexCLI(
+    cli = HermesCLI(
         model=model,
         toolsets=toolsets_list,
         provider=provider,
@@ -15757,7 +15744,7 @@ def main(
                 logger.warning(
                     "Unknown skill(s) requested, skipping: %s. "
                     "Continuing with: %s. "
-                    "List available skills with `lucifex skills list`.",
+                    "List available skills with `hermes skills list`.",
                     missing_display,
                     ", ".join(loaded_skills),
                 )
@@ -15795,7 +15782,7 @@ def main(
     atexit.register(_run_cleanup)
 
     # Also install signal handlers in single-query / `-q` mode.  Interactive
-    # mode registers its own inside LucifexCLI.run(), but `-q` runs
+    # mode registers its own inside HermesCLI.run(), but `-q` runs
     # cli.agent.run_conversation() below and AIAgent spawns worker threads
     # for tools — so when SIGTERM arrives on the main thread, raising
     # KeyboardInterrupt only unwinds the main thread, not the worker
@@ -15807,16 +15794,20 @@ def main(
     # per-thread interrupt flag the worker's poll loop checks every 200 ms.
     # Give the worker a grace window to call _kill_process (SIGTERM to the
     # process group, then SIGKILL after 1 s), then raise KeyboardInterrupt
-    # so main unwinds normally.  LUCIFEX_SIGTERM_GRACE overrides the 1.5 s
+    # so main unwinds normally.  HERMES_SIGTERM_GRACE overrides the 1.5 s
     # default for debugging.
     def _signal_handler_q(signum, frame):
         logger.debug("Received signal %s in single-query mode", signum)
+        # Arm the exit backstop now that shutdown intent is unambiguous —
+        # covers wedges in the unwind below that would otherwise leave the
+        # process alive with no watchdog (#65998 class). Never raises.
+        _arm_exit_watchdog_on_shutdown_signal()
         try:
             _agent = getattr(cli, "agent", None)
             if _agent is not None:
                 _agent.interrupt(f"received signal {signum}")
                 try:
-                    _grace = float(os.getenv("LUCIFEX_SIGTERM_GRACE", "1.5"))
+                    _grace = float(os.getenv("HERMES_SIGTERM_GRACE", "1.5"))
                 except (TypeError, ValueError):
                     _grace = 1.5
                 if _grace > 0:
@@ -15835,7 +15826,7 @@ def main(
         # first so the final debug trace isn't lost; SIGALRM deadman guards
         # the flush against any rare blocking-I/O case (the reporter measured
         # flush in <1ms; the alarm is a failsafe, not the common path).
-        if os.environ.get("LUCIFEX_KANBAN_TASK"):
+        if os.environ.get("HERMES_KANBAN_TASK"):
             try:
                 import signal as _sig_mod
                 if hasattr(_sig_mod, "SIGALRM"):
@@ -15872,7 +15863,7 @@ def main(
             sys.exit(1)
         try:
             query, single_query_images = _collect_query_images(query, image)
-            # Kanban workers spawn with ``lucifex chat -q "work kanban task <id>"``;
+            # Kanban workers spawn with ``hermes chat -q "work kanban task <id>"``;
             # the actual task description lives in the task body. Mirror the
             # gateway/CLI behaviour for inbound images by scanning the body for
             # local image paths and http(s) image URLs and attaching them to the
@@ -15880,10 +15871,10 @@ def main(
             # path or URL into a kanban task body never get it routed to the
             # model's vision input.
             single_query_image_urls: list[str] = []
-            _kanban_task_id = os.environ.get("LUCIFEX_KANBAN_TASK", "").strip()
+            _kanban_task_id = os.environ.get("HERMES_KANBAN_TASK", "").strip()
             if _kanban_task_id:
                 try:
-                    from lucifex_cli import kanban_db as _kb
+                    from hermes_cli import kanban_db as _kb
                     from agent.image_routing import extract_image_refs as _extract_refs
 
                     _conn = _kb.connect()
@@ -15929,7 +15920,7 @@ def main(
                                 build_native_content_parts as _build_parts,  # noqa: F811
                             )
                             from agent.image_routing import decide_image_input_mode
-                            from lucifex_cli.config import load_config
+                            from hermes_cli.config import load_config
 
                             _img_mode = decide_image_input_mode(
                                 (cli.provider or "").strip(),
@@ -15980,7 +15971,7 @@ def main(
                         cli.agent.quiet_mode = True
                         cli.agent.suppress_status_output = True
                         # Suppress streaming display callbacks so stdout stays
-                        # machine-readable (no styled "Lucifex" box, no tool-gen
+                        # machine-readable (no styled "Hermes" box, no tool-gen
                         # status lines).  The response is printed once below.
                         cli.agent.stream_delta_callback = None
                         cli.agent.tool_gen_callback = None
@@ -16024,7 +16015,7 @@ def main(
                         # out (→ sticky block). Gated on the env vars the
                         # dispatcher sets in `_default_spawn`; a no-op for every
                         # normal worker and every non-kanban `-q` run.
-                        if os.environ.get("LUCIFEX_KANBAN_GOAL_MODE") == "1":
+                        if os.environ.get("HERMES_KANBAN_GOAL_MODE") == "1":
                             try:
                                 _run_kanban_goal_loop_q(cli, response)
                             except Exception as _goal_exc:
@@ -16048,11 +16039,11 @@ def main(
                         _exit_code = 0
                         if isinstance(result, dict) and result.get("failed"):
                             _exit_code = 1
-                            if os.environ.get("LUCIFEX_KANBAN_TASK") and result.get(
+                            if os.environ.get("HERMES_KANBAN_TASK") and result.get(
                                 "failure_reason"
                             ) in ("rate_limit", "billing"):
                                 try:
-                                    from lucifex_cli.kanban_db import (
+                                    from hermes_cli.kanban_db import (
                                         KANBAN_RATE_LIMIT_EXIT_CODE as _RL_CODE,
                                     )
                                     _exit_code = _RL_CODE
@@ -16063,7 +16054,7 @@ def main(
                 # Exit with error code if credentials or agent init fails
                 sys.exit(1)
             else:
-                # Single-query mode (`lucifex chat -q "…"`): skip the welcome
+                # Single-query mode (`hermes chat -q "…"`): skip the welcome
                 # banner. Building the banner takes ~420 ms on cold start —
                 # ~200 ms of that is the version-update check, the rest is
                 # toolset / skill enumeration and Rich panel rendering. None
@@ -16083,7 +16074,7 @@ def main(
                 # banner, doesn't depend on the welcome banner being shown.
                 cli._show_security_advisories()
                 cli.chat(query, images=single_query_images or None)
-                cli._print_exit_summary()
+                cli._print_exit_summary(clear_screen=False)
         finally:
             _finalize_single_query(cli)
         return
