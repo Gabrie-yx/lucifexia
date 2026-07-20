@@ -7485,10 +7485,8 @@ def _hermes_exe_shims(scripts_dir: Path) -> list[Path]:
     if not _is_windows():
         return []
 
-    names = set(_load_console_script_names()) or {"hermes", "hermes-agent", "hermes-acp"}
-    # The gateway shim is not a [project.scripts] entry point, but older
-    # update/install paths still rewrite and quarantine it.
-    names.add("hermes-gateway")
+    names = set(_load_console_script_names()) or {"lucifex", "lucifex-agent", "lucifex-acp", "hermes", "hermes-agent", "hermes-acp"}
+    names.update({"lucifex", "lucifex-agent", "lucifex-acp", "lucifex-gateway", "hermes", "hermes-agent", "hermes-acp", "hermes-gateway"})
     return [scripts_dir / f"{name}.exe" for name in sorted(names)]
 
 
@@ -7613,16 +7611,16 @@ def _format_concurrent_instances_message(
     matches: list[tuple[int, str]], scripts_dir: Path
 ) -> str:
     """Build a human-readable explanation + remediation hint for the user."""
-    shim = scripts_dir / "hermes.exe"
-    lines = ["✗ Another hermes.exe is running:"]
+    shim = scripts_dir / "lucifex.exe"
+    lines = ["✗ Another lucifex.exe is running:"]
     for pid, name in matches:
         lines.append(f"    PID {pid}  {name}")
     lines.append("")
     lines.append(f"  Updating now would fail to overwrite {shim} because")
     lines.append("  Windows blocks REPLACE on a running executable.")
     lines.append("")
-    lines.append("  Close Hermes Desktop, exit any open `hermes` REPLs, and")
-    lines.append("  stop the gateway (`hermes gateway stop`) before retrying.")
+    lines.append("  Close Lucifex Desktop, exit any open `lucifex` REPLs, and")
+    lines.append("  stop the gateway (`lucifex gateway stop`) before retrying.")
     lines.append("")
     if matches:
         pid_args = " ".join(f"/PID {pid}" for pid, _ in matches)
@@ -7630,7 +7628,7 @@ def _format_concurrent_instances_message(
         lines.append("  stale, terminate them directly, then retry the update:")
         lines.append(f"      taskkill {pid_args} /F")
         lines.append("")
-    lines.append("  Override with `hermes update --force` if you've already")
+    lines.append("  Override with `lucifex update --force` if you've already")
     lines.append("  confirmed those processes will not write to the venv.")
     return "\n".join(lines)
 
