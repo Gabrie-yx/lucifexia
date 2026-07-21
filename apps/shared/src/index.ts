@@ -43,11 +43,11 @@ export {
   type WebSocketLike
 } from './json-rpc-gateway'
 export {
-  buildHermesWebSocketUrl,
+  buildLucifexWebSocketUrl,
   type GatewayAuthMode,
   GatewayReauthRequiredError,
   type GatewayWsConnection,
-  type HermesWebSocketUrlOptions,
+  type LucifexWebSocketUrlOptions,
   isGatewayReauthRequired,
   resolveGatewayWsUrl,
   type ResolveGatewayWsUrlDeps,

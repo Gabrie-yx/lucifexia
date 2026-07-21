@@ -1,7 +1,7 @@
 import { atom } from 'nanostores'
 
-import { getStarmapGraph } from '@/hermes'
-import type { StarmapGraph } from '@/types/hermes'
+import { getStarmapGraph } from '@/lucifex'
+import type { StarmapGraph } from '@/types/lucifex'
 
 // On-demand cache for the star map. The graph scan touches the skills catalog +
 // usage ledger + memory files, so we fetch it only when the panel opens (and on

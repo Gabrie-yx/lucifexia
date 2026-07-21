@@ -63,7 +63,15 @@ class NousPortalAdapter(UpstreamAdapter):
         return _ALLOWED_PATHS
 
     def is_authenticated(self) -> bool:
-        return True
+        state = self._read_state()
+        if state is None:
+            return False
+        # We need either a usable inference JWT OR (refresh_token + access_token)
+        # to recover. The refresh helper validates and refreshes as needed.
+        return bool(
+            state.get("agent_key")
+            or (state.get("refresh_token") and state.get("access_token"))
+        )
 
     def get_credential(self) -> UpstreamCredential:
         return self._get_credential()

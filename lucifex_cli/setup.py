@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 
-_DOCS_BASE = "https://github.com/Gabrie-yx/lucifexia"
+_DOCS_BASE = "https://lucifex-agent.nousresearch.com/docs"
 
 
 def _model_config_dict(config: Dict[str, Any]) -> Dict[str, Any]:
@@ -84,6 +84,7 @@ _DEFAULT_PROVIDER_MODELS = {
         "gpt-4o",
         "gpt-4o-mini",
         "claude-opus-4.6",
+        "claude-sonnet-5",
         "claude-sonnet-4.6",
         "claude-sonnet-4.5",
         "claude-haiku-4.5",
@@ -105,8 +106,8 @@ _DEFAULT_PROVIDER_MODELS = {
     "arcee": ["trinity-large-thinking", "trinity-large-preview", "trinity-mini"],
     "minimax": ["MiniMax-M2.7", "MiniMax-M2.5", "MiniMax-M2.1", "MiniMax-M2"],
     "minimax-cn": ["MiniMax-M2.7", "MiniMax-M2.5", "MiniMax-M2.1", "MiniMax-M2"],
-    "kilocode": ["anthropic/claude-opus-4.6", "anthropic/claude-sonnet-4.6", "openai/gpt-5.4", "google/gemini-3-pro-preview", "google/gemini-3-flash-preview"],
-    "opencode-zen": ["gpt-5.4", "gpt-5.3-codex", "claude-sonnet-4-6", "gemini-3-flash", "glm-5", "kimi-k2.5", "minimax-m2.7"],
+    "kilocode": ["anthropic/claude-sonnet-5", "anthropic/claude-opus-4.6", "anthropic/claude-sonnet-4.6", "openai/gpt-5.4", "google/gemini-3-pro-preview", "google/gemini-3-flash-preview"],
+    "opencode-zen": ["gpt-5.4", "gpt-5.3-codex", "claude-sonnet-5", "claude-sonnet-4-6", "gemini-3-flash", "glm-5", "kimi-k2.5", "minimax-m2.7"],
     "opencode-go": ["kimi-k2.6", "kimi-k2.5", "glm-5.1", "glm-5", "mimo-v2.5-pro", "mimo-v2.5", "mimo-v2-pro", "mimo-v2-omni", "minimax-m2.7", "minimax-m2.5", "qwen3.7-max", "qwen3.6-plus", "qwen3.5-plus"],
     "huggingface": [
         "Qwen/Qwen3.5-397B-A17B", "Qwen/Qwen3-235B-A22B-Thinking-2507",
@@ -610,69 +611,6 @@ def _print_setup_summary(config: dict, lucifex_home):
         print_warning(f"or edit {_dhh()}/.env directly to add the missing API keys.")
         print()
 
-    # Novas Capacidades — anunciar para todos os usuarios no setup
-    print()
-    print(
-        color(
-            "╔═════════════════════════════════════════════════════════╗",
-            Colors.CYAN,
-        )
-    )
-    print(
-        color(
-            "║         ✨  Novas Capacidades Disponíveis!  ✨           ║",
-            Colors.CYAN,
-        )
-    )
-    print(
-        color(
-            "╚═════════════════════════════════════════════════════════╝",
-            Colors.CYAN,
-        )
-    )
-    print()
-    print(
-        color("  🕷️  Web Scraping Stealth  (plugin: scrapling)", Colors.GREEN)
-    )
-    print(
-        color("     Bypass automático de Cloudflare, anti-bot e JS challenges.", Colors.DIM)
-    )
-    print(
-        color("     Ferramenta: web_extract_stealth — instala sozinho!", Colors.DIM)
-    )
-    print()
-    print(
-        color("  📡  Redes Sociais sem API  (plugin: agent-reach)", Colors.GREEN)
-    )
-    print(
-        color("     Twitter, Reddit, YouTube (transcrições!), GitHub — zero API key.", Colors.DIM)
-    )
-    print(
-        color("     Ferramentas: social_read, youtube_transcript, reddit_search", Colors.DIM)
-    )
-    print()
-    print(
-        color("  🎬  Criador de Vídeos  (plugin: video-creator)", Colors.GREEN)
-    )
-    print(
-        color("     Prompt → script → footage Pexels → narração → MP4 completo.", Colors.DIM)
-    )
-    print(
-        color("     Ferramenta: create_short_video | Requer: ffmpeg + PEXELS_API_KEY", Colors.DIM)
-    )
-    print()
-    print(
-        color("  🎨  Skill de Design  (skills/design)", Colors.GREEN)
-    )
-    print(
-        color("     Pensa como designer especialista ao criar UIs, slides e dashboards.", Colors.DIM)
-    )
-    print()
-    print(
-        color("  Use 'lucifex tools' para gerenciar os plugins acima.", Colors.DIM)
-    )
-    print()
-
     # Done banner
     print()
     print(
@@ -691,7 +629,6 @@ def _print_setup_summary(config: dict, lucifex_home):
         )
     )
     print()
-
 
     # Show file locations prominently
     from lucifex_constants import display_lucifex_home as _dhh
@@ -892,17 +829,24 @@ def _install_neutts_deps() -> bool:
     print_info("Installing neutts Python package...")
     print_info("This will also download the TTS model (~300MB) on first use.")
     print()
+
+    # Route through the canonical uv → pip → ensurepip ladder so pip-less
+    # venvs (Ubuntu 25.10 `python -m venv`, `uv venv`) work out of the box.
+    from lucifex_cli.tools_config import _pip_install
+
     try:
-        subprocess.run(
-            [sys.executable, "-m", "pip", "install", "-U", "neutts[all]", "--quiet"],
-            check=True, timeout=300,
-        )
+        result = _pip_install(["-U", "neutts[all]", "--quiet"], timeout=300)
+    except Exception as e:
+        print_error(f"Failed to install neutts: {e}")
+        print_info("Try manually: uv pip install -U 'neutts[all]'")
+        return False
+    if result.returncode == 0:
         print_success("neutts installed successfully")
         return True
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
-        print_error(f"Failed to install neutts: {e}")
-        print_info("Try manually: python -m pip install -U neutts[all]")
-        return False
+    err = (result.stderr or "").strip()
+    print_error(f"Failed to install neutts: {err[:300] if err else 'install failed'}")
+    print_info("Try manually: uv pip install -U 'neutts[all]'")
+    return False
 
 
 def _install_kittentts_deps() -> bool:
@@ -917,17 +861,22 @@ def _install_kittentts_deps() -> bool:
     print()
     print_info("Installing kittentts Python package (~25-80MB model downloaded on first use)...")
     print()
+
+    from lucifex_cli.tools_config import _pip_install
+
     try:
-        subprocess.run(
-            [sys.executable, "-m", "pip", "install", "-U", wheel_url, "soundfile", "--quiet"],
-            check=True, timeout=300,
-        )
+        result = _pip_install(["-U", wheel_url, "soundfile", "--quiet"], timeout=300)
+    except Exception as e:
+        print_error(f"Failed to install kittentts: {e}")
+        print_info(f"Try manually: uv pip install -U '{wheel_url}' soundfile")
+        return False
+    if result.returncode == 0:
         print_success("kittentts installed successfully")
         return True
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
-        print_error(f"Failed to install kittentts: {e}")
-        print_info(f"Try manually: python -m pip install -U '{wheel_url}' soundfile")
-        return False
+    err = (result.stderr or "").strip()
+    print_error(f"Failed to install kittentts: {err[:300] if err else 'install failed'}")
+    print_info(f"Try manually: uv pip install -U '{wheel_url}' soundfile")
+    return False
 
 
 def _xai_oauth_logged_in_for_setup() -> bool:
@@ -1366,32 +1315,13 @@ def setup_terminal_backend(config: dict):
                 __import__("modal")
             except ImportError:
                 print_info("Installing modal SDK...")
-                import subprocess
+                from lucifex_cli.tools_config import _pip_install
 
-                uv_bin = shutil.which("uv")
-                if uv_bin:
-                    result = subprocess.run(
-                        [
-                            uv_bin,
-                            "pip",
-                            "install",
-                            "--python",
-                            sys.executable,
-                            "modal",
-                        ],
-                        capture_output=True,
-                        text=True,
-                    )
-                else:
-                    result = subprocess.run(
-                        [sys.executable, "-m", "pip", "install", "modal"],
-                        capture_output=True,
-                        text=True,
-                    )
+                result = _pip_install(["modal"])
                 if result.returncode == 0:
                     print_success("modal SDK installed")
                 else:
-                    print_warning("Install failed — run manually: pip install modal")
+                    print_warning("Install failed — run manually: uv pip install modal")
 
             # Modal token
             print()
@@ -1426,25 +1356,13 @@ def setup_terminal_backend(config: dict):
             __import__("daytona")
         except ImportError:
             print_info("Installing daytona SDK...")
-            import subprocess
+            from lucifex_cli.tools_config import _pip_install
 
-            uv_bin = shutil.which("uv")
-            if uv_bin:
-                result = subprocess.run(
-                    [uv_bin, "pip", "install", "--python", sys.executable, "daytona"],
-                    capture_output=True,
-                    text=True,
-                )
-            else:
-                result = subprocess.run(
-                    [sys.executable, "-m", "pip", "install", "daytona"],
-                    capture_output=True,
-                    text=True,
-                )
+            result = _pip_install(["daytona"])
             if result.returncode == 0:
                 print_success("daytona SDK installed")
             else:
-                print_warning("Install failed — run manually: pip install daytona")
+                print_warning("Install failed — run manually: uv pip install daytona")
                 if result.stderr:
                     print_info(f"  Error: {result.stderr.strip().splitlines()[-1]}")
 
@@ -1546,9 +1464,9 @@ def _apply_default_agent_settings(config: dict):
     config.setdefault("compression", {})["enabled"] = True
     config["compression"]["threshold"] = 0.50
 
-    # Default to never auto-resetting sessions. The gateway treats absent
-    # session_reset as "both", so we must write "none" explicitly to make
-    # the no-auto-reset default actually take effect.
+    # Default: never auto-reset sessions. This matches the gateway's own
+    # default (SessionResetPolicy.mode = "none"); we still write it
+    # explicitly so the choice is visible/editable in config.yaml.
     config.setdefault("session_reset", {})["mode"] = "none"
 
     save_config(config)
@@ -1659,19 +1577,19 @@ def setup_agent_settings(config: dict):
     print_info("")
 
     reset_choices = [
-        "Inactivity + daily reset (recommended - reset whichever comes first)",
+        "Inactivity + daily reset (reset whichever comes first)",
         "Inactivity only (reset after N minutes of no messages)",
         "Daily only (reset at a fixed hour each day)",
-        "Never auto-reset (context lives until /reset or context compression)",
+        "Never auto-reset (recommended - context lives until /reset or context compression)",
         "Keep current settings",
     ]
 
     current_policy = config.get("session_reset", {})
-    current_mode = current_policy.get("mode", "both")
+    current_mode = current_policy.get("mode", "none")
     current_idle = current_policy.get("idle_minutes", 1440)
     current_hour = current_policy.get("at_hour", 4)
 
-    default_reset = {"both": 0, "idle": 1, "daily": 2, "none": 3}.get(current_mode, 0)
+    default_reset = {"both": 0, "idle": 1, "daily": 2, "none": 3}.get(current_mode, 3)
 
     reset_idx = prompt_choice("Session reset mode:", reset_choices, default_reset)
 
@@ -2694,7 +2612,22 @@ SETUP_SECTIONS = [
 
 
 def _run_portal_one_shot(config: dict) -> None:
-    """One-shot Ollama setup — pick model + provider."""
+    """One-shot Nous Portal setup — OAuth + model pick + provider + Tool Gateway.
+
+    Wired into ``lucifex setup --portal`` and ``lucifex portal``. This is the
+    Nous-Portal slice of the first-time quick setup, collapsed into a single
+    shareable command so a brand-new user goes from zero to a fully working
+    Lucifex session — model selected, provider set, and web/image/tts/browser
+    tools routed via their Portal sub — without being told to run
+    ``lucifex setup`` and hunt for the quick-setup option.
+
+    The login + model selection + provider switch + Tool Gateway opt-in are all
+    delegated to ``_model_flow_nous`` — the exact same flow quick setup uses
+    (``_run_first_time_quick_setup``) and the same one ``lucifex model`` runs
+    when you pick Nous. Routing through it (instead of hand-rolling the auth +
+    provider write here) means ``lucifex portal`` always offers a model picker,
+    and there is a single source of truth for the Nous onboarding steps.
+    """
     from lucifex_cli.config import load_config
 
     print()
@@ -2704,7 +2637,7 @@ def _run_portal_one_shot(config: dict) -> None:
             Colors.MAGENTA,
         )
     )
-    print(color("│     ⚕ Lucifex Setup — Ollama (one-shot)             │", Colors.MAGENTA))
+    print(color("│     ⚕ Lucifex Setup — Nous Portal (one-shot)             │", Colors.MAGENTA))
     print(
         color(
             "└─────────────────────────────────────────────────────────┘",
@@ -2712,26 +2645,37 @@ def _run_portal_one_shot(config: dict) -> None:
         )
     )
     print()
-    print_info("  Configure o provedor OLLAMA local para processar seus modelos.")
-    print_info("  Certifique-se de que o Ollama esta rodando em sua maquina.")
+    print_info("  One subscription, 300+ models, plus the Tool Gateway:")
+    print_info("    web search, image generation, TTS, browser automation")
+    print_info("    — all routed through your Nous Portal sub.")
     print()
-    print_info("  Download do Ollama: https://ollama.com")
+    print_info("  Sign up: https://portal.nousresearch.com/manage-subscription")
     print()
 
+    # _model_flow_nous handles BOTH the logged-out path (device-code OAuth,
+    # which selects a model internally) and the already-logged-in path (curated
+    # Nous model picker), then offers the Tool Gateway opt-in and sets
+    # provider=nous via the login/model save. This is the same routine quick
+    # setup calls, so `lucifex portal` == quick setup's Nous step.
     try:
         from lucifex_cli.main import _model_flow_nous
 
         _model_flow_nous(config)
     except (KeyboardInterrupt, EOFError, SystemExit):
+        # _login_nous raises SystemExit(130)/(1) on cancel/failure; the
+        # logged-out path inside _model_flow_nous catches it, but the
+        # expired-session re-login path only catches Exception, so a
+        # SystemExit there would otherwise escape and kill the whole CLI.
+        # Treat all of these as a graceful cancel/abort for the portal flow.
         print()
-        print_info("  Setup cancelado.")
-        print_info("  Voce pode tentar novamente com `lucifex portal`.")
+        print_info("  Setup cancelled.")
+        print_info("  You can retry later with `lucifex portal`.")
         return
     except Exception as exc:
         logger.debug("_model_flow_nous error during `lucifex portal`: %s", exc)
         print()
-        print_error(f"  Ocorreu um erro no setup do Ollama: {exc}")
-        print_info("  Voce pode tentar novamente com `lucifex portal`.")
+        print_error(f"  Nous Portal setup encountered an error: {exc}")
+        print_info("  You can retry later with `lucifex portal`.")
         return
 
     # Re-sync the in-memory config from disk — _model_flow_nous (and the
@@ -2806,7 +2750,7 @@ def run_setup_wizard(args):
         )
         return
 
-    # --portal: one-shot Ollama setup. Skips the rest of the wizard.
+    # --portal: one-shot Nous Portal setup. Skips the rest of the wizard.
     if bool(getattr(args, "portal", False)):
         _run_portal_one_shot(config)
         return
@@ -2926,7 +2870,7 @@ def run_setup_wizard(args):
         setup_mode = prompt_choice(
             "How would you like to set up Lucifex?",
             [
-                "Quick Setup (Ollama) — free OAuth login, no API keys, model + tools (recommended)",
+                "Quick Setup (Nous Portal) — free OAuth login, no API keys, model + tools (recommended)",
                 "Full setup — configure every provider, tool & option yourself (bring your own keys)",
                 "Blank Slate — everything off except the bare minimum; opt in to each capability",
             ],
@@ -2987,9 +2931,9 @@ def run_setup_wizard(args):
 
 
 def _run_first_time_quick_setup(config: dict, lucifex_home, is_existing: bool):
-    """Streamlined first-time setup via Ollama: OAuth, model, terminal & messaging.
+    """Streamlined first-time setup via Nous Portal: OAuth, model, terminal & messaging.
 
-    Routes straight to the Ollama provider — runs the device-code OAuth
+    Routes straight to the Nous Portal provider — runs the device-code OAuth
     login, picks a Nous model, then configures the terminal backend and (optionally)
     a messaging platform. Applies sensible defaults for everything else (agent
     settings, tools); the user can customize later via ``lucifex setup <section>``
@@ -2997,12 +2941,12 @@ def _run_first_time_quick_setup(config: dict, lucifex_home, is_existing: bool):
     """
     from lucifex_cli.config import load_config
 
-    # Step 1: Ollama — OAuth login + model selection.
+    # Step 1: Nous Portal — OAuth login + model selection.
     # _model_flow_nous() handles both the logged-out path (device-code OAuth,
     # which selects a model internally) and the already-logged-in path (curated
     # Nous model picker). Provider is set to "nous" by the login/model save.
     print()
-    print_header("Ollama")
+    print_header("Nous Portal")
     print_info("One subscription, 300+ models, plus the Tool Gateway:")
     print_info("  web search, image generation, TTS, browser automation.")
     print_info("Sign up: https://portal.nousresearch.com/manage-subscription")
@@ -3012,10 +2956,10 @@ def _run_first_time_quick_setup(config: dict, lucifex_home, is_existing: bool):
         _model_flow_nous(config)
     except (KeyboardInterrupt, EOFError):
         print()
-        print_info("Ollama setup cancelled.")
+        print_info("Nous Portal setup cancelled.")
     except Exception as exc:
         logger.debug("_model_flow_nous error during quick setup: %s", exc)
-        print_warning(f"Ollama setup encountered an error: {exc}")
+        print_warning(f"Nous Portal setup encountered an error: {exc}")
         print_info("You can try again later with: lucifex model")
 
     # Re-sync the wizard's config dict from disk — _model_flow_nous (and the
@@ -3092,6 +3036,12 @@ def _blank_slate_minimal_toolsets(config: dict):
                 continue  # platform composites — not user-facing toolsets
             if isinstance(tdef, dict) and tdef.get("includes"):
                 continue  # composite groupings, not leaf toolsets
+            if isinstance(tdef, dict) and tdef.get("posture"):
+                continue  # posture toolsets (e.g. coding) are session-level
+                # selections made by agent/coding_context.py — not permanent
+                # user-facing disables. Adding them here causes model_tools
+                # to subtract their tools (terminal, read_file, …) from the
+                # minimal Blank Slate surface (#57315).
             all_keys.add(k)
 
         disabled = sorted(all_keys - keep)

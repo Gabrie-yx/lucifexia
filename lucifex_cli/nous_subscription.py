@@ -1,4 +1,4 @@
-﻿"""Helpers for Nous subscription managed-tool capabilities."""
+"""Helpers for Nous subscription managed-tool capabilities."""
 
 from __future__ import annotations
 
@@ -1131,7 +1131,7 @@ def prompt_enable_tool_gateway(
 
 
 # ---------------------------------------------------------------------------
-# Inline Ollama login for the Tool Gateway picker (`lucifex tools`)
+# Inline Nous Portal login for the Tool Gateway picker (`lucifex tools`)
 # ---------------------------------------------------------------------------
 
 
@@ -1144,14 +1144,14 @@ def ensure_nous_portal_access(
     needed.
 
     Used by ``lucifex tools`` when a user selects a Nous-managed Tool Gateway
-    backend (e.g. "Firecrawl (Ollama)").  Unlike ``lucifex model``'s Nous
+    backend (e.g. "Firecrawl (Nous Portal)").  Unlike ``lucifex model``'s Nous
     login, this:
 
     - does NOT change the inference provider (``model.provider`` is untouched),
     - does NOT run model selection, and
     - does NOT offer the bulk "enable for all tools" Tool Gateway prompt.
 
-    It only performs the Ollama device-code OAuth (when the user isn't
+    It only performs the Nous Portal device-code OAuth (when the user isn't
     already logged in) and refreshes entitlement, so the caller can enable the
     single tool the user picked.
 
@@ -1204,7 +1204,7 @@ def ensure_nous_portal_access(
 
 
 def _run_nous_portal_login_only(*, capability: str) -> bool:
-    """Run the Ollama device-code OAuth and persist credentials only.
+    """Run the Nous Portal device-code OAuth and persist credentials only.
 
     No model selection, no provider switch, no Tool Gateway bulk prompt.
     Returns ``True`` on a successful login, ``False`` if the user declined or
@@ -1223,18 +1223,18 @@ def _run_nous_portal_login_only(*, capability: str) -> bool:
             _write_shared_nous_state,
         )
     except Exception as exc:  # pragma: no cover - defensive
-        print(f"  Could not start Ollama login: {exc}")
+        print(f"  Could not start Nous Portal login: {exc}")
         return False
 
     print()
-    print(f"  {capability} requires a Ollama login.")
+    print(f"  {capability} requires a Nous Portal login.")
     try:
-        proceed = input("  Log in to Ollama now? [Y/n]: ").strip().lower()
+        proceed = input("  Log in to Nous Portal now? [Y/n]: ").strip().lower()
     except (EOFError, KeyboardInterrupt):
         print()
         return False
     if proceed not in {"", "y", "yes"}:
-        print("  Skipped Ollama login.")
+        print("  Skipped Nous Portal login.")
         return False
 
     try:
@@ -1271,7 +1271,7 @@ def _run_nous_portal_login_only(*, capability: str) -> bool:
 
         _write_shared_nous_state(auth_state)
         _sync_nous_pool_from_auth_store()
-        print("  Ollama login successful.")
+        print("  Nous Portal login successful.")
         return True
     except KeyboardInterrupt:
         print("\n  Login cancelled.")
@@ -1281,5 +1281,5 @@ def _run_nous_portal_login_only(*, capability: str) -> bool:
         # it already printed billing guidance.
         return False
     except Exception as exc:
-        print(f"  Ollama login failed: {exc}")
+        print(f"  Nous Portal login failed: {exc}")
         return False

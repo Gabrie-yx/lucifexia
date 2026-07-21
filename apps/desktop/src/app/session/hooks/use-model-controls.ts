@@ -2,7 +2,7 @@ import { type QueryClient } from '@tanstack/react-query'
 import { useCallback, useRef } from 'react'
 
 import type { ModelSelection } from '@/app/shell/model-menu-panel'
-import { getGlobalModelInfo } from '@/hermes'
+import { getGlobalModelInfo } from '@/lucifex'
 import { useI18n } from '@/i18n'
 import { manualPickRemoved } from '@/lib/model-options'
 import { notifyError } from '@/store/notifications'
@@ -18,7 +18,7 @@ import {
   setCurrentProvider
 } from '@/store/session'
 import { $sessionStates, sessionTileDelegate } from '@/store/session-states'
-import type { ModelOptionsResponse } from '@/types/hermes'
+import type { ModelOptionsResponse } from '@/types/lucifex'
 
 interface ModelControlsOptions {
   queryClient: QueryClient

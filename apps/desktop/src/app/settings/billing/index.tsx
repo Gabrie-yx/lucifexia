@@ -41,7 +41,7 @@ function openExternal(url?: string) {
     return
   }
 
-  void window.hermesDesktop?.openExternal?.(url)
+  void window.lucifexDesktop?.openExternal?.(url)
 }
 
 function SummaryCard({ label, value, tone }: { label: string; tone?: 'muted' | 'primary'; value: string }) {

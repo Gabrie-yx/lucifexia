@@ -61,26 +61,26 @@ function appendUniquePathEntries(entries, { delimiter = path.delimiter } = {}) {
 }
 
 function buildDesktopBackendPath({
-  hermesHome,
+  lucifexHome,
   venvRoot,
   currentPath = '',
   platform = process.platform,
   pathModule = pathModuleForPlatform(platform)
 }: any = {}) {
   const delimiter = delimiterForPlatform(platform)
-  const hermesNodeBin = hermesHome ? pathModule.join(hermesHome, 'node', 'bin') : null
+  const lucifexNodeBin = lucifexHome ? pathModule.join(lucifexHome, 'node', 'bin') : null
   const venvBin = venvRoot ? pathModule.join(venvRoot, platform === 'win32' ? 'Scripts' : 'bin') : null
   const saneEntries = platform === 'win32' ? [] : POSIX_SANE_PATH_ENTRIES
 
-  return appendUniquePathEntries([hermesNodeBin, venvBin, currentPath, saneEntries], { delimiter })
+  return appendUniquePathEntries([lucifexNodeBin, venvBin, currentPath, saneEntries], { delimiter })
 }
 
-function normalizeHermesHomeRoot(hermesHome, { pathModule = pathModuleForPlatform(process.platform) }: any = {}) {
-  if (!hermesHome) {
-    return hermesHome
+function normalizeLucifexHomeRoot(lucifexHome, { pathModule = pathModuleForPlatform(process.platform) }: any = {}) {
+  if (!lucifexHome) {
+    return lucifexHome
   }
 
-  const resolved = pathModule.resolve(String(hermesHome))
+  const resolved = pathModule.resolve(String(lucifexHome))
   const parent = pathModule.dirname(resolved)
 
   if (pathModule.basename(parent).toLowerCase() === 'profiles') {
@@ -91,7 +91,7 @@ function normalizeHermesHomeRoot(hermesHome, { pathModule = pathModuleForPlatfor
 }
 
 function buildDesktopBackendEnv({
-  hermesHome,
+  lucifexHome,
   pythonPathEntries = [],
   venvRoot,
   currentEnv = process.env,
@@ -105,7 +105,7 @@ function buildDesktopBackendEnv({
   return {
     PYTHONPATH: appendUniquePathEntries([...pythonPathEntries, currentPythonPath], { delimiter }),
     [key]: buildDesktopBackendPath({
-      hermesHome,
+      lucifexHome,
       venvRoot,
       currentPath: currentPathValue(currentEnv, platform),
       platform,
@@ -119,7 +119,7 @@ export {
   buildDesktopBackendEnv,
   buildDesktopBackendPath,
   delimiterForPlatform,
-  normalizeHermesHomeRoot,
+  normalizeLucifexHomeRoot,
   pathEnvKey,
   POSIX_SANE_PATH_ENTRIES
 }

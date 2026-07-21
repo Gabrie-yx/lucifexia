@@ -38,7 +38,7 @@ interface MessageStreamOptions {
     runtimeSessionId?: string | null
   ) => Promise<void>
   queryClient: QueryClient
-  refreshHermesConfig: () => Promise<void>
+  refreshLucifexConfig: () => Promise<void>
   refreshSessions: () => Promise<void>
   sessionStateByRuntimeIdRef: MutableRefObject<Map<string, ClientSessionState>>
   updateSessionState: (
@@ -57,7 +57,7 @@ export function useMessageStream({
   activeSessionIdRef,
   hydrateFromStoredSession,
   queryClient,
-  refreshHermesConfig,
+  refreshLucifexConfig,
   refreshSessions,
   sessionStateByRuntimeIdRef,
   updateSessionState
@@ -510,7 +510,7 @@ export function useMessageStream({
         const streamId = state.streamId ?? `assistant-error-${Date.now()}`
         const groupId = state.pendingBranchGroup ?? undefined
         const prev = state.messages
-        const error = errorMessage.trim() || 'Hermes reported an error'
+        const error = errorMessage.trim() || 'Lucifex reported an error'
 
         const nextMessages = prev.some(m => m.id === streamId)
           ? prev.map(message =>
@@ -561,7 +561,7 @@ export function useMessageStream({
     failAssistantMessage,
     flushQueuedDeltas,
     queryClient,
-    refreshHermesConfig,
+    refreshLucifexConfig,
     sessionInterrupted,
     sessionStateByRuntimeIdRef,
     updateSessionState,

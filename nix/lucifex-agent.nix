@@ -1,9 +1,9 @@
-# nix/lucifex-agent.nix — Overridable Lucifex Agent package
+# nix/hermes-agent.nix — Overridable Hermes Agent package
 #
 # callPackage auto-wires nixpkgs args; flake inputs are passed explicitly.
 # Users override via:
-#   pkgs.lucifex-agent.override { extraPythonPackages = [...]; }
-#   pkgs.lucifex-agent.override { extraDependencyGroups = [ "hindsight" ]; }
+#   pkgs.hermes-agent.override { extraPythonPackages = [...]; }
+#   pkgs.hermes-agent.override { extraDependencyGroups = [ "hindsight" ]; }
 {
   lib,
   stdenv,
@@ -37,42 +37,53 @@
 }:
 let
   nodejs = nodejs_22;
-  mkLucifexVenv =
+  mkHermesVenv =
     extraDependencyGroups:
     callPackage ./python.nix {
       inherit uv2nix pyproject-nix pyproject-build-systems;
+      pythonSrc = hermesNpmLib.pythonSrc;
       dependency-groups = [ "all" ] ++ extraDependencyGroups;
     };
 
-  lucifexVenv = mkLucifexVenv extraDependencyGroups;
+  hermesVenv = (mkHermesVenv extraDependencyGroups).venv;
 
-  lucifexNpmLib = callPackage ./lib.nix {
+  hermesNpmLib = callPackage ./lib.nix {
     inherit npm-lockfile-fix nodejs;
   };
 
-  lucifexTui = callPackage ./tui.nix {
-    inherit lucifexNpmLib;
+  hermesTui = callPackage ./tui.nix {
+    inherit hermesNpmLib;
   };
 
-  lucifexWeb = callPackage ./web.nix {
-    inherit lucifexNpmLib;
+  hermesWeb = callPackage ./web.nix {
+    inherit hermesNpmLib;
   };
 
   bundledSkills = lib.cleanSourceWith {
     src = ../skills;
-    filter = path: _type: !(lib.hasInfix "/index-cache/" path);
+    filter =
+      path: _type: !(lib.hasInfix "/index-cache/" path) && !(lib.hasInfix "/__pycache__/" path);
+  };
+
+  # Optional skills are NOT in the wheel (pythonSrc excludes them, see
+  # lib.nix) — the wrapper exposes them via HERMES_OPTIONAL_SKILLS, the
+  # same mechanism Homebrew packaging uses.
+  bundledOptionalSkills = lib.cleanSourceWith {
+    src = ../optional-skills;
+    filter =
+      path: _type: !(lib.hasInfix "/index-cache/" path) && !(lib.hasInfix "/__pycache__/" path);
   };
 
   # Import bundled plugins (memory, context_engine, platforms/*).  Keeping
   # them out of the Python site-packages keeps import semantics identical
-  # to a dev checkout — the loader reads them from LUCIFEX_BUNDLED_PLUGINS.
+  # to a dev checkout — the loader reads them from HERMES_BUNDLED_PLUGINS.
   bundledPlugins = lib.cleanSourceWith {
     src = ../plugins;
     filter = path: _type: !(lib.hasInfix "/__pycache__/" path);
   };
 
   # i18n locale catalogs (locales/*.yaml). Shipped into the store and pointed
-  # at by LUCIFEX_BUNDLED_LOCALES so the wrapped binary always resolves human
+  # at by HERMES_BUNDLED_LOCALES so the wrapped binary always resolves human
   # strings instead of raw i18n keys (#23943 / #27632 / #35374).
   #
   # Defense-in-depth, not load-bearing: the wheel already declares locales/ as
@@ -118,7 +129,7 @@ let
 
     # Collect core venv package names
     core = set()
-    venv_sp = pathlib.Path('${lucifexVenv}/${sitePackagesPath}')
+    venv_sp = pathlib.Path('${hermesVenv}/${sitePackagesPath}')
     for di in venv_sp.glob('*.dist-info'):
         meta = di / 'METADATA'
         if meta.exists():
@@ -141,7 +152,7 @@ let
                 if line.startswith('Name:'):
                     pkg = canonical(line.split(':', 1)[1].strip())
                     if pkg in core:
-                        print(f'ERROR: plugin package \"{pkg}\" collides with a package in lucifex sealed venv', file=sys.stderr)
+                        print(f'ERROR: plugin package \"{pkg}\" collides with a package in hermes sealed venv', file=sys.stderr)
                         print(f'  from: {di}', file=sys.stderr)
                         print(f'  Remove this dependency from extraPythonPackages.', file=sys.stderr)
                         sys.exit(1)
@@ -151,7 +162,7 @@ let
   '';
 in
 stdenv.mkDerivation (finalAttrs: {
-  pname = "lucifex-agent";
+  pname = "hermes-agent";
   version = (fromTOML (builtins.readFile ../pyproject.toml)).project.version;
 
   dontUnpack = true;
@@ -161,76 +172,92 @@ stdenv.mkDerivation (finalAttrs: {
   installPhase = ''
     runHook preInstall
 
-    mkdir -p $out/share/lucifex-agent $out/bin
-    cp -r ${bundledSkills} $out/share/lucifex-agent/skills
-    cp -r ${bundledPlugins} $out/share/lucifex-agent/plugins
-    cp -r ${bundledLocales} $out/share/lucifex-agent/locales
-    cp -r ${lucifexWeb} $out/share/lucifex-agent/web_dist
-
-    mkdir -p $out/ui-tui
-    cp -r ${lucifexTui}/lib/lucifex-tui/* $out/ui-tui/
+    # Symlinks, not copies: these are all store paths already, and the
+    # wrapper env vars just hold paths.  Symlinking keeps this derivation
+    # near-instant when only the venv changed, with an identical closure.
+    mkdir -p $out/share/hermes-agent $out/bin
+    ln -s ${bundledSkills} $out/share/hermes-agent/skills
+    ln -s ${bundledOptionalSkills} $out/share/hermes-agent/optional-skills
+    ln -s ${bundledPlugins} $out/share/hermes-agent/plugins
+    ln -s ${bundledLocales} $out/share/hermes-agent/locales
+    ln -s ${hermesWeb} $out/share/hermes-agent/web_dist
+    ln -s ${hermesTui}/lib/hermes-tui $out/ui-tui
 
     ${lib.concatMapStringsSep "\n"
       (name: ''
-        makeWrapper ${lucifexVenv}/bin/${name} $out/bin/${name} \
+        makeWrapper ${hermesVenv}/bin/${name} $out/bin/${name} \
           --suffix PATH : "${runtimePath}" \
-          --set LUCIFEX_BUNDLED_SKILLS $out/share/lucifex-agent/skills \
-          --set LUCIFEX_BUNDLED_PLUGINS $out/share/lucifex-agent/plugins \
-          --set LUCIFEX_BUNDLED_LOCALES $out/share/lucifex-agent/locales \
-          --set LUCIFEX_WEB_DIST $out/share/lucifex-agent/web_dist \
-          --set LUCIFEX_TUI_DIR $out/ui-tui \
-          --set LUCIFEX_PYTHON ${lucifexVenv}/bin/python3 \
-          --set LUCIFEX_NODE ${lib.getExe nodejs} \
-          ${lib.optionalString (rev != null) ''--set LUCIFEX_REVISION ${rev} \''}
-          ${lib.optionalString (extraPythonPackages != [ ]) ''--suffix PYTHONPATH : "${pythonPath}"''}
+          --set HERMES_BUNDLED_SKILLS $out/share/hermes-agent/skills \
+          --set HERMES_OPTIONAL_SKILLS $out/share/hermes-agent/optional-skills \
+          --set HERMES_BUNDLED_PLUGINS $out/share/hermes-agent/plugins \
+          --set HERMES_BUNDLED_LOCALES $out/share/hermes-agent/locales \
+          --set HERMES_WEB_DIST $out/share/hermes-agent/web_dist \
+          --set HERMES_TUI_DIR $out/ui-tui \
+          --set HERMES_PYTHON ${hermesVenv}/bin/python3 \
+          --set HERMES_NODE ${lib.getExe nodejs}${
+            # Fold the line continuation INTO the optionalString: a bare
+            # `\` on the line above an empty expansion would dangle onto a
+            # blank line, ending the makeWrapper command early and running
+            # the next flag as its own shell command (`--suffix: command
+            # not found`). Only reproduces when rev == null (dirty trees).
+            lib.optionalString (rev != null) " \\\n          --set HERMES_REVISION ${rev}"
+          }${
+            lib.optionalString (
+              extraPythonPackages != [ ]
+            ) " \\\n          --suffix PYTHONPATH : \"${pythonPath}\""
+          }
       '')
       [
-        "lucifex"
-        "lucifex-agent"
-        "lucifex-acp"
+        "hermes"
+        "hermes-agent"
+        "hermes-acp"
       ]
     }
 
     ${lib.optionalString (extraPythonPackages != [ ]) ''
       echo "=== Checking for plugin/core package collisions ==="
-      ${lucifexVenv}/bin/python3 -c "${checkPackageCollisions}"
+      ${hermesVenv}/bin/python3 -c "${checkPackageCollisions}"
       echo "=== No collisions ==="
     ''}
 
     runHook postInstall
   '';
 
-  passthru = {
-    inherit
-      lucifexTui
-      lucifexWeb
-      lucifexNpmLib
-      lucifexVenv
-      ;
+  passthru =
+    let
+      devPython = (mkHermesVenv (extraDependencyGroups ++ [ "dev" ])).editableVenv;
+    in
+    {
+      inherit
+        hermesTui
+        hermesWeb
+        hermesNpmLib
+        hermesVenv
+        ;
 
-    # `lucifexDesktop` references `finalAttrs.finalPackage` (this whole
-    # derivation, after all overrides are applied) so the desktop wrapper
-    # can prepend its `/bin` to PATH.  The desktop's resolver step 4
-    # ("existing lucifex on PATH") then picks up the fully wrapped
-    # `lucifex` binary — venv with all deps, bundled skills/plugins,
-    # runtime PATH (ripgrep/git/ffmpeg/etc).  No re-implementation
-    # of the agent resolution in the desktop wrapper.
-    lucifexDesktop = callPackage ./desktop.nix {
-      inherit lucifexNpmLib electron;
-      lucifexAgent = finalAttrs.finalPackage;
+      # `hermesDesktop` references `finalAttrs.finalPackage` (this whole
+      # derivation, after all overrides are applied) so the desktop wrapper
+      # can prepend its `/bin` to PATH.  The desktop's resolver step 4
+      # ("existing hermes on PATH") then picks up the fully wrapped
+      # `hermes` binary — venv with all deps, bundled skills/plugins,
+      # runtime PATH (ripgrep/git/ffmpeg/etc).  No re-implementation
+      # of the agent resolution in the desktop wrapper.
+      hermesDesktop = callPackage ./desktop.nix {
+        inherit hermesNpmLib electron;
+        hermesAgent = finalAttrs.finalPackage;
+      };
+
+      devShellHook = ''
+        export HERMES_PYTHON=${devPython}/bin/python3
+      '';
+
+      devDeps = runtimeDeps ++ [ devPython ];
     };
-
-    devShellHook = ''
-      export LUCIFEX_PYTHON=${lucifexVenv}/bin/python3
-    '';
-
-    devDeps = runtimeDeps ++ [ (mkLucifexVenv (extraDependencyGroups ++ [ "dev" ])) ];
-  };
 
   meta = with lib; {
     description = "AI agent with advanced tool-calling capabilities";
-    homepage = "https://github.com/NousResearch/lucifex-agent";
-    mainProgram = "lucifex";
+    homepage = "https://github.com/NousResearch/hermes-agent";
+    mainProgram = "hermes";
     license = licenses.mit;
     platforms = platforms.unix;
   };
