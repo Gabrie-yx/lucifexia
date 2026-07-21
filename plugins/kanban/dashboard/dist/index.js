@@ -1,5 +1,5 @@
 /**
- * Hermes Kanban — Dashboard Plugin
+ * Lucifex Kanban — Dashboard Plugin
  *
  * Board view for the multi-agent collaboration board backed by
  * ~/.hermes/kanban.db. Calls the plugin's backend at /api/plugins/kanban/
