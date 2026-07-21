@@ -4,7 +4,7 @@ import { persistBoolean, storedBoolean } from '@/lib/storage'
 
 const TAKEOVER_KEY = 'lucifex.desktop.terminalTakeover'
 
-export const $terminalTakeover = atom(storedBoolean(TAKEOVER_KEY, false))
+export const $terminalTakeover = atom(false)
 
 $terminalTakeover.subscribe(active => persistBoolean(TAKEOVER_KEY, active))
 
