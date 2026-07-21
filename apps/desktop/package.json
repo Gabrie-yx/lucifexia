@@ -3,7 +3,7 @@
   "productName": "Lucifex",
   "private": true,
   "version": "0.20.3",
-  "description": "Native desktop shell for Lucifex Agent.",
+  "description": "Native desktop shell for Lucifexia Agent.",
   "author": "Gabriel Santos",
   "type": "module",
   "main": "dist/electron-main.mjs",
@@ -253,7 +253,7 @@
     "linux": {
       "category": "Development",
       "maintainer": "Nous Research <support@nousresearch.com>",
-      "synopsis": "Native desktop shell for Lucifex Agent.",
+      "synopsis": "Native desktop shell for Lucifexia Agent.",
       "target": [
         "AppImage",
         "deb",

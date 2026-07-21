@@ -2,23 +2,15 @@
   <img src="assets/banner.png" alt="Lucifex Agent" width="100%">
 </p>
 
-# Lucifex Agent ☤
+# Lucifexia ☤
 <p align="center">
-  <a href="https://lucifex-agent.nousresearch.com/">Lucifex Agent</a> | <a href="https://lucifex-agent.nousresearch.com/">Lucifex Desktop</a>
-</p>
-<p align="center">
-  <a href="https://lucifex-agent.nousresearch.com/docs/"><img src="https://img.shields.io/badge/Docs-lucifex--agent.nousresearch.com-FFD700?style=for-the-badge" alt="Documentation"></a>
-  <a href="https://discord.gg/NousResearch"><img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>
-  <a href="https://github.com/NousResearch/lucifex-agent/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License: MIT"></a>
-  <a href="https://nousresearch.com"><img src="https://img.shields.io/badge/Built%20by-Nous%20Research-blueviolet?style=for-the-badge" alt="Built by Nous Research"></a>
-  <a href="README.zh-CN.md"><img src="https://img.shields.io/badge/Lang-中文-red?style=for-the-badge" alt="中文"></a>
-  <a href="README.ur-pk.md"><img src="https://img.shields.io/badge/Lang-اردو-green?style=for-the-badge" alt="اردو"></a>
-  <a href="README.es.md"><img src="https://img.shields.io/badge/Lang-Español-orange?style=for-the-badge" alt="Español"></a>
+  <a href="https://github.com/Gabrie-yx/lucifexia"><img src="https://img.shields.io/badge/GitHub-Gabrie--yx%2Flucifexia-FFD700?style=for-the-badge&logo=github" alt="GitHub Repository"></a>
+  <a href="https://github.com/Gabrie-yx/lucifexia/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License: MIT"></a>
 </p>
 
-**The self-improving AI agent built by [Nous Research](https://nousresearch.com).** It's the only agent with a built-in learning loop — it creates skills from experience, improves them during use, nudges itself to persist knowledge, searches its own past conversations, and builds a deepening model of who you are across sessions. Run it on a $5 VPS, a GPU cluster, or serverless infrastructure that costs nearly nothing when idle. It's not tied to your laptop — talk to it from Telegram while it works on a cloud VM.
+**Lucifexia — Personal AI agent running seamlessly across CLI, messaging gateways, TUI, and Electron desktop app.** It learns across sessions (memory + skills), delegates to subagents, runs scheduled jobs, drives a real terminal and browser, and extends primarily through plugins and skills. Run it on a $5 VPS, a GPU cluster, or serverless infrastructure that costs nearly nothing when idle. Talk to it from Telegram, Discord, Slack, or the Desktop app while it works anywhere.
 
-Use any model you want — [Lucifex portal](https://portal.nousresearch.com), OpenRouter, OpenAI, your own endpoint, and [many others](https://lucifex-agent.nousresearch.com/docs/integrations/providers). Switch with `lucifex model` — no code changes, no lock-in.
+Use any model you want — OpenRouter, Anthropic, OpenAI, your own endpoint, and many others. Switch with `lucifex model` — no code changes, no lock-in.
 
 <table>
 <tr><td><b>A real terminal interface</b></td><td>Full TUI with multiline editing, slash-command autocomplete, conversation history, interrupt-and-redirect, and streaming tool output.</td></tr>
