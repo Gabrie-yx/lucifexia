@@ -1,4 +1,4 @@
-import { driveChargeSettlement, type SettlementOutcome } from '@lucifex/shared/charge-settlement'
+import { driveChargeSettlement, type SettlementOutcome } from '@lucifex/shared'
 
 import type {
   BillingChargeResponse,
