@@ -35,7 +35,6 @@ export function GatewayConnectingOverlay() {
   if (previewing || connecting) {
     shownRef.current = true
   }
-
   useEffect(() => {
     if (phase !== 'live') return
 
@@ -44,9 +43,17 @@ export function GatewayConnectingOverlay() {
       return () => window.clearTimeout(id)
     }
 
+    const safetyTimer = window.setTimeout(() => {
+      if (phase === 'live' && !previewing) {
+        setPhase('text-out')
+      }
+    }, 3500)
+
     if (gatewayState === 'open' && shownRef.current) {
       setPhase('text-out')
     }
+
+    return () => window.clearTimeout(safetyTimer)
   }, [phase, previewing, gatewayState])
 
   useEffect(() => {

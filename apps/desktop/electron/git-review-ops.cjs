@@ -64,7 +64,13 @@ function runGh(args, cwd, ghBin) {
 }
 
 function gitFor(cwd, gitBin) {
-  return simpleGit({ baseDir: cwd, binary: gitBin || 'git', maxConcurrentProcesses: 4, trimmed: false })
+  return simpleGit({
+    baseDir: cwd,
+    binary: gitBin || 'git',
+    maxConcurrentProcesses: 4,
+    trimmed: false,
+    unsafe: { allowUnsafeCustomBinary: true }
+  })
 }
 
 // simple-git reports renames as `old => new` (and `dir/{old => new}/f`); resolve

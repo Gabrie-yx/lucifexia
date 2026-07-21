@@ -3270,7 +3270,11 @@ function resolveWebDist() {
 }
 
 function resolveRendererIndex() {
-  const candidates = [path.join(APP_ROOT, 'dist', 'index.html'), path.join(resolveWebDist(), 'index.html')]
+  const candidates = [
+    path.join(APP_ROOT, 'dist', 'index.html'),
+    path.join(APP_ROOT.replace(/app\.asar$/, 'app.asar.unpacked'), 'dist', 'index.html'),
+    path.join(resolveWebDist(), 'index.html')
+  ].filter(Boolean)
   const found = candidates.find(fileExists)
 
   if (found) {
