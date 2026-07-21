@@ -4,24 +4,27 @@ Gateway runtime status helpers.
 Provides PID-file based detection of whether the gateway daemon is running,
 used by send_message's check_fn to gate availability in the CLI.
 
-The PID file lives at ``{LUCIFEX_HOME}/gateway.pid``.  LUCIFEX_HOME defaults to
-``~/.lucifex`` but can be overridden via the environment variable.  This means
-separate LUCIFEX_HOME directories naturally get separate PID files — a property
+The PID file lives at ``{HERMES_HOME}/gateway.pid``.  HERMES_HOME defaults to
+``~/.hermes`` but can be overridden via the environment variable.  This means
+separate HERMES_HOME directories naturally get separate PID files — a property
 that will be useful when we add named profiles (multiple agents running
 concurrently under distinct configurations).
 """
 
 import hashlib
 import json
+import logging
 import os
 import shlex
 import signal
 import subprocess
 import sys
+import threading
+import time
 from datetime import datetime, timezone
 from pathlib import Path
-from lucifex_constants import get_lucifex_home
-from typing import Any, Optional
+from hermes_constants import get_hermes_home, _get_platform_default_hermes_home
+from typing import Any, NamedTuple, Optional
 from utils import atomic_json_write
 
 if sys.platform == "win32":
@@ -29,7 +32,7 @@ if sys.platform == "win32":
 else:
     import fcntl
 
-_GATEWAY_KIND = "lucifex-gateway"
+_GATEWAY_KIND = "hermes-gateway"
 _RUNTIME_STATUS_FILE = "gateway_state.json"
 _LOCKS_DIRNAME = "gateway-locks"
 _IS_WINDOWS = sys.platform == "win32"
@@ -40,11 +43,108 @@ _gateway_lock_handle = None
 # past the JSON payload so runtime status / PID readers can still read the file
 # while another process holds the mutual-exclusion lock.
 _WINDOWS_LOCK_OFFSET = 1024 * 1024
+_GATEWAY_RUNNING_PID_CACHE_TTL_SECONDS = 1.0
+_gateway_running_pid_cache_lock = threading.Lock()
+_gateway_running_pid_cache: dict[tuple[str, bool, bool], tuple[float, tuple[Any, ...], Optional[int]]] = {}
+
+logger = logging.getLogger(__name__)
+
+
+class StormInfo(NamedTuple):
+    """Result of a respawn-storm check: how many starts, over what window, and
+    the backoff the caller should sleep to break the storm."""
+
+    count: int
+    window_s: float
+    backoff_s: float
+
+
+def _get_starts_log_path() -> Path:
+    """Path to the append-only gateway-start ledger used by the respawn-storm
+    breaker. Distinct from ``restart_loop.json`` (the auto-resume guard) — no
+    collision."""
+    return get_hermes_home() / "gateway-starts.log"
+
+
+def record_start_and_check_storm(
+    max_starts: int = 5, window_s: float = 120.0, *, backoff_cap_s: float = 300.0
+) -> Optional[StormInfo]:
+    """Record this gateway start and report whether a respawn storm is underway.
+
+    Appends the current UTC timestamp to the starts-log, prunes entries older
+    than ``window_s``, and ring-buffers the file so it can't grow unbounded.
+    Returns a :class:`StormInfo` when more than ``max_starts`` starts landed in
+    the window (with an exponential backoff capped at ``backoff_cap_s``), else
+    ``None``.
+
+    Best-effort: any bookkeeping failure is logged and swallowed so a broken
+    ledger can never crash gateway startup.
+    """
+    try:
+        path = _get_starts_log_path()
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+        now = datetime.now(timezone.utc).timestamp()
+
+        existing: list[float] = []
+        if path.exists():
+            for line in path.read_text(encoding="utf-8").splitlines():
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    existing.append(float(line))
+                except ValueError:
+                    continue
+
+        existing.append(now)
+
+        # Keep only starts within the sliding window for the storm decision.
+        recent = [ts for ts in existing if now - ts <= window_s]
+
+        # Ring-buffer what we persist so the file stays bounded even if the
+        # window is wide or starts are frequent.
+        keep = max(max_starts * 4, 40)
+        to_write = existing[-keep:]
+
+        tmp = path.with_suffix(".tmp")
+        tmp.write_text(
+            "\n".join(repr(ts) for ts in to_write) + "\n", encoding="utf-8"
+        )
+        os.replace(tmp, path)
+
+        if len(recent) > max_starts:
+            backoff = min(
+                backoff_cap_s, 5.0 * (2 ** min(len(recent) - max_starts, 6))
+            )
+            return StormInfo(count=len(recent), window_s=window_s, backoff_s=backoff)
+        return None
+    except Exception as _e:
+        logger.debug(
+            "respawn-storm breaker bookkeeping failed (non-fatal): %s", _e
+        )
+        return None
+
+
+def _get_process_hermes_home() -> Path:
+    """Return the process-level HERMES_HOME, skipping context-local overrides.
+
+    Gateway identity files (PID, lock, runtime status, takeover/stop markers)
+    must always live in the directory the gateway process was launched with.
+    ``get_hermes_home()`` honors ``_HERMES_HOME_OVERRIDE`` contextvar used for
+    per-session profile dispatch, which would route these files into the wrong
+    profile directory when a profile-context task happens to be active at write
+    time.  See issue #56986.
+    """
+    val = os.environ.get("HERMES_HOME", "").strip()
+    if val:
+        return Path(val)
+    return _get_platform_default_hermes_home()
 
 
 def _get_pid_path() -> Path:
-    """Return the path to the gateway PID file, respecting LUCIFEX_HOME."""
-    home = get_lucifex_home()
+    """Return the path to the gateway PID file, respecting HERMES_HOME."""
+    home = _get_process_hermes_home()
     return home / "gateway.pid"
 
 
@@ -52,7 +152,7 @@ def _get_gateway_lock_path(pid_path: Optional[Path] = None) -> Path:
     """Return the path to the runtime gateway lock file."""
     if pid_path is not None:
         return pid_path.with_name(_GATEWAY_LOCK_FILENAME)
-    home = get_lucifex_home()
+    home = _get_process_hermes_home()
     return home / _GATEWAY_LOCK_FILENAME
 
 
@@ -63,11 +163,11 @@ def _get_runtime_status_path() -> Path:
 
 def _get_lock_dir() -> Path:
     """Return the machine-local directory for token-scoped gateway locks."""
-    override = os.getenv("LUCIFEX_GATEWAY_LOCK_DIR")
+    override = os.getenv("HERMES_GATEWAY_LOCK_DIR")
     if override:
         return Path(override)
     state_home = Path(os.getenv("XDG_STATE_HOME", Path.home() / ".local" / "state"))
-    return state_home / "lucifex" / _LOCKS_DIRNAME
+    return state_home / "hermes" / _LOCKS_DIRNAME
 
 
 def _utc_now_iso() -> str:
@@ -84,7 +184,7 @@ def terminate_pid(pid: int, *, force: bool = False) -> None:
         # CREATE_NO_WINDOW: terminate_pid runs from the windowless pythonw.exe
         # gateway/desktop backend, so a bare taskkill spawn would flash a
         # conhost window on every force-kill.
-        from lucifex_cli._subprocess_compat import windows_hide_flags
+        from hermes_cli._subprocess_compat import windows_hide_flags
 
         try:
             result = subprocess.run(
@@ -198,11 +298,11 @@ def _read_process_cmdline(pid: int) -> Optional[str]:
 
 
 def _gateway_command_subcommand(command: str | None) -> str | None:
-    """Return the Lucifex gateway lifecycle subcommand from a command line.
+    """Return the Hermes gateway lifecycle subcommand from a command line.
 
     Lifecycle decisions (is the gateway up? did restart relaunch it?) must not
     fire on loose substring matches.  The previous ``"... gateway" in cmdline``
-    test also matched ``lucifex_cli.main gateway status`` and even unrelated
+    test also matched ``hermes_cli.main gateway status`` and even unrelated
     processes like ``python -m tui_gateway`` -- which made ``restart()`` race
     against a still-draining old process and ``status``/``start`` report false
     positives.  This requires the actual ``gateway`` subcommand followed by
@@ -211,8 +311,8 @@ def _gateway_command_subcommand(command: str | None) -> str | None:
     word "gateway".
 
     Tokenizes quote-aware (``shlex``) so quoted Windows paths with spaces
-    (``"C:\\Program Files\\...\\lucifex-gateway.exe"``) survive, and strips
-    ``--profile``/``-p`` selectors from anywhere in argv -- Lucifex's
+    (``"C:\\Program Files\\...\\hermes-gateway.exe"``) survive, and strips
+    ``--profile``/``-p`` selectors from anywhere in argv -- Hermes's
     ``_apply_profile_override`` removes them before argparse, so the profile
     flag (and a profile literally named ``gateway``) can legally appear on
     either side of the ``gateway`` subcommand.
@@ -234,14 +334,14 @@ def _gateway_command_subcommand(command: str | None) -> str | None:
         if token == "gateway/run.py" or token.endswith("/gateway/run.py"):
             return "run"
         basename = token.rsplit("/", 1)[-1]
-        if basename in ("lucifex-gateway", "lucifex-gateway.exe"):
+        if basename in ("hermes-gateway", "hermes-gateway.exe"):
             return "run"
 
     joined = " ".join(tokens)
     has_gateway_entry = (
-        "lucifex_cli.main" in joined
-        or "lucifex_cli/main.py" in joined
-        or any(t.rsplit("/", 1)[-1] in ("lucifex", "lucifex.exe") for t in tokens)
+        "hermes_cli.main" in joined
+        or "hermes_cli/main.py" in joined
+        or any(t.rsplit("/", 1)[-1] in ("hermes", "hermes.exe") for t in tokens)
     )
     if not has_gateway_entry:
         return None
@@ -266,7 +366,7 @@ def _gateway_command_subcommand(command: str | None) -> str | None:
         if token != "gateway":
             continue
         if i + 1 >= len(filtered):
-            return "run"  # bare `lucifex gateway` defaults to `run`
+            return "run"  # bare `hermes gateway` defaults to `run`
         return filtered[i + 1]
     return None
 
@@ -284,14 +384,14 @@ def looks_like_gateway_runtime_command_line(command: str | None) -> bool:
     fallback executes ``run_gateway()`` in that same process, so its argv stays
     as ``gateway restart`` while it owns the webhook port and writes runtime
     state. Keep the public ``looks_like_gateway_command_line()`` strict, and
-    use this broader matcher only when validating Lucifex-owned runtime records
+    use this broader matcher only when validating Hermes-owned runtime records
     or no-supervisor cleanup scans.
     """
     return _gateway_command_subcommand(command) in {"run", "restart"}
 
 
 def _looks_like_gateway_process(pid: int) -> bool:
-    """Return True when the live PID still looks like the Lucifex gateway."""
+    """Return True when the live PID still looks like the Hermes gateway."""
     cmdline = _read_process_cmdline(pid)
     if not cmdline:
         return False
@@ -312,10 +412,10 @@ def _record_looks_like_gateway(record: dict[str, Any]) -> bool:
 
 
 def _profile_name_for_home(profile_home: Path) -> Optional[str]:
-    """Return the profile id a LUCIFEX_HOME directory represents, or None.
+    """Return the profile id a HERMES_HOME directory represents, or None.
 
     A named profile's home is ``<root>/profiles/<name>`` (immediate parent is
-    ``profiles``).  The root/default home (``~/.lucifex`` or ``$LUCIFEX_HOME``)
+    ``profiles``).  The root/default home (``~/.hermes`` or ``$HERMES_HOME``)
     has no such parent, so it maps to the default profile (``None`` here, which
     callers treat as "the bare, flag-less gateway").
     """
@@ -327,14 +427,14 @@ def _profile_name_for_home(profile_home: Path) -> Optional[str]:
 def _command_line_belongs_to_profile(command: str, profile_home: Path) -> bool:
     """Return True when a gateway command line belongs to ``profile_home``.
 
-    Mirrors ``lucifex_cli.gateway._matches_current_profile`` so the dashboard's
+    Mirrors ``hermes_cli.gateway._matches_current_profile`` so the dashboard's
     cross-profile liveness fallback scopes a live PID to the *right* profile.
     In a per-profile container, one profile's stale ``gateway_state.json`` can
     record a PID that the OS has since recycled onto a DIFFERENT profile's live
     gateway.  That recycled PID's command line still ``looks_like_gateway`` —
     so without a profile check the dead profile is reported running.  A named
     profile gateway carries ``-p <name>``/``--profile <name>`` (or, rarely, an
-    explicit ``LUCIFEX_HOME=<path>``) on its argv; the default/root gateway runs
+    explicit ``HERMES_HOME=<path>``) on its argv; the default/root gateway runs
     bare with no profile flag.
     """
     command_lc = command.lower()
@@ -346,17 +446,17 @@ def _command_line_belongs_to_profile(command: str, profile_home: Path) -> bool:
         return (
             f"--profile {profile_lc}" in command_lc
             or f"-p {profile_lc}" in command_lc
-            or f"lucifex_home={home_lc}" in command_lc
+            or f"hermes_home={home_lc}" in command_lc
         )
 
     # Default/root profile: the gateway runs with no profile flag. Accept unless
     # the command advertises *some other* profile (an explicit -p/--profile) or
-    # a non-matching explicit LUCIFEX_HOME= on the argv. LUCIFEX_HOME is usually
+    # a non-matching explicit HERMES_HOME= on the argv. HERMES_HOME is usually
     # passed via the environment (not visible on the command line), so its mere
     # absence is not disqualifying — only a conflicting explicit value is.
     if "--profile " in command_lc or " -p " in command_lc:
         return False
-    if "lucifex_home=" in command_lc and f"lucifex_home={home_lc}" not in command_lc:
+    if "hermes_home=" in command_lc and f"hermes_home={home_lc}" not in command_lc:
         return False
     return True
 
@@ -480,6 +580,33 @@ def _pid_from_record(record: Optional[dict[str, Any]]) -> Optional[int]:
         return None
 
 
+def _clear_running_pid_cache() -> None:
+    with _gateway_running_pid_cache_lock:
+        _gateway_running_pid_cache.clear()
+
+
+def _file_cache_signature(path: Path) -> tuple[bool, Optional[int], Optional[int]]:
+    try:
+        st = path.stat()
+    except OSError:
+        return (False, None, None)
+    return (True, st.st_mtime_ns, st.st_size)
+
+
+def _running_pid_cache_signature(
+    pid_path: Path,
+    *,
+    include_runtime_status: bool,
+) -> tuple[Any, ...]:
+    parts: list[Any] = [
+        _file_cache_signature(pid_path),
+        _file_cache_signature(_get_gateway_lock_path(pid_path)),
+    ]
+    if include_runtime_status:
+        parts.append(_file_cache_signature(_get_runtime_status_path()))
+    return tuple(parts)
+
+
 def _cleanup_invalid_pid_path(pid_path: Path, *, cleanup_stale: bool) -> None:
     """Delete a stale gateway PID file (and its sibling lock metadata).
 
@@ -492,6 +619,7 @@ def _cleanup_invalid_pid_path(pid_path: Path, *, cleanup_stale: bool) -> None:
     """
     if not cleanup_stale:
         return
+    _clear_running_pid_cache()
     try:
         pid_path.unlink(missing_ok=True)
     except Exception:
@@ -677,6 +805,7 @@ def acquire_gateway_runtime_lock() -> bool:
         return False
     _write_gateway_lock_record(handle)
     _gateway_lock_handle = handle
+    _clear_running_pid_cache()
     return True
 
 
@@ -692,6 +821,7 @@ def release_gateway_runtime_lock() -> None:
         handle.close()
     except OSError:
         pass
+    _clear_running_pid_cache()
 
 
 def is_gateway_runtime_lock_active(lock_path: Optional[Path] = None) -> bool:
@@ -734,6 +864,7 @@ def write_pid_file() -> None:
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             f.write(record)
+        _clear_running_pid_cache()
     except Exception:
         try:
             path.unlink(missing_ok=True)
@@ -775,7 +906,7 @@ def write_runtime_status(
         payload["active_agents"] = parse_active_agents(active_agents)
     if served_profiles is not _UNSET:
         # Profiles this gateway multiplexes (multi-profile mode). Absent/empty
-        # for a single-profile gateway. Lets `lucifex status` show per-profile
+        # for a single-profile gateway. Lets `hermes status` show per-profile
         # coverage without a second probe.
         payload["served_profiles"] = list(served_profiles or [])
 
@@ -798,7 +929,7 @@ def read_runtime_status(path: Optional[Path] = None) -> Optional[dict[str, Any]]
 
     ``path`` is optional so callers that need to inspect a *different*
     profile's state file (e.g. the dashboard enumerating every profile)
-    can do so without mutating ``LUCIFEX_HOME`` in-process.  Defaults to
+    can do so without mutating ``HERMES_HOME`` in-process.  Defaults to
     the active profile's ``gateway_state.json``.
     """
     return _read_json_file(path or _get_runtime_status_path())
@@ -876,7 +1007,7 @@ def get_runtime_status_running_pid(
     OS process identity.
 
     ``expected_home`` scopes the OS-identity check to a specific profile's
-    LUCIFEX_HOME.  Pass it when validating *another* profile's state file (the
+    HERMES_HOME.  Pass it when validating *another* profile's state file (the
     dashboard enumerating every profile): a stale record whose PID the OS has
     recycled onto a different profile's live gateway must not be reported
     running for the dead profile.  Omit it (the default) for the active
@@ -926,6 +1057,7 @@ def remove_pid_file() -> None:
                 # PID file belongs to a different process — leave it alone.
                 return
         path.unlink(missing_ok=True)
+        _clear_running_pid_cache()
     except Exception:
         pass
 
@@ -934,7 +1066,7 @@ def acquire_scoped_lock(scope: str, identity: str, metadata: Optional[dict[str, 
     """Acquire a machine-local lock keyed by scope + identity.
 
     Used to prevent multiple local gateways from using the same external identity
-    at once (e.g. the same Telegram bot token across different LUCIFEX_HOME dirs).
+    at once (e.g. the same Telegram bot token across different HERMES_HOME dirs).
     """
     lock_path = _get_scope_lock_path(scope, identity)
     lock_path.parent.mkdir(parents=True, exist_ok=True)
@@ -1117,7 +1249,7 @@ def release_all_scoped_locks(
 # unexpected kills — but that also means a --replace takeover target
 # exits 1, which tricks systemd into reviving it 30 seconds later,
 # starting a flap loop against the replacer when both services are
-# enabled in the user's systemd (e.g. ``lucifex.service`` + ``lucifex-
+# enabled in the user's systemd (e.g. ``hermes.service`` + ``hermes-
 # gateway.service``).
 #
 # The takeover marker breaks the loop: the replacer writes a short-lived
@@ -1136,13 +1268,13 @@ _PLANNED_STOP_MARKER_TTL_S = 60
 
 def _get_takeover_marker_path() -> Path:
     """Return the path to the --replace takeover marker file."""
-    home = get_lucifex_home()
+    home = _get_process_hermes_home()
     return home / _TAKEOVER_MARKER_FILENAME
 
 
 def _get_planned_stop_marker_path() -> Path:
     """Return the path to the intentional gateway stop marker file."""
-    home = get_lucifex_home()
+    home = _get_process_hermes_home()
     return home / _PLANNED_STOP_MARKER_FILENAME
 
 
@@ -1185,19 +1317,19 @@ def _consume_pid_marker_for_self(
         return False
 
     # Cross-profile guard (#29092): reject markers written by a gateway
-    # running under a different LUCIFEX_HOME. When two profile gateway
-    # services share the same default ~/.lucifex (LUCIFEX_HOME not set
+    # running under a different HERMES_HOME. When two profile gateway
+    # services share the same default ~/.hermes (HERMES_HOME not set
     # distinctly), the marker path resolves to the same file for both. A
     # --replace from profile B could land in profile A's marker, match on
     # PID + start_time by coincidence of a shared PID namespace, and make
     # profile A exit 0 — only to be revived by systemd Restart=always,
     # which then races the replacer again, flapping indefinitely. The
-    # field is absent in markers written by older Lucifex versions; treat
+    # field is absent in markers written by older Hermes versions; treat
     # absent as "same home" so old markers and single-profile setups are
     # unaffected. Leave a mismatched marker in place so the correct
     # profile can still consume it.
-    replacer_home = record.get("replacer_lucifex_home")
-    if replacer_home is not None and replacer_home != str(get_lucifex_home()):
+    replacer_home = record.get("replacer_hermes_home")
+    if replacer_home is not None and replacer_home != str(_get_process_hermes_home()):
         return False
 
     our_pid = os.getpid()
@@ -1207,7 +1339,7 @@ def _consume_pid_marker_for_self(
     # platforms without ``/proc`` (macOS, native Windows — the very
     # platform the planned-stop watcher exists for). Requiring a non-None
     # match there would make every consume return False, so a legitimate
-    # ``lucifex gateway stop`` on Windows would be misclassified as an
+    # ``hermes gateway stop`` on Windows would be misclassified as an
     # unexpected ``UNKNOWN`` exit (exit 1) and revived by the service
     # manager. So: when both start_times are known they must match; when
     # either is unknown, fall back to PID equality alone (bounded by the
@@ -1246,7 +1378,7 @@ def write_takeover_marker(target_pid: int) -> bool:
             "target_pid": target_pid,
             "target_start_time": target_start_time,
             "replacer_pid": os.getpid(),
-            "replacer_lucifex_home": str(get_lucifex_home()),
+            "replacer_hermes_home": str(_get_process_hermes_home()),
             "written_at": _utc_now_iso(),
         }
         _write_json_file(_get_takeover_marker_path(), record)
@@ -1429,6 +1561,54 @@ def get_running_pid(
         if runtime_pid is not None:
             return runtime_pid
     return None
+
+
+def get_running_pid_cached(
+    pid_path: Optional[Path] = None,
+    *,
+    cleanup_stale: bool = True,
+    ttl_seconds: float = _GATEWAY_RUNNING_PID_CACHE_TTL_SECONDS,
+) -> Optional[int]:
+    """Cached read-side wrapper for dashboard/status polling.
+
+    ``get_running_pid()`` probes the runtime lock by briefly opening and locking
+    ``gateway.lock``. That is the right authoritative check for control paths,
+    but high-frequency read-only HTTP polling can call it hundreds of times per
+    minute. Cache for a short window and invalidate on PID/lock/runtime-status
+    file changes so status endpoints do not churn file descriptors while still
+    noticing gateway start/stop transitions quickly.
+    """
+    if ttl_seconds <= 0:
+        return get_running_pid(pid_path, cleanup_stale=cleanup_stale)
+
+    resolved_pid_path = pid_path or _get_pid_path()
+    include_runtime_status = pid_path is None
+    signature = _running_pid_cache_signature(
+        resolved_pid_path,
+        include_runtime_status=include_runtime_status,
+    )
+    key = (str(resolved_pid_path), bool(cleanup_stale), include_runtime_status)
+    now = time.monotonic()
+
+    with _gateway_running_pid_cache_lock:
+        cached = _gateway_running_pid_cache.get(key)
+        if cached is not None:
+            cached_at, cached_signature, cached_pid = cached
+            if now - cached_at <= ttl_seconds and cached_signature == signature:
+                return cached_pid
+
+    pid = get_running_pid(pid_path, cleanup_stale=cleanup_stale)
+    refreshed_signature = _running_pid_cache_signature(
+        resolved_pid_path,
+        include_runtime_status=include_runtime_status,
+    )
+    with _gateway_running_pid_cache_lock:
+        _gateway_running_pid_cache[key] = (
+            time.monotonic(),
+            refreshed_signature,
+            pid,
+        )
+    return pid
 
 
 def is_gateway_running(

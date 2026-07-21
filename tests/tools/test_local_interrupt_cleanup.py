@@ -6,7 +6,7 @@ or explicit sys.exit from some caller), the child subprocess must be killed
 before the exception propagates — otherwise the local backend's use of
 os.setsid leaves an orphan with PPID=1.
 
-The live repro that motivated this: lucifex chat -q ... 'sleep 300', SIGTERM
+The live repro that motivated this: hermes chat -q ... 'sleep 300', SIGTERM
 to the python process, sleep 300 survived with PPID=1 for the full 300 s
 because _wait_for_process never got to call _kill_process before python
 died.  See commit message for full context.
@@ -25,8 +25,8 @@ from tools.environments.local import LocalEnvironment
 
 
 @pytest.fixture(autouse=True)
-def _isolate_lucifex_home(tmp_path, monkeypatch):
-    monkeypatch.setenv("LUCIFEX_HOME", str(tmp_path))
+def _isolate_hermes_home(tmp_path, monkeypatch):
+    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
     (tmp_path / "logs").mkdir(exist_ok=True)
 
 
@@ -49,7 +49,7 @@ def _process_group_snapshot(pgid: int) -> str:
     ).stdout.strip()
 
 
-def _wait_for_pgid_exit(pgid: int, timeout: float = 30.0) -> bool:
+def _wait_for_pgid_exit(pgid: int, timeout: float = 60.0) -> bool:
     """Wait for a process group to disappear under loaded xdist hosts.
 
     The cleanup chain is: SIGTERM → 3s TimeoutStopSec → SIGKILL → reap.
@@ -75,7 +75,7 @@ def test_kill_process_uses_cached_pgid_if_wrapper_already_exited(monkeypatch):
     env = object.__new__(LocalEnvironment)
     proc = SimpleNamespace(
         pid=12345,
-        _lucifex_pgid=67890,
+        _hermes_pgid=67890,
         poll=lambda: 0,
         kill=lambda: None,
     )
@@ -150,7 +150,7 @@ def test_wait_for_process_kills_subprocess_on_keyboardinterrupt():
         # does init_session() (one spawn) before the real command, so we need
         # to wait until a sleep 30 is visible.  Use pgrep-style lookup via
         # /proc to find the bash process running our sleep.
-        deadline = time.monotonic() + 5.0
+        deadline = time.monotonic() + 20.0  # generous: init_session + spawn dilate under CI load
         target_pid = None
         while time.monotonic() < deadline:
             # Walk our children and grand-children to find one running 'sleep 30'
@@ -201,8 +201,8 @@ def test_wait_for_process_kills_subprocess_on_keyboardinterrupt():
         # run the except-block cleanup (_kill_process), and exit.  Under
         # xdist load the SIGTERM → 3s wait → SIGKILL chain can take longer
         # than 5s before the worker's join() returns; bumped to 15s.
-        t.join(timeout=15.0)
-        assert not t.is_alive(), "worker didn't exit within 15 s of the interrupt"
+        t.join(timeout=30.0)
+        assert not t.is_alive(), "worker didn't exit within 30 s of the interrupt"
 
         # The critical assertion: the subprocess GROUP must be dead.  Not
         # just the bash wrapper — the 'sleep 30' child too. Under xdist load,

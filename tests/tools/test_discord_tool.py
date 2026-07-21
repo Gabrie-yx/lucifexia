@@ -142,6 +142,41 @@ class TestDiscordRequest:
         assert exc_info.value.status == 403
         assert "Missing Access" in exc_info.value.body
 
+    @patch("tools.discord_tool.urllib.request.urlopen")
+    def test_response_body_size_limit(self, mock_urlopen_fn, monkeypatch):
+        monkeypatch.setattr("tools.discord_tool._DISCORD_RESPONSE_BODY_MAX_BYTES", 8)
+        mock_resp = MagicMock()
+        mock_resp.status = 200
+        mock_resp.read.return_value = b"x" * 9
+        mock_resp.__enter__ = MagicMock(return_value=mock_resp)
+        mock_resp.__exit__ = MagicMock(return_value=False)
+        mock_urlopen_fn.return_value = mock_resp
+
+        with pytest.raises(DiscordAPIError) as exc_info:
+            _discord_request("GET", "/test", "tok")
+
+        assert exc_info.value.status == 502
+        assert "response body exceeded 8 bytes" in exc_info.value.body
+        mock_resp.read.assert_called_once_with(9)
+
+    @patch("tools.discord_tool.urllib.request.urlopen")
+    def test_http_error_body_size_limit(self, mock_urlopen_fn, monkeypatch):
+        monkeypatch.setattr("tools.discord_tool._DISCORD_ERROR_BODY_MAX_BYTES", 8)
+        http_error = urllib.error.HTTPError(
+            url="https://discord.com/api/v10/test",
+            code=403,
+            msg="Forbidden",
+            hdrs={},
+            fp=BytesIO(b"x" * 9),
+        )
+        mock_urlopen_fn.side_effect = http_error
+
+        with pytest.raises(DiscordAPIError) as exc_info:
+            _discord_request("GET", "/test", "tok")
+
+        assert exc_info.value.status == 403
+        assert "error body exceeded 8 bytes" in exc_info.value.body
+
 
 # ---------------------------------------------------------------------------
 # Main handler: validation
@@ -614,24 +649,24 @@ class TestRegistration:
 
 
 # ---------------------------------------------------------------------------
-# Toolset: discord / discord_admin only in lucifex-discord
+# Toolset: discord / discord_admin only in hermes-discord
 # ---------------------------------------------------------------------------
 
 class TestToolsetInclusion:
-    def test_discord_tools_in_lucifex_discord_toolset(self):
+    def test_discord_tools_in_hermes_discord_toolset(self):
         from toolsets import TOOLSETS
-        assert "discord" in TOOLSETS["lucifex-discord"]["tools"]
-        assert "discord_admin" in TOOLSETS["lucifex-discord"]["tools"]
+        assert "discord" in TOOLSETS["hermes-discord"]["tools"]
+        assert "discord_admin" in TOOLSETS["hermes-discord"]["tools"]
 
     def test_discord_tools_not_in_core_tools(self):
-        from toolsets import _LUCIFEX_CORE_TOOLS
-        assert "discord" not in _LUCIFEX_CORE_TOOLS
-        assert "discord_admin" not in _LUCIFEX_CORE_TOOLS
+        from toolsets import _HERMES_CORE_TOOLS
+        assert "discord" not in _HERMES_CORE_TOOLS
+        assert "discord_admin" not in _HERMES_CORE_TOOLS
 
     def test_discord_tools_not_in_other_toolsets(self):
         from toolsets import TOOLSETS
         for name, ts in TOOLSETS.items():
-            if name in {"lucifex-discord", "lucifex-gateway", "discord", "discord_admin"}:
+            if name in {"hermes-discord", "hermes-gateway", "discord", "discord_admin"}:
                 continue
             tools = ts.get("tools", [])
             assert "discord" not in tools or name == "discord", (
@@ -711,6 +746,119 @@ class TestCapabilityDetection:
         _detect_capabilities("tok", force=True)
         assert mock_req.call_count == 2
 
+
+class TestNonBlockingCapabilityDetection:
+    """The schema-build path must never block on a discord.com HTTP call.
+
+    ``_detect_capabilities_nonblocking`` resolves memory cache → disk cache →
+    permissive default (+ background detect), keeping the ~2s blocking
+    detection off the first-token critical path (TTFT fix, July 2026).
+    """
+
+    def setup_method(self):
+        _reset_capability_cache()
+
+    def teardown_method(self):
+        _reset_capability_cache()
+
+    def test_memory_cache_hit_no_network(self):
+        from tools.discord_tool import _capability_cache, _detect_capabilities_nonblocking
+        caps_in = {"has_members_intent": False, "has_message_content": True, "detected": True}
+        _capability_cache["tok"] = caps_in
+        with patch("tools.discord_tool._discord_request") as mock_req:
+            caps = _detect_capabilities_nonblocking("tok")
+        assert caps == caps_in
+        mock_req.assert_not_called()
+
+    def test_cold_start_returns_permissive_default_immediately(self):
+        from tools.discord_tool import _detect_capabilities_nonblocking
+        with patch("tools.discord_tool._load_caps_from_disk", return_value=None), \
+             patch("tools.discord_tool.threading.Thread") as mock_thread:
+            caps = _detect_capabilities_nonblocking("tok")
+        assert caps["has_members_intent"] is True
+        assert caps["has_message_content"] is True
+        assert caps["detected"] is False
+        # Background detection was scheduled exactly once
+        assert mock_thread.call_count == 1
+
+    def test_cold_start_pins_default_for_process_schema_stability(self):
+        """Within one process the schema must not flip mid-conversation:
+        the permissive default is pinned in the memory cache so later
+        schema builds see the same caps even after bg detection lands
+        on disk."""
+        from tools.discord_tool import _capability_cache, _detect_capabilities_nonblocking
+        with patch("tools.discord_tool._load_caps_from_disk", return_value=None), \
+             patch("tools.discord_tool.threading.Thread"):
+            first = _detect_capabilities_nonblocking("tok")
+        # Even if the disk now has restrictive caps, the pinned entry wins.
+        with patch(
+            "tools.discord_tool._load_caps_from_disk",
+            return_value={"has_members_intent": False, "has_message_content": False, "detected": True},
+        ):
+            second = _detect_capabilities_nonblocking("tok")
+        assert first == second
+        assert _capability_cache["tok"] is first
+
+    def test_bg_detection_scheduled_once_per_token(self):
+        from tools.discord_tool import _detect_capabilities_nonblocking
+        with patch("tools.discord_tool._load_caps_from_disk", return_value=None), \
+             patch("tools.discord_tool.threading.Thread") as mock_thread:
+            _detect_capabilities_nonblocking("tok")
+            # Second cold call for the same token in the same process
+            from tools.discord_tool import _capability_cache
+            _capability_cache.pop("tok", None)  # simulate another cold path
+            _detect_capabilities_nonblocking("tok")
+        # bg started set persists → only one thread scheduled
+        assert mock_thread.call_count == 1
+
+    def test_disk_cache_round_trip(self, tmp_path, monkeypatch):
+        import tools.discord_tool as dt
+        monkeypatch.setattr(
+            dt, "_capability_disk_cache_path",
+            lambda: tmp_path / "discord_capabilities.json",
+        )
+        caps_in = {"has_members_intent": True, "has_message_content": False, "detected": True}
+        dt._save_caps_to_disk("tok", caps_in)
+        assert dt._load_caps_from_disk("tok") == caps_in
+        # Wrong token → miss
+        assert dt._load_caps_from_disk("other") is None
+
+    def test_disk_cache_expires(self, tmp_path, monkeypatch):
+        import time as _time
+
+        import tools.discord_tool as dt
+        monkeypatch.setattr(
+            dt, "_capability_disk_cache_path",
+            lambda: tmp_path / "discord_capabilities.json",
+        )
+        caps_in = {"has_members_intent": True, "has_message_content": True, "detected": True}
+        dt._save_caps_to_disk("tok", caps_in)
+        # Rewrite timestamp to be stale
+        import json as _json
+        p = tmp_path / "discord_capabilities.json"
+        data = _json.loads(p.read_text())
+        for entry in data.values():
+            entry["ts"] = _time.time() - dt._CAPABILITY_DISK_TTL_SECONDS - 10
+        p.write_text(_json.dumps(data))
+        assert dt._load_caps_from_disk("tok") is None
+
+    def test_schema_build_uses_nonblocking_path(self, monkeypatch):
+        """get_dynamic_schema_core must not call the blocking detection."""
+        monkeypatch.setenv("DISCORD_BOT_TOKEN", "tok")
+        monkeypatch.setattr(
+            "hermes_cli.config.load_config",
+            lambda: {"discord": {"server_actions": ""}},
+        )
+        with patch("tools.discord_tool._load_caps_from_disk", return_value=None), \
+             patch("tools.discord_tool.threading.Thread"), \
+             patch("tools.discord_tool._discord_request") as mock_req:
+            schema = get_dynamic_schema_core()
+        # No blocking HTTP call happened on the schema-build path
+        mock_req.assert_not_called()
+        assert schema is not None
+        actions = set(schema["parameters"]["properties"]["action"]["enum"])
+        assert actions == set(_CORE_ACTIONS.keys())  # permissive default
+
     @patch("tools.discord_tool._discord_request")
     def test_cache_is_keyed_by_token(self, mock_req):
         """Regression: token A's capabilities must not leak to token B.
@@ -774,21 +922,21 @@ class TestConfigAllowlist:
     def test_empty_string_returns_none(self, monkeypatch):
         """Empty config means no allowlist — all actions visible."""
         monkeypatch.setattr(
-            "lucifex_cli.config.load_config",
+            "hermes_cli.config.load_config",
             lambda: {"discord": {"server_actions": ""}},
         )
         assert _load_allowed_actions_config() is None
 
     def test_missing_key_returns_none(self, monkeypatch):
         monkeypatch.setattr(
-            "lucifex_cli.config.load_config",
+            "hermes_cli.config.load_config",
             lambda: {"discord": {}},
         )
         assert _load_allowed_actions_config() is None
 
     def test_comma_separated_string(self, monkeypatch):
         monkeypatch.setattr(
-            "lucifex_cli.config.load_config",
+            "hermes_cli.config.load_config",
             lambda: {"discord": {"server_actions": "list_guilds,list_channels,fetch_messages"}},
         )
         result = _load_allowed_actions_config()
@@ -796,7 +944,7 @@ class TestConfigAllowlist:
 
     def test_yaml_list(self, monkeypatch):
         monkeypatch.setattr(
-            "lucifex_cli.config.load_config",
+            "hermes_cli.config.load_config",
             lambda: {"discord": {"server_actions": ["list_guilds", "server_info"]}},
         )
         result = _load_allowed_actions_config()
@@ -804,7 +952,7 @@ class TestConfigAllowlist:
 
     def test_unknown_names_dropped(self, monkeypatch, caplog):
         monkeypatch.setattr(
-            "lucifex_cli.config.load_config",
+            "hermes_cli.config.load_config",
             lambda: {"discord": {"server_actions": "list_guilds,bogus_action,fetch_messages"}},
         )
         with caplog.at_level("WARNING"):
@@ -816,12 +964,12 @@ class TestConfigAllowlist:
         """If config can't be loaded at all, fall back to None (all allowed)."""
         def bad_load():
             raise RuntimeError("disk gone")
-        monkeypatch.setattr("lucifex_cli.config.load_config", bad_load)
+        monkeypatch.setattr("hermes_cli.config.load_config", bad_load)
         assert _load_allowed_actions_config() is None
 
     def test_unexpected_type_ignored(self, monkeypatch, caplog):
         monkeypatch.setattr(
-            "lucifex_cli.config.load_config",
+            "hermes_cli.config.load_config",
             lambda: {"discord": {"server_actions": {"unexpected": "dict"}}},
         )
         with caplog.at_level("WARNING"):
@@ -896,7 +1044,7 @@ class TestDynamicSchema:
     def test_full_intents_core_schema(self, mock_req, monkeypatch):
         monkeypatch.setenv("DISCORD_BOT_TOKEN", "tok")
         monkeypatch.setattr(
-            "lucifex_cli.config.load_config",
+            "hermes_cli.config.load_config",
             lambda: {"discord": {"server_actions": ""}},
         )
         mock_req.return_value = {"flags": (1 << 14) | (1 << 18)}
@@ -909,7 +1057,7 @@ class TestDynamicSchema:
     def test_full_intents_admin_schema(self, mock_req, monkeypatch):
         monkeypatch.setenv("DISCORD_BOT_TOKEN", "tok")
         monkeypatch.setattr(
-            "lucifex_cli.config.load_config",
+            "hermes_cli.config.load_config",
             lambda: {"discord": {"server_actions": ""}},
         )
         mock_req.return_value = {"flags": (1 << 14) | (1 << 18)}
@@ -928,10 +1076,14 @@ class TestDynamicSchema:
         GUILD_MEMBERS intent is missing."""
         monkeypatch.setenv("DISCORD_BOT_TOKEN", "tok")
         monkeypatch.setattr(
-            "lucifex_cli.config.load_config",
+            "hermes_cli.config.load_config",
             lambda: {"discord": {"server_actions": ""}},
         )
         mock_req.return_value = {"flags": 1 << 18}  # only MESSAGE_CONTENT
+        # Warm the capability cache — schema builds are non-blocking and use
+        # the permissive default until detection has completed (background
+        # thread + disk cache); filtering applies once caps are known.
+        _detect_capabilities("tok")
         schema = get_dynamic_schema_admin()
         actions = schema["parameters"]["properties"]["action"]["enum"]
         assert "member_info" not in actions
@@ -944,10 +1096,11 @@ class TestDynamicSchema:
         """search_members is a core action gated by GUILD_MEMBERS intent."""
         monkeypatch.setenv("DISCORD_BOT_TOKEN", "tok")
         monkeypatch.setattr(
-            "lucifex_cli.config.load_config",
+            "hermes_cli.config.load_config",
             lambda: {"discord": {"server_actions": ""}},
         )
         mock_req.return_value = {"flags": 1 << 18}  # only MESSAGE_CONTENT
+        _detect_capabilities("tok")  # warm cache — schema builds are non-blocking
         schema = get_dynamic_schema_core()
         actions = schema["parameters"]["properties"]["action"]["enum"]
         assert "search_members" not in actions
@@ -956,10 +1109,11 @@ class TestDynamicSchema:
     def test_no_message_content_adds_warning_note(self, mock_req, monkeypatch):
         monkeypatch.setenv("DISCORD_BOT_TOKEN", "tok")
         monkeypatch.setattr(
-            "lucifex_cli.config.load_config",
+            "hermes_cli.config.load_config",
             lambda: {"discord": {"server_actions": ""}},
         )
         mock_req.return_value = {"flags": 1 << 14}  # only GUILD_MEMBERS
+        _detect_capabilities("tok")  # warm cache — schema builds are non-blocking
         schema = get_dynamic_schema_core()
         assert "MESSAGE_CONTENT" in schema["description"]
         # But fetch_messages is still available
@@ -970,7 +1124,7 @@ class TestDynamicSchema:
     def test_config_allowlist_narrows_admin_schema(self, mock_req, monkeypatch):
         monkeypatch.setenv("DISCORD_BOT_TOKEN", "tok")
         monkeypatch.setattr(
-            "lucifex_cli.config.load_config",
+            "hermes_cli.config.load_config",
             lambda: {"discord": {"server_actions": "list_guilds,list_channels"}},
         )
         mock_req.return_value = {"flags": (1 << 14) | (1 << 18)}
@@ -986,7 +1140,7 @@ class TestDynamicSchema:
         were typos), get_dynamic_schema returns None so the tool is dropped."""
         monkeypatch.setenv("DISCORD_BOT_TOKEN", "tok")
         monkeypatch.setattr(
-            "lucifex_cli.config.load_config",
+            "hermes_cli.config.load_config",
             lambda: {"discord": {"server_actions": "typo_one,typo_two"}},
         )
         mock_req.return_value = {"flags": (1 << 14) | (1 << 18)}
@@ -998,7 +1152,7 @@ class TestDynamicSchema:
         """get_dynamic_schema() should delegate to get_dynamic_schema_core()."""
         monkeypatch.setenv("DISCORD_BOT_TOKEN", "tok")
         monkeypatch.setattr(
-            "lucifex_cli.config.load_config",
+            "hermes_cli.config.load_config",
             lambda: {"discord": {"server_actions": ""}},
         )
         mock_req.return_value = {"flags": (1 << 14) | (1 << 18)}
@@ -1018,7 +1172,7 @@ class TestRuntimeAllowlistEnforcement:
     def test_denied_action_blocked_at_runtime(self, mock_req, monkeypatch):
         monkeypatch.setenv("DISCORD_BOT_TOKEN", "tok")
         monkeypatch.setattr(
-            "lucifex_cli.config.load_config",
+            "hermes_cli.config.load_config",
             lambda: {"discord": {"server_actions": "list_guilds"}},
         )
         result = json.loads(discord_admin_handler(action="add_role", guild_id="1", user_id="2", role_id="3"))
@@ -1030,7 +1184,7 @@ class TestRuntimeAllowlistEnforcement:
     def test_allowed_action_proceeds(self, mock_req, monkeypatch):
         monkeypatch.setenv("DISCORD_BOT_TOKEN", "tok")
         monkeypatch.setattr(
-            "lucifex_cli.config.load_config",
+            "hermes_cli.config.load_config",
             lambda: {"discord": {"server_actions": "list_guilds"}},
         )
         mock_req.return_value = []
@@ -1057,7 +1211,7 @@ class Test403Enrichment:
     def test_403_in_runtime_is_enriched(self, mock_req, monkeypatch):
         monkeypatch.setenv("DISCORD_BOT_TOKEN", "tok")
         monkeypatch.setattr(
-            "lucifex_cli.config.load_config",
+            "hermes_cli.config.load_config",
             lambda: {"discord": {"server_actions": ""}},
         )
         mock_req.side_effect = DiscordAPIError(403, '{"message":"Missing Permissions"}')
@@ -1071,7 +1225,7 @@ class Test403Enrichment:
     def test_non_403_errors_are_not_enriched(self, mock_req, monkeypatch):
         monkeypatch.setenv("DISCORD_BOT_TOKEN", "tok")
         monkeypatch.setattr(
-            "lucifex_cli.config.load_config",
+            "hermes_cli.config.load_config",
             lambda: {"discord": {"server_actions": ""}},
         )
         mock_req.side_effect = DiscordAPIError(500, "server error")
@@ -1107,14 +1261,14 @@ class TestModelToolsIntegration:
         available, it should replace the static schema with the dynamic one."""
         monkeypatch.setenv("DISCORD_BOT_TOKEN", "tok")
         monkeypatch.setattr(
-            "lucifex_cli.config.load_config",
+            "hermes_cli.config.load_config",
             lambda: {"discord": {"server_actions": "list_guilds,server_info"}},
         )
         # Bot without GUILD_MEMBERS intent
         mock_req.return_value = {"flags": 0}
 
         from model_tools import get_tool_definitions
-        tools = get_tool_definitions(enabled_toolsets=["lucifex-discord"], quiet_mode=True)
+        tools = get_tool_definitions(enabled_toolsets=["hermes-discord"], quiet_mode=True)
         discord_admin_tool = next(
             (t for t in tools if t.get("function", {}).get("name") == "discord_admin"),
             None,
@@ -1129,13 +1283,13 @@ class TestModelToolsIntegration:
     ):
         monkeypatch.setenv("DISCORD_BOT_TOKEN", "tok")
         monkeypatch.setattr(
-            "lucifex_cli.config.load_config",
+            "hermes_cli.config.load_config",
             lambda: {"discord": {"server_actions": "all_bogus_names"}},
         )
         mock_req.return_value = {"flags": 0}
 
         from model_tools import get_tool_definitions
-        tools = get_tool_definitions(enabled_toolsets=["lucifex-discord"], quiet_mode=True)
+        tools = get_tool_definitions(enabled_toolsets=["hermes-discord"], quiet_mode=True)
         names = [t.get("function", {}).get("name") for t in tools]
         assert "discord" not in names
         assert "discord_admin" not in names

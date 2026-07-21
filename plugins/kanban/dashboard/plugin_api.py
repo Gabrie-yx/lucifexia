@@ -3,7 +3,7 @@
 Mounted at /api/plugins/kanban/ by the dashboard plugin system.
 
 This layer is intentionally thin: every handler is a small wrapper around
-``lucifex_cli.kanban_db`` or a direct SQL query. Writes use the same code
+``hermes_cli.kanban_db`` or a direct SQL query. Writes use the same code
 paths the CLI and gateway ``/kanban`` command use, so the three surfaces
 cannot drift.
 
@@ -18,15 +18,15 @@ Plugin HTTP routes go through the dashboard's session-token auth middleware
 ``/api/plugins/...`` request must present the session bearer token (or the
 session cookie set when you load the dashboard HTML). The token is the
 random per-process ``_SESSION_TOKEN`` printed at startup; the dashboard's
-own pages inject it via ``window.__LUCIFEX_SESSION_TOKEN__`` so logged-in
+own pages inject it via ``window.__HERMES_SESSION_TOKEN__`` so logged-in
 browsers don't have to handle it manually.
 
 For the ``/events`` WebSocket we still require the session token as a
 ``?token=`` query parameter (browsers cannot set the ``Authorization``
 header on an upgrade request), matching the established pattern used by
-the in-browser PTY bridge in ``lucifex_cli/web_server.py``.
+the in-browser PTY bridge in ``hermes_cli/web_server.py``.
 
-This means ``lucifex dashboard --host 0.0.0.0`` is safe to run on a LAN:
+This means ``hermes dashboard --host 0.0.0.0`` is safe to run on a LAN:
 plugin routes are no longer an unauthenticated exception. The auth still
 isn't multi-user — anyone who can read the printed URL+token gets full
 dashboard access — but they can't ride along just because they can reach
@@ -48,8 +48,8 @@ from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile, Web
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
-from lucifex_cli import kanban_db
-from lucifex_cli import kanban_diagnostics as kd
+from hermes_cli import kanban_db
+from hermes_cli import kanban_diagnostics as kd
 
 log = logging.getLogger(__name__)
 
@@ -63,7 +63,7 @@ router = APIRouter()
 
 def _ws_upgrade_authorized(ws: "WebSocket") -> bool:
     """Authorize a WebSocket upgrade by delegating to the dashboard's canonical
-    WS auth gate (``lucifex_cli.web_server._ws_auth_ok``).
+    WS auth gate (``hermes_cli.web_server._ws_auth_ok``).
 
     Delegating (rather than re-implementing a ``_SESSION_TOKEN``-only check)
     means this endpoint transparently accepts whatever the core gate accepts
@@ -85,7 +85,7 @@ def _ws_upgrade_authorized(ws: "WebSocket") -> bool:
     the prior behaviour.
     """
     try:
-        from lucifex_cli import web_server as _ws
+        from hermes_cli import web_server as _ws
     except Exception:
         # No dashboard context (tests). Accept so the tail loop is still
         # testable; in production the dashboard module always imports
@@ -253,11 +253,11 @@ def _compute_task_diagnostics(
     and return ``{task_id: [diagnostic_dict, ...]}``.
 
     Tasks with no active diagnostics are omitted from the result.
-    Uses ``lucifex_cli.kanban_diagnostics`` — see that module for the
+    Uses ``hermes_cli.kanban_diagnostics`` — see that module for the
     rule definitions.
     """
-    from lucifex_cli import kanban_diagnostics as kd
-    from lucifex_cli.config import load_config
+    from hermes_cli import kanban_diagnostics as kd
+    from hermes_cli.config import load_config
 
     diag_config = kd.config_from_runtime_config(load_config())
 
@@ -325,7 +325,7 @@ def _warnings_summary_from_diagnostics(
     """
     if not diagnostics:
         return None
-    from lucifex_cli.kanban_diagnostics import SEVERITY_ORDER
+    from hermes_cli.kanban_diagnostics import SEVERITY_ORDER
 
     kinds: dict[str, int] = {}
     latest = 0
@@ -393,7 +393,7 @@ def get_board(
     install doesn't surface a "failed to load" error on the plugin tab.
 
     ``board`` selects which board to read from. Omitting it falls
-    through to the active board (``LUCIFEX_KANBAN_BOARD`` env → on-disk
+    through to the active board (``HERMES_KANBAN_BOARD`` env → on-disk
     ``current`` pointer → ``default``).
     """
     board = _resolve_board(board)
@@ -546,6 +546,21 @@ def get_task(
         # a second round-trip. Cards on /board carry a 200-char preview.
         full_summary = kanban_db.latest_summary(conn, task_id)
         task_d = _task_dict(task, latest_summary=full_summary)
+        links = _links_for(conn, task_id)
+        child_ids = links["children"]
+        child_summaries = kanban_db.latest_summaries(conn, child_ids)
+        child_results = []
+        for child_id in child_ids:
+            child = kanban_db.get_task(conn, child_id)
+            if child is None:
+                continue
+            child_results.append({
+                "id": child.id,
+                "title": child.title,
+                "status": child.status,
+                "latest_summary": child_summaries.get(child.id),
+                "result": child.result,
+            })
         # Attach diagnostics so the drawer's Diagnostics section can
         # render recovery actions without a second round-trip.
         diags = _compute_task_diagnostics(conn, task_ids=[task_id])
@@ -558,7 +573,8 @@ def get_task(
             "comments": [_comment_dict(c) for c in kanban_db.list_comments(conn, task_id)],
             "events": [_event_dict(e) for e in kanban_db.list_events(conn, task_id)],
             "attachments": [_attachment_dict(a) for a in kanban_db.list_attachments(conn, task_id)],
-            "links": _links_for(conn, task_id),
+            "links": links,
+            "child_results": child_results,
             "runs": [
                 _run_dict(r)
                 for r in kanban_db.list_runs(
@@ -626,7 +642,7 @@ def create_task(payload: CreateTaskBody, board: Optional[str] = Query(None)):
         # and unassigned tasks can't be dispatched regardless.
         if task and task.status == "ready" and task.assignee:
             try:
-                from lucifex_cli.kanban import _check_dispatcher_presence
+                from hermes_cli.kanban import _check_dispatcher_presence
                 running, message = _check_dispatcher_presence()
                 if not running and message:
                     body["warning"] = message
@@ -644,28 +660,16 @@ def create_task(payload: CreateTaskBody, board: Optional[str] = Query(None)):
 # Attachments — upload / list / download / delete (#35338)
 # ---------------------------------------------------------------------------
 
-# Cap a single upload so a runaway request can't fill the disk. 25 MB
-# comfortably covers PDFs, images, and source docs — the kanban use case.
-_MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024
-
-
-def _safe_attachment_name(raw: str) -> str:
-    """Reduce a client-supplied filename to a safe basename.
-
-    Strips any directory components (``os.path.basename`` on both
-    separators) so a malicious ``../../etc/passwd`` or ``C:\\x`` collapses
-    to its leaf. Rejects empty / dotfile-only names. The result is only
-    ever joined under the per-task attachments dir, never used verbatim
-    as a path from the client.
-    """
-    name = (raw or "").replace("\\", "/").split("/")[-1].strip()
-    # Drop control chars and leading dots so we never write a dotfile or
-    # a name with embedded NULs/newlines.
-    name = "".join(ch for ch in name if ch.isprintable() and ch not in '\x00').strip()
-    name = name.lstrip(".").strip()
-    if not name:
-        raise HTTPException(status_code=400, detail="invalid attachment filename")
-    return name[:200]
+# The size cap, filename sanitiser, and collision resolver now live in
+# ``kanban_db`` so the dashboard, the agent toolset, and the CLI share one
+# implementation and cannot drift. ``_safe_attachment_name`` raises a plain
+# ``ValueError`` there; the upload handler's ``except ValueError`` below maps
+# it to a 400, preserving the previous response.
+from hermes_cli.kanban_db import (  # noqa: E402
+    KANBAN_ATTACHMENT_MAX_BYTES,
+    _collision_free_path,
+    _safe_attachment_name,
+)
 
 
 @router.get("/tasks/{task_id}/attachments")
@@ -711,13 +715,8 @@ async def upload_task_attachment(
         dest_dir.mkdir(parents=True, exist_ok=True)
 
         # Resolve name collisions: foo.pdf → foo (1).pdf, foo (2).pdf, …
-        stem, dot, ext = safe_name.partition(".")
-        candidate = safe_name
-        n = 1
-        while (dest_dir / candidate).exists():
-            candidate = f"{stem} ({n}){dot}{ext}"
-            n += 1
-        dest_path = dest_dir / candidate
+        dest_path = _collision_free_path(dest_dir, safe_name)
+        candidate = dest_path.name
 
         total = 0
         try:
@@ -727,13 +726,13 @@ async def upload_task_attachment(
                     if not chunk:
                         break
                     total += len(chunk)
-                    if total > _MAX_ATTACHMENT_BYTES:
+                    if total > KANBAN_ATTACHMENT_MAX_BYTES:
                         out.close()
                         dest_path.unlink(missing_ok=True)
                         raise HTTPException(
                             status_code=413,
                             detail=(
-                                f"attachment exceeds {_MAX_ATTACHMENT_BYTES // (1024 * 1024)} MB limit"
+                                f"attachment exceeds {KANBAN_ATTACHMENT_MAX_BYTES // (1024 * 1024)} MB limit"
                             ),
                         )
                     out.write(chunk)
@@ -812,7 +811,7 @@ class UpdateTaskBody(BaseModel):
     result: Optional[str] = None
     block_reason: Optional[str] = None
     # Structured handoff fields — forwarded to complete_task when status
-    # transitions to 'done'. Dashboard parity with ``lucifex kanban
+    # transitions to 'done'. Dashboard parity with ``hermes kanban
     # complete --summary ... --metadata ...``.
     summary: Optional[str] = None
     metadata: Optional[dict] = None
@@ -1257,7 +1256,7 @@ def bulk_update(payload: BulkTaskBody, board: Optional[str] = Query(None)):
 
 # ---------------------------------------------------------------------------
 # Diagnostics — fleet-wide distress signals (hallucinations, crashes,
-# spawn failures, stuck-blocked). See lucifex_cli.kanban_diagnostics for
+# spawn failures, stuck-blocked). See hermes_cli.kanban_diagnostics for
 # the rule engine.
 # ---------------------------------------------------------------------------
 
@@ -1275,7 +1274,7 @@ def list_diagnostics(
 
     Severity-filterable so the UI can render "just the critical ones"
     or the CLI can grep. Useful for the board-header attention strip
-    AND for ``lucifex kanban diagnostics`` which shells to this
+    AND for ``hermes kanban diagnostics`` which shells to this
     endpoint when the dashboard's running, or invokes the engine
     directly when it isn't.
     """
@@ -1320,7 +1319,7 @@ def list_diagnostics(
                 "diagnostics": dl,
             })
         # Sort: highest severity first, then most recent.
-        from lucifex_cli.kanban_diagnostics import SEVERITY_ORDER
+        from hermes_cli.kanban_diagnostics import SEVERITY_ORDER
         sev_idx = {s: i for i, s in enumerate(SEVERITY_ORDER)}
         def _sort_key(row):
             top = row["diagnostics"][0]
@@ -1571,7 +1570,7 @@ def reclaim_task_endpoint(
     Used by the dashboard recovery popover when an operator wants to
     abort a stuck worker (e.g. one that keeps hallucinating card ids)
     without waiting for the claim TTL. Maps 1:1 to
-    ``lucifex kanban reclaim <task_id> --reason ...``.
+    ``hermes kanban reclaim <task_id> --reason ...``.
     """
     board = _resolve_board(board)
     conn = _conn(board=board)
@@ -1605,7 +1604,7 @@ def specify_task_endpoint(
     board: Optional[str] = Query(None),
 ):
     """Flesh out a triage-column task via the auxiliary LLM and promote
-    it to ``todo``. Maps 1:1 to ``lucifex kanban specify <task_id>``.
+    it to ``todo``. Maps 1:1 to ``hermes kanban specify <task_id>``.
 
     Returns the outcome shape used by the CLI: ``{ok, task_id, reason,
     new_title}``. A non-OK outcome is NOT an HTTP error — the UI renders
@@ -1621,13 +1620,13 @@ def specify_task_endpoint(
     # Pin the board for the duration of this call so the specifier module
     # (which calls ``kb.connect()`` with no args) hits the right DB. Use a
     # context-local override rather than mutating the process-global
-    # LUCIFEX_KANBAN_BOARD env var — this endpoint runs in FastAPI's
+    # HERMES_KANBAN_BOARD env var — this endpoint runs in FastAPI's
     # threadpool, so two concurrent requests for different boards would
     # otherwise race on the shared env var and cross-write (issue #38323).
     with kanban_db.scoped_current_board(board or kanban_db.DEFAULT_BOARD):
         # Import lazily so a missing auxiliary client at import time
         # doesn't break plugin load.
-        from lucifex_cli import kanban_specify  # noqa: WPS433 (intentional)
+        from hermes_cli import kanban_specify  # noqa: WPS433 (intentional)
 
         outcome = kanban_specify.specify_task(
             task_id,
@@ -1659,7 +1658,7 @@ def reassign_task_endpoint(
     Used by the dashboard recovery popover when an operator wants to
     retry a task with a different worker profile (e.g. switch to a
     smarter model after the assigned profile keeps hallucinating).
-    Maps 1:1 to ``lucifex kanban reassign <task_id> <profile> [--reclaim]``.
+    Maps 1:1 to ``hermes kanban reassign <task_id> <profile> [--reclaim]``.
     """
     board = _resolve_board(board)
     conn = _conn(board=board)
@@ -1689,14 +1688,14 @@ def reassign_task_endpoint(
 
 @router.get("/config")
 def get_config():
-    """Return kanban dashboard preferences from ~/.lucifex/config.yaml.
+    """Return kanban dashboard preferences from ~/.hermes/config.yaml.
 
     Reads the ``dashboard.kanban`` section if present; defaults otherwise.
     Used by the UI to pre-select tenant filters, toggle markdown rendering,
     or set column-width preferences without a round-trip per page load.
     """
     try:
-        from lucifex_cli.config import load_config
+        from hermes_cli.config import load_config
         cfg = load_config() or {}
     except Exception:
         cfg = {}
@@ -1759,9 +1758,9 @@ def _configured_home_channels() -> list[dict]:
 
 
 def _active_profile_name() -> str:
-    """Return the current Lucifex profile name for notify-sub ownership."""
+    """Return the current Hermes profile name for notify-sub ownership."""
     try:
-        from lucifex_cli.profiles import get_active_profile_name
+        from hermes_cli.profiles import get_active_profile_name
         return get_active_profile_name() or "default"
     except Exception:
         return "default"
@@ -1894,7 +1893,7 @@ def get_stats(board: Optional[str] = Query(None)):
 def get_assignees(board: Optional[str] = Query(None)):
     """Known profiles + per-profile task counts.
 
-    Returns the union of ``~/.lucifex/profiles/*`` on disk and every
+    Returns the union of ``~/.hermes/profiles/*`` on disk and every
     distinct assignee currently used on the board. The dashboard uses
     this to populate its assignee dropdown so a freshly-created profile
     appears in the picker before it's been given any task.
@@ -1982,6 +1981,7 @@ class CreateBoardBody(BaseModel):
     description: Optional[str] = None
     icon: Optional[str] = None
     color: Optional[str] = None
+    default_workdir: Optional[str] = None
     switch: bool = False
 
 
@@ -1990,6 +1990,9 @@ class RenameBoardBody(BaseModel):
     description: Optional[str] = None
     icon: Optional[str] = None
     color: Optional[str] = None
+    # Board-level default project directory for new tasks. ``None`` =
+    # leave unchanged; empty string = clear; a path = validate + set.
+    default_workdir: Optional[str] = None
 
 
 def _board_counts(slug: str) -> dict[str, int]:
@@ -2010,6 +2013,17 @@ def _board_counts(slug: str) -> dict[str, int]:
         return {}
 
 
+def _default_workspace_kind(board: dict[str, Any]) -> str:
+    """Recommend a non-destructive task workspace from board metadata."""
+    workdir = str(board.get("default_workdir") or "").strip()
+    if not workdir:
+        return "scratch"
+    try:
+        return "worktree" if kanban_db._git_toplevel(Path(workdir)) else "dir"
+    except (OSError, ValueError):
+        return "dir"
+
+
 @router.get("/boards")
 def list_boards(include_archived: bool = Query(False)):
     """Return every board on disk with task counts and the active slug."""
@@ -2019,12 +2033,36 @@ def list_boards(include_archived: bool = Query(False)):
         b["is_current"] = (b["slug"] == current)
         b["counts"] = _board_counts(b["slug"])
         b["total"] = sum(b["counts"].values())
+        b["default_workspace_kind"] = _default_workspace_kind(b)
     return {"boards": boards, "current": current}
+
+
+def _validate_workdir(raw: str) -> str:
+    """Validate a board default_workdir value; return the resolved path.
+
+    Raises :class:`HTTPException` (400) for relative or non-directory
+    paths — mirroring the create-board contract.
+    """
+    requested = Path(raw).expanduser()
+    if not requested.is_absolute():
+        raise HTTPException(
+            status_code=400,
+            detail="Project directory must be an absolute path.",
+        )
+    if not requested.is_dir():
+        raise HTTPException(
+            status_code=400,
+            detail="Project directory must be an existing directory.",
+        )
+    return str(requested.resolve())
 
 
 @router.post("/boards")
 def create_board_endpoint(payload: CreateBoardBody):
     """Create a new board. Idempotent — ``slug`` collision returns existing."""
+    default_workdir = None
+    if payload.default_workdir:
+        default_workdir = _validate_workdir(payload.default_workdir)
     try:
         meta = kanban_db.create_board(
             payload.slug,
@@ -2032,6 +2070,7 @@ def create_board_endpoint(payload: CreateBoardBody):
             description=payload.description,
             icon=payload.icon,
             color=payload.color,
+            default_workdir=default_workdir,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
@@ -2040,25 +2079,34 @@ def create_board_endpoint(payload: CreateBoardBody):
             kanban_db.set_current_board(meta["slug"])
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc))
+    meta["default_workspace_kind"] = _default_workspace_kind(meta)
     return {"board": meta, "current": kanban_db.get_current_board()}
 
 
 @router.patch("/boards/{slug}")
 def rename_board(slug: str, payload: RenameBoardBody):
-    """Update a board's display metadata (slug is immutable — create a new one to rename the directory)."""
+    """Update a board's display metadata + default project directory (slug is immutable — create a new one to rename the directory)."""
     try:
         normed = kanban_db._normalize_board_slug(slug)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     if not normed or not kanban_db.board_exists(normed):
         raise HTTPException(status_code=404, detail=f"board {slug!r} does not exist")
+    # default_workdir: None = leave unchanged; "" = clear; path = validate + set.
+    # write_board_metadata treats a falsy value as "clear", so pass "" through.
+    default_workdir: Optional[str] = None
+    if payload.default_workdir is not None:
+        raw = payload.default_workdir.strip()
+        default_workdir = _validate_workdir(raw) if raw else ""
     meta = kanban_db.write_board_metadata(
         normed,
         name=payload.name,
         description=payload.description,
         icon=payload.icon,
         color=payload.color,
+        default_workdir=default_workdir,
     )
+    meta["default_workspace_kind"] = _default_workspace_kind(meta)
     return {"board": meta}
 
 
@@ -2122,7 +2170,7 @@ def list_profile_roster():
     just less precisely.
     """
     try:
-        from lucifex_cli import profiles as profiles_mod
+        from hermes_cli import profiles as profiles_mod
         profiles = profiles_mod.list_profiles()
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"failed to list profiles: {exc}")
@@ -2152,12 +2200,12 @@ def update_profile_description(profile_name: str, payload: DescribeBody):
     ``--overwrite``.
     """
     try:
-        from lucifex_cli import profiles as profiles_mod
+        from hermes_cli import profiles as profiles_mod
         canon = profiles_mod.normalize_profile_name(profile_name)
         if canon == "default":
-            from lucifex_constants import get_lucifex_home  # type: ignore
+            from hermes_constants import get_hermes_home  # type: ignore
             from pathlib import Path as _Path
-            profile_dir = _Path(get_lucifex_home())
+            profile_dir = _Path(get_hermes_home())
         else:
             profile_dir = profiles_mod.get_profile_dir(canon)
         if not profile_dir.is_dir():
@@ -2182,13 +2230,13 @@ def auto_describe_profile(profile_name: str, payload: DescribeAutoBody):
     ``description_auto: true`` so the dashboard can surface a "review"
     badge.
 
-    Maps 1:1 to ``lucifex profile describe <name> --auto``. Non-OK
+    Maps 1:1 to ``hermes profile describe <name> --auto``. Non-OK
     outcomes are NOT HTTP errors — the UI renders the reason inline
     (e.g. "no auxiliary client configured") so the operator can fix
     config and retry without a page reload.
     """
     try:
-        from lucifex_cli import profile_describer  # noqa: WPS433 (intentional)
+        from hermes_cli import profile_describer  # noqa: WPS433 (intentional)
         outcome = profile_describer.describe_profile(
             profile_name,
             overwrite=bool(payload.overwrite),
@@ -2219,7 +2267,7 @@ def decompose_task_endpoint(
 ):
     """Fan a triage-column task out into a graph of child tasks via the
     auxiliary LLM, routed to specialist profiles by description. Maps
-    1:1 to ``lucifex kanban decompose <task_id>``.
+    1:1 to ``hermes kanban decompose <task_id>``.
 
     Returns the outcome shape used by the CLI: ``{ok, task_id, reason,
     fanout, child_ids, new_title}``. A non-OK outcome is NOT an HTTP
@@ -2231,10 +2279,10 @@ def decompose_task_endpoint(
     board = _resolve_board(board)
     # Context-local board pin (see specify endpoint above): this sync
     # endpoint runs in FastAPI's threadpool, so mutating the process-global
-    # LUCIFEX_KANBAN_BOARD env var would let concurrent requests for
+    # HERMES_KANBAN_BOARD env var would let concurrent requests for
     # different boards race and cross-write (issue #38323).
     with kanban_db.scoped_current_board(board or kanban_db.DEFAULT_BOARD):
-        from lucifex_cli import kanban_decompose  # noqa: WPS433 (intentional)
+        from hermes_cli import kanban_decompose  # noqa: WPS433 (intentional)
         outcome = kanban_decompose.decompose_task(
             task_id,
             author=(payload.author or None),
@@ -2267,7 +2315,7 @@ def get_orchestration_settings():
     """Return the current kanban orchestration knobs from config.yaml
     plus the resolved effective values (filling in fallbacks)."""
     try:
-        from lucifex_cli.config import load_config
+        from hermes_cli.config import load_config
         cfg = load_config() or {}
     except Exception:
         cfg = {}
@@ -2281,7 +2329,7 @@ def get_orchestration_settings():
     resolved_orch = explicit_orch
     resolved_default = explicit_default
     try:
-        from lucifex_cli import profiles as profiles_mod
+        from hermes_cli import profiles as profiles_mod
         active_default = profiles_mod.get_active_profile_name() or "default"
         if not resolved_orch or not profiles_mod.profile_exists(resolved_orch):
             resolved_orch = active_default
@@ -2307,7 +2355,7 @@ def get_orchestration_settings():
 
 @router.put("/orchestration")
 def set_orchestration_settings(payload: OrchestrationSettingsBody):
-    """Update the kanban orchestration knobs in ~/.lucifex/config.yaml.
+    """Update the kanban orchestration knobs in ~/.hermes/config.yaml.
 
     Each field is optional — only fields explicitly passed are
     written. ``orchestrator_profile`` / ``default_assignee`` accept
@@ -2315,7 +2363,7 @@ def set_orchestration_settings(payload: OrchestrationSettingsBody):
     profile.
     """
     try:
-        from lucifex_cli.config import load_config, save_config
+        from hermes_cli.config import load_config, save_config
         cfg = load_config() or {}
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"failed to load config: {exc}")
@@ -2327,7 +2375,7 @@ def set_orchestration_settings(payload: OrchestrationSettingsBody):
 
     # Validate any non-empty profile names exist before saving.
     try:
-        from lucifex_cli import profiles as profiles_mod
+        from hermes_cli import profiles as profiles_mod
     except Exception:
         profiles_mod = None  # type: ignore
 

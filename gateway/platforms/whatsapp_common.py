@@ -54,7 +54,25 @@ class WhatsAppBehaviorMixin:
     MAX_MESSAGE_LENGTH: int = 4096
     supports_code_blocks = True  # WhatsApp renders fenced code blocks (monospace)
 
-    DEFAULT_REPLY_PREFIX: str = "⚕ *Lucifex Agent*\n────────────\n"
+    DEFAULT_REPLY_PREFIX: str = "⚕ *Hermes Agent*\n────────────\n"
+
+    _OUTBOUND_INVISIBLE_CHARS_RE = re.compile(r"[\u200b\u2060\u2063\ufeff]")
+    _OUTBOUND_ODD_SPACE_RE = re.compile(r"[\u00a0\u1680\u180e\u2000-\u200a\u202f\u205f\u3000]")
+
+    @classmethod
+    def _sanitize_outbound_text(cls, content: str) -> str:
+        """Remove invisible formatting chars that leak badly in WhatsApp.
+
+        Some provider/gateway formatting paths can emit unicode like WORD
+        JOINER (U+2060) plus NARROW NO-BREAK SPACE (U+202F). WhatsApp may
+        render those as mojibake-looking prefixes (``⁠ text``) instead of
+        invisible spacing. Keep normal text and emoji joiners intact, but
+        strip known zero-width format chars and normalize odd unicode spaces.
+        """
+        if not content:
+            return content
+        content = cls._OUTBOUND_INVISIBLE_CHARS_RE.sub("", content)
+        return cls._OUTBOUND_ODD_SPACE_RE.sub(" ", content)
 
     @property
     def enforces_own_access_policy(self) -> bool:
@@ -375,6 +393,8 @@ class WhatsAppBehaviorMixin:
         if not content:
             return content
 
+        content = self._sanitize_outbound_text(content)
+
         # --- 1. Protect fenced code blocks from formatting changes ---
         _FENCE_PH = "\x00FENCE"
         fences: list[str] = []
@@ -396,12 +416,19 @@ class WhatsAppBehaviorMixin:
         result = re.sub(r"`[^`\n]+`", _save_code, result)
 
         # --- 3. Convert markdown formatting to WhatsApp syntax ---
+        # Italic: standard Markdown *text* → WhatsApp _text_.  Do this before
+        # bold conversion so **bold** does not become italic by accident.  The
+        # lookarounds avoid list bullets and bold delimiters.
+        result = re.sub(
+            r"(?<!\*)\*(?!\s|\*)([^*\n]*?\S[^*\n]*?)\*(?!\*)",
+            r"_\1_",
+            result,
+        )
         # Bold: **text** or __text__ → *text*
         result = re.sub(r"\*\*(.+?)\*\*", r"*\1*", result)
         result = re.sub(r"__(.+?)__", r"*\1*", result)
         # Strikethrough: ~~text~~ → ~text~
         result = re.sub(r"~~(.+?)~~", r"~\1~", result)
-        # Italic: *text* is already WhatsApp italic — leave as-is
         # _text_ is already WhatsApp italic — leave as-is
 
         # --- 4. Convert markdown headers to bold text ---
@@ -435,10 +462,10 @@ class WhatsAppBehaviorMixin:
 # ---------------------------------------------------------------------------
 
 def resolve_whatsapp_bridge_dir() -> Path:
-    """Resolve the WhatsApp bridge directory, mirroring to LUCIFEX_HOME if needed.
+    """Resolve the WhatsApp bridge directory, mirroring to HERMES_HOME if needed.
 
-    When the install tree is read-only (e.g., Docker /opt/lucifex), this function
-    mirrors the bridge source to a writable LUCIFEX_HOME location and returns that
+    When the install tree is read-only (e.g., Docker /opt/hermes), this function
+    mirrors the bridge source to a writable HERMES_HOME location and returns that
     path. This ensures npm install works in Docker environments.
 
     Returns the resolved bridge directory path.
@@ -447,12 +474,12 @@ def resolve_whatsapp_bridge_dir() -> Path:
     from pathlib import Path as _Path
 
     # Default location in install tree (may be read-only)
-    from lucifex_constants import get_lucifex_home
+    from hermes_constants import get_hermes_home
     install_bridge = _Path(__file__).resolve().parents[2] / "scripts" / "whatsapp-bridge"
 
-    # Try LUCIFEX_HOME location first
-    lucifex_home = get_lucifex_home()
-    lucifex_home_bridge = lucifex_home / "scripts" / "whatsapp-bridge"
+    # Try HERMES_HOME location first
+    hermes_home = get_hermes_home()
+    hermes_home_bridge = hermes_home / "scripts" / "whatsapp-bridge"
 
     # Check if install dir is writable
     try:
@@ -466,18 +493,18 @@ def resolve_whatsapp_bridge_dir() -> Path:
     if install_writable:
         return install_bridge
 
-    # Install dir is read-only, mirror to LUCIFEX_HOME if needed
-    if lucifex_home_bridge.exists():
-        return lucifex_home_bridge
+    # Install dir is read-only, mirror to HERMES_HOME if needed
+    if hermes_home_bridge.exists():
+        return hermes_home_bridge
 
-    # Mirror the bridge source to LUCIFEX_HOME
+    # Mirror the bridge source to HERMES_HOME
     try:
-        lucifex_home_bridge.parent.mkdir(parents=True, exist_ok=True)
+        hermes_home_bridge.parent.mkdir(parents=True, exist_ok=True)
         shutil.copytree(
             install_bridge,
-            lucifex_home_bridge,
+            hermes_home_bridge,
             dirs_exist_ok=False,
         )
-        return lucifex_home_bridge
+        return hermes_home_bridge
     except Exception:
         return install_bridge

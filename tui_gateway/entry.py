@@ -2,19 +2,21 @@ import os
 import sys
 
 # Stop a ``utils/`` (or ``proxy/``, ``ui/``) package in the launch directory
-# from shadowing Lucifex's own top-level modules.  ``lucifex_bootstrap`` lives at
+# from shadowing Hermes's own top-level modules.  ``hermes_bootstrap`` lives at
 # the repo root next to this package, so importing it is safe before the guard
 # runs (its name won't collide with a user package), and it owns the canonical
 # path-hardening logic shared with the other entry points.
-import lucifex_bootstrap
+import hermes_bootstrap
 
-lucifex_bootstrap.harden_import_path()
+hermes_bootstrap.harden_import_path()
 
 import json
 import logging
 import signal
 import time
 import traceback
+
+from tui_gateway._stdin_recovery import handle_spurious_eof
 
 from tui_gateway import server
 from tui_gateway.server import _CRASH_LOG, dispatch, resolve_skin, write_json
@@ -31,11 +33,11 @@ _mcp_discovery_thread = None
 def _install_sidecar_publisher() -> None:
     """Mirror every dispatcher emit to the dashboard sidebar via WS.
 
-    Activated by `LUCIFEX_TUI_SIDECAR_URL`, set by the dashboard's
+    Activated by `HERMES_TUI_SIDECAR_URL`, set by the dashboard's
     ``/api/pty`` endpoint when a chat tab passes a ``channel`` query param.
     Best-effort: connect failure or runtime drop falls back to stdio-only.
     """
-    url = os.environ.get("LUCIFEX_TUI_SIDECAR_URL")
+    url = os.environ.get("HERMES_TUI_SIDECAR_URL")
 
     if not url:
         return
@@ -51,7 +53,7 @@ def _install_sidecar_publisher() -> None:
 # falling back to ``os._exit(0)`` so a wedged worker mid-flush can't
 # strand the process.  1s covers the gateway's own shutdown work
 # (thread-pool drain + session finalize) on every machine we've
-# tested; override via ``LUCIFEX_TUI_GATEWAY_SHUTDOWN_GRACE_S`` if a
+# tested; override via ``HERMES_TUI_GATEWAY_SHUTDOWN_GRACE_S`` if a
 # slower environment needs more headroom (e.g. encrypted disks
 # flushing checkpoints) and accept that a longer grace also means a
 # longer wait when shutdown actually deadlocks.
@@ -59,7 +61,7 @@ _DEFAULT_SHUTDOWN_GRACE_S = 1.0
 
 
 def _shutdown_grace_seconds() -> float:
-    raw = (os.environ.get("LUCIFEX_TUI_GATEWAY_SHUTDOWN_GRACE_S") or "").strip()
+    raw = (os.environ.get("HERMES_TUI_GATEWAY_SHUTDOWN_GRACE_S") or "").strip()
     if not raw:
         return _DEFAULT_SHUTDOWN_GRACE_S
     try:
@@ -83,7 +85,7 @@ def _log_signal(signum: int, frame) -> None:
     pool — a thread holding ``_stdout_lock`` mid-flush would block the
     interpreter shutdown indefinitely.  We now log the stack, give the
     process the configured shutdown grace
-    (``LUCIFEX_TUI_GATEWAY_SHUTDOWN_GRACE_S``, default
+    (``HERMES_TUI_GATEWAY_SHUTDOWN_GRACE_S``, default
     ``_DEFAULT_SHUTDOWN_GRACE_S``) to drain naturally on a background
     thread, and fall back to ``os._exit(0)`` so a wedged write/flush
     can never strand the process.
@@ -166,7 +168,7 @@ def _log_signal(signum: int, frame) -> None:
 #
 # SIGPIPE and SIGHUP don't exist on Windows; guard each installation
 # with hasattr so ``python -m tui_gateway.entry`` (spawned by
-# ``lucifex --tui``) imports cleanly there.  SIGBREAK (Windows' Ctrl+Break)
+# ``hermes --tui``) imports cleanly there.  SIGBREAK (Windows' Ctrl+Break)
 # is installed when available as a weaker equivalent of SIGHUP.
 if hasattr(signal, "SIGPIPE"):
     signal.signal(signal.SIGPIPE, signal.SIG_IGN)
@@ -218,13 +220,13 @@ def wait_for_mcp_discovery(timeout: "float | None" = None) -> None:
     waited on beyond the bound.  No-op when no discovery thread was started.
 
     The bound comes from ``mcp_discovery_timeout`` in config (shared with the
-    CLI path via ``lucifex_cli.mcp_startup``); ``timeout`` overrides it.
+    CLI path via ``hermes_cli.mcp_startup``); ``timeout`` overrides it.
     """
     thread = _mcp_discovery_thread
     if thread is None or not thread.is_alive():
         return
     try:
-        from lucifex_cli.mcp_startup import _resolve_discovery_timeout
+        from hermes_cli.mcp_startup import _resolve_discovery_timeout
 
         bound = _resolve_discovery_timeout(timeout)
     except Exception:
@@ -241,10 +243,10 @@ def mcp_discovery_in_flight() -> bool:
     and the banner/tool count will be stale until they arrive.
 
     There are two independent discovery-thread owners by surface: the stdio
-    ``lucifex --tui`` path spawns ITS thread here (``_mcp_discovery_thread``),
+    ``hermes --tui`` path spawns ITS thread here (``_mcp_discovery_thread``),
     while the desktop app + dashboard WebSocket sidecar (``tui_gateway/ws.py``)
-    and ``lucifex dashboard`` spawn theirs via
-    ``lucifex_cli.mcp_startup.start_background_mcp_discovery``. The late-refresh
+    and ``hermes dashboard`` spawn theirs via
+    ``hermes_cli.mcp_startup.start_background_mcp_discovery``. The late-refresh
     scheduler imports this function regardless of surface, so it MUST consult
     both — checking only the entry thread left the desktop/dashboard surfaces
     with no late refresh, so a slow MCP server's tools never surfaced for the
@@ -254,7 +256,7 @@ def mcp_discovery_in_flight() -> bool:
     if thread is not None and thread.is_alive():
         return True
     try:
-        from lucifex_cli.mcp_startup import (
+        from hermes_cli.mcp_startup import (
             mcp_discovery_in_flight as _startup_in_flight,
         )
 
@@ -272,7 +274,7 @@ def join_mcp_discovery(timeout: float | None = None) -> bool:
     the outcome, for the off-critical-path late-refresh waiter.
 
     Joins both discovery-thread owners (see ``mcp_discovery_in_flight``): the
-    entry thread first, then the ``lucifex_cli.mcp_startup`` thread used by the
+    entry thread first, then the ``hermes_cli.mcp_startup`` thread used by the
     desktop/dashboard surfaces. ``timeout`` bounds EACH join, mirroring the
     pre-#51587 single-owner behavior for the entry thread.
     """
@@ -282,12 +284,16 @@ def join_mcp_discovery(timeout: float | None = None) -> bool:
         thread.join(timeout=timeout)
         entry_done = not thread.is_alive()
     try:
-        from lucifex_cli.mcp_startup import join_mcp_discovery as _startup_join
+        from hermes_cli.mcp_startup import join_mcp_discovery as _startup_join
 
         startup_done = _startup_join(timeout=timeout)
     except Exception:
         startup_done = True
     return entry_done and startup_done
+
+
+# Spurious stdin-EOF recovery tracker (shared open-file-description O_NONBLOCK flip).
+_recovery_times: list[float] = []
 
 
 def main():
@@ -296,7 +302,7 @@ def main():
     # MCP tool discovery — runs in a background daemon thread so a slow or
     # unreachable MCP server can't freeze TUI startup.  Previously this ran
     # inline before ``gateway.ready``, which meant any configured-but-down
-    # server stalled the whole shell on "summoning lucifex…" for the full
+    # server stalled the whole shell on "summoning hermes…" for the full
     # connect-retry backoff (e.g. a dead stdio/http server burns 1+2+4s of
     # retries → ~7s of dead air before the composer appears).  Discovery is
     # idempotent and registers tools into the shared registry as servers
@@ -314,7 +320,7 @@ def main():
     # thread when there's actually MCP work to do, so the import cost stays
     # off the path entirely for the common case.
     try:
-        from lucifex_cli.config import read_raw_config
+        from hermes_cli.config import read_raw_config
         _mcp_servers = (read_raw_config() or {}).get("mcp_servers")
         _has_mcp_servers = isinstance(_mcp_servers, dict) and len(_mcp_servers) > 0
     except Exception:
@@ -324,7 +330,7 @@ def main():
     if _has_mcp_servers:
         def _discover_mcp_background() -> None:
             try:
-                from lucifex_cli.mcp_startup import (
+                from hermes_cli.mcp_startup import (
                     _discover_mcp_tools_without_interactive_oauth,
                 )
 
@@ -354,7 +360,15 @@ def main():
         _log_exit("startup write failed (broken stdout pipe before first event)")
         sys.exit(0)
 
-    for raw in sys.stdin:
+    while True:
+        raw = sys.stdin.readline()
+        if not raw:
+            # Stdin fell through — check if spurious (O_NONBLOCK flip by a
+            # child on the shared open file description) or genuine EOF.
+            if not handle_spurious_eof(_recovery_times, _log_exit):
+                break
+            continue
+
         line = raw.strip()
         if not line:
             continue
@@ -373,8 +387,6 @@ def main():
             if not write_json(resp):
                 _log_exit(f"response write failed for method={method!r} (broken stdout pipe)")
                 sys.exit(0)
-
-    _log_exit("stdin EOF (TUI closed the command pipe)")
 
 
 if __name__ == "__main__":

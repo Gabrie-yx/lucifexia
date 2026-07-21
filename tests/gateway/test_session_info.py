@@ -18,7 +18,7 @@ def _patch_info(tmp_path, config_yaml, model, runtime):
     if config_yaml is not None:
         cfg_path.write_text(config_yaml)
     return (
-        patch("gateway.run._lucifex_home", tmp_path),
+        patch("gateway.run._hermes_home", tmp_path),
         patch("gateway.run._resolve_gateway_model", return_value=model),
         patch("gateway.run._resolve_runtime_agent_kwargs", return_value=runtime),
     )
@@ -101,9 +101,57 @@ class TestFormatSessionInfo:
         """If runtime resolution raises, should still produce output."""
         cfg_path = tmp_path / "config.yaml"
         cfg_path.write_text("model:\n  default: test-model\n  context_length: 4096\n")
-        with patch("gateway.run._lucifex_home", tmp_path), \
+        with patch("gateway.run._hermes_home", tmp_path), \
              patch("gateway.run._resolve_gateway_model", return_value="test-model"), \
              patch("gateway.run._resolve_runtime_agent_kwargs", side_effect=RuntimeError("no creds")):
             info = runner._format_session_info()
         assert "4K" in info
         assert "config" in info
+
+
+class TestResetNoticeSessionInfo:
+    """#59003: the auto-reset banner must report the serving profile's config,
+    not the multiplexer's base config."""
+
+    _RUNTIME = {"provider": "", "base_url": "", "api_key": ""}
+
+    def _source(self):
+        from gateway.config import Platform
+        from gateway.session import SessionSource
+        return SessionSource(
+            platform=Platform.TELEGRAM, chat_id="123", user_id="u1",
+            profile="planner",
+        )
+
+    def _homes(self, tmp_path):
+        base = tmp_path / "base"
+        profile = tmp_path / "profiles" / "planner"
+        profile.mkdir(parents=True)
+        base.mkdir()
+        base.joinpath("config.yaml").write_text(
+            "model:\n  default: base-model\n  provider: custom\n  context_length: 1000\n")
+        profile.joinpath("config.yaml").write_text(
+            "model:\n  default: profile-model\n  provider: anthropic\n  context_length: 2000\n")
+        return base, profile
+
+    def test_multiplex_uses_profile_config(self, runner, tmp_path):
+        from types import SimpleNamespace
+        base, profile = self._homes(tmp_path)
+        runner.config = SimpleNamespace(multiplex_profiles=True)
+        with patch("gateway.run._hermes_home", base), \
+             patch.object(GatewayRunner, "_resolve_profile_home_for_source", return_value=profile), \
+             patch("gateway.run._resolve_runtime_agent_kwargs", return_value=self._RUNTIME):
+            info = runner._reset_notice_session_info(self._source())
+        assert "profile-model" in info
+        assert "anthropic" in info
+        assert "base-model" not in info
+
+    def test_single_profile_uses_base_config(self, runner, tmp_path):
+        from types import SimpleNamespace
+        base, _profile = self._homes(tmp_path)
+        runner.config = SimpleNamespace(multiplex_profiles=False)
+        with patch("gateway.run._hermes_home", base), \
+             patch("gateway.run._resolve_runtime_agent_kwargs", return_value=self._RUNTIME):
+            info = runner._reset_notice_session_info(self._source())
+        assert "base-model" in info
+        assert "profile-model" not in info

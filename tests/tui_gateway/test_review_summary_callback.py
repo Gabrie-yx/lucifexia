@@ -21,12 +21,12 @@ def server():
     with patch.dict(
         "sys.modules",
         {
-            "lucifex_constants": MagicMock(
-                get_lucifex_home=MagicMock(return_value="/tmp/lucifex_test_review_summary")
+            "hermes_constants": MagicMock(
+                get_hermes_home=MagicMock(return_value="/tmp/hermes_test_review_summary")
             ),
-            "lucifex_cli.env_loader": MagicMock(),
-            "lucifex_cli.banner": MagicMock(),
-            "lucifex_state": MagicMock(),
+            "hermes_cli.env_loader": MagicMock(),
+            "hermes_cli.banner": MagicMock(),
+            "hermes_state": MagicMock(),
         },
     ):
         import importlib
@@ -86,7 +86,7 @@ def test_init_session_attaches_background_review_callback(server, monkeypatch):
     captured_emits.clear()
 
     # Invoke the callback the way AIAgent._spawn_background_review would.
-    cb("💾 Self-improvement review: Skill 'lucifex-release' patched")
+    cb("💾 Self-improvement review: Skill 'hermes-release' patched")
 
     # Exactly one review.summary event should have been emitted, bound to
     # the session id we passed in, carrying the full message text.
@@ -95,7 +95,7 @@ def test_init_session_attaches_background_review_callback(server, monkeypatch):
     event, sid, payload = matched[0]
     assert sid == "sid-abc"
     assert payload == {
-        "text": "💾 Self-improvement review: Skill 'lucifex-release' patched"
+        "text": "💾 Self-improvement review: Skill 'hermes-release' patched"
     }
 
 

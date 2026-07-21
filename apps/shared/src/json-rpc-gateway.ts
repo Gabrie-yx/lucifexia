@@ -23,6 +23,8 @@ export type GatewayEventName =
 
 export interface GatewayEvent<P = unknown> {
   payload?: P
+  /** Renderer-side source tag added by the Desktop gateway registry. */
+  profile?: string
   session_id?: string
   type: GatewayEventName
 }
@@ -60,7 +62,7 @@ export interface GatewayClientOptions {
 const ANY = '*'
 const DEFAULT_REQUEST_TIMEOUT_MS = 120_000
 // A reconnect after sleep/wake must not hang forever in 'connecting' (which
-// keeps the composer disabled and stuck on "Starting Lucifex..."). If the open
+// keeps the composer disabled and stuck on "Starting Hermes..."). If the open
 // handshake doesn't land in this window, fail to 'error' so callers can retry.
 const DEFAULT_CONNECT_TIMEOUT_MS = 15_000
 
@@ -165,6 +167,7 @@ export class JsonRpcGatewayClient {
 
           settled = true
           cleanup()
+
           // Drop the half-open socket so the next connect() starts clean
           // instead of short-circuiting on a zombie 'connecting' state.
           if (this.socket === socket) {
@@ -176,6 +179,7 @@ export class JsonRpcGatewayClient {
 
             this.socket = null
           }
+
           this.setState('error')
           reject(new Error(this.options.connectErrorMessage))
         }, this.options.connectTimeoutMs)
@@ -247,6 +251,7 @@ export class JsonRpcGatewayClient {
 
     return new Promise<T>((resolve, reject) => {
       let onAbort: (() => void) | undefined
+
       const detach = () => {
         if (onAbort && signal) {
           signal.removeEventListener('abort', onAbort)
@@ -278,13 +283,16 @@ export class JsonRpcGatewayClient {
       if (signal) {
         onAbort = () => {
           const call = this.pending.get(id)
+
           if (call?.timer) {
             clearTimeout(call.timer)
           }
+
           this.pending.delete(id)
           detach()
           reject(new DOMException('Aborted', 'AbortError'))
         }
+
         signal.addEventListener('abort', onAbort, { once: true })
       }
 
@@ -327,7 +335,7 @@ export class JsonRpcGatewayClient {
       this.clearPending(frame.id)
 
       if (frame.error) {
-        call.reject(new Error(frame.error.message || 'Lucifex RPC failed'))
+        call.reject(new Error(frame.error.message || 'Hermes RPC failed'))
       } else {
         call.resolve(frame.result)
       }

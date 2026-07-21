@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import {
   Eye,
   EyeOff,
@@ -45,12 +45,12 @@ import { PluginSlot } from "@/plugins";
 
 /** Map env-var key prefixes to a human-friendly provider name + ordering. */
 const PROVIDER_GROUPS: { prefix: string; name: string; priority: number }[] = [
-  // Ollama first
-  { prefix: "NOUS_", name: "Ollama", priority: 0 },
+  // Nous Portal first
+  { prefix: "NOUS_", name: "Nous Portal", priority: 0 },
   // Then alphabetical by display name
   { prefix: "ANTHROPIC_", name: "Anthropic", priority: 1 },
   { prefix: "DASHSCOPE_", name: "DashScope (Qwen)", priority: 2 },
-  { prefix: "LUCIFEX_QWEN_", name: "DashScope (Qwen)", priority: 2 },
+  { prefix: "HERMES_QWEN_", name: "DashScope (Qwen)", priority: 2 },
   { prefix: "DEEPSEEK_", name: "DeepSeek", priority: 3 },
   { prefix: "GOOGLE_", name: "Gemini", priority: 4 },
   { prefix: "GEMINI_", name: "Gemini", priority: 4 },
@@ -65,6 +65,7 @@ const PROVIDER_GROUPS: { prefix: string; name: string; priority: number }[] = [
   { prefix: "OPENCODE_ZEN_", name: "OpenCode Zen", priority: 11 },
   { prefix: "OPENROUTER_", name: "OpenRouter", priority: 12 },
   { prefix: "XIAOMI_", name: "Xiaomi MiMo", priority: 13 },
+  { prefix: "UPSTAGE_", name: "Upstage Solar", priority: 14 },
 ];
 
 function getProviderGroup(key: string): string {
@@ -487,7 +488,7 @@ function ProviderGroupCard({
 /*  CustomKeysCard — user-added arbitrary env vars + add-key form      */
 /* ------------------------------------------------------------------ */
 
-// Mirror of the backend env-name guard (lucifex_cli/config.py _ENV_VAR_NAME_RE).
+// Mirror of the backend env-name guard (hermes_cli/config.py _ENV_VAR_NAME_RE).
 const ENV_VAR_NAME_RE = /^[A-Za-z_][A-Za-z0-9_]*$/;
 
 function CustomKeysCard({
@@ -918,7 +919,7 @@ export default function EnvPage() {
       <div className="flex items-center justify-between">
         <div className="flex flex-col gap-1">
           <p className="text-sm text-muted-foreground">
-            {t.env.description} <code>~/.lucifex/.env</code>
+            {t.env.description} <code>~/.hermes/.env</code>
           </p>
           <p className="text-xs text-text-tertiary">
             {t.env.changesNote}

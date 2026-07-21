@@ -9,7 +9,7 @@ the active one (selected via ``web.search_backend`` / ``web.extract_backend`` /
 ``web_extract`` tool call.
 
 Providers live in ``<repo>/plugins/web/<name>/`` (built-in, auto-loaded as
-``kind: backend``) or ``~/.lucifex/plugins/web/<name>/`` (user, opt-in via
+``kind: backend``) or ``~/.hermes/plugins/web/<name>/`` (user, opt-in via
 ``plugins.enabled``).
 
 This ABC is the SINGLE plugin-facing surface for web providers — every
@@ -52,7 +52,33 @@ On failure (either capability)::
 from __future__ import annotations
 
 import abc
-from typing import Any, Dict, List
+import os
+from typing import Any, Dict, List, Optional
+
+
+def get_provider_env(name: str) -> str:
+    """Config-aware env lookup for web providers.
+
+    Resolves *name* via :func:`hermes_cli.config.get_env_value` (checks
+    ``os.environ`` first, then ``~/.hermes/.env``) so credentials set
+    through Hermes' config layer are visible even when they were never
+    exported into the process environment — gateway sessions, delegate
+    children, and subprocess agent runs (issue #40190). Falls back to a
+    bare ``os.getenv`` when the config module is unavailable (stripped
+    installs, early import contexts).
+
+    Returns the stripped value, or ``""`` when unset.
+    """
+    val: Optional[str] = None
+    try:
+        from hermes_cli.config import get_env_value
+
+        val = get_env_value(name)
+    except Exception:  # noqa: BLE001 — config layer optional here
+        val = None
+    if val is None:
+        val = os.getenv(name, "")
+    return (val or "").strip()
 
 
 # ---------------------------------------------------------------------------
@@ -84,7 +110,7 @@ class WebSearchProvider(abc.ABC):
 
     @property
     def display_name(self) -> str:
-        """Human-readable label shown in ``lucifex tools``. Defaults to ``name``."""
+        """Human-readable label shown in ``hermes tools``. Defaults to ``name``."""
         return self.name
 
     @abc.abstractmethod
@@ -93,7 +119,7 @@ class WebSearchProvider(abc.ABC):
 
         Typically a cheap check (env var present, optional Python dep
         importable, instance URL set). Must NOT make network calls — this
-        runs at tool-registration time and on every ``lucifex tools`` paint.
+        runs at tool-registration time and on every ``hermes tools`` paint.
         """
 
     def supports_search(self) -> bool:
@@ -158,9 +184,9 @@ class WebSearchProvider(abc.ABC):
         )
 
     def get_setup_schema(self) -> Dict[str, Any]:
-        """Return provider metadata for the ``lucifex tools`` picker.
+        """Return provider metadata for the ``hermes tools`` picker.
 
-        Used by ``lucifex_cli/tools_config.py`` to inject this provider as a
+        Used by ``hermes_cli/tools_config.py`` to inject this provider as a
         row in the Web Search / Web Extract picker. Shape::
 
             {

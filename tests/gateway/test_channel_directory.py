@@ -3,6 +3,7 @@
 import asyncio
 import json
 import os
+import threading
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -24,7 +25,7 @@ import pytest
 @pytest.fixture(autouse=True)
 def _isolate_channel_aliases(tmp_path_factory):
     """Point the alias overlay at a nonexistent path by default so a real
-    ~/.lucifex/channel_aliases.json never leaks into directory tests. Tests
+    ~/.hermes/channel_aliases.json never leaks into directory tests. Tests
     that exercise aliases patch CHANNEL_ALIASES_PATH themselves inside the
     test body, which takes precedence over this outer patch."""
     missing = tmp_path_factory.mktemp("aliases") / "none.json"
@@ -82,6 +83,85 @@ class TestBuildChannelDirectoryWrites:
             result = load_directory()
 
         assert result == previous
+
+
+class TestBuildChannelDirectoryOffload:
+    def test_discord_builder_runs_off_event_loop_thread(self, tmp_path):
+        from gateway.config import Platform
+
+        cache_file = tmp_path / "channel_directory.json"
+        loop_thread = threading.get_ident()
+        builder_threads = []
+
+        def fake_build_discord(_adapter):
+            builder_threads.append(threading.get_ident())
+            return []
+
+        with patch("gateway.channel_directory._build_discord", side_effect=fake_build_discord), \
+             patch("gateway.channel_directory.DIRECTORY_PATH", cache_file):
+            asyncio.run(build_channel_directory({Platform.DISCORD: object()}))
+
+        assert builder_threads
+        assert all(tid != loop_thread for tid in builder_threads)
+
+    def test_session_discovery_runs_off_event_loop_thread(self, tmp_path):
+        from gateway.config import Platform
+
+        cache_file = tmp_path / "channel_directory.json"
+        loop_thread = threading.get_ident()
+        calls = []
+
+        def fake_build_from_sessions(platform_name):
+            calls.append((platform_name, threading.get_ident()))
+            return []
+
+        with patch("gateway.channel_directory._build_from_sessions", side_effect=fake_build_from_sessions), \
+             patch("gateway.channel_directory.DIRECTORY_PATH", cache_file):
+            asyncio.run(build_channel_directory({Platform.TELEGRAM: object()}))
+
+        assert [name for name, _ in calls] == ["telegram"]
+        assert calls[0][1] != loop_thread
+
+    def test_plugin_session_discovery_runs_off_event_loop_thread(self, tmp_path):
+        cache_file = tmp_path / "channel_directory.json"
+        loop_thread = threading.get_ident()
+        calls = []
+        plugin_entry = SimpleNamespace(name="irc")
+
+        def fake_build_from_sessions(platform_name):
+            calls.append((platform_name, threading.get_ident()))
+            return []
+
+        with patch("gateway.channel_directory._build_from_sessions", side_effect=fake_build_from_sessions), \
+             patch("gateway.channel_directory.DIRECTORY_PATH", cache_file), \
+             patch(
+                 "gateway.platform_registry.platform_registry.plugin_entries",
+                 return_value=[plugin_entry],
+             ):
+            asyncio.run(build_channel_directory({"irc": object()}))
+
+        assert [name for name, _ in calls] == ["irc"]
+        assert calls[0][1] != loop_thread
+
+    def test_slack_session_merge_runs_off_event_loop_thread(self):
+        loop_thread = threading.get_ident()
+        calls = []
+
+        class FakeSlackClient:
+            async def users_conversations(self, **_kwargs):
+                return {"ok": True, "channels": []}
+
+        def fake_build_from_sessions(platform_name):
+            calls.append((platform_name, threading.get_ident()))
+            return [{"id": "D1", "name": "Alice", "type": "dm"}]
+
+        adapter = SimpleNamespace(_team_clients={"T1": FakeSlackClient()})
+        with patch("gateway.channel_directory._build_from_sessions", side_effect=fake_build_from_sessions):
+            channels = asyncio.run(_build_slack(adapter))
+
+        assert channels == [{"id": "D1", "name": "Alice", "type": "dm"}]
+        assert [name for name, _ in calls] == ["slack"]
+        assert calls[0][1] != loop_thread
 
 
 class TestResolveChannelName:
@@ -220,7 +300,7 @@ class TestBuildFromSessions:
             },
         })
 
-        with patch.dict(os.environ, {"LUCIFEX_HOME": str(tmp_path)}):
+        with patch.dict(os.environ, {"HERMES_HOME": str(tmp_path)}):
             entries = _build_from_sessions("telegram")
 
         assert len(entries) == 2
@@ -229,7 +309,7 @@ class TestBuildFromSessions:
         assert "Bob" in names
 
     def test_missing_sessions_file(self, tmp_path):
-        with patch.dict(os.environ, {"LUCIFEX_HOME": str(tmp_path)}):
+        with patch.dict(os.environ, {"HERMES_HOME": str(tmp_path)}):
             entries = _build_from_sessions("telegram")
         assert entries == []
 
@@ -239,7 +319,7 @@ class TestBuildFromSessions:
             "s2": {"origin": {"platform": "telegram", "chat_id": "123", "chat_name": "X"}},
         })
 
-        with patch.dict(os.environ, {"LUCIFEX_HOME": str(tmp_path)}):
+        with patch.dict(os.environ, {"HERMES_HOME": str(tmp_path)}):
             entries = _build_from_sessions("telegram")
 
         assert len(entries) == 1
@@ -270,7 +350,7 @@ class TestBuildFromSessions:
             },
         })
 
-        with patch.dict(os.environ, {"LUCIFEX_HOME": str(tmp_path)}):
+        with patch.dict(os.environ, {"HERMES_HOME": str(tmp_path)}):
             entries = _build_from_sessions("telegram")
 
         ids = {entry["id"] for entry in entries}
@@ -387,7 +467,7 @@ class TestBuildSlack:
             "s1": {"origin": {"platform": "slack", "chat_id": "D123", "chat_name": "Alice"}},
         }))
 
-        with patch.dict(os.environ, {"LUCIFEX_HOME": str(tmp_path)}):
+        with patch.dict(os.environ, {"HERMES_HOME": str(tmp_path)}):
             entries = asyncio.run(_build_slack(_make_slack_adapter({})))
 
         assert len(entries) == 1
@@ -404,7 +484,7 @@ class TestBuildSlack:
                 "response_metadata": {},
             },
         ])
-        with patch.dict(os.environ, {"LUCIFEX_HOME": str(tmp_path)}):
+        with patch.dict(os.environ, {"HERMES_HOME": str(tmp_path)}):
             entries = asyncio.run(_build_slack(_make_slack_adapter({"T1": client})))
 
         ids = {e["id"] for e in entries}
@@ -427,7 +507,7 @@ class TestBuildSlack:
                 "response_metadata": {"next_cursor": ""},
             },
         ])
-        with patch.dict(os.environ, {"LUCIFEX_HOME": str(tmp_path)}):
+        with patch.dict(os.environ, {"HERMES_HOME": str(tmp_path)}):
             entries = asyncio.run(_build_slack(_make_slack_adapter({"T1": client})))
 
         assert {e["id"] for e in entries} == {"C001", "C002"}
@@ -443,7 +523,7 @@ class TestBuildSlack:
                 "response_metadata": {},
             },
         ])
-        with patch.dict(os.environ, {"LUCIFEX_HOME": str(tmp_path)}):
+        with patch.dict(os.environ, {"HERMES_HOME": str(tmp_path)}):
             entries = asyncio.run(_build_slack(_make_slack_adapter({"BAD": bad, "GOOD": good})))
 
         assert {e["id"] for e in entries} == {"C999"}
@@ -462,7 +542,7 @@ class TestBuildSlack:
                 "response_metadata": {},
             },
         ])
-        with patch.dict(os.environ, {"LUCIFEX_HOME": str(tmp_path)}):
+        with patch.dict(os.environ, {"HERMES_HOME": str(tmp_path)}):
             entries = asyncio.run(_build_slack(_make_slack_adapter({"T1": client})))
 
         ids = {e["id"] for e in entries}
@@ -482,7 +562,7 @@ class TestBuildSlack:
                 "response_metadata": {},
             },
         ])
-        with patch.dict(os.environ, {"LUCIFEX_HOME": str(tmp_path)}):
+        with patch.dict(os.environ, {"HERMES_HOME": str(tmp_path)}):
             entries = asyncio.run(_build_slack(_make_slack_adapter({"T1": client})))
 
         assert {e["id"] for e in entries} == {"C001"}
@@ -491,7 +571,7 @@ class TestBuildSlack:
         client = _make_slack_client([
             {"ok": False, "error": "missing_scope"},
         ])
-        with patch.dict(os.environ, {"LUCIFEX_HOME": str(tmp_path)}):
+        with patch.dict(os.environ, {"HERMES_HOME": str(tmp_path)}):
             entries = asyncio.run(_build_slack(_make_slack_adapter({"T1": client})))
 
         assert entries == []

@@ -1,17 +1,17 @@
 # NeMo Relay Observability
 
-Optional Lucifex observability plugin that maps Lucifex observer hooks to
+Optional Hermes observability plugin that maps Hermes observer hooks to
 NeMo Relay scopes, LLM spans, tool spans, marks, ATOF, and ATIF.
 
 NeMo Relay is NVIDIA's runtime layer for agent execution boundaries. It does
-not replace Lucifex Agent's planner, tools, memory, model provider routing, or
-CLI UX. Instead, this plugin lets Lucifex emit NeMo Relay lifecycle events for
-the work Lucifex already owns: sessions, turns, provider/API calls, tool calls,
+not replace Hermes Agent's planner, tools, memory, model provider routing, or
+CLI UX. Instead, this plugin lets Hermes emit NeMo Relay lifecycle events for
+the work Hermes already owns: sessions, turns, provider/API calls, tool calls,
 approval prompts, and delegated subagents.
 
-With this plugin enabled, Lucifex Agent can:
+With this plugin enabled, Hermes Agent can:
 
-- Preserve Lucifex execution as NeMo Relay scopes, LLM spans, tool spans, and
+- Preserve Hermes execution as NeMo Relay scopes, LLM spans, tool spans, and
   mark events.
 - Export raw lifecycle events as Agent Trajectory Observability Format (ATOF)
   JSONL for debugging and offline inspection.
@@ -38,44 +38,44 @@ https://github.com/harbor-framework/harbor/blob/main/rfcs/0001-trajectory-format
 Enable the plugin before setting export options:
 
 ```bash
-lucifex plugins enable observability/nemo_relay
+hermes plugins enable observability/nemo_relay
 ```
 
-The `LUCIFEX_NEMO_RELAY_*` environment variables below only configure an
+The `HERMES_NEMO_RELAY_*` environment variables below only configure an
 already-enabled plugin. They do not enable plugin discovery by themselves.
 
-For isolated test homes, enable the plugin in the same `LUCIFEX_HOME` that the
+For isolated test homes, enable the plugin in the same `HERMES_HOME` that the
 agent run will use:
 
 ```bash
-env LUCIFEX_HOME=/tmp/lucifex-nemo-relay-test \
-  lucifex plugins enable observability/nemo_relay
+env HERMES_HOME=/tmp/hermes-nemo-relay-test \
+  hermes plugins enable observability/nemo_relay
 ```
 
 Runs started with `--ignore_user_config` skip the enabled-plugin state from
-`LUCIFEX_HOME`, so local E2E tests should omit that flag unless the test harness
+`HERMES_HOME`, so local E2E tests should omit that flag unless the test harness
 loads `observability/nemo_relay` explicitly another way.
 
-`LUCIFEX_HOME` is the Lucifex profile/config home used by both
-`lucifex plugins enable ...` and the later `lucifex chat ...` run. If unset,
-Lucifex uses the user's default home, usually `~/.lucifex`. For isolated smoke
+`HERMES_HOME` is the Hermes profile/config home used by both
+`hermes plugins enable ...` and the later `hermes chat ...` run. If unset,
+Hermes uses the user's default home, usually `~/.hermes`. For isolated smoke
 tests, choose any writable temporary directory and use the same value for every
 command in that test:
 
 ```bash
-export LUCIFEX_HOME=/tmp/lucifex-nemo-relay-test
-lucifex plugins enable observability/nemo_relay
-lucifex chat --query 'Reply exactly ok' --provider custom --model qwen3.6:35b
+export HERMES_HOME=/tmp/hermes-nemo-relay-test
+hermes plugins enable observability/nemo_relay
+hermes chat --query 'Reply exactly ok' --provider custom --model qwen3.6:35b
 ```
 
-For source checkouts, make sure the `lucifex` command you run is built from the
+For source checkouts, make sure the `hermes` command you run is built from the
 checkout that contains this plugin. A globally installed older CLI will not see
 new bundled plugins from your working tree.
 
 ```bash
 uv sync --extra nemo-relay
-uv run lucifex plugins enable observability/nemo_relay
-uv run lucifex chat --query 'Reply exactly ok' --provider custom --model qwen3.6:35b
+uv run hermes plugins enable observability/nemo_relay
+uv run hermes chat --query 'Reply exactly ok' --provider custom --model qwen3.6:35b
 ```
 
 To ship the updated CLI into another environment, build and install a fresh
@@ -83,20 +83,21 @@ wheel from this checkout, then install the official NeMo Relay runtime extra:
 
 ```bash
 uv build --wheel
-python -m pip install --force-reinstall dist/lucifex_agent-*.whl
-python -m pip install "nemo-relay==0.3"
-lucifex plugins enable observability/nemo_relay
+python -m pip install --force-reinstall dist/hermes_agent-*.whl
+python -m pip install "nemo-relay>=0.5,<1.0"
+hermes plugins enable observability/nemo_relay
 ```
 
-The plugin fails open when `nemo-relay` is not installed. Install and test it against the official NeMo Relay 0.3 PyPI distribution:
+The plugin fails open when `nemo-relay` is not installed. Install a supported
+NeMo Relay 0.x distribution beginning with 0.5:
 
 ```bash
-pip install "nemo-relay==0.3"
+pip install "nemo-relay>=0.5,<1.0"
 ```
 
 ## Export Configuration
 
-The plugin can configure exporters directly from `LUCIFEX_NEMO_RELAY_*`
+The plugin can configure exporters directly from `HERMES_NEMO_RELAY_*`
 environment variables, or delegate exporter setup to a NeMo Relay
 `plugins.toml` component config.
 
@@ -110,29 +111,29 @@ OpenInference.
 Useful local export settings after the plugin is enabled:
 
 ```bash
-export LUCIFEX_NEMO_RELAY_ATOF_ENABLED=1
-export LUCIFEX_NEMO_RELAY_ATOF_OUTPUT_DIRECTORY=.nemo-relay/atof
-export LUCIFEX_NEMO_RELAY_ATIF_ENABLED=1
-export LUCIFEX_NEMO_RELAY_ATIF_OUTPUT_DIRECTORY=.nemo-relay/atif
+export HERMES_NEMO_RELAY_ATOF_ENABLED=1
+export HERMES_NEMO_RELAY_ATOF_OUTPUT_DIRECTORY=.nemo-relay/atof
+export HERMES_NEMO_RELAY_ATIF_ENABLED=1
+export HERMES_NEMO_RELAY_ATIF_OUTPUT_DIRECTORY=.nemo-relay/atif
 ```
 
 Optional overrides:
 
-- `LUCIFEX_NEMO_RELAY_ATOF_FILENAME`
-- `LUCIFEX_NEMO_RELAY_ATOF_MODE` (`append` or `overwrite`)
-- `LUCIFEX_NEMO_RELAY_ATIF_FILENAME_TEMPLATE`
-- `LUCIFEX_NEMO_RELAY_ATIF_AGENT_NAME`
-- `LUCIFEX_NEMO_RELAY_ATIF_AGENT_VERSION`
-- `LUCIFEX_NEMO_RELAY_ATIF_MODEL_NAME`
-- `LUCIFEX_NEMO_RELAY_ATIF_SUBAGENT_EXPORT_MODE` (`embedded` by default; set `all` to also write standalone child files)
+- `HERMES_NEMO_RELAY_ATOF_FILENAME`
+- `HERMES_NEMO_RELAY_ATOF_MODE` (`append` or `overwrite`)
+- `HERMES_NEMO_RELAY_ATIF_FILENAME_TEMPLATE`
+- `HERMES_NEMO_RELAY_ATIF_AGENT_NAME`
+- `HERMES_NEMO_RELAY_ATIF_AGENT_VERSION`
+- `HERMES_NEMO_RELAY_ATIF_MODEL_NAME`
+- `HERMES_NEMO_RELAY_ATIF_SUBAGENT_EXPORT_MODE` (`embedded` by default; set `all` to also write standalone child files)
 
 ### NeMo Relay Component Config
 
 To initialize NeMo Relay from a component config, create a `plugins.toml` file
-and point Lucifex at it:
+and point Hermes at it:
 
 ```bash
-export LUCIFEX_NEMO_RELAY_PLUGINS_TOML=.nemo-relay/plugins.toml
+export HERMES_NEMO_RELAY_PLUGINS_TOML=.nemo-relay/plugins.toml
 ```
 
 Minimal ATOF and ATIF config:
@@ -157,17 +158,17 @@ mode = "overwrite"
 enabled = true
 output_directory = ".nemo-relay/atif"
 filename_template = "trajectory-{session_id}.json"
-agent_name = "Lucifex Agent"
+agent_name = "Hermes Agent"
 agent_version = "local"
 ```
 
-When `LUCIFEX_NEMO_RELAY_PLUGINS_TOML` is set and initializes successfully, NeMo
+When `HERMES_NEMO_RELAY_PLUGINS_TOML` is set and initializes successfully, NeMo
 Relay owns exporter lifecycle through that config. The direct
-`LUCIFEX_NEMO_RELAY_ATOF_*` fallback setup is skipped. If the same
+`HERMES_NEMO_RELAY_ATOF_*` fallback setup is skipped. If the same
 `plugins.toml` observability config enables `atif`, the direct
-`LUCIFEX_NEMO_RELAY_ATIF_*` fallback setup is also skipped so Lucifex does not
+`HERMES_NEMO_RELAY_ATIF_*` fallback setup is also skipped so Hermes does not
 double-export trajectories on teardown. If `plugins.toml` initialization fails,
-Lucifex keeps the direct env-var fallbacks active for that run.
+Hermes keeps the direct env-var fallbacks active for that run.
 
 To enable NeMo Relay managed execution intercepts for provider and tool calls,
 include an adaptive component in the same `plugins.toml`:
@@ -182,28 +183,87 @@ mode = "observe_only"
 ```
 
 When the adaptive component is enabled and the installed NeMo Relay runtime
-exposes `llm.execute(...)` / `tools.execute(...)`, Lucifex routes LLM and tool
+exposes `llm.execute(...)` / `tools.execute(...)`, Hermes routes LLM and tool
 execution through those middleware boundaries. The observer hooks still emit
 session, turn, approval, and subagent marks; the plugin skips its manual
 `llm.call` and `tools.call` spans for executions that are already managed by
 NeMo Relay. `tool_parallelism.mode = "observe_only"` keeps tool scheduling
 observational while still wrapping the real execution boundary.
 
-For the full generic Lucifex middleware contract, see
+### Dynamic Plugins
+
+Hermes feature-detects the dynamic-plugin activation API available in NeMo Relay
+0.6 and later. Configure native or worker plugins with Hermes-owned
+`[[dynamic_plugins]]` entries that match the Python binding's activation-spec
+fields:
+
+```toml
+[[dynamic_plugins]]
+plugin_id = "example-plugin"
+kind = "rust_dynamic"
+manifest_ref = "./example-plugin/relay-plugin.toml"
+
+[dynamic_plugins.config]
+mode = "enabled"
+```
+
+For a worker plugin, also provide the lifecycle-managed `environment_ref`:
+
+```toml
+[[dynamic_plugins]]
+plugin_id = "example-worker"
+kind = "worker"
+manifest_ref = "./example-worker/relay-plugin.toml"
+environment_ref = "/absolute/path/from-nemo-relay-plugins-inspect"
+
+[dynamic_plugins.config]
+mode = "enabled"
+```
+
+Provision the worker first with `nemo-relay plugins add`, then copy
+`data.source.environment_ref` from the JSON output of
+`nemo-relay plugins inspect <plugin-id> --json`. Relay rejects arbitrary Python
+environments at activation time.
+
+Relative `manifest_ref` and `environment_ref` values resolve relative to the
+physical `plugins.toml` file.
+
+Relay's canonical gateway `[[plugins.dynamic]]` records are not interchangeable
+with this Hermes-owned section. The gateway combines those records with
+separate lifecycle state for enablement, trust policy, and worker environments;
+the Python binding does not yet expose that resolver. Hermes rejects
+`[[plugins.dynamic]]` with an actionable diagnostic instead of silently
+ignoring it or bypassing lifecycle policy. Use `[[dynamic_plugins]]` until Relay
+exposes shared file-and-lifecycle resolution to embedding hosts.
+
+Hermes activates these plugins before registering its managed LLM and tool
+execution middleware and retains the activation for the runtime lifetime.
+During shutdown it closes session exporters, flushes Relay subscribers, and
+then closes the activation so callbacks are removed before plugin code is
+unloaded.
+
+NeMo Relay 0.5 does not expose dynamic activation through its Python binding.
+When dynamic plugin configuration is present with a binding that lacks the
+activation API, Hermes logs an actionable warning and continues with the
+ordinary static component configuration, so ATOF and ATIF observability remain
+available. No dynamic plugin is loaded in that degraded mode.
+
+For the full generic Hermes middleware contract, see
 [`docs/middleware/README.md`](../../../docs/middleware/README.md).
 
 ## Canonical Local Examples
 
-The observe-only examples in this section use the official `nemo-relay==0.3`
-distribution and a local Ollama model served through the OpenAI-compatible API.
+The observe-only examples in this section use a supported NeMo Relay 0.x
+distribution beginning with 0.5 and a local Ollama model served through the
+OpenAI-compatible API.
 
 ```bash
-pip install "nemo-relay==0.3"
+pip install "nemo-relay>=0.5,<1.0"
 
-export LUCIFEX_HOME=/tmp/lucifex-nemo-relay-docs/lucifex-home
-mkdir -p "$LUCIFEX_HOME"
+export HERMES_HOME=/tmp/hermes-nemo-relay-docs/hermes-home
+mkdir -p "$HERMES_HOME"
 
-cat > "$LUCIFEX_HOME/config.yaml" <<'YAML'
+cat > "$HERMES_HOME/config.yaml" <<'YAML'
 model:
   provider: custom
   default: qwen3.6:35b
@@ -225,22 +285,22 @@ YAML
 
 ### Delegated Subagent Tool Call
 
-This run starts a parent Lucifex session, delegates to a child subagent, has the
+This run starts a parent Hermes session, delegates to a child subagent, has the
 child call `terminal`, and writes both ATOF and ATIF.
 
 ```bash
-export LUCIFEX_NEMO_RELAY_ATOF_ENABLED=1
-export LUCIFEX_NEMO_RELAY_ATOF_OUTPUT_DIRECTORY=/tmp/lucifex-nemo-relay-docs/subagent/atof
-export LUCIFEX_NEMO_RELAY_ATOF_FILENAME=nested-subagent-atof.jsonl
-export LUCIFEX_NEMO_RELAY_ATOF_MODE=overwrite
-export LUCIFEX_NEMO_RELAY_ATIF_ENABLED=1
-export LUCIFEX_NEMO_RELAY_ATIF_OUTPUT_DIRECTORY=/tmp/lucifex-nemo-relay-docs/subagent/atif
-export LUCIFEX_NEMO_RELAY_ATIF_FILENAME_TEMPLATE='nested-subagent-atif-{session_id}.json'
-export LUCIFEX_NEMO_RELAY_ATIF_AGENT_NAME='Lucifex Agent E2E'
-export LUCIFEX_NEMO_RELAY_ATIF_AGENT_VERSION=docs-example
-export LUCIFEX_NEMO_RELAY_ATIF_SUBAGENT_EXPORT_MODE=all
+export HERMES_NEMO_RELAY_ATOF_ENABLED=1
+export HERMES_NEMO_RELAY_ATOF_OUTPUT_DIRECTORY=/tmp/hermes-nemo-relay-docs/subagent/atof
+export HERMES_NEMO_RELAY_ATOF_FILENAME=nested-subagent-atof.jsonl
+export HERMES_NEMO_RELAY_ATOF_MODE=overwrite
+export HERMES_NEMO_RELAY_ATIF_ENABLED=1
+export HERMES_NEMO_RELAY_ATIF_OUTPUT_DIRECTORY=/tmp/hermes-nemo-relay-docs/subagent/atif
+export HERMES_NEMO_RELAY_ATIF_FILENAME_TEMPLATE='nested-subagent-atif-{session_id}.json'
+export HERMES_NEMO_RELAY_ATIF_AGENT_NAME='Hermes Agent E2E'
+export HERMES_NEMO_RELAY_ATIF_AGENT_VERSION=docs-example
+export HERMES_NEMO_RELAY_ATIF_SUBAGENT_EXPORT_MODE=all
 
-lucifex chat \
+hermes chat \
   --query 'Use delegate_task exactly once. Ask the child subagent to use the terminal tool exactly once to run printf docs_nested_leaf_function. After the child returns, reply with exactly: parent received nested subagent result.' \
   --provider custom \
   --model qwen3.6:35b \
@@ -261,7 +321,7 @@ Sanitized ATOF excerpt:
 
 ```jsonl
 {"kind":"scope","category":"tool","name":"delegate_task","scope_category":"start","metadata":{"session_id":"docs-parent-session","tool_call_id":"call_delegate"},"data":{"goal":"Run the command `printf docs_nested_leaf_function` using the terminal tool.","toolsets":["terminal"]}}
-{"kind":"mark","name":"lucifex.subagent.start","metadata":{"parent_session_id":"docs-parent-session","session_id":"docs-child-session","subagent_id":"sa-0-docs","child_role":"leaf"}}
+{"kind":"mark","name":"hermes.subagent.start","metadata":{"parent_session_id":"docs-parent-session","session_id":"docs-child-session","subagent_id":"sa-0-docs","child_role":"leaf"}}
 {"kind":"scope","category":"tool","name":"terminal","scope_category":"end","metadata":{"session_id":"docs-child-session","tool_call_id":"call_terminal","status":"ok"},"data":"{\"output\":\"docs_nested_leaf_function\",\"exit_code\":0,\"error\":null}"}
 {"kind":"scope","category":"tool","name":"delegate_task","scope_category":"end","metadata":{"session_id":"docs-parent-session","tool_call_id":"call_delegate","status":"ok"}}
 ```
@@ -272,7 +332,7 @@ Sanitized ATIF excerpt:
 {
   "schema_version": "ATIF-v1.7",
   "session_id": "docs-parent-session",
-  "agent": {"name": "Lucifex Agent E2E", "version": "docs-example", "model_name": "qwen3.6:35b"},
+  "agent": {"name": "Hermes Agent E2E", "version": "docs-example", "model_name": "qwen3.6:35b"},
   "steps": [
     {
       "source": "agent",
@@ -306,26 +366,26 @@ Sanitized ATIF excerpt:
 ### Parallel Tool Calls
 
 This run asks the model to emit two `read_file` tool calls in the same assistant
-message. Lucifex dispatches the read-only tools as one batch, and NeMo Relay
+message. Hermes dispatches the read-only tools as one batch, and NeMo Relay
 records both tool invocations.
 
 ```bash
-mkdir -p /tmp/lucifex-nemo-relay-docs/workdir
-printf 'docs_parallel_alpha_function\n' > /tmp/lucifex-nemo-relay-docs/workdir/alpha.txt
-printf 'docs_parallel_beta_function\n' > /tmp/lucifex-nemo-relay-docs/workdir/beta.txt
-cd /tmp/lucifex-nemo-relay-docs/workdir
+mkdir -p /tmp/hermes-nemo-relay-docs/workdir
+printf 'docs_parallel_alpha_function\n' > /tmp/hermes-nemo-relay-docs/workdir/alpha.txt
+printf 'docs_parallel_beta_function\n' > /tmp/hermes-nemo-relay-docs/workdir/beta.txt
+cd /tmp/hermes-nemo-relay-docs/workdir
 
-export LUCIFEX_NEMO_RELAY_ATOF_ENABLED=1
-export LUCIFEX_NEMO_RELAY_ATOF_OUTPUT_DIRECTORY=/tmp/lucifex-nemo-relay-docs/parallel/atof
-export LUCIFEX_NEMO_RELAY_ATOF_FILENAME=parallel-tools-atof.jsonl
-export LUCIFEX_NEMO_RELAY_ATOF_MODE=overwrite
-export LUCIFEX_NEMO_RELAY_ATIF_ENABLED=1
-export LUCIFEX_NEMO_RELAY_ATIF_OUTPUT_DIRECTORY=/tmp/lucifex-nemo-relay-docs/parallel/atif
-export LUCIFEX_NEMO_RELAY_ATIF_FILENAME_TEMPLATE='parallel-tools-atif-{session_id}.json'
-export LUCIFEX_NEMO_RELAY_ATIF_AGENT_NAME='Lucifex Agent E2E'
-export LUCIFEX_NEMO_RELAY_ATIF_AGENT_VERSION=docs-example
+export HERMES_NEMO_RELAY_ATOF_ENABLED=1
+export HERMES_NEMO_RELAY_ATOF_OUTPUT_DIRECTORY=/tmp/hermes-nemo-relay-docs/parallel/atof
+export HERMES_NEMO_RELAY_ATOF_FILENAME=parallel-tools-atof.jsonl
+export HERMES_NEMO_RELAY_ATOF_MODE=overwrite
+export HERMES_NEMO_RELAY_ATIF_ENABLED=1
+export HERMES_NEMO_RELAY_ATIF_OUTPUT_DIRECTORY=/tmp/hermes-nemo-relay-docs/parallel/atif
+export HERMES_NEMO_RELAY_ATIF_FILENAME_TEMPLATE='parallel-tools-atif-{session_id}.json'
+export HERMES_NEMO_RELAY_ATIF_AGENT_NAME='Hermes Agent E2E'
+export HERMES_NEMO_RELAY_ATIF_AGENT_VERSION=docs-example
 
-lucifex chat \
+hermes chat \
   --query 'Use exactly two read_file tool calls in the same assistant message. Read alpha.txt and beta.txt. Do not call terminal. After both tool results are available, reply with exactly: parallel tools complete.' \
   --provider custom \
   --model qwen3.6:35b \
@@ -358,7 +418,7 @@ Sanitized ATIF excerpt:
 {
   "schema_version": "ATIF-v1.7",
   "session_id": "docs-parallel-session",
-  "agent": {"name": "Lucifex Agent E2E", "version": "docs-example", "model_name": "qwen3.6:35b"},
+  "agent": {"name": "Hermes Agent E2E", "version": "docs-example", "model_name": "qwen3.6:35b"},
   "steps": [
     {
       "source": "agent",
@@ -382,9 +442,9 @@ Sanitized ATIF excerpt:
 
 The plugin keeps NeMo Relay's native event model:
 
-- Lucifex sessions map to `agent` scopes.
-- Lucifex API request hooks map to `llm` scope start/end events.
-- Lucifex tool hooks map to `tool` scope start/end events.
+- Hermes sessions map to `agent` scopes.
+- Hermes API request hooks map to `llm` scope start/end events.
+- Hermes tool hooks map to `tool` scope start/end events.
 - Turn, approval, subagent, and diagnostic fallback events map to `mark`
   events.
 
@@ -396,7 +456,7 @@ separate trajectories.
 
 ## Adaptive Middleware Example
 
-The `observability/nemo_relay` plugin uses Lucifex execution middleware to hand
+The `observability/nemo_relay` plugin uses Hermes execution middleware to hand
 LLM and tool calls to NeMo Relay managed execution when an adaptive component is
 enabled.
 
@@ -413,26 +473,26 @@ enabled = true
 mode = "observe_only"
 ```
 
-Enable it for Lucifex:
+Enable it for Hermes:
 
 ```bash
-export LUCIFEX_NEMO_RELAY_PLUGINS_TOML=/tmp/lucifex-middleware-test/plugins.toml
+export HERMES_NEMO_RELAY_PLUGINS_TOML=/tmp/hermes-middleware-test/plugins.toml
 ```
 
 When the adaptive component is enabled and the installed NeMo Relay runtime
-exposes `llm.execute(...)` and `tools.execute(...)`, Lucifex routes execution
+exposes `llm.execute(...)` and `tools.execute(...)`, Hermes routes execution
 through these boundaries:
 
 ```text
-Lucifex provider call
+Hermes provider call
   -> llm_execution middleware
     -> nemo_relay.llm.execute(...)
-      -> Lucifex provider adapter next_call(...)
+      -> Hermes provider adapter next_call(...)
 
-Lucifex tool call
+Hermes tool call
   -> tool_execution middleware
     -> nemo_relay.tools.execute(...)
-      -> Lucifex tool dispatcher next_call(...)
+      -> Hermes tool dispatcher next_call(...)
 ```
 
 The plugin still emits observer marks for sessions, turns, approvals, and
@@ -443,16 +503,15 @@ for the same execution.
 ### Local Adaptive E2E
 
 This example enables both NeMo Relay observability export and adaptive execution
-middleware for a local Lucifex run. This path requires a NeMo Relay runtime that
-supports `[components.config.tool_parallelism]`; the `nemo-relay==0.3`
-install used by the earlier observability-only examples does not support this
-adaptive config.
+middleware for a local Hermes run. This path requires a NeMo Relay runtime that
+supports `[components.config.tool_parallelism]`, as provided by the supported
+0.x release range beginning with 0.5.
 
 ```bash
-export LUCIFEX_HOME=/tmp/lucifex-middleware-test/lucifex-home
-mkdir -p "$LUCIFEX_HOME" /tmp/lucifex-middleware-test/nemo-relay
+export HERMES_HOME=/tmp/hermes-middleware-test/hermes-home
+mkdir -p "$HERMES_HOME" /tmp/hermes-middleware-test/nemo-relay
 
-cat > "$LUCIFEX_HOME/config.yaml" <<'YAML'
+cat > "$HERMES_HOME/config.yaml" <<'YAML'
 model:
   provider: custom
   default: qwen3.6:35b
@@ -463,7 +522,7 @@ plugins:
     - observability/nemo_relay
 YAML
 
-cat > /tmp/lucifex-middleware-test/nemo-relay/plugins.toml <<'TOML'
+cat > /tmp/hermes-middleware-test/nemo-relay/plugins.toml <<'TOML'
 version = 1
 
 [[components]]
@@ -475,15 +534,15 @@ version = 1
 
 [components.config.atof]
 enabled = true
-output_directory = "/tmp/lucifex-middleware-test/atof"
+output_directory = "/tmp/hermes-middleware-test/atof"
 filename = "middleware-events.jsonl"
 mode = "overwrite"
 
 [components.config.atif]
 enabled = true
-output_directory = "/tmp/lucifex-middleware-test/atif"
+output_directory = "/tmp/hermes-middleware-test/atif"
 filename_template = "middleware-trajectory-{session_id}.json"
-agent_name = "Lucifex Middleware E2E"
+agent_name = "Hermes Middleware E2E"
 agent_version = "local"
 
 [[components]]
@@ -494,9 +553,9 @@ enabled = true
 mode = "observe_only"
 TOML
 
-export LUCIFEX_NEMO_RELAY_PLUGINS_TOML=/tmp/lucifex-middleware-test/nemo-relay/plugins.toml
+export HERMES_NEMO_RELAY_PLUGINS_TOML=/tmp/hermes-middleware-test/nemo-relay/plugins.toml
 
-lucifex chat \
+hermes chat \
   --query 'Use the terminal tool exactly once to run printf middleware_execution_ok. Then reply with exactly the command output.' \
   --provider custom \
   --model qwen3.6:35b \
@@ -528,7 +587,7 @@ Expected ATIF shape:
   "schema_version": "ATIF-v1.7",
   "session_id": "middleware-demo-session",
   "agent": {
-    "name": "Lucifex Middleware E2E",
+    "name": "Hermes Middleware E2E",
     "version": "local",
     "model_name": "qwen3.6:35b"
   },

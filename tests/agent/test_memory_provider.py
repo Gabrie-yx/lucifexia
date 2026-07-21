@@ -1,6 +1,8 @@
 """Tests for the memory provider interface, manager, and builtin provider."""
 
 import json
+import threading
+import time
 import pytest
 from types import SimpleNamespace
 from unittest.mock import MagicMock
@@ -90,6 +92,21 @@ class MessagesMemoryProvider(FakeMemoryProvider):
 
     def sync_turn(self, user_content, assistant_content, *, session_id="", messages=None):
         self.synced_turns.append((user_content, assistant_content, session_id, messages))
+
+
+class BlockingPrefetchProvider(FakeMemoryProvider):
+    """External provider whose prefetch call blocks until released."""
+
+    def __init__(self, name="external"):
+        super().__init__(name=name)
+        self.started = threading.Event()
+        self.release = threading.Event()
+
+    def prefetch(self, query, *, session_id=""):
+        self.prefetch_queries.append(query)
+        self.started.set()
+        self.release.wait(timeout=5.0)
+        return self._prefetch_result
 
 
 # ---------------------------------------------------------------------------
@@ -399,6 +416,48 @@ class TestMemoryManager:
         result = mgr.prefetch_all("query")
         assert "external memory" in result
 
+    def test_external_prefetch_timeout_skips_stuck_provider(self):
+        mgr = MemoryManager(external_prefetch_timeout=0.01)
+        builtin = FakeMemoryProvider("builtin")
+        builtin._prefetch_result = "builtin memory"
+        external = BlockingPrefetchProvider("hy-memory")
+        external._prefetch_result = "late external memory"
+        mgr.add_provider(builtin)
+        mgr.add_provider(external)
+
+        started = time.monotonic()
+        result = mgr.prefetch_all("query")
+        elapsed = time.monotonic() - started
+
+        assert result == "builtin memory"
+        assert elapsed < 0.5
+        assert external.started.wait(timeout=1.0)
+        assert external.prefetch_queries == ["query"]
+
+        started = time.monotonic()
+        result = mgr.prefetch_all("query 2")
+        elapsed = time.monotonic() - started
+
+        assert result == "builtin memory"
+        assert elapsed < 0.2
+        assert external.prefetch_queries == ["query"]
+
+        external.release.set()
+
+        deadline = time.monotonic() + 1.0
+        while (
+            external.name in mgr._external_prefetch_threads
+            and mgr._external_prefetch_threads[external.name].is_alive()
+            and time.monotonic() < deadline
+        ):
+            time.sleep(0.01)
+
+        result = mgr.prefetch_all("query 3")
+
+        assert result == "builtin memory\n\nlate external memory"
+        assert external.prefetch_queries == ["query", "query 3"]
+        assert external.name not in mgr._external_prefetch_threads
+
     def test_system_prompt_failure_doesnt_block(self):
         mgr = MemoryManager()
         p1 = FakeMemoryProvider("builtin")
@@ -437,7 +496,7 @@ class TestPluginMemoryDiscovery:
 
 
 class TestUserInstalledProviderDiscovery:
-    """Memory providers installed to $LUCIFEX_HOME/plugins/ should be found.
+    """Memory providers installed to $HERMES_HOME/plugins/ should be found.
 
     Regression test for issues #4956 and #9099: load_memory_provider() and
     discover_memory_providers() only scanned the bundled plugins/memory/
@@ -478,7 +537,7 @@ class TestUserInstalledProviderDiscovery:
         assert "holographic" in names  # bundled still found
 
     def test_load_user_plugin(self, tmp_path, monkeypatch):
-        """load_memory_provider() can load from $LUCIFEX_HOME/plugins/."""
+        """load_memory_provider() can load from $HERMES_HOME/plugins/."""
         from plugins.memory import load_memory_provider
         self._make_user_memory_plugin(tmp_path, "myexternal")
         monkeypatch.setattr(
@@ -541,10 +600,10 @@ class TestUserInstalledProviderDiscovery:
         """User plugins may import sibling modules with relative imports.
 
         Regression: _load_provider_from_dir() imports user plugins under the
-        synthetic ``_lucifex_user_memory.<name>`` package but never registered
+        synthetic ``_hermes_user_memory.<name>`` package but never registered
         that parent namespace in sys.modules, so any relative import inside
         the plugin raised
-        ``ModuleNotFoundError: No module named '_lucifex_user_memory'``.
+        ``ModuleNotFoundError: No module named '_hermes_user_memory'``.
         """
         from plugins.memory import load_memory_provider
         plugin_dir = tmp_path / "plugins" / "relimport"
@@ -580,7 +639,7 @@ class TestUserInstalledProviderDiscovery:
         """
         from plugins.memory import load_memory_provider
         plugin_dir = tmp_path / "plugins" / "nestedimpl"
-        impl_dir = plugin_dir / "adapters" / "lucifex"  # adapters/ has no __init__.py
+        impl_dir = plugin_dir / "adapters" / "hermes"  # adapters/ has no __init__.py
         impl_dir.mkdir(parents=True)
         (impl_dir / "__init__.py").write_text(
             "from agent.memory_provider import MemoryProvider\n"
@@ -594,7 +653,7 @@ class TestUserInstalledProviderDiscovery:
             "    def handle_tool_call(self, *a, **kw): return '{}'\n"
         )
         (plugin_dir / "__init__.py").write_text(
-            "from .adapters.lucifex import MyProvider\n"
+            "from .adapters.hermes import MyProvider\n"
             "def register(ctx):\n"
             "    ctx.register_memory_provider(MyProvider())\n"
         )
@@ -612,7 +671,7 @@ class TestUserInstalledProviderCli:
 
     Mirror of the relative-import regression above:
     discover_plugin_cli_commands() imports the active provider's cli.py as
-    ``_lucifex_user_memory.<name>.cli`` without registering the parent
+    ``_hermes_user_memory.<name>.cli`` without registering the parent
     packages, so a cli.py with a relative import could never load.
     """
 
@@ -791,7 +850,7 @@ class TestSequentialDispatchRouting:
 
 class TestSetupFieldFiltering:
     """Test the 'when' clause and 'default_from' logic used by the
-    memory setup wizard in lucifex_cli/memory_setup.py.
+    memory setup wizard in hermes_cli/memory_setup.py.
 
     These features are generic — any memory plugin can use them in
     get_config_schema(). Currently used by the hindsight plugin.
@@ -850,7 +909,7 @@ class TestSetupFieldFiltering:
     def test_when_clause_no_condition_always_shown(self):
         """Fields without 'when' are always included."""
         schema = [
-            {"key": "bank_id", "default": "lucifex"},
+            {"key": "bank_id", "default": "hermes"},
             {"key": "budget", "default": "mid"},
         ]
         fields = self._filter_fields(schema, {"mode": "cloud"})
@@ -1363,7 +1422,7 @@ class TestMemoryToolToolsetGate:
     def test_composite_toolset_with_memory_injects(self):
         """Composite toolsets that include memory should inject provider tools."""
         mgr = self._mgr_with_tools("hindsight_recall")
-        tools, names = self._run_memory_injection(["lucifex-acp"], mgr)
+        tools, names = self._run_memory_injection(["hermes-acp"], mgr)
         assert "hindsight_recall" in names
         assert any(t["function"]["name"] == "hindsight_recall" for t in tools)
 

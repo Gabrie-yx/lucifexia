@@ -1,56 +1,64 @@
-# nix/nixosModules.nix — NixOS module for lucifex-agent
+# nix/nixosModules.nix — NixOS module for hermes-agent
 #
 # Two modes:
 #   container.enable = false (default) → native systemd service
 #   container.enable = true            → OCI container (persistent writable layer)
 #
-# Container mode: lucifex runs from /nix/store bind-mounted read-only into a
+# Container mode: hermes runs from /nix/store bind-mounted read-only into a
 # plain Ubuntu container. The writable layer (apt/pip/npm installs) persists
 # across restarts and agent updates. Only image/volume/options changes trigger
-# container recreation. Environment variables are written to $LUCIFEX_HOME/.env
-# and read by lucifex at startup — no container recreation needed for env changes.
+# container recreation. Environment variables are written to $HERMES_HOME/.env
+# and read by hermes at startup — no container recreation needed for env changes.
 #
-# Tool resolution: the lucifex wrapper uses --suffix PATH for nix store tools,
+# Tool resolution: the hermes wrapper uses --suffix PATH for nix store tools,
 # so apt/uv-installed versions take priority. The container entrypoint provisions
 # extensible tools on first boot: nodejs/npm via apt, uv via curl, and a Python
 # 3.11 venv (bootstrapped entirely by uv) at ~/.venv with pip seeded. Agents get
 # writable tool prefixes for npm i -g, pip install, uv tool install, etc.
 #
 # Usage:
-#   services.lucifex-agent = {
+#   services.hermes-agent = {
 #     enable = true;
 #     settings.model = "anthropic/claude-sonnet-4";
-#     environmentFiles = [ config.sops.secrets."lucifex/env".path ];
+#     environmentFiles = [ config.sops.secrets."hermes/env".path ];
 #   };
 #
 { inputs, ... }: {
   flake.nixosModules.default = { config, lib, pkgs, ... }:
 
   let
-    cfg = config.services.lucifex-agent;
+    cfg = config.services.hermes-agent;
     effectivePackage =
       if cfg.extraPythonPackages == [ ] && cfg.extraDependencyGroups == [ ]
       then cfg.package
       else cfg.package.override { inherit (cfg) extraPythonPackages extraDependencyGroups; };
-    lucifex-agent = inputs.self.packages.${pkgs.stdenv.hostPlatform.system}.default;
+    hermes-agent = inputs.self.packages.${pkgs.stdenv.hostPlatform.system}.default;
 
-    # Deep-merge config type (from 0xrsydn/nix-lucifex-agent)
+    # Deep-merge config type (from 0xrsydn/nix-hermes-agent)
     deepConfigType = lib.types.mkOptionType {
-      name = "lucifex-config-attrs";
-      description = "Lucifex YAML config (attrset), merged deeply via lib.recursiveUpdate.";
+      name = "hermes-config-attrs";
+      description = "Hermes YAML config (attrset), merged deeply via lib.recursiveUpdate.";
       check = builtins.isAttrs;
       merge = _loc: defs: lib.foldl' lib.recursiveUpdate { } (map (d: d.value) defs);
     };
 
-    # Generate config.yaml from Nix attrset (YAML is a superset of JSON)
-    configJson = builtins.toJSON cfg.settings;
-    generatedConfigFile = pkgs.writeText "lucifex-config.yaml" configJson;
+    # Generate config.yaml from Nix attrset (YAML is a superset of JSON).
+    # terminal.cwd replaces the deprecated MESSAGING_CWD env var — hermes
+    # reads it from config.yaml and bridges it to TERMINAL_CWD internally.
+    # recursiveUpdate: cfg.settings wins, so an explicit
+    # settings.terminal.cwd overrides the workingDirectory default.
+    # Container mode uses the in-container mount path.
+    effectiveWorkDir = if cfg.container.enable then containerWorkDir else cfg.workingDirectory;
+    configJson = builtins.toJSON (
+      lib.recursiveUpdate { terminal.cwd = effectiveWorkDir; } cfg.settings
+    );
+    generatedConfigFile = pkgs.writeText "hermes-config.yaml" configJson;
     configFile = if cfg.configFile != null then cfg.configFile else generatedConfigFile;
 
     configMergeScript = pkgs.callPackage ./configMergeScript.nix { };
 
     # config.yaml mode: group-writable (0660) when interactive users share this
-    # LUCIFEX_HOME via addToSystemPackages, so they can save settings through the
+    # HERMES_HOME via addToSystemPackages, so they can save settings through the
     # CLI/TUI without hitting EACCES; otherwise group-read-only (0640). Secrets
     # (.env) stay 0640 regardless — see below.
     configYamlMode = if cfg.addToSystemPackages then "0660" else "0640";
@@ -60,21 +68,21 @@
       lib.mapAttrsToList (k: v: "${k}=${v}") cfg.environment
     );
     # Build documents derivation (from 0xrsydn)
-    documentDerivation = pkgs.runCommand "lucifex-documents" { } (
+    documentDerivation = pkgs.runCommand "hermes-documents" { } (
       ''
         mkdir -p $out
       '' + lib.concatStringsSep "\n" (
         lib.mapAttrsToList (name: value:
           if builtins.isPath value || lib.isStorePath value
           then "cp ${value} $out/${name}"
-          else "cat > $out/${name} <<'LUCIFEX_DOC_EOF'\n${value}\nLUCIFEX_DOC_EOF"
+          else "cat > $out/${name} <<'HERMES_DOC_EOF'\n${value}\nHERMES_DOC_EOF"
         ) cfg.documents
       )
     );
 
-    containerName = "lucifex-agent";
+    containerName = "hermes-agent";
     containerDataDir = "/data";     # stateDir mount point inside container
-    containerHomeDir = "/home/lucifex";
+    containerHomeDir = "/home/hermes";
 
     # ── Container mode helpers ──────────────────────────────────────────
     containerBin = if cfg.container.backend == "docker"
@@ -82,54 +90,54 @@
       else "${pkgs.podman}/bin/podman";
 
     # Runs as root inside the container on every start. Provisions the
-    # lucifex user + sudo on first boot (writable layer persists), then
+    # hermes user + sudo on first boot (writable layer persists), then
     # drops privileges. Supports arbitrary base images (Debian, Alpine, etc).
-    containerEntrypoint = pkgs.writeShellScript "lucifex-container-entrypoint" ''
+    containerEntrypoint = pkgs.writeShellScript "hermes-container-entrypoint" ''
       set -eu
 
-      LUCIFEX_UID="''${LUCIFEX_UID:?LUCIFEX_UID must be set}"
-      LUCIFEX_GID="''${LUCIFEX_GID:?LUCIFEX_GID must be set}"
+      HERMES_UID="''${HERMES_UID:?HERMES_UID must be set}"
+      HERMES_GID="''${HERMES_GID:?HERMES_GID must be set}"
 
-      # ── Group: ensure a group with GID=$LUCIFEX_GID exists ──
+      # ── Group: ensure a group with GID=$HERMES_GID exists ──
       # Check by GID (not name) to avoid collisions with pre-existing groups
       # (e.g. GID 100 = "users" on Ubuntu)
-      EXISTING_GROUP=$(getent group "$LUCIFEX_GID" 2>/dev/null | cut -d: -f1 || true)
+      EXISTING_GROUP=$(getent group "$HERMES_GID" 2>/dev/null | cut -d: -f1 || true)
       if [ -n "$EXISTING_GROUP" ]; then
         GROUP_NAME="$EXISTING_GROUP"
       else
-        GROUP_NAME="lucifex"
+        GROUP_NAME="hermes"
         if command -v groupadd >/dev/null 2>&1; then
-          groupadd -g "$LUCIFEX_GID" "$GROUP_NAME"
+          groupadd -g "$HERMES_GID" "$GROUP_NAME"
         elif command -v addgroup >/dev/null 2>&1; then
-          addgroup -g "$LUCIFEX_GID" "$GROUP_NAME" 2>/dev/null || true
+          addgroup -g "$HERMES_GID" "$GROUP_NAME" 2>/dev/null || true
         fi
       fi
 
-      # ── User: ensure a user with UID=$LUCIFEX_UID exists ──
-      PASSWD_ENTRY=$(getent passwd "$LUCIFEX_UID" 2>/dev/null || true)
+      # ── User: ensure a user with UID=$HERMES_UID exists ──
+      PASSWD_ENTRY=$(getent passwd "$HERMES_UID" 2>/dev/null || true)
       if [ -n "$PASSWD_ENTRY" ]; then
         TARGET_USER=$(echo "$PASSWD_ENTRY" | cut -d: -f1)
         TARGET_HOME=$(echo "$PASSWD_ENTRY" | cut -d: -f6)
       else
-        TARGET_USER="lucifex"
-        TARGET_HOME="/home/lucifex"
+        TARGET_USER="hermes"
+        TARGET_HOME="/home/hermes"
         if command -v useradd >/dev/null 2>&1; then
-          useradd -u "$LUCIFEX_UID" -g "$LUCIFEX_GID" -m -d "$TARGET_HOME" -s /bin/bash "$TARGET_USER"
+          useradd -u "$HERMES_UID" -g "$HERMES_GID" -m -d "$TARGET_HOME" -s /bin/bash "$TARGET_USER"
         elif command -v adduser >/dev/null 2>&1; then
-          adduser -u "$LUCIFEX_UID" -D -h "$TARGET_HOME" -s /bin/sh -G "$GROUP_NAME" "$TARGET_USER" 2>/dev/null || true
+          adduser -u "$HERMES_UID" -D -h "$TARGET_HOME" -s /bin/sh -G "$GROUP_NAME" "$TARGET_USER" 2>/dev/null || true
         fi
       fi
       mkdir -p "$TARGET_HOME"
-      chown "$LUCIFEX_UID:$LUCIFEX_GID" "$TARGET_HOME"
+      chown "$HERMES_UID:$HERMES_GID" "$TARGET_HOME"
       chmod 0750 "$TARGET_HOME"
 
-      # Ensure LUCIFEX_HOME is owned by the target user.
+      # Ensure HERMES_HOME is owned by the target user.
       # Use find instead of chown -R: chown strips the setgid bit (kernel
       # behavior), destroying the 2770 permissions the NixOS activation
       # script sets for group access by hostUsers.  Only touch files with
       # wrong ownership so correctly-owned dirs keep their permission bits.
-      if [ -n "''${LUCIFEX_HOME:-}" ] && [ -d "$LUCIFEX_HOME" ]; then
-        find "$LUCIFEX_HOME" \! -user "$LUCIFEX_UID" -exec chown "$LUCIFEX_UID:$LUCIFEX_GID" {} +
+      if [ -n "''${HERMES_HOME:-}" ] && [ -d "$HERMES_HOME" ]; then
+        find "$HERMES_HOME" \! -user "$HERMES_UID" -exec chown "$HERMES_UID:$HERMES_GID" {} +
       fi
 
       # ── Provision apt packages (first boot only, cached in writable layer) ──
@@ -137,7 +145,7 @@
       # nodejs/npm: writable node so npm i -g works (nix store copies are read-only)
       #   Node 22 via NodeSource — Ubuntu 24.04 ships Node 18 which is EOL.
       # curl: needed for uv installer + NodeSource setup
-      if [ ! -f /var/lib/lucifex-tools-provisioned ] && command -v apt-get >/dev/null 2>&1; then
+      if [ ! -f /var/lib/hermes-tools-provisioned ] && command -v apt-get >/dev/null 2>&1; then
         echo "First boot: provisioning agent tools..."
         apt-get update -qq
         apt-get install -y -qq sudo curl ca-certificates gnupg
@@ -148,13 +156,13 @@
           > /etc/apt/sources.list.d/nodesource.list
         apt-get update -qq
         apt-get install -y -qq nodejs
-        touch /var/lib/lucifex-tools-provisioned
+        touch /var/lib/hermes-tools-provisioned
       fi
 
-      if command -v sudo >/dev/null 2>&1 && [ ! -f /etc/sudoers.d/lucifex ]; then
+      if command -v sudo >/dev/null 2>&1 && [ ! -f /etc/sudoers.d/hermes ]; then
         mkdir -p /etc/sudoers.d
-        echo "$TARGET_USER ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/lucifex
-        chmod 0440 /etc/sudoers.d/lucifex
+        echo "$TARGET_USER ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/hermes
+        chmod 0440 /etc/sudoers.d/hermes
       fi
 
       # uv (Python manager) — not in Ubuntu repos, retry-safe outside the sentinel
@@ -179,7 +187,7 @@
       fi
 
       if command -v setpriv >/dev/null 2>&1; then
-        exec setpriv --reuid="$LUCIFEX_UID" --regid="$LUCIFEX_GID" --init-groups "$@"
+        exec setpriv --reuid="$HERMES_UID" --regid="$HERMES_GID" --init-groups "$@"
       elif command -v su >/dev/null 2>&1; then
         exec su -s /bin/sh "$TARGET_USER" -c 'exec "$0" "$@"' -- "$@"
       else
@@ -190,7 +198,7 @@
 
     # Identity hash — only recreate container when structural config changes.
     # Package and entrypoint use stable symlinks (current-package, current-entrypoint)
-    # so they can update without recreation. Env vars go through $LUCIFEX_HOME/.env.
+    # so they can update without recreation. Env vars go through $HERMES_HOME/.env.
     containerIdentity = builtins.hashString "sha256" (builtins.toJSON {
       schema = 4; # bump when identity inputs change (4: Node 18→22 via NodeSource)
       image = cfg.container.image;
@@ -200,7 +208,7 @@
 
     identityFile = "${cfg.stateDir}/.container-identity";
 
-    # Default: /var/lib/lucifex/workspace → /data/workspace.
+    # Default: /var/lib/hermes/workspace → /data/workspace.
     # Custom paths outside stateDir pass through unchanged (user must add extraVolumes).
     containerWorkDir =
       if lib.hasPrefix "${cfg.stateDir}/" cfg.workingDirectory
@@ -208,26 +216,26 @@
       else cfg.workingDirectory;
 
   in {
-    options.services.lucifex-agent = with lib; {
-      enable = mkEnableOption "Lucifex Agent gateway service";
+    options.services.hermes-agent = with lib; {
+      enable = mkEnableOption "Hermes Agent gateway service";
 
       # ── Package ──────────────────────────────────────────────────────────
       package = mkOption {
         type = types.package;
-        default = lucifex-agent;
-        description = "The lucifex-agent package to use.";
+        default = hermes-agent;
+        description = "The hermes-agent package to use.";
       };
 
       # ── Service identity ─────────────────────────────────────────────────
       user = mkOption {
         type = types.str;
-        default = "lucifex";
+        default = "hermes";
         description = "System user running the gateway.";
       };
 
       group = mkOption {
         type = types.str;
-        default = "lucifex";
+        default = "hermes";
         description = "System group running the gateway.";
       };
 
@@ -240,8 +248,8 @@
       # ── Directories ──────────────────────────────────────────────────────
       stateDir = mkOption {
         type = types.str;
-        default = "/var/lib/lucifex";
-        description = "State directory. Contains .lucifex/ subdir (LUCIFEX_HOME).";
+        default = "/var/lib/hermes";
+        description = "State directory. Contains .hermes/ subdir (HERMES_HOME).";
       };
 
       workingDirectory = mkOption {
@@ -265,7 +273,7 @@
         type = deepConfigType;
         default = { };
         description = ''
-          Declarative Lucifex config (attrset). Deep-merged across module
+          Declarative Hermes config (attrset). Deep-merged across module
           definitions and rendered as config.yaml.
         '';
         example = literalExpression ''
@@ -284,8 +292,8 @@
         default = [ ];
         description = ''
           Paths to environment files containing secrets (API keys, tokens).
-          Contents are merged into $LUCIFEX_HOME/.env at activation time.
-          Lucifex reads this file on every startup via load_lucifex_dotenv().
+          Contents are merged into $HERMES_HOME/.env at activation time.
+          Hermes reads this file on every startup via load_hermes_dotenv().
         '';
       };
 
@@ -293,7 +301,7 @@
         type = types.attrsOf types.str;
         default = { };
         description = ''
-          Non-secret environment variables. Merged into $LUCIFEX_HOME/.env
+          Non-secret environment variables. Merged into $HERMES_HOME/.env
           at activation time. Do NOT put secrets here — use environmentFiles.
         '';
       };
@@ -368,7 +376,7 @@
               default = null;
               description = ''
                 Authentication method. Set to "oauth" for OAuth 2.1 PKCE flow
-                (remote MCP servers). Tokens are stored in $LUCIFEX_HOME/mcp-tokens/.
+                (remote MCP servers). Tokens are stored in $HERMES_HOME/mcp-tokens/.
               '';
             };
 
@@ -461,7 +469,7 @@
       extraArgs = mkOption {
         type = types.listOf types.str;
         default = [ ];
-        description = "Extra command-line arguments for `lucifex gateway`.";
+        description = "Extra command-line arguments for `hermes gateway`.";
       };
 
       extraPackages = mkOption {
@@ -471,7 +479,7 @@
           Extra packages available to the agent — terminal commands, skills,
           cron jobs, and the service process all see them.
 
-          Implemented via the lucifex user's per-user profile
+          Implemented via the hermes user's per-user profile
           (`/etc/profiles/per-user/${cfg.user}/bin`), which NixOS includes
           in PATH for login shells.  The packages are also added to the
           systemd service PATH for direct process access.
@@ -482,16 +490,16 @@
         type = types.listOf types.package;
         default = [ ];
         description = ''
-          Directory-based plugin packages to symlink into the lucifex plugins
+          Directory-based plugin packages to symlink into the hermes plugins
           directory. Each package should contain a plugin.yaml and __init__.py
-          at its root. Lucifex discovers these automatically on startup.
+          at its root. Hermes discovers these automatically on startup.
         '';
         example = literalExpression ''
           [
             (pkgs.fetchFromGitHub {
               owner = "stephenschoettler";
-              repo = "lucifex-lcm";
-              name = "lucifex-lcm";
+              repo = "hermes-lcm";
+              name = "hermes-lcm";
               rev = "v0.7.0";
               hash = "sha256-...";
             })
@@ -505,17 +513,17 @@
         description = ''
           Python packages to add to PYTHONPATH for entry-point plugin discovery.
           These are pip-packaged plugins that register via the
-          lucifex_agent.plugins entry-point group. Each package must be built
-          with the same Python interpreter as lucifex (python312).
+          hermes_agent.plugins entry-point group. Each package must be built
+          with the same Python interpreter as hermes (python312).
         '';
         example = literalExpression ''
           [
             (pkgs.python312Packages.buildPythonPackage {
-              pname = "rtk-lucifex";
+              pname = "rtk-hermes";
               version = "1.0.0";
               src = pkgs.fetchFromGitHub {
                 owner = "ogallotti";
-                repo = "rtk-lucifex";
+                repo = "rtk-hermes";
                 rev = "main";
                 hash = "sha256-...";
               };
@@ -532,7 +540,7 @@
           the sealed Python venv. These are resolved by uv alongside core
           dependencies — no PYTHONPATH patching or collision risk.
 
-          Use this for optional extras already declared in lucifex-agent's
+          Use this for optional extras already declared in hermes-agent's
           pyproject.toml (e.g. "hindsight", "honcho", "voice").
           Use extraPythonPackages for external packages not in pyproject.toml.
         '';
@@ -555,8 +563,8 @@
         type = types.bool;
         default = false;
         description = ''
-          Add the lucifex CLI to environment.systemPackages and export
-          LUCIFEX_HOME system-wide (via environment.variables) so interactive
+          Add the hermes CLI to environment.systemPackages and export
+          HERMES_HOME system-wide (via environment.variables) so interactive
           shells share state with the gateway service.
         '';
       };
@@ -594,8 +602,8 @@
           type = types.listOf types.str;
           default = [ ];
           description = ''
-            Interactive users who get a ~/.lucifex symlink to the service
-            stateDir. These users are automatically added to the lucifex group.
+            Interactive users who get a ~/.hermes symlink to the service
+            stateDir. These users are automatically added to the hermes group.
           '';
           example = [ "sidbin" ];
         };
@@ -606,7 +614,7 @@
 
       # ── Merge MCP servers into settings ────────────────────────────────
       (lib.mkIf (cfg.mcpServers != { }) {
-        services.lucifex-agent.settings.mcp_servers = lib.mapAttrs (_name: srv:
+        services.hermes-agent.settings.mcp_servers = lib.mapAttrs (_name: srv:
           # Stdio transport
           lib.optionalAttrs (srv.command != null) { inherit (srv) command args; }
           // lib.optionalAttrs (srv.env != { }) { inherit (srv) env; }
@@ -649,12 +657,12 @@
       })
 
       # ── Host CLI ──────────────────────────────────────────────────────
-      # Add the lucifex CLI to system PATH and export LUCIFEX_HOME system-wide
+      # Add the hermes CLI to system PATH and export HERMES_HOME system-wide
       # so interactive shells share state (sessions, skills, cron) with the
-      # gateway service instead of creating a separate ~/.lucifex/.
+      # gateway service instead of creating a separate ~/.hermes/.
       (lib.mkIf cfg.addToSystemPackages {
         environment.systemPackages = [ effectivePackage ];
-        environment.variables.LUCIFEX_HOME = "${cfg.stateDir}/.lucifex";
+        environment.variables.HERMES_HOME = "${cfg.stateDir}/.hermes";
       })
 
       # ── Host user group membership ─────────────────────────────────────
@@ -670,23 +678,13 @@
           names = map lib.getName cfg.extraPlugins;
         in [{
           assertion = (lib.length names) == (lib.length (lib.unique names));
-          message = "services.lucifex-agent.extraPlugins: duplicate plugin names detected: ${toString names}. If using fetchFromGitHub, set name = \"plugin-name\" to disambiguate.";
-        }];
-      }
-
-      # ── Assertions ─────────────────────────────────────────────────────
-      {
-        assertions = let
-          names = map lib.getName cfg.extraPlugins;
-        in [{
-          assertion = (lib.length names) == (lib.length (lib.unique names));
-          message = "services.lucifex-agent.extraPlugins: duplicate plugin names detected: ${toString names}. If using fetchFromGitHub, set name = \"plugin-name\" to disambiguate.";
+          message = "services.hermes-agent.extraPlugins: duplicate plugin names detected: ${toString names}. If using fetchFromGitHub, set name = \"plugin-name\" to disambiguate.";
         }];
       }
 
       # ── Warnings ──────────────────────────────────────────────────────
       # ── Per-user profile for extraPackages ───────────────────────────
-      # Wire extraPackages into the lucifex user's per-user profile so the
+      # Wire extraPackages into the hermes user's per-user profile so the
       # login-shell snapshot (which rebuilds PATH from NixOS profiles) sees
       # them.  The systemd service PATH also includes them for direct access.
       (lib.mkIf (cfg.extraPackages != []) {
@@ -699,10 +697,10 @@
       (lib.mkIf (cfg.container.enable && !cfg.addToSystemPackages && cfg.container.hostUsers != []) {
         warnings = [
           ''
-            services.lucifex-agent: container.enable is true and container.hostUsers
-            is set, but addToSystemPackages is false. Without a host-installed lucifex
+            services.hermes-agent: container.enable is true and container.hostUsers
+            is set, but addToSystemPackages is false. Without a host-installed hermes
             binary, container routing will not work for interactive users.
-            Set addToSystemPackages = true or ensure lucifex is on PATH.
+            Set addToSystemPackages = true or ensure hermes is on PATH.
           ''
         ];
       })
@@ -711,12 +709,12 @@
       {
         systemd.tmpfiles.rules = [
           "d ${cfg.stateDir}                2770 ${cfg.user} ${cfg.group} - -"
-          "d ${cfg.stateDir}/.lucifex        2770 ${cfg.user} ${cfg.group} - -"
-          "d ${cfg.stateDir}/.lucifex/cron   2770 ${cfg.user} ${cfg.group} - -"
-          "d ${cfg.stateDir}/.lucifex/sessions 2770 ${cfg.user} ${cfg.group} - -"
-          "d ${cfg.stateDir}/.lucifex/logs   2770 ${cfg.user} ${cfg.group} - -"
-          "d ${cfg.stateDir}/.lucifex/memories 2770 ${cfg.user} ${cfg.group} - -"
-          "d ${cfg.stateDir}/.lucifex/plugins 2770 ${cfg.user} ${cfg.group} - -"
+          "d ${cfg.stateDir}/.hermes        2770 ${cfg.user} ${cfg.group} - -"
+          "d ${cfg.stateDir}/.hermes/cron   2770 ${cfg.user} ${cfg.group} - -"
+          "d ${cfg.stateDir}/.hermes/sessions 2770 ${cfg.user} ${cfg.group} - -"
+          "d ${cfg.stateDir}/.hermes/logs   2770 ${cfg.user} ${cfg.group} - -"
+          "d ${cfg.stateDir}/.hermes/memories 2770 ${cfg.user} ${cfg.group} - -"
+          "d ${cfg.stateDir}/.hermes/plugins 2770 ${cfg.user} ${cfg.group} - -"
           "d ${cfg.stateDir}/home           0750 ${cfg.user} ${cfg.group} - -"
           "d ${cfg.workingDirectory}         2770 ${cfg.user} ${cfg.group} - -"
         ];
@@ -724,26 +722,26 @@
 
       # ── Activation: link config + auth + documents ────────────────────
       {
-        system.activationScripts."lucifex-agent-setup" = lib.stringAfter ([ "users" ] ++ lib.optional (config.system.activationScripts ? setupSecrets) "setupSecrets") ''
+        system.activationScripts."hermes-agent-setup" = lib.stringAfter ([ "users" ] ++ lib.optional (config.system.activationScripts ? setupSecrets) "setupSecrets") ''
           # Ensure directories exist (activation runs before tmpfiles)
-          mkdir -p ${cfg.stateDir}/.lucifex
+          mkdir -p ${cfg.stateDir}/.hermes
           mkdir -p ${cfg.stateDir}/home
           mkdir -p ${cfg.workingDirectory}
-          chown ${cfg.user}:${cfg.group} ${cfg.stateDir} ${cfg.stateDir}/.lucifex ${cfg.stateDir}/home ${cfg.workingDirectory}
-          chmod 2770 ${cfg.stateDir} ${cfg.stateDir}/.lucifex ${cfg.workingDirectory}
+          chown ${cfg.user}:${cfg.group} ${cfg.stateDir} ${cfg.stateDir}/.hermes ${cfg.stateDir}/home ${cfg.workingDirectory}
+          chmod 2770 ${cfg.stateDir} ${cfg.stateDir}/.hermes ${cfg.workingDirectory}
           chmod 0750 ${cfg.stateDir}/home
 
           # Create subdirs, set setgid + group-writable, migrate existing files.
           # Nix-managed .env/.managed stay 0640/0644; config.yaml uses
           # configYamlMode (0660 under addToSystemPackages, else 0640).
-          find ${cfg.stateDir}/.lucifex -maxdepth 1 \
+          find ${cfg.stateDir}/.hermes -maxdepth 1 \
             \( -name "*.db" -o -name "*.db-wal" -o -name "*.db-shm" -o -name "SOUL.md" \) \
             -exec chmod g+rw {} + 2>/dev/null || true
           for _subdir in cron sessions logs memories plugins; do
-            mkdir -p "${cfg.stateDir}/.lucifex/$_subdir"
-            chown ${cfg.user}:${cfg.group} "${cfg.stateDir}/.lucifex/$_subdir"
-            chmod 2770 "${cfg.stateDir}/.lucifex/$_subdir"
-            find "${cfg.stateDir}/.lucifex/$_subdir" -type f \
+            mkdir -p "${cfg.stateDir}/.hermes/$_subdir"
+            chown ${cfg.user}:${cfg.group} "${cfg.stateDir}/.hermes/$_subdir"
+            chmod 2770 "${cfg.stateDir}/.hermes/$_subdir"
+            find "${cfg.stateDir}/.hermes/$_subdir" -type f \
               -exec chmod g+rw {} + 2>/dev/null || true
           done
 
@@ -751,65 +749,65 @@
           # Preserves user-added keys (skills, streaming, etc.); Nix keys win.
           # If configFile is user-provided (not generated), overwrite instead of merge.
           # Mode is configYamlMode (0660 under addToSystemPackages so interactive
-          # lucifex-group users can save settings via the CLI/TUI, else 0640).
+          # hermes-group users can save settings via the CLI/TUI, else 0640).
           ${if cfg.configFile != null then ''
-            install -o ${cfg.user} -g ${cfg.group} -m ${configYamlMode} -D ${configFile} ${cfg.stateDir}/.lucifex/config.yaml
+            install -o ${cfg.user} -g ${cfg.group} -m ${configYamlMode} -D ${configFile} ${cfg.stateDir}/.hermes/config.yaml
           '' else ''
-            ${configMergeScript} ${generatedConfigFile} ${cfg.stateDir}/.lucifex/config.yaml
-            chown ${cfg.user}:${cfg.group} ${cfg.stateDir}/.lucifex/config.yaml
-            chmod ${configYamlMode} ${cfg.stateDir}/.lucifex/config.yaml
+            ${configMergeScript} ${generatedConfigFile} ${cfg.stateDir}/.hermes/config.yaml
+            chown ${cfg.user}:${cfg.group} ${cfg.stateDir}/.hermes/config.yaml
+            chmod ${configYamlMode} ${cfg.stateDir}/.hermes/config.yaml
           ''}
 
           # Managed mode marker (so interactive shells also detect NixOS management)
-          touch ${cfg.stateDir}/.lucifex/.managed
-          chown ${cfg.user}:${cfg.group} ${cfg.stateDir}/.lucifex/.managed
-          chmod 0644 ${cfg.stateDir}/.lucifex/.managed
+          touch ${cfg.stateDir}/.hermes/.managed
+          chown ${cfg.user}:${cfg.group} ${cfg.stateDir}/.hermes/.managed
+          chmod 0644 ${cfg.stateDir}/.hermes/.managed
 
           # Container mode metadata — tells the host CLI to exec into the
           # container instead of running locally. Removed when container mode
           # is disabled so the host CLI falls back to native execution.
           ${if cfg.container.enable then ''
-            cat > ${cfg.stateDir}/.lucifex/.container-mode <<'LUCIFEX_CONTAINER_MODE_EOF'
+            cat > ${cfg.stateDir}/.hermes/.container-mode <<'HERMES_CONTAINER_MODE_EOF'
     # Written by NixOS activation script. Do not edit manually.
     backend=${cfg.container.backend}
     container_name=${containerName}
     exec_user=${cfg.user}
-    lucifex_bin=${containerDataDir}/current-package/bin/lucifex
-    LUCIFEX_CONTAINER_MODE_EOF
-            chown ${cfg.user}:${cfg.group} ${cfg.stateDir}/.lucifex/.container-mode
-            chmod 0644 ${cfg.stateDir}/.lucifex/.container-mode
+    hermes_bin=${containerDataDir}/current-package/bin/hermes
+    HERMES_CONTAINER_MODE_EOF
+            chown ${cfg.user}:${cfg.group} ${cfg.stateDir}/.hermes/.container-mode
+            chmod 0644 ${cfg.stateDir}/.hermes/.container-mode
           '' else ''
-            rm -f ${cfg.stateDir}/.lucifex/.container-mode
+            rm -f ${cfg.stateDir}/.hermes/.container-mode
 
             # Remove symlink bridge for hostUsers
             ${lib.concatStringsSep "\n" (map (user:
               let
                 userHome = config.users.users.${user}.home;
-                symlinkPath = "${userHome}/.lucifex";
+                symlinkPath = "${userHome}/.hermes";
               in ''
-                if [ -L "${symlinkPath}" ] && [ "$(readlink "${symlinkPath}")" = "${cfg.stateDir}/.lucifex" ]; then
+                if [ -L "${symlinkPath}" ] && [ "$(readlink "${symlinkPath}")" = "${cfg.stateDir}/.hermes" ]; then
                   rm -f "${symlinkPath}"
-                  echo "lucifex-agent: removed symlink ${symlinkPath}"
+                  echo "hermes-agent: removed symlink ${symlinkPath}"
                 fi
               '') cfg.container.hostUsers)}
           ''}
 
           # ── Symlink bridge for interactive users ───────────────────────
-          # Create ~/.lucifex -> stateDir/.lucifex for each hostUser so the
+          # Create ~/.hermes -> stateDir/.hermes for each hostUser so the
           # host CLI shares state with the container service.
           # Only runs when container mode is enabled.
           ${lib.optionalString cfg.container.enable
             (lib.concatStringsSep "\n" (map (user:
               let
                 userHome = config.users.users.${user}.home;
-                symlinkPath = "${userHome}/.lucifex";
-                target = "${cfg.stateDir}/.lucifex";
+                symlinkPath = "${userHome}/.hermes";
+                target = "${cfg.stateDir}/.hermes";
               in ''
                 if [ -d "${symlinkPath}" ] && [ ! -L "${symlinkPath}" ]; then
                   # Real directory — back it up, then create symlink.
                   # (ln -sfn cannot atomically replace a directory.)
                   _backup="${symlinkPath}.bak.$(date +%s)"
-                  echo "lucifex-agent: backing up existing ${symlinkPath} to $_backup"
+                  echo "hermes-agent: backing up existing ${symlinkPath} to $_backup"
                   mv "${symlinkPath}" "$_backup"
                 fi
                 # For everything else (existing symlink, doesn't exist, etc.)
@@ -821,23 +819,23 @@
           # Seed auth file if provided
           ${lib.optionalString (cfg.authFile != null) ''
             ${if cfg.authFileForceOverwrite then ''
-              install -o ${cfg.user} -g ${cfg.group} -m 0600 ${cfg.authFile} ${cfg.stateDir}/.lucifex/auth.json
+              install -o ${cfg.user} -g ${cfg.group} -m 0600 ${cfg.authFile} ${cfg.stateDir}/.hermes/auth.json
             '' else ''
-              if [ ! -f ${cfg.stateDir}/.lucifex/auth.json ]; then
-                install -o ${cfg.user} -g ${cfg.group} -m 0600 ${cfg.authFile} ${cfg.stateDir}/.lucifex/auth.json
+              if [ ! -f ${cfg.stateDir}/.hermes/auth.json ]; then
+                install -o ${cfg.user} -g ${cfg.group} -m 0600 ${cfg.authFile} ${cfg.stateDir}/.hermes/auth.json
               fi
             ''}
           ''}
 
           # Seed .env from Nix-declared environment + environmentFiles.
-          # Lucifex reads $LUCIFEX_HOME/.env at startup via load_lucifex_dotenv(),
+          # Hermes reads $HERMES_HOME/.env at startup via load_hermes_dotenv(),
           # so this is the single source of truth for both native and container mode.
           ${lib.optionalString (cfg.environment != {} || cfg.environmentFiles != []) ''
-            ENV_FILE="${cfg.stateDir}/.lucifex/.env"
+            ENV_FILE="${cfg.stateDir}/.hermes/.env"
             install -o ${cfg.user} -g ${cfg.group} -m 0640 /dev/null "$ENV_FILE"
-            cat > "$ENV_FILE" <<'LUCIFEX_NIX_ENV_EOF'
+            cat > "$ENV_FILE" <<'HERMES_NIX_ENV_EOF'
     ${envFileContent}
-    LUCIFEX_NIX_ENV_EOF
+    HERMES_NIX_ENV_EOF
             ${lib.concatStringsSep "\n" (map (f: ''
               if [ -f "${f}" ]; then
                 echo "" >> "$ENV_FILE"
@@ -853,7 +851,7 @@
 
         # ── Declarative plugins ─────────────────────────────────────────
         # Remove stale managed symlinks (plugins removed from config)
-        find ${cfg.stateDir}/.lucifex/plugins -maxdepth 1 -type l -name 'nix-managed-*' -delete 2>/dev/null || true
+        find ${cfg.stateDir}/.hermes/plugins -maxdepth 1 -type l -name 'nix-managed-*' -delete 2>/dev/null || true
 
         ${lib.concatStringsSep "\n" (map (plugin:
           let
@@ -863,8 +861,8 @@
               echo "ERROR: extraPlugins entry '${plugin}' has no plugin.yaml" >&2
               exit 1
             fi
-            ln -sfn ${plugin} ${cfg.stateDir}/.lucifex/plugins/nix-managed-${name}
-            chown -h ${cfg.user}:${cfg.group} ${cfg.stateDir}/.lucifex/plugins/nix-managed-${name}
+            ln -sfn ${plugin} ${cfg.stateDir}/.hermes/plugins/nix-managed-${name}
+            chown -h ${cfg.user}:${cfg.group} ${cfg.stateDir}/.hermes/plugins/nix-managed-${name}
           '') cfg.extraPlugins)}
         '';
       }
@@ -873,17 +871,18 @@
       # MODE A: Native systemd service (default)
       # ══════════════════════════════════════════════════════════════════
       (lib.mkIf (!cfg.container.enable) {
-        systemd.services.lucifex-agent = {
-          description = "Lucifex Agent Gateway";
+        systemd.services.hermes-agent = {
+          description = "Hermes Agent Gateway";
           wantedBy = [ "multi-user.target" ];
           after = [ "network-online.target" ];
           wants = [ "network-online.target" ];
 
           environment = {
             HOME = cfg.stateDir;
-            LUCIFEX_HOME = "${cfg.stateDir}/.lucifex";
-            LUCIFEX_MANAGED = "true";
-            MESSAGING_CWD = cfg.workingDirectory;
+            HERMES_HOME = "${cfg.stateDir}/.hermes";
+            HERMES_MANAGED = "true";
+            # Working directory is declared via terminal.cwd in the merged
+            # config.yaml (see configJson above) — MESSAGING_CWD is deprecated.
           };
 
           serviceConfig = {
@@ -892,11 +891,11 @@
             WorkingDirectory = cfg.workingDirectory;
 
             # cfg.environment and cfg.environmentFiles are written to
-            # $LUCIFEX_HOME/.env by the activation script. load_lucifex_dotenv()
+            # $HERMES_HOME/.env by the activation script. load_hermes_dotenv()
             # reads them at Python startup — no systemd EnvironmentFile needed.
 
             ExecStart = lib.concatStringsSep " " ([
-              "${effectivePackage}/bin/lucifex"
+              "${effectivePackage}/bin/hermes"
               "gateway"
             ] ++ cfg.extraArgs);
 
@@ -904,7 +903,7 @@
             RestartSec = cfg.restartSec;
 
             # Shared-state: files created by the gateway should be group-writable
-            # so interactive users in the lucifex group can read/write them.
+            # so interactive users in the hermes group can read/write them.
             UMask = "0007";
 
             # Hardening
@@ -934,8 +933,8 @@
         # Ensure the container runtime is available
         virtualisation.docker.enable = lib.mkDefault (cfg.container.backend == "docker");
 
-        systemd.services.lucifex-agent = {
-          description = "Lucifex Agent Gateway (container)";
+        systemd.services.hermes-agent = {
+          description = "Hermes Agent Gateway (container)";
           wantedBy = [ "multi-user.target" ];
           after = [ "network-online.target" ]
             ++ lib.optional (cfg.container.backend == "docker") "docker.service";
@@ -963,8 +962,8 @@
 
             if [ "$NEED_CREATE" = "true" ]; then
               # Resolve numeric UID/GID — passed to entrypoint for in-container user setup
-              LUCIFEX_UID=$(${pkgs.coreutils}/bin/id -u ${cfg.user})
-              LUCIFEX_GID=$(${pkgs.coreutils}/bin/id -g ${cfg.user})
+              HERMES_UID=$(${pkgs.coreutils}/bin/id -u ${cfg.user})
+              HERMES_GID=$(${pkgs.coreutils}/bin/id -g ${cfg.user})
 
               echo "Creating container..."
               ${containerBin} create \
@@ -975,15 +974,14 @@
                 --volume ${cfg.stateDir}:${containerDataDir} \
                 --volume ${cfg.stateDir}/home:${containerHomeDir} \
                 ${lib.concatStringsSep " " (map (v: "--volume ${v}") cfg.container.extraVolumes)} \
-                --env LUCIFEX_UID="$LUCIFEX_UID" \
-                --env LUCIFEX_GID="$LUCIFEX_GID" \
-                --env LUCIFEX_HOME=${containerDataDir}/.lucifex \
-                --env LUCIFEX_MANAGED=true \
+                --env HERMES_UID="$HERMES_UID" \
+                --env HERMES_GID="$HERMES_GID" \
+                --env HERMES_HOME=${containerDataDir}/.hermes \
+                --env HERMES_MANAGED=true \
                 --env HOME=${containerHomeDir} \
-                --env MESSAGING_CWD=${containerWorkDir} \
                 ${lib.concatStringsSep " " cfg.container.extraOptions} \
                 ${cfg.container.image} \
-                ${containerDataDir}/current-package/bin/lucifex gateway run --replace ${lib.concatStringsSep " " cfg.extraArgs}
+                ${containerDataDir}/current-package/bin/hermes gateway run --replace ${lib.concatStringsSep " " cfg.extraArgs}
 
               echo "${containerIdentity}" > ${identityFile}
             fi

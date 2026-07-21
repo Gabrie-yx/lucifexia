@@ -2,13 +2,13 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { $desktopOnboarding, type DesktopOnboardingState, type OnboardingContext } from '@/store/onboarding'
-import type { OAuthProvider } from '@/types/lucifex'
+import type { OAuthProvider } from '@/types/hermes'
 
 import { Picker } from '.'
 
 function provider(id: string, name = id): OAuthProvider {
   return {
-    cli_command: `lucifex login ${id}`,
+    cli_command: `hermes login ${id}`,
     docs_url: `https://example.com/${id}`,
     flow: 'pkce',
     id,
@@ -60,8 +60,11 @@ describe('onboarding Picker', () => {
     setProviders([provider('anthropic', 'Anthropic Claude'), provider('nous', 'Nous Portal')])
     render(<Picker ctx={ctx} />)
 
-    expect(screen.getByText('LucifexIA')).toBeTruthy()
+    expect(screen.getByText('Nous Portal')).toBeTruthy()
     expect(screen.getByText('Recommended')).toBeTruthy()
+    // Fireworks is the always-visible #2 slot (after Nous), even while OAuth
+    // alternatives stay collapsed behind the disclosure.
+    expect(screen.getByText('Fireworks AI')).toBeTruthy()
     expect(screen.queryByText('Anthropic API Key')).toBeNull()
 
     fireEvent.click(screen.getByRole('button', { name: 'Other providers' }))
@@ -70,10 +73,32 @@ describe('onboarding Picker', () => {
     expect(screen.getByRole('button', { name: 'Collapse' })).toBeTruthy()
   })
 
+  it('shows Fireworks in slot #2 ahead of other OAuth providers', () => {
+    setProviders([
+      provider('openai-codex', 'OpenAI Codex / ChatGPT'),
+      provider('minimax-oauth', 'MiniMax'),
+      provider('nous', 'Nous Portal')
+    ])
+    render(<Picker ctx={ctx} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Other providers' }))
+
+    const labels = screen
+      .getAllByRole('button')
+      .map(el => el.textContent ?? '')
+      .filter(text => /Nous Portal|Fireworks AI|OpenAI OAuth|MiniMax|OpenRouter/.test(text))
+
+    const indexOf = (needle: string) => labels.findIndex(text => text.includes(needle))
+    expect(indexOf('Nous Portal')).toBeGreaterThanOrEqual(0)
+    expect(indexOf('Fireworks AI')).toBeGreaterThan(indexOf('Nous Portal'))
+    expect(indexOf('OpenAI OAuth')).toBeGreaterThan(indexOf('Fireworks AI'))
+    expect(indexOf('MiniMax')).toBeGreaterThan(indexOf('OpenAI OAuth'))
+  })
+
   it('shows every provider directly when Nous Portal is absent', () => {
     setProviders([provider('anthropic', 'Anthropic Claude'), provider('openai-codex', 'OpenAI Codex / ChatGPT')])
     render(<Picker ctx={ctx} />)
 
+    expect(screen.getByText('Fireworks AI')).toBeTruthy()
     expect(screen.getByText('Anthropic API Key')).toBeTruthy()
     expect(screen.getByText('OpenAI OAuth (ChatGPT)')).toBeTruthy()
     expect(screen.queryByText('Other sign-in options')).toBeNull()
@@ -89,7 +114,7 @@ describe('onboarding Picker', () => {
     fireEvent.click(skip)
 
     expect($desktopOnboarding.get().firstRunSkipped).toBe(true)
-    expect(window.localStorage.getItem('lucifex-onboarding-skipped-v1')).toBe('1')
+    expect(window.localStorage.getItem('hermes-onboarding-skipped-v1')).toBe('1')
   })
 
   it('hides "choose later" in manual (add-provider) mode', () => {

@@ -1,15 +1,15 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { MessagingPlatformInfo } from '@/types/lucifex'
+import type { MessagingPlatformInfo } from '@/types/hermes'
 
 const getMessagingPlatforms = vi.fn()
 const updateMessagingPlatform = vi.fn()
 const openExternalLink = vi.fn()
 
-vi.mock('@/lucifex', () => ({
+vi.mock('@/hermes', () => ({
   getMessagingPlatforms: () => getMessagingPlatforms(),
   updateMessagingPlatform: (id: string, body: unknown) => updateMessagingPlatform(id, body)
 }))
@@ -53,12 +53,16 @@ afterEach(() => {
 
 async function renderMessaging() {
   const { MessagingView } = await import('./index')
+  let result: ReturnType<typeof render>
+  await act(async () => {
+    result = render(
+      <MemoryRouter>
+        <MessagingView />
+      </MemoryRouter>
+    )
+  })
 
-  return render(
-    <MemoryRouter>
-      <MessagingView />
-    </MemoryRouter>
-  )
+  return result!
 }
 
 describe('MessagingView setup-guide link', () => {
@@ -76,13 +80,15 @@ describe('MessagingView setup-guide link', () => {
   })
 
   it('opens a real docs URL through the validated external opener', async () => {
-    const docsUrl = 'https://lucifex-agent.nousresearch.com/docs/user-guide/messaging/teams'
+    const docsUrl = 'https://hermes-agent.nousresearch.com/docs/user-guide/messaging/teams'
     getMessagingPlatforms.mockResolvedValue({ platforms: [platform({ docs_url: docsUrl })] })
 
     await renderMessaging()
 
     const link = await screen.findByText('Open setup guide')
-    fireEvent.click(link)
+    await act(async () => {
+      fireEvent.click(link)
+    })
 
     await waitFor(() => expect(openExternalLink).toHaveBeenCalledWith(docsUrl))
   })

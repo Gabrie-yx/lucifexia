@@ -1,4 +1,4 @@
-import type { StarmapGraph, StarmapNode } from '@/types/lucifex'
+import type { StarmapGraph, StarmapNode } from '@/types/hermes'
 
 import { clamp } from './geometry'
 

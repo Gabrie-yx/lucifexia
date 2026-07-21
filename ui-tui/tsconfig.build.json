@@ -2,7 +2,7 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "paths": {
-      "@lucifex/ink": ["src/types/lucifex-ink.d.ts"]
+      "@hermes/ink": ["src/types/hermes-ink.d.ts"]
     }
   }
 }

@@ -30,7 +30,7 @@ import tempfile
 import time
 from contextlib import contextmanager
 from pathlib import Path
-from lucifex_constants import get_lucifex_home
+from hermes_constants import get_hermes_home
 from typing import Dict, Any, List, Optional
 
 from utils import atomic_replace
@@ -49,12 +49,22 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 # Where memory files live — resolved dynamically so profile overrides
-# (LUCIFEX_HOME env var changes) are always respected.  The old module-level
+# (HERMES_HOME env var changes) are always respected.  The old module-level
 # constant was cached at import time and could go stale if a profile switch
 # happened after the first import.
 def get_memory_dir() -> Path:
     """Return the profile-scoped memories directory."""
-    return get_lucifex_home() / "memories"
+    return get_hermes_home() / "memories"
+
+# Stable header prefixes for the system-prompt memory blocks rendered by
+# MemoryStore._render_block. Exported so compression's prompt-retention check
+# (agent/conversation_compression.py) can detect a leftover block for a
+# target whose entries have since been emptied — keep in lockstep with
+# _render_block below.
+MEMORY_BLOCK_HEADERS = {
+    "memory": "MEMORY (your personal notes)",
+    "user": "USER PROFILE (who the user is)",
+}
 
 ENTRY_DELIMITER = "\n§\n"
 
@@ -672,9 +682,9 @@ class MemoryStore:
         pct = min(100, int((current / limit) * 100)) if limit > 0 else 0
 
         if target == "user":
-            header = f"USER PROFILE (who the user is) [{pct}% — {current:,}/{limit:,} chars]"
+            header = f"{MEMORY_BLOCK_HEADERS['user']} [{pct}% — {current:,}/{limit:,} chars]"
         else:
-            header = f"MEMORY (your personal notes) [{pct}% — {current:,}/{limit:,} chars]"
+            header = f"{MEMORY_BLOCK_HEADERS['memory']} [{pct}% — {current:,}/{limit:,} chars]"
 
         separator = "═" * 46
         return f"{separator}\n{header}\n{separator}\n{content}"
@@ -804,7 +814,7 @@ def load_on_disk_store() -> "MemoryStore":
     memory_char_limit = 2200
     user_char_limit = 1375
     try:
-        from lucifex_cli.config import load_config
+        from hermes_cli.config import load_config
 
         mem_cfg = (load_config() or {}).get("memory", {}) or {}
         memory_char_limit = int(mem_cfg.get("memory_char_limit", memory_char_limit))
@@ -976,6 +986,12 @@ def memory_tool(
     """
     if store is None:
         return tool_error("Memory is not available. It may be disabled in config or this environment.", success=False)
+
+    # Some strict providers fill optional schema fields with JSON null rather
+    # than omitting them.  Treat ``target: null`` as omitted so memory writes
+    # still use the documented default store instead of failing validation.
+    if target is None:
+        target = "memory"
 
     if target not in {"memory", "user"}:
         return tool_error(f"Invalid target '{target}'. Use 'memory' or 'user'.", success=False)

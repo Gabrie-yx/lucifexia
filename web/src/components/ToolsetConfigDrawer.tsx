@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Check, ExternalLink, Loader2, Terminal, X } from "lucide-react";
 import { api } from "@/lib/api";
@@ -30,7 +30,7 @@ interface Props {
 
 /**
  * Full configuration surface for a single toolset's backends — the dashboard
- * equivalent of selecting a toolset in the `lucifex tools` curses UI: toggle
+ * equivalent of selecting a toolset in the `hermes tools` curses UI: toggle
  * the toolset on/off, pick a provider, enter API keys, and run a provider's
  * post-setup install hook (npm/pip/binary) with a live log tail.
  */
@@ -211,6 +211,7 @@ export function ToolsetConfigDrawer({ toolset, profile, onClose, onChanged }: Pr
   };
 
   const labelText = toolset.label?.trim() || toolset.name;
+  const platformText = toolset.platform_label?.trim() || toolset.platform;
 
   return createPortal(
     <div
@@ -253,10 +254,12 @@ export function ToolsetConfigDrawer({ toolset, profile, onClose, onChanged }: Pr
               checked={enabled}
               onCheckedChange={(v) => void handleToggle(v)}
               disabled={toggling}
-              aria-label="Enable toolset"
+              aria-label={`Enable toolset for ${platformText}`}
             />
             <span className="text-xs text-muted-foreground">
-              {enabled ? "Enabled for the agent" : "Disabled"}
+              {enabled
+                ? `Enabled for ${platformText}`
+                : `Disabled for ${platformText}`}
             </span>
           </div>
         </header>
@@ -299,7 +302,7 @@ export function ToolsetConfigDrawer({ toolset, profile, onClose, onChanged }: Pr
                       )}
                       {provider.requires_nous_auth && (
                         <Badge tone="outline" className="text-xs">
-                          Ollama
+                          Nous Portal
                         </Badge>
                       )}
                     </div>

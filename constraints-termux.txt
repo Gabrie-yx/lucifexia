@@ -1,4 +1,4 @@
-# Termux / Android dependency constraints for Lucifex Agent.
+# Termux / Android dependency constraints for Hermes Agent.
 #
 # Usage:
 #   python -m pip install -e '.[termux]' -c constraints-termux.txt

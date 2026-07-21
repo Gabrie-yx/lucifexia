@@ -82,10 +82,10 @@ class TestParseFrontmatter:
 
     def test_nested_yaml(self):
         content = (
-            "---\nname: test\nmetadata:\n  lucifex:\n    tags: [a, b]\n---\n\nBody.\n"
+            "---\nname: test\nmetadata:\n  hermes:\n    tags: [a, b]\n---\n\nBody.\n"
         )
         fm, body = _parse_frontmatter(content)
-        assert fm["metadata"]["lucifex"]["tags"] == ["a", "b"]
+        assert fm["metadata"]["hermes"]["tags"] == ["a", "b"]
 
     def test_malformed_yaml_fallback(self):
         """Malformed YAML falls back to simple key:value parsing."""
@@ -93,6 +93,17 @@ class TestParseFrontmatter:
         fm, body = _parse_frontmatter(content)
         # Should still parse what it can via fallback
         assert "name" in fm
+
+    def test_utf8_bom_frontmatter(self):
+        """A leading UTF-8 BOM (Windows Notepad / PowerShell ``>`` save) must
+        not drop the frontmatter. Confirms the fix reaches the tools/ surface
+        via the _parse_frontmatter re-export."""
+        bom = chr(0xFEFF)
+        content = bom + "---\nname: test\ndescription: A test.\n---\n\n# Body\n"
+        fm, body = _parse_frontmatter(content)
+        assert fm["name"] == "test"
+        assert fm["description"] == "A test."
+        assert not body.startswith(bom)
 
 
 # ---------------------------------------------------------------------------
@@ -404,14 +415,14 @@ class TestSkillView:
             skill_dir = _make_skill(
                 tmp_path,
                 "templated",
-                body="Run ${LUCIFEX_SKILL_DIR}/scripts/do.sh in ${LUCIFEX_SESSION_ID}",
+                body="Run ${HERMES_SKILL_DIR}/scripts/do.sh in ${HERMES_SESSION_ID}",
             )
             raw = skill_view("templated", task_id="session-123")
 
         result = json.loads(raw)
         assert result["success"] is True
         assert f"Run {skill_dir}/scripts/do.sh in session-123" in result["content"]
-        assert "${LUCIFEX_SKILL_DIR}" not in result["content"]
+        assert "${HERMES_SKILL_DIR}" not in result["content"]
 
     def test_skill_view_applies_inline_shell_when_enabled(self, tmp_path):
         with (
@@ -500,7 +511,7 @@ class TestSkillView:
             _make_skill(
                 tmp_path,
                 "tagged",
-                frontmatter_extra="metadata:\n  lucifex:\n    tags: [fine-tuning, llm]\n",
+                frontmatter_extra="metadata:\n  hermes:\n    tags: [fine-tuning, llm]\n",
             )
             raw = skill_view("tagged")
         result = json.loads(raw)
@@ -920,7 +931,7 @@ class TestSkillViewPrerequisites:
                 "remote-ready",
                 frontmatter_extra="prerequisites:\n  env_vars: [PERSISTED_REMOTE_KEY]\n",
             )
-            from lucifex_cli.config import save_env_value
+            from hermes_cli.config import save_env_value
 
             save_env_value("PERSISTED_REMOTE_KEY", "persisted-value")
             monkeypatch.delenv("PERSISTED_REMOTE_KEY", raising=False)
@@ -1052,7 +1063,7 @@ class TestSkillViewPrerequisites:
 name: legacy-flat
 description: Legacy flat skill.
 metadata:
-  lucifex:
+  hermes:
     tags: [legacy, flat]
 required_environment_variables:
   - name: LEGACY_KEY
@@ -1085,7 +1096,7 @@ Do the legacy thing.
         monkeypatch.delenv("TENOR_API_KEY", raising=False)
 
         def fake_secret_callback(var_name, prompt, metadata=None):
-            from lucifex_cli.config import save_env_value
+            from hermes_cli.config import save_env_value
 
             save_env_value(var_name, "captured-value")
             return {
@@ -1112,7 +1123,7 @@ Do the legacy thing.
                     "    prompt: Tenor API key\n"
                 ),
             )
-            from lucifex_cli.config import save_env_value
+            from hermes_cli.config import save_env_value
 
             save_env_value("TENOR_API_KEY", "")
             raw = skill_view("gif-search")

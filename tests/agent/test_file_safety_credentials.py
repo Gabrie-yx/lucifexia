@@ -1,13 +1,13 @@
-"""Tests for LUCIFEX_HOME credential-file read blocking in file_safety.
+"""Tests for HERMES_HOME credential-file read blocking in file_safety.
 
-Regression for https://github.com/NousResearch/lucifex-agent/issues/17656 —
-``read_file`` was previously only sandboxed against ``LUCIFEX_HOME`` itself,
+Regression for https://github.com/NousResearch/hermes-agent/issues/17656 —
+``read_file`` was previously only sandboxed against ``HERMES_HOME`` itself,
 which left ``auth.json`` and ``.anthropic_oauth.json`` (plaintext provider
 keys + OAuth tokens) readable by the agent. A prompt-injection reaching
 ``read_file`` could exfiltrate active credentials.
 
 These tests verify that ``get_read_block_error`` returns a denial message
-for the credential stores while leaving arbitrary ``LUCIFEX_HOME`` files
+for the credential stores while leaving arbitrary ``HERMES_HOME`` files
 readable, and that the existing ``skills/.hub`` deny still applies.
 """
 
@@ -21,12 +21,12 @@ import pytest
 
 @pytest.fixture()
 def fake_home(tmp_path, monkeypatch):
-    """Point ``_lucifex_home_path()`` at a tmp dir for isolated checks."""
+    """Point ``_hermes_home_path()`` at a tmp dir for isolated checks."""
     import agent.file_safety as fs
 
-    home = tmp_path / "lucifex_home"
+    home = tmp_path / "hermes_home"
     home.mkdir()
-    monkeypatch.setattr(fs, "_lucifex_home_path", lambda: home)
+    monkeypatch.setattr(fs, "_hermes_home_path", lambda: home)
     return home
 
 
@@ -76,8 +76,8 @@ def test_google_oauth_json_blocked(fake_home):
     assert "credential store" in err
 
 
-def test_arbitrary_lucifex_home_file_not_blocked(fake_home):
-    """Non-credential files inside LUCIFEX_HOME stay readable."""
+def test_arbitrary_hermes_home_file_not_blocked(fake_home):
+    """Non-credential files inside HERMES_HOME stay readable."""
     from agent.file_safety import get_read_block_error
 
     safe = _create(fake_home, "session_log.txt")
@@ -100,25 +100,25 @@ def test_skills_hub_block_still_applies(fake_home):
     hub_file = _create(fake_home, "skills/.hub/manifest.json")
     err = get_read_block_error(str(hub_file))
     assert err is not None
-    assert "internal Lucifex cache file" in err
+    assert "internal Hermes cache file" in err
 
 
 def test_path_traversal_resolves_to_blocked(fake_home, tmp_path):
-    """A path that traverses through a sibling dir back into LUCIFEX_HOME's
+    """A path that traverses through a sibling dir back into HERMES_HOME's
     auth.json must still be caught — the check resolves through realpath."""
     from agent.file_safety import get_read_block_error
 
     _create(fake_home, "auth.json")
     sibling = tmp_path / "elsewhere"
     sibling.mkdir()
-    traversal = sibling / ".." / "lucifex_home" / "auth.json"
+    traversal = sibling / ".." / "hermes_home" / "auth.json"
     err = get_read_block_error(str(traversal))
     assert err is not None
     assert "credential store" in err
 
 
 def test_symlink_to_auth_json_blocked(fake_home, tmp_path):
-    """A symlink pointing at LUCIFEX_HOME/auth.json from outside the home
+    """A symlink pointing at HERMES_HOME/auth.json from outside the home
     must be blocked — readlink-resolution catches the indirection."""
     from agent.file_safety import get_read_block_error
 
@@ -137,21 +137,22 @@ def test_read_file_tool_blocks_relative_path_under_terminal_cwd(
     fake_home, tmp_path, monkeypatch
 ):
     """Bypass guard: a relative path like ``"auth.json"`` resolved by
-    ``read_file_tool`` against ``TERMINAL_CWD == LUCIFEX_HOME`` must still
+    ``read_file_tool`` against ``TERMINAL_CWD == HERMES_HOME`` must still
     be blocked, even though ``get_read_block_error``'s own ``resolve()``
     is anchored at the (different) Python process cwd.
     """
     import json
 
     import tools.file_tools as ft
+    import tools.terminal_tool as terminal_tool
 
     _create(fake_home, "auth.json")
-    # Force the file_tools resolver to anchor relative paths at LUCIFEX_HOME
+    # Force the file_tools resolver to anchor relative paths at HERMES_HOME
     # while the Python process cwd remains tmp_path (a different directory).
     monkeypatch.setenv("TERMINAL_CWD", str(fake_home))
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(
-        ft, "_get_live_tracking_cwd", lambda task_id="default": None
+        terminal_tool, "_session_cwd", {}
     )
 
     out = json.loads(ft.read_file_tool("auth.json"))
@@ -166,6 +167,7 @@ def test_read_file_tool_blocks_nested_google_oauth_path(
     import json
 
     import tools.file_tools as ft
+    import tools.terminal_tool as terminal_tool
 
     oauth = _create(fake_home, Path("auth") / "google_oauth.json")
     oauth.write_text(
@@ -180,7 +182,7 @@ def test_read_file_tool_blocks_nested_google_oauth_path(
     )
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(
-        ft, "_get_live_tracking_cwd", lambda task_id="default": None
+        terminal_tool, "_session_cwd", {}
     )
 
     out = json.loads(ft.read_file_tool(str(oauth), task_id="google-oauth-test"))
@@ -195,6 +197,7 @@ def test_search_tool_blocks_direct_auth_json_path(fake_home, monkeypatch):
     import json
 
     import tools.file_tools as ft
+    import tools.terminal_tool as terminal_tool
 
     auth = _create(fake_home, "auth.json")
     auth.write_text("SEARCH_DIRECT_AUTH_SECRET", encoding="utf-8")
@@ -223,6 +226,7 @@ def test_search_tool_filters_credential_results(fake_home, tmp_path, monkeypatch
 
     from tools.file_operations import SearchMatch, SearchResult
     import tools.file_tools as ft
+    import tools.terminal_tool as terminal_tool
 
     auth = _create(fake_home, "auth.json")
     token = _create(fake_home, Path("mcp-tokens") / "provider.json")
@@ -256,7 +260,7 @@ def test_search_tool_filters_credential_results(fake_home, tmp_path, monkeypatch
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(ft, "_get_file_ops", lambda task_id="default": FakeFileOps())
     monkeypatch.setattr(
-        ft, "_get_live_tracking_cwd", lambda task_id="default": None
+        terminal_tool, "_session_cwd", {}
     )
 
     search_response = ft.search_tool(
@@ -288,7 +292,7 @@ def test_search_tool_filters_credential_results(fake_home, tmp_path, monkeypatch
 
 
 def test_dotenv_blocked(fake_home):
-    """.env in LUCIFEX_HOME holds API keys — blocked."""
+    """.env in HERMES_HOME holds API keys — blocked."""
     from agent.file_safety import get_read_block_error
 
     env = _create(fake_home, ".env")
@@ -338,11 +342,11 @@ def test_mcp_tokens_dir_itself_blocked(fake_home):
     assert "MCP token" in err
 
 
-def test_identically_named_lucifex_files_outside_home_not_blocked(
+def test_identically_named_hermes_files_outside_home_not_blocked(
     fake_home, tmp_path
 ):
-    """Lucifex-specific filenames (``auth.json``, ``mcp-tokens/``, ``google_oauth.json``)
-    outside LUCIFEX_HOME must remain readable — the gate is per-location for
+    """Hermes-specific filenames (``auth.json``, ``mcp-tokens/``, ``google_oauth.json``)
+    outside HERMES_HOME must remain readable — the gate is per-location for
     those, not per-filename. ``.env`` is the exception: it's blocked anywhere
     on disk (see test_project_local_env_blocked) because the basename always
     means \"secret-bearing environment file\" regardless of directory."""
@@ -350,11 +354,11 @@ def test_identically_named_lucifex_files_outside_home_not_blocked(
 
     project = tmp_path / "myproject"
     project.mkdir()
-    # auth.json outside LUCIFEX_HOME — readable (per-location gate).
+    # auth.json outside HERMES_HOME — readable (per-location gate).
     p = project / "auth.json"
     p.write_text("not secret here", encoding="utf-8")
     assert get_read_block_error(str(p)) is None, (
-        "auth.json outside LUCIFEX_HOME should NOT be blocked"
+        "auth.json outside HERMES_HOME should NOT be blocked"
     )
 
     google_oauth = project / "auth" / "google_oauth.json"
@@ -388,16 +392,16 @@ def test_config_yaml_not_blocked(fake_home):
 
 
 def test_profile_mode_blocks_root_credentials(tmp_path, monkeypatch):
-    """Under a profile, LUCIFEX_HOME = <root>/profiles/<name>, but
+    """Under a profile, HERMES_HOME = <root>/profiles/<name>, but
     <root>/auth.json must ALSO be blocked — credentials at root are
     inherited by every profile."""
     import agent.file_safety as fs
 
-    root = tmp_path / "lucifex"
+    root = tmp_path / "hermes"
     profile = root / "profiles" / "coder"
     profile.mkdir(parents=True)
-    monkeypatch.setattr(fs, "_lucifex_home_path", lambda: profile)
-    monkeypatch.setattr(fs, "_lucifex_root_path", lambda: root)
+    monkeypatch.setattr(fs, "_hermes_home_path", lambda: profile)
+    monkeypatch.setattr(fs, "_hermes_root_path", lambda: root)
 
     from agent.file_safety import get_read_block_error
 

@@ -40,12 +40,14 @@ logger = logging.getLogger(__name__)
 
 
 def check_ha_requirements() -> bool:
-    """Check if Home Assistant dependencies are available and configured."""
-    if not AIOHTTP_AVAILABLE:
-        return False
-    if not os.getenv("HASS_TOKEN"):
-        return False
-    return True
+    """Check if Home Assistant runtime dependencies are available."""
+    return AIOHTTP_AVAILABLE
+
+
+def validate_ha_config(config: PlatformConfig) -> bool:
+    """Return True when Home Assistant has enough credential config to connect."""
+    token = (getattr(config, "token", None) or os.getenv("HASS_TOKEN", "")).strip()
+    return bool(token)
 
 
 class HomeAssistantAdapter(BasePlatformAdapter):
@@ -401,7 +403,7 @@ class HomeAssistantAdapter(BasePlatformAdapter):
             "Content-Type": "application/json",
         }
         payload = {
-            "title": "Lucifex Agent",
+            "title": "Hermes Agent",
             "message": content[:self.MAX_MESSAGE_LENGTH],
         }
 
@@ -533,13 +535,13 @@ async def _standalone_send(
 def _is_connected(config) -> bool:
     """Home Assistant is considered connected when ``HASS_TOKEN`` is set.
 
-    Looks up via ``lucifex_cli.gateway.get_env_value`` at call time (not via
+    Looks up via ``hermes_cli.gateway.get_env_value`` at call time (not via
     the plugin's own bound import) so tests that patch
     ``gateway_mod.get_env_value`` can suppress ambient ``HASS_TOKEN`` env
     vars.  Matches what the legacy connected-platforms check did before
     this migration.
     """
-    import lucifex_cli.gateway as gateway_mod
+    import hermes_cli.gateway as gateway_mod
     return bool((gateway_mod.get_env_value("HASS_TOKEN") or "").strip())
 
 
@@ -554,12 +556,13 @@ def _build_adapter(config):
 
 
 def register(ctx) -> None:
-    """Plugin entry point — called by the Lucifex plugin system."""
+    """Plugin entry point — called by the Hermes plugin system."""
     ctx.register_platform(
         name="homeassistant",
         label="Home Assistant",
         adapter_factory=_build_adapter,
         check_fn=check_ha_requirements,
+        validate_config=validate_ha_config,
         is_connected=_is_connected,
         required_env=["HASS_TOKEN"],
         install_hint="pip install aiohttp",

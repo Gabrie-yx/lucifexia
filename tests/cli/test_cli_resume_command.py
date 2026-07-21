@@ -1,11 +1,12 @@
+import os
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
-from cli import LucifexCLI
+from cli import HermesCLI
 
 
 def _make_cli():
-    cli_obj = LucifexCLI.__new__(LucifexCLI)
+    cli_obj = HermesCLI.__new__(HermesCLI)
     cli_obj.session_id = "current_session"
     cli_obj._resumed = False
     cli_obj._pending_title = None
@@ -87,7 +88,7 @@ class TestCliResumeCommand:
         cli_obj._session_db.resolve_resume_session_id.return_value = "sess_001"
 
         with (
-            patch("lucifex_cli.main._resolve_session_by_name_or_id", return_value=None),
+            patch("hermes_cli.main._resolve_session_by_name_or_id", return_value=None),
             patch("cli._cprint") as mock_cprint,
         ):
             cli_obj._handle_resume_command("/resume 2")
@@ -125,7 +126,7 @@ class TestCliResumeCommand:
         for raw in ("<sess_alpha>", "[sess_alpha]", '"sess_alpha"', "'sess_alpha'"):
             cli_obj.session_id = "current_session"
             with (
-                patch("lucifex_cli.main._resolve_session_by_name_or_id", return_value="sess_alpha"),
+                patch("hermes_cli.main._resolve_session_by_name_or_id", return_value="sess_alpha"),
                 patch("cli._cprint"),
             ):
                 cli_obj._handle_resume_command(f"/resume {raw}")
@@ -144,13 +145,85 @@ class TestCliResumeCommand:
         cli_obj._session_db.get_session.return_value = None
 
         with (
-            patch("lucifex_cli.main._resolve_session_by_name_or_id", return_value=None),
+            patch("hermes_cli.main._resolve_session_by_name_or_id", return_value=None),
             patch("cli._cprint") as mock_cprint,
         ):
             cli_obj._handle_resume_command("/resume <half")
 
         printed = " ".join(str(call) for call in mock_cprint.call_args_list)
         assert "<half" in printed
+
+
+class TestCliResumeRestoresCwd:
+    """Mid-chat /resume must retarget the working directory to where the
+    session was started — the same contract as a startup ``hermes -c`` /
+    ``--resume``.
+
+    Regression coverage for #38562: ``_restore_session_cwd()`` was wired into
+    the startup resume paths but not into ``_handle_resume_command()``, so an
+    interactive ``/resume`` (and ``/sessions <id>``, which delegates here) left
+    the process + ``TERMINAL_CWD`` pointing at whatever directory the user had
+    cd'd into — so the terminal/code-exec tools and relative paths ran in the
+    wrong repo.
+    """
+
+    def _resumable_cli(self, session_meta):
+        cli_obj = _make_cli()
+        cli_obj._session_db.get_session.return_value = session_meta
+        cli_obj._session_db.get_messages_as_conversation.return_value = [
+            {"role": "user", "content": "hello"},
+        ]
+        cli_obj._session_db.resolve_resume_session_id.return_value = session_meta["id"]
+        return cli_obj
+
+    def test_handle_resume_restores_recorded_cwd(self, tmp_path):
+        recorded = str(tmp_path)
+        cli_obj = self._resumable_cli({"id": "sess_dir", "title": "Dir", "cwd": recorded})
+
+        with (
+            patch("hermes_cli.main._resolve_session_by_name_or_id", return_value="sess_dir"),
+            patch("cli._cprint"),
+            patch.object(cli_obj, "_console_print"),
+            patch("os.chdir") as mock_chdir,
+            patch.dict(os.environ, {}, clear=False),
+        ):
+            cli_obj._handle_resume_command("/resume Dir")
+            # Assert inside the patch.dict scope — it restores os.environ on exit.
+            assert os.environ.get("TERMINAL_CWD") == recorded
+
+        mock_chdir.assert_called_once_with(recorded)
+
+    def test_handle_resume_without_recorded_cwd_does_not_chdir(self):
+        # Gateway/remote/older sessions record no cwd — restore must no-op.
+        cli_obj = self._resumable_cli({"id": "sess_dir", "title": "Dir"})
+
+        with (
+            patch("hermes_cli.main._resolve_session_by_name_or_id", return_value="sess_dir"),
+            patch("cli._cprint"),
+            patch.object(cli_obj, "_console_print"),
+            patch("os.chdir") as mock_chdir,
+        ):
+            cli_obj._handle_resume_command("/resume Dir")
+
+        mock_chdir.assert_not_called()
+
+    def test_sessions_command_restores_recorded_cwd(self, tmp_path):
+        # /sessions <id> delegates to the resume flow, so it restores cwd too.
+        recorded = str(tmp_path)
+        cli_obj = self._resumable_cli({"id": "sess_dir", "title": "Dir", "cwd": recorded})
+
+        with (
+            patch("hermes_cli.main._resolve_session_by_name_or_id", return_value="sess_dir"),
+            patch("cli._cprint"),
+            patch.object(cli_obj, "_console_print"),
+            patch("os.chdir") as mock_chdir,
+            patch.dict(os.environ, {}, clear=False),
+        ):
+            cli_obj._handle_sessions_command("/sessions Dir")
+            # Assert inside the patch.dict scope — it restores os.environ on exit.
+            assert os.environ.get("TERMINAL_CWD") == recorded
+
+        mock_chdir.assert_called_once_with(recorded)
 
 
 class TestPendingResumeNumberedSelection:
@@ -203,7 +276,7 @@ class TestPendingResumeNumberedSelection:
         cli_obj._session_db.resolve_resume_session_id.return_value = "sess_001"
 
         with (
-            patch("lucifex_cli.main._resolve_session_by_name_or_id", return_value=None),
+            patch("hermes_cli.main._resolve_session_by_name_or_id", return_value=None),
             patch("cli._cprint"),
         ):
             consumed = cli_obj._consume_pending_resume_selection("2")
@@ -264,7 +337,7 @@ class TestRestoreSessionCwdMarkup:
     ``rich.errors.MarkupError: closing tag [/] at position N has nothing to
     close`` because ``_DIM`` is an ANSI escape (``\\x1b[2;3m``), not a valid
     Rich tag.  The fix replaces ``[{_DIM}]`` with Rich's native ``[dim]`` tag.
-    See: https://github.com/NousResearch/lucifex-agent/issues/39469
+    See: https://github.com/NousResearch/hermes-agent/issues/39469
     """
 
     def test_missing_dir_does_not_raise_markup_error(self):
@@ -342,7 +415,7 @@ class TestResumeFlushesBeforeEndSession:
         cli_obj._session_db.resolve_resume_session_id.return_value = "target"
 
         with (
-            patch("lucifex_cli.main._resolve_session_by_name_or_id", return_value="target"),
+            patch("hermes_cli.main._resolve_session_by_name_or_id", return_value="target"),
             patch("cli._cprint"),
         ):
             cli_obj._handle_resume_command("/resume target")

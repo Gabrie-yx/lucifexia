@@ -1,5 +1,6 @@
 import asyncio
 import os
+import sys
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -17,7 +18,7 @@ if not _MCP_AVAILABLE:
         _mcp_mod.ClientSession = MagicMock
 
 
-def test_resolve_stdio_command_falls_back_to_lucifex_node_bin(tmp_path):
+def test_resolve_stdio_command_falls_back_to_hermes_node_bin(tmp_path):
     node_bin = tmp_path / "node" / "bin"
     node_bin.mkdir(parents=True)
     npx_path = node_bin / "npx"
@@ -25,7 +26,7 @@ def test_resolve_stdio_command_falls_back_to_lucifex_node_bin(tmp_path):
     npx_path.chmod(0o755)
 
     with patch("tools.mcp_tool.shutil.which", return_value=None), \
-         patch.dict("os.environ", {"LUCIFEX_HOME": str(tmp_path)}, clear=False):
+         patch.dict("os.environ", {"HERMES_HOME": str(tmp_path)}, clear=False):
         command, env = _resolve_stdio_command("npx", {"PATH": "/usr/bin"})
 
     assert command == str(npx_path)
@@ -33,11 +34,11 @@ def test_resolve_stdio_command_falls_back_to_lucifex_node_bin(tmp_path):
 
 
 def test_resolve_stdio_command_falls_back_to_usr_local_bin():
-    """When ``npx`` isn't on the filtered PATH and isn't under ``$LUCIFEX_HOME/node/bin``
+    """When ``npx`` isn't on the filtered PATH and isn't under ``$HERMES_HOME/node/bin``
     or ``~/.local/bin``, the resolver should still locate it at ``/usr/local/bin/npx``.
 
     This is the canonical install location for Node on Linux from-source builds,
-    the upstream ``node:bookworm-slim`` image (which the Lucifex Docker image
+    the upstream ``node:bookworm-slim`` image (which the Hermes Docker image
     copies ``node + npm + corepack`` from since #4977), and macOS Homebrew on
     Intel. Without this candidate, MCP servers run with an ``env.PATH`` that
     omits ``/usr/local/bin`` (common when users hand-author PATH for sandboxing)
@@ -46,7 +47,7 @@ def test_resolve_stdio_command_falls_back_to_usr_local_bin():
     target = os.path.join(os.sep, "usr", "local", "bin", "npx")
 
     # Pretend ONLY the /usr/local/bin/npx candidate exists and is executable —
-    # the other candidates ($LUCIFEX_HOME/node/bin/npx and ~/.local/bin/npx)
+    # the other candidates ($HERMES_HOME/node/bin/npx and ~/.local/bin/npx)
     # should fail isfile() and the resolver must fall through to /usr/local/bin.
     def _fake_isfile(path):
         return path == target
@@ -112,15 +113,25 @@ def test_run_stdio_uses_resolved_command_and_prepended_path(tmp_path):
 
     async def _test():
         with patch("tools.mcp_tool.shutil.which", return_value=None), \
-             patch.dict("os.environ", {"LUCIFEX_HOME": str(tmp_path), "PATH": "/usr/bin", "HOME": str(tmp_path)}, clear=False), \
+             patch.dict("os.environ", {"HERMES_HOME": str(tmp_path), "PATH": "/usr/bin", "HOME": str(tmp_path)}, clear=False), \
              patch("tools.mcp_tool.StdioServerParameters") as mock_params, \
              patch("tools.mcp_tool.stdio_client", return_value=mock_stdio_cm), \
              patch("tools.mcp_tool.ClientSession", return_value=mock_session_cm):
             server = MCPServerTask("srv")
             await server.start({"command": "npx", "args": ["-y", "pkg"], "env": {"PATH": "/usr/bin"}})
 
+            # The real (resolved) command no longer reaches StdioServerParameters
+            # directly -- it's now wrapped in the parent-death watchdog
+            # supervisor (tools/mcp_stdio_watchdog.py) so an ungraceful exit of
+            # this process can't orphan it. Assert the resolved npx path and
+            # its args still flow through correctly as the watchdog's target
+            # command, preserving this test's original path-resolution intent.
             call_kwargs = mock_params.call_args.kwargs
-            assert call_kwargs["command"] == str(npx_path)
+            assert call_kwargs["command"] == sys.executable
+            assert call_kwargs["args"][0].endswith("mcp_stdio_watchdog.py")
+            assert "--" in call_kwargs["args"]
+            sep = call_kwargs["args"].index("--")
+            assert call_kwargs["args"][sep + 1:] == [str(npx_path), "-y", "pkg"]
             assert call_kwargs["env"]["PATH"].split(os.pathsep)[0] == str(node_bin)
 
             await server.shutdown()

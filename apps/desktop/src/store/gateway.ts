@@ -1,7 +1,7 @@
-import { type ConnectionState, type GatewayEvent, resolveGatewayWsUrl } from '@lucifex/shared'
+import { type ConnectionState, type GatewayEvent, resolveGatewayWsUrl } from '@hermes/shared'
 import { atom } from 'nanostores'
 
-import { LucifexGateway } from '@/lucifex'
+import { HermesGateway } from '@/hermes'
 import { setGatewayState } from '@/store/session'
 
 // ── Multi-profile gateway routing ──────────────────────────────────────────
@@ -18,12 +18,12 @@ const normKey = (profile: string | null | undefined): string => (profile ?? '').
 
 // Read connection state through a call so TS control-flow analysis doesn't
 // narrow the getter to a constant across guards (it genuinely changes).
-const isOpen = (gateway: LucifexGateway | null): boolean => gateway?.connectionState === 'open'
+const isOpen = (gateway: HermesGateway | null): boolean => gateway?.connectionState === 'open'
 
 // The active gateway instance, exposed for inline message-stream components
 // (e.g. inline ClarifyTool, model overlays) that call gateway methods without
 // the instance threaded down through props.
-export const $gateway = atom<LucifexGateway | null>(null)
+export const $gateway = atom<HermesGateway | null>(null)
 
 interface RegistryConfig {
   onEvent: (event: GatewayEvent) => void
@@ -36,10 +36,10 @@ export function configureGatewayRegistry(cfg: RegistryConfig): void {
 }
 
 // ── Primary (window) backend ───────────────────────────────────────────────
-let primaryGateway: LucifexGateway | null = null
+let primaryGateway: HermesGateway | null = null
 let primaryProfile = 'default'
 
-export function setPrimaryGateway(gateway: LucifexGateway | null, profile = 'default'): void {
+export function setPrimaryGateway(gateway: HermesGateway | null, profile = 'default'): void {
   primaryGateway = gateway
   primaryProfile = normKey(profile)
 }
@@ -47,7 +47,7 @@ export function setPrimaryGateway(gateway: LucifexGateway | null, profile = 'def
 // ── Secondary (pool) backends ──────────────────────────────────────────────
 interface Secondary {
   profile: string
-  gateway: LucifexGateway
+  gateway: HermesGateway
   offEvent: () => void
   offState: () => void
   reconnectTimer: ReturnType<typeof setTimeout> | null
@@ -66,7 +66,7 @@ export function isActivePrimary(): boolean {
   return activeKey === primaryProfile
 }
 
-export function activeGateway(): LucifexGateway | null {
+export function activeGateway(): HermesGateway | null {
   if (activeKey === primaryProfile) {
     return primaryGateway
   }
@@ -103,7 +103,7 @@ function clearTimer(entry: Secondary): void {
 }
 
 async function openSecondary(entry: Secondary): Promise<void> {
-  const desktop = window.lucifexDesktop
+  const desktop = window.hermesDesktop
 
   if (!desktop) {
     return
@@ -151,7 +151,7 @@ async function reconnectSecondary(entry: Secondary): Promise<void> {
 }
 
 function createSecondary(profile: string): Secondary {
-  const gateway = new LucifexGateway()
+  const gateway = new HermesGateway()
 
   const entry: Secondary = {
     profile,
@@ -164,7 +164,7 @@ function createSecondary(profile: string): Secondary {
     wantOpen: true
   }
 
-  entry.offEvent = gateway.onEvent(event => config?.onEvent(event))
+  entry.offEvent = gateway.onEvent(event => config?.onEvent({ ...event, profile }))
   entry.offState = gateway.onState(state => {
     reportGatewayState(profile, state)
 
@@ -179,6 +179,27 @@ function createSecondary(profile: string): Secondary {
   secondaries.set(profile, entry)
 
   return entry
+}
+
+// Open `profile`'s socket WITHOUT making it active — the hover-intent pre-warm
+// (store/profile). Runs the same spawn + connect chain as a real switch, so by
+// click time ensureGatewayForProfile finds an open socket and just activates
+// it. No scheduleReconnect on failure: a hover is speculative, so a dead
+// backend must not start a background retry loop — the real switch owns retry
+// and error UX. An already-open (or primary) profile is a no-op.
+export async function openGatewayForProfile(profile: string): Promise<void> {
+  const key = normKey(profile)
+
+  if (key === primaryProfile) {
+    return
+  }
+
+  const entry = secondaries.get(key) ?? createSecondary(key)
+  entry.wantOpen = true
+
+  if (!isOpen(entry.gateway)) {
+    await openSecondary(entry)
+  }
 }
 
 // Make `profile` the active gateway, lazily opening its socket if needed. The
@@ -216,7 +237,7 @@ export async function ensureGatewayForProfile(profile: string): Promise<void> {
 
 // Reconnect the active gateway after a transient request failure. Primary
 // reconnects are owned by use-gateway-boot, so we only drive secondaries here.
-export async function ensureActiveGatewayOpen(): Promise<LucifexGateway | null> {
+export async function ensureActiveGatewayOpen(): Promise<HermesGateway | null> {
   if (activeKey === primaryProfile) {
     return primaryGateway
   }
@@ -250,7 +271,7 @@ export function reconnectSecondaryGateways(): void {
 // Keep the idle reaper from killing a backend we still need: ping every live
 // secondary. The active one is pinged separately (touchActiveGatewayBackend).
 export function touchSecondaryGateways(): void {
-  const desktop = window.lucifexDesktop
+  const desktop = window.hermesDesktop
 
   for (const entry of secondaries.values()) {
     if (entry.wantOpen) {

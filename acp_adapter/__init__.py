@@ -1,1 +1,1 @@
-"""ACP (Agent Communication Protocol) adapter for lucifex-agent."""
+"""ACP (Agent Communication Protocol) adapter for hermes-agent."""

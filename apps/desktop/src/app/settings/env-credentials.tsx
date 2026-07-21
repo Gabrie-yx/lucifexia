@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 
-import { deleteEnvVar, getEnvVars, revealEnvVar, setEnvVar } from '@/lucifex'
+import { deleteEnvVar, getEnvVars, revealEnvVar, setEnvVar } from '@/hermes'
 import { useI18n } from '@/i18n'
 import { type IconComponent } from '@/lib/icons'
 import { notify, notifyError } from '@/store/notifications'
-import type { EnvVarInfo } from '@/types/lucifex'
+import type { EnvVarInfo } from '@/types/hermes'
 
 import { asText, includesQuery, redactedValue, withoutKey } from './helpers'
 import { Pill } from './primitives'

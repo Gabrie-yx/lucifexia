@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
 import { Input } from '@/components/ui/input'
-import { getGlobalModelOptions } from '@/lucifex'
+import { getGlobalModelOptions } from '@/hermes'
 import { useI18n } from '@/i18n'
 import { Check, ChevronDown, ChevronLeft, KeyRound, Loader2 } from '@/lib/icons'
 import { isProviderSetupErrorMessage } from '@/lib/provider-setup-errors'
@@ -25,12 +25,26 @@ import {
   setOnboardingMode,
   startProviderOAuth
 } from '@/store/onboarding'
-import type { ModelOptionProvider, OAuthProvider } from '@/types/lucifex'
+import type { ModelOptionProvider, OAuthProvider } from '@/types/hermes'
 
 import { DocsLink, FlowPanel, Status } from './flow'
-import { FeaturedProviderRow, KeyProviderRow, ProviderRow, sortProviders } from './providers'
+import {
+  FeaturedProviderRow,
+  FireworksProviderRow,
+  OpenRouterProviderRow,
+  ProviderRow,
+  sortProviders
+} from './providers'
 
-export { FeaturedProviderRow, KeyProviderRow, ProviderRow, providerTitle, sortProviders } from './providers'
+export {
+  FeaturedProviderRow,
+  FireworksProviderRow,
+  KeyProviderRow,
+  OpenRouterProviderRow,
+  ProviderRow,
+  providerTitle,
+  sortProviders
+} from './providers'
 
 interface DesktopOnboardingOverlayProps {
   enabled: boolean
@@ -48,7 +62,15 @@ export interface ApiKeyOption {
   short?: string
 }
 
+// Curated order mirrors CANONICAL_PROVIDERS: Fireworks sits #2 overall (after
+// Nous Portal OAuth), ahead of OpenRouter and the rest of the key catalog.
 const API_KEY_OPTIONS: ApiKeyOption[] = [
+  {
+    id: 'fireworks',
+    name: 'Fireworks AI',
+    envKey: 'FIREWORKS_API_KEY',
+    docsUrl: 'https://app.fireworks.ai/settings/users/api-keys'
+  },
   {
     id: 'openrouter',
     name: 'OpenRouter',
@@ -77,13 +99,13 @@ const API_KEY_OPTIONS: ApiKeyOption[] = [
     id: 'local',
     name: 'Local / custom endpoint',
     envKey: 'OPENAI_BASE_URL',
-    docsUrl: 'https://github.com/NousResearch/lucifex-agent#bring-your-own-endpoint',
+    docsUrl: 'https://github.com/NousResearch/hermes-agent#bring-your-own-endpoint',
     placeholder: 'http://127.0.0.1:8000/v1'
   }
 ]
 
 // Build the FULL API-key provider catalog from the backend model options so the
-// onboarding / Providers key form lists every `api_key` provider `lucifex model`
+// onboarding / Providers key form lists every `api_key` provider `hermes model`
 // knows about — not just the hand-curated five. Curated entries keep their
 // richer copy + placeholders and float to the top (recommended defaults); every
 // other api_key provider is appended with a generic "paste {KEY}" affordance.
@@ -99,7 +121,7 @@ function useApiKeyCatalog(): ApiKeyOption[] {
     // Promise.resolve().then so a synchronous throw (e.g. no desktop bridge in
     // tests) is funneled into the same .catch instead of escaping.
     void Promise.resolve()
-      .then(() => getGlobalModelOptions())
+      .then(() => getGlobalModelOptions({ includeUnconfigured: true, explicitOnly: false }))
       .then(res => {
         if (!cancelled) {
           setRows(res.providers ?? [])
@@ -371,7 +393,7 @@ function Header() {
 }
 
 export const FEATURED_ID = 'nous'
-const SHOW_ALL_KEY = 'lucifex-onboarding-show-all-v1'
+const SHOW_ALL_KEY = 'hermes-onboarding-show-all-v1'
 
 const readShowAll = () => {
   try {
@@ -395,6 +417,15 @@ export function Picker({ ctx }: { ctx: OnboardingContext }) {
   const { t } = useI18n()
   const { localEndpoint, manual, mode, providers } = useStore($desktopOnboarding)
   const [showAll, setShowAll] = useState(readShowAll)
+  // Which key-form option to preselect when we flip to 'apikey' mode. The
+  // OpenRouter row selects its key; the generic link lands on the first option.
+  const [apiKeyInitialEnv, setApiKeyInitialEnv] = useState<string | undefined>(undefined)
+
+  const openKeyForm = (envKey?: string) => {
+    setApiKeyInitialEnv(envKey)
+    setOnboardingMode('apikey')
+  }
+
   const ordered = useMemo(() => (providers ? sortProviders(providers) : []), [providers])
   const hasOauth = ordered.length > 0
   const apiKeyOptions = useApiKeyCatalog()
@@ -408,7 +439,7 @@ export function Picker({ ctx }: { ctx: OnboardingContext }) {
       <div className="grid gap-3">
         <ApiKeyForm
           canGoBack={hasOauth && !localEndpoint}
-          initialEnvKey={localEndpoint ? 'OPENAI_BASE_URL' : undefined}
+          initialEnvKey={localEndpoint ? 'OPENAI_BASE_URL' : apiKeyInitialEnv}
           onBack={() => setOnboardingMode('oauth')}
           onSave={(envKey, value, name, apiKey) => saveOnboardingApiKey(envKey, value, name, ctx, apiKey)}
           options={apiKeyOptions}
@@ -438,12 +469,14 @@ export function Picker({ ctx }: { ctx: OnboardingContext }) {
     <div className="grid gap-2">
       <div className="grid max-h-[60dvh] gap-2 overflow-y-auto p-1">
         {featured ? <FeaturedProviderRow onSelect={select} provider={featured} /> : null}
+        {/* Slot #2 — always visible, matching CANONICAL_PROVIDERS (Nous → Fireworks). */}
+        <FireworksProviderRow onClick={() => openKeyForm('FIREWORKS_API_KEY')} />
         {showRest ? (
           <>
             {rest.map(p => (
               <ProviderRow key={p.id} onSelect={select} provider={p} />
             ))}
-            <KeyProviderRow onClick={() => setOnboardingMode('apikey')} />
+            <OpenRouterProviderRow onClick={() => openKeyForm('OPENROUTER_API_KEY')} />
           </>
         ) : null}
       </div>
@@ -464,13 +497,7 @@ export function Picker({ ctx }: { ctx: OnboardingContext }) {
             In manual mode the overlay already has a close affordance, so the
             "choose later" escape would be redundant — hide it. */}
         {manual ? <span /> : <ChooseLaterLink />}
-        <Button
-          className="-mr-2 font-medium"
-          onClick={() => setOnboardingMode('apikey')}
-          size="xs"
-          type="button"
-          variant="text"
-        >
+        <Button className="-mr-2 font-medium" onClick={() => openKeyForm()} size="xs" type="button" variant="text">
           {t.onboarding.haveApiKey}
         </Button>
       </div>

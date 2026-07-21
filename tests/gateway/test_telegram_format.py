@@ -197,7 +197,7 @@ async def test_legacy_send_keeps_chunk_indicators_outside_fenced_code_lines(adap
     content = (
         "Intro before code block\n"
         "```text\n"
-        + ("~/.lucifex/skills/github/lucifex-contribution-workflow/SKILL.md\n" * 8)
+        + ("~/.hermes/skills/github/hermes-contribution-workflow/SKILL.md\n" * 8)
         + "```\n"
         "After."
     )
@@ -1003,6 +1003,89 @@ class TestEditMessageStreamingSafety:
         assert len(edited_text) <= adapter.MAX_MESSAGE_LENGTH
 
     @pytest.mark.asyncio
+    async def test_saturated_preview_dedups_repeat_oversized_edits(self):
+        """Once a mid-stream preview saturates at the truncation cap, further
+        oversized edits truncate to the SAME text — re-sending them is a
+        visual no-op that burns Telegram's flood budget (~1 edit/0.8s for the
+        rest of a long stream ⇒ flood control with 200s+ penalties, hanging
+        final delivery). The adapter must skip identical saturated previews
+        without an API call."""
+        adapter = TelegramAdapter(PlatformConfig(enabled=True, token="fake-token"))
+        adapter._bot = MagicMock()
+        adapter._bot.edit_message_text = AsyncMock()
+        adapter._bot.send_message = AsyncMock()
+
+        # First oversized edit: delivers the truncated preview (1 API call).
+        r1 = await adapter.edit_message("123", "456", "x" * 6000, finalize=False)
+        assert r1.success is True
+        assert adapter._bot.edit_message_text.await_count == 1
+
+        # Stream keeps growing within the same chunk count: previews truncate
+        # identically — no API calls. (7000 and 8000 chars both truncate to
+        # the same "…(1/2)" preview; 9000 crosses into "(1/3)" — a real change
+        # that SHOULD be delivered, at most one edit per ~4096 chars of growth
+        # instead of one per 0.8s tick.)
+        for grow in (7000, 8000):
+            r = await adapter.edit_message("123", "456", "x" * grow, finalize=False)
+            assert r.success is True
+            assert r.message_id == "456"
+        assert adapter._bot.edit_message_text.await_count == 1, (
+            "identical saturated previews must not be re-sent"
+        )
+        # Chunk-count boundary: marker changes (1/2 → 1/3) — one real edit.
+        await adapter.edit_message("123", "456", "x" * 9000, finalize=False)
+        assert adapter._bot.edit_message_text.await_count == 2
+        # ...and saturates again at the new marker.
+        await adapter.edit_message("123", "456", "x" * 9100, finalize=False)
+        assert adapter._bot.edit_message_text.await_count == 2
+
+        # A DIFFERENT oversized prefix (content changed within the first 4096)
+        # must still go through.
+        await adapter.edit_message("123", "456", "y" * 9100, finalize=False)
+        assert adapter._bot.edit_message_text.await_count == 3
+
+    @pytest.mark.asyncio
+    async def test_saturated_preview_state_cleared_on_finalize(self):
+        """finalize=True delivers full content (split) and clears saturation
+        state, so a reused message id can't be masked by stale dedup."""
+        adapter = TelegramAdapter(PlatformConfig(enabled=True, token="fake-token"))
+        adapter._bot = MagicMock()
+        adapter._bot.edit_message_text = AsyncMock()
+        _next_id = [1000]
+
+        async def _fake_send(**kwargs):
+            _next_id[0] += 1
+            return SimpleNamespace(message_id=_next_id[0])
+
+        adapter._bot.send_message = AsyncMock(side_effect=_fake_send)
+
+        await adapter.edit_message("123", "456", "x" * 6000, finalize=False)
+        assert ("123", "456") in adapter._last_overflow_preview
+
+        result = await adapter.edit_message("123", "456", "x" * 6000, finalize=True)
+        assert result.success is True
+        # Finalize split-delivered (edit + continuation) and cleared the state.
+        assert adapter._bot.send_message.await_count >= 1
+        assert ("123", "456") not in adapter._last_overflow_preview
+
+    @pytest.mark.asyncio
+    async def test_saturation_state_cleared_when_content_shrinks(self):
+        """A same-id edit back under the cap (segment reset) clears saturation
+        state so later oversized edits aren't wrongly deduped."""
+        adapter = TelegramAdapter(PlatformConfig(enabled=True, token="fake-token"))
+        adapter._bot = MagicMock()
+        adapter._bot.edit_message_text = AsyncMock()
+        adapter._bot.send_message = AsyncMock()
+
+        await adapter.edit_message("123", "456", "x" * 6000, finalize=False)
+        assert ("123", "456") in adapter._last_overflow_preview
+        await adapter.edit_message("123", "456", "short", finalize=False)
+        assert ("123", "456") not in adapter._last_overflow_preview
+        # Oversized again → must be delivered, not deduped.
+        await adapter.edit_message("123", "456", "x" * 6000, finalize=False)
+        assert adapter._bot.edit_message_text.await_count == 3
+
+    @pytest.mark.asyncio
     async def test_mid_stream_reactive_overflow_retries_truncated_edit(self):
         """If Telegram rejects a streaming edit as too long, retry with a
         one-message preview instead of splitting into continuations."""
@@ -1041,7 +1124,7 @@ def _guest_test_adapter(*, guest_mode=True, require_mention=True, allowed_chats=
     )
     adapter = object.__new__(TelegramAdapter)
     adapter.config = config
-    adapter._bot = SimpleNamespace(id=999, username="lucifex_bot")
+    adapter._bot = SimpleNamespace(id=999, username="hermes_bot")
     adapter._mention_patterns = adapter._compile_mention_patterns()
     # PR db50af910 added a TELEGRAM_ALLOWED_USERS allowlist gate to
     # _should_process_message. These tests aren't exercising the auth
@@ -1065,14 +1148,14 @@ def _guest_group_message(text, *, chat_id=-100201, entities=None, reply_to_bot=F
     )
 
 
-def _guest_mention_entity(text, mention="@lucifex_bot"):
+def _guest_mention_entity(text, mention="@hermes_bot"):
     return SimpleNamespace(type="mention", offset=text.index(mention), length=len(mention))
 
 
 class TestTelegramGuestMentionGating:
     def test_guest_mode_allows_explicit_mention_outside_allowed_chats(self):
         adapter = _guest_test_adapter(guest_mode=True, allowed_chats=["-100200"])
-        text = "please help @lucifex_bot"
+        text = "please help @hermes_bot"
         message = _guest_group_message(
             text,
             chat_id=-100201,
@@ -1089,7 +1172,7 @@ class TestTelegramGuestMentionGating:
 
     def test_guest_mode_disabled_keeps_allowed_chats_as_hard_gate_for_mentions(self):
         adapter = _guest_test_adapter(guest_mode=False, allowed_chats=["-100200"])
-        text = "please help @lucifex_bot"
+        text = "please help @hermes_bot"
         message = _guest_group_message(
             text,
             chat_id=-100201,
@@ -1101,7 +1184,7 @@ class TestTelegramGuestMentionGating:
     def test_guest_mode_allows_bot_command_entity_outside_allowed_chats(self):
         """``/cmd@botname`` is a ``bot_command`` entity, not ``mention``."""
         adapter = _guest_test_adapter(guest_mode=True, allowed_chats=["-100200"])
-        text = "/status@lucifex_bot"
+        text = "/status@hermes_bot"
         message = _guest_group_message(
             text,
             chat_id=-100201,
@@ -1124,7 +1207,7 @@ class TestTelegramGuestMentionGating:
     def test_guest_mode_allows_mention_in_caption_outside_allowed_chats(self):
         """Media caption @mention should bypass allowed_chats via guest_mode."""
         adapter = _guest_test_adapter(guest_mode=True, allowed_chats=["-100200"])
-        text = "look @lucifex_bot"
+        text = "look @hermes_bot"
         message = _guest_group_message(
             text="",
             chat_id=-100201,

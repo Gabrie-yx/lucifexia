@@ -13,12 +13,12 @@ import type {
   DesktopUpdateStatus,
   DesktopVersionInfo
 } from '@/global'
-import { checkLucifexUpdate, getActionStatus, updateLucifex } from '@/lucifex'
+import { checkHermesUpdate, getActionStatus, updateHermes } from '@/hermes'
 import { translateNow } from '@/i18n'
 import { persistString, storedString } from '@/lib/storage'
 import { dismissNotification, notify } from '@/store/notifications'
 import { $connection } from '@/store/session'
-import type { BackendUpdateCheckResponse } from '@/types/lucifex'
+import type { BackendUpdateCheckResponse } from '@/types/hermes'
 
 export interface UpdateApplyState {
   applying: boolean
@@ -74,7 +74,7 @@ const UPDATE_TOAST_ID = 'desktop-update-available'
 // a day, so a "don't show this exact sha again" guard re-popped the toast on
 // every new commit. We instead suppress the toast for a cooldown window that
 // (re)starts whenever the user closes it.
-const UPDATE_TOAST_SNOOZE_KEY = 'lucifex:update-toast-snooze-until'
+const UPDATE_TOAST_SNOOZE_KEY = 'hermes:update-toast-snooze-until'
 const UPDATE_TOAST_COOLDOWN_MS = 24 * 60 * 60 * 1000
 
 function snoozeUpdateToast(): void {
@@ -91,14 +91,16 @@ function isUpdateToastSnoozed(): boolean {
 // against. The backend reports its own value in session runtime info; a lower
 // value (or none — a pre-GUI checkout) means GUI<->backend skew.
 // v2: requires the file.attach RPC (remote-gateway non-image file upload).
-const REQUIRED_BACKEND_CONTRACT = 2
+// v3: requires approvals.mode config RPCs and session.info reconciliation.
+// v4: requires explicit Fast-off session creation and session-scoped Fast edits.
+const REQUIRED_BACKEND_CONTRACT = 4
 const SKEW_TOAST_ID = 'backend-contract-skew'
 // The contract check runs on every session.resume (applyRuntimeInfo), so
 // without a snooze the warning re-popped on every thread the user opened, even
 // right after they closed it. Mirror the update toast: persist a cooldown when
 // the user dismisses it. It still reminds again after the window if the backend
 // is still behind, and clears immediately once the backend catches up.
-const SKEW_TOAST_SNOOZE_KEY = 'lucifex:backend-skew-toast-snooze-until'
+const SKEW_TOAST_SNOOZE_KEY = 'hermes:backend-skew-toast-snooze-until'
 const SKEW_TOAST_COOLDOWN_MS = 24 * 60 * 60 * 1000
 
 function snoozeSkewToast(): void {
@@ -107,6 +109,24 @@ function snoozeSkewToast(): void {
 
 function isSkewToastSnoozed(): boolean {
   const until = Number(storedString(SKEW_TOAST_SNOOZE_KEY) || 0)
+
+  return Number.isFinite(until) && Date.now() < until
+}
+
+const INSTALL_METHOD_TOAST_ID = 'install-method-not-supported'
+// Same time-based snooze pattern as the update/skew toasts: the warning is
+// re-derived from every session.info (session.create/resume/activate all
+// route through applyRuntimeInfo), so without a snooze it would re-pop on
+// every session switch even right after the user dismissed it.
+const INSTALL_METHOD_TOAST_SNOOZE_KEY = 'hermes:install-method-toast-snooze-until'
+const INSTALL_METHOD_TOAST_COOLDOWN_MS = 24 * 60 * 60 * 1000
+
+function snoozeInstallMethodToast(): void {
+  persistString(INSTALL_METHOD_TOAST_SNOOZE_KEY, String(Date.now() + INSTALL_METHOD_TOAST_COOLDOWN_MS))
+}
+
+function isInstallMethodToastSnoozed(): boolean {
+  const until = Number(storedString(INSTALL_METHOD_TOAST_SNOOZE_KEY) || 0)
 
   return Number.isFinite(until) && Date.now() < until
 }
@@ -136,7 +156,7 @@ export function reportBackendContract(contract: number | undefined): void {
 
   notify({
     action: {
-      label: translateNow('notifications.updateLucifex'),
+      label: translateNow('notifications.updateHermes'),
       onClick: () => {
         snoozeSkewToast()
         void applyBackendUpdate()
@@ -148,6 +168,27 @@ export function reportBackendContract(contract: number | undefined): void {
     message: translateNow('notifications.backendOutOfDateMessage'),
     onDismiss: () => snoozeSkewToast(),
     title: translateNow('notifications.backendOutOfDateTitle')
+  })
+}
+
+export function reportInstallMethodWarning(message: string | undefined): void {
+  if (!message) {
+    dismissNotification(INSTALL_METHOD_TOAST_ID)
+
+    return
+  }
+
+  if (isInstallMethodToastSnoozed()) {
+    return
+  }
+
+  notify({
+    durationMs: 0,
+    id: INSTALL_METHOD_TOAST_ID,
+    kind: 'warning',
+    message,
+    onDismiss: () => snoozeInstallMethodToast(),
+    title: translateNow('notifications.installMethodUnsupportedTitle')
   })
 }
 
@@ -228,7 +269,7 @@ export async function refreshDesktopVersion(): Promise<DesktopVersionInfo | null
   // mid-reload, or the bridge not yet ready on first paint) would surface
   // as an unhandled promise rejection in the renderer. Swallow it.
   try {
-    const next = await window.lucifexDesktop?.getVersion?.()
+    const next = await window.hermesDesktop?.getVersion?.()
 
     if (next) {
       $desktopVersion.set(next)
@@ -266,7 +307,7 @@ export async function checkBackendUpdates(): Promise<DesktopUpdateStatus | null>
   $backendUpdateChecking.set(true)
 
   try {
-    const status = mapBackendCheck(await checkLucifexUpdate(true))
+    const status = mapBackendCheck(await checkHermesUpdate(true))
     $backendUpdateStatus.set(status)
     maybeNotifyUpdateAvailable(status)
 
@@ -288,7 +329,7 @@ export async function checkBackendUpdates(): Promise<DesktopUpdateStatus | null>
 }
 
 export async function checkUpdates(): Promise<DesktopUpdateStatus | null> {
-  const bridge = window.lucifexDesktop?.updates
+  const bridge = window.hermesDesktop?.updates
 
   if (!bridge || $updateChecking.get()) {
     return $updateStatus.get()
@@ -323,7 +364,7 @@ export async function checkUpdates(): Promise<DesktopUpdateStatus | null> {
 }
 
 export async function applyUpdates(opts: DesktopUpdateApplyOptions = {}): Promise<DesktopUpdateApplyResult> {
-  const bridge = window.lucifexDesktop?.updates
+  const bridge = window.hermesDesktop?.updates
 
   if (!bridge) {
     return { ok: false, error: 'unavailable', message: 'Desktop bridge unavailable.' }
@@ -336,15 +377,15 @@ export async function applyUpdates(opts: DesktopUpdateApplyOptions = {}): Promis
     const result = await bridge.apply(opts)
 
     // CLI install with no staged updater: not an error — the user just runs
-    // `lucifex update` themselves. Land on a dedicated manual state so the
+    // `hermes update` themselves. Land on a dedicated manual state so the
     // overlay shows the command + copy button instead of a dead retry loop.
     if (result?.manual) {
       $updateApply.set({
         ...IDLE,
         applying: false,
         stage: 'manual',
-        message: result.command ?? 'lucifex update',
-        command: result.command ?? 'lucifex update'
+        message: result.command ?? 'hermes update',
+        command: result.command ?? 'hermes update'
       })
 
       return result
@@ -433,7 +474,7 @@ async function waitForBackendReturn(): Promise<boolean> {
     await new Promise(resolve => globalThis.setTimeout(resolve, BACKEND_RETURN_POLL_MS))
 
     try {
-      await checkLucifexUpdate()
+      await checkHermesUpdate()
 
       return true
     } catch {
@@ -495,11 +536,11 @@ export async function applyBackendUpdate(): Promise<DesktopUpdateApplyResult> {
   })
 
   try {
-    const started = await updateLucifex()
+    const started = await updateHermes()
 
     if (!started.ok) {
       const message = (started as { message?: string }).message || translateNow('updates.applyStatus.notAvailable')
-      const command = (started as { update_command?: string }).update_command || 'lucifex update'
+      const command = (started as { update_command?: string }).update_command || 'hermes update'
       $backendUpdateApply.set({ ...IDLE, applying: false, stage: 'manual', message, command })
 
       return { ok: false, error: 'manual', manual: true, message, command }
@@ -609,7 +650,7 @@ export function startUpdatePoller(): void {
     return
   }
 
-  const bridge = window.lucifexDesktop?.updates
+  const bridge = window.hermesDesktop?.updates
 
   if (!bridge) {
     return

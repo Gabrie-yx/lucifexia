@@ -10,6 +10,7 @@ The ``telegram`` package is mocked by ``tests/gateway/conftest.py``
 ``TelegramAdapter`` and wire a mock bot.
 """
 
+import logging
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
@@ -308,7 +309,7 @@ async def test_expect_edits_metadata_keeps_preview_on_legacy_path():
 
     assert result.success is True
     # Streaming preview sends will be edited later, so they must not be born as
-    # rich messages until Lucifex wires rich_message edits directly.
+    # rich messages until Hermes wires rich_message edits directly.
     bot = adapter._bot
     assert bot is not None
     bot.do_api_request.assert_not_called()
@@ -476,6 +477,53 @@ async def test_transient_timeout_is_not_retryable():
 
 
 @pytest.mark.asyncio
+async def test_rich_transport_error_redacts_bot_token_even_when_redaction_disabled(monkeypatch):
+    import agent.redact as redact
+
+    monkeypatch.setattr(redact, "_REDACT_ENABLED", False)
+    token = "123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdef"
+    adapter = _make_adapter()
+    adapter._bot.do_api_request = AsyncMock(
+        side_effect=NetworkError(
+            f"Timed out requesting https://api.telegram.org/bot{token}/sendRichMessage"
+        )
+    )
+
+    result = await adapter.send("12345", RICH_CONTENT)
+
+    assert result.success is False
+    assert result.error is not None
+    assert token not in result.error
+    assert "bot123456789:***/sendRichMessage" in result.error
+    adapter._bot.send_message.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_legacy_send_error_redacts_bot_token_without_traceback(monkeypatch, caplog):
+    import agent.redact as redact
+
+    monkeypatch.setattr(redact, "_REDACT_ENABLED", False)
+    token = "123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdef"
+    adapter = _make_adapter({"rich_messages": False})
+    adapter._bot.send_message = AsyncMock(
+        side_effect=BadRequest(
+            f"Bad Request: https://api.telegram.org/bot{token}/sendMessage"
+        )
+    )
+
+    with caplog.at_level(logging.ERROR):
+        result = await adapter.send("12345", "Plain legacy content.")
+
+    assert result.success is False
+    assert result.error is not None
+    assert token not in result.error
+    assert "bot123456789:***/sendMessage" in result.error
+    assert token not in caplog.text
+    assert "bot123456789:***/sendMessage" in caplog.text
+    adapter._bot.do_api_request.assert_not_called()
+
+
+@pytest.mark.asyncio
 async def test_routing_thread_id_maps_to_message_thread_id():
     adapter = _make_adapter()
 
@@ -534,21 +582,20 @@ async def test_notification_opt_in_drops_disable_flag():
 
 
 @pytest.mark.asyncio
-async def test_table_only_uses_rich_when_rich_messages_opt_out():
-    """Pipe tables auto-route to sendRichMessage even without the full opt-in."""
+async def test_table_only_uses_legacy_when_rich_messages_opt_out():
+    """Pipe tables respect the rich_messages: false config and stay on legacy."""
     adapter = _make_adapter(extra={"rich_messages": False})
 
     result = await adapter.send("12345", TABLE_ONLY_CONTENT)
 
     assert result.success is True
-    api_kwargs = _rich_api_kwargs(adapter)
-    assert api_kwargs["rich_message"]["markdown"] == TABLE_ONLY_CONTENT
-    adapter._bot.send_message.assert_not_called()
+    adapter._bot.do_api_request.assert_not_called()
+    adapter._bot.send_message.assert_awaited()
 
 
 @pytest.mark.asyncio
-async def test_table_only_uses_rich_with_default_config():
-    """Default config keeps task lists on legacy but upgrades bare tables."""
+async def test_table_only_uses_legacy_with_default_config():
+    """Default config (rich_messages unset → False) keeps tables on legacy path."""
     config = PlatformConfig(enabled=True, token="fake-token")
     adapter = TelegramAdapter(config)
     bot = MagicMock()
@@ -560,13 +607,13 @@ async def test_table_only_uses_rich_with_default_config():
     result = await adapter.send("12345", TABLE_ONLY_CONTENT)
 
     assert result.success is True
-    bot.do_api_request.assert_awaited_once()
-    bot.send_message.assert_not_called()
+    bot.do_api_request.assert_not_called()
+    bot.send_message.assert_awaited()
 
 
 @pytest.mark.asyncio
-async def test_dm_topic_resumed_send_uses_rich_for_table_without_reply_anchor():
-    """Resumed/synthetic DM-topic sends route tables via direct_messages_topic_id."""
+async def test_dm_topic_resumed_send_uses_legacy_for_table_when_opt_out():
+    """Resumed DM-topic sends respect rich_messages: false for tables."""
     adapter = _make_adapter(extra={"rich_messages": False})
 
     result = await adapter.send(
@@ -580,14 +627,13 @@ async def test_dm_topic_resumed_send_uses_rich_for_table_without_reply_anchor():
     )
 
     assert result.success is True
-    api_kwargs = _rich_api_kwargs(adapter)
-    assert api_kwargs["direct_messages_topic_id"] == 20189
-    assert "reply_parameters" not in api_kwargs
-    assert api_kwargs["rich_message"]["markdown"] == TABLE_ONLY_CONTENT
+    adapter._bot.do_api_request.assert_not_called()
+    adapter._bot.send_message.assert_awaited()
 
 
 @pytest.mark.asyncio
-async def test_finalize_edit_rich_includes_forum_topic_routing():
+async def test_finalize_edit_legacy_includes_forum_topic_routing():
+    """With rich_messages: false, table edits use legacy path with topic routing."""
     adapter = _make_adapter(extra={"rich_messages": False})
 
     result = await adapter.edit_message(
@@ -599,9 +645,8 @@ async def test_finalize_edit_rich_includes_forum_topic_routing():
     )
 
     assert result.success is True
-    api_kwargs = _rich_edit_kwargs(adapter)
-    assert api_kwargs["message_thread_id"] == 5
-    assert api_kwargs["rich_message"]["markdown"] == TABLE_ONLY_CONTENT
+    adapter._bot.do_api_request.assert_not_called()
+    adapter._bot.edit_message_text.assert_awaited()
 
 
 @pytest.mark.asyncio
@@ -824,6 +869,32 @@ async def test_finalize_edit_plain_content_stays_legacy():
 
 
 @pytest.mark.asyncio
+async def test_legacy_edit_error_logs_redacted_bot_token_without_traceback(monkeypatch, caplog):
+    import agent.redact as redact
+
+    monkeypatch.setattr(redact, "_REDACT_ENABLED", False)
+    token = "123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdef"
+    adapter = _make_adapter()
+    adapter._bot.edit_message_text = AsyncMock(
+        side_effect=BadRequest(
+            f"Bad Request: https://api.telegram.org/bot{token}/editMessageText"
+        )
+    )
+
+    with caplog.at_level(logging.WARNING):
+        result = await adapter.edit_message(
+            "12345", "555", "Just a normal answer.", finalize=True,
+        )
+
+    assert result.success is False
+    assert result.error is not None
+    assert token not in result.error
+    assert "bot123456789:***/editMessageText" in result.error
+    assert token not in caplog.text
+    assert "bot123456789:***/editMessageText" in caplog.text
+
+
+@pytest.mark.asyncio
 async def test_finalize_edit_cjk_rich_content_stays_legacy_to_avoid_tdesktop_garble():
     adapter = _make_adapter()
 
@@ -990,7 +1061,7 @@ def _reply_message_with_rich_blocks(
 @pytest.mark.asyncio
 async def test_rich_reply_records_and_recovers_text(monkeypatch, tmp_path):
     """A reply to a rich-sent message resolves the original text via the index."""
-    monkeypatch.setenv("LUCIFEX_HOME", str(tmp_path))
+    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
     from gateway.platforms.base import MessageType
     from gateway import rich_sent_store
 
@@ -1020,7 +1091,7 @@ async def test_rich_reply_records_and_recovers_text(monkeypatch, tmp_path):
 @pytest.mark.asyncio
 async def test_rich_reply_lookup_miss_leaves_text_none(monkeypatch, tmp_path):
     """No recorded entry -> reply_to_text stays None, no crash."""
-    monkeypatch.setenv("LUCIFEX_HOME", str(tmp_path))
+    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
     from gateway.platforms.base import MessageType
 
     adapter = _make_adapter()
@@ -1034,7 +1105,7 @@ async def test_rich_reply_lookup_miss_leaves_text_none(monkeypatch, tmp_path):
 @pytest.mark.asyncio
 async def test_rich_reply_native_quote_wins_over_lookup(monkeypatch, tmp_path):
     """A native partial quote takes precedence over the send-time index."""
-    monkeypatch.setenv("LUCIFEX_HOME", str(tmp_path))
+    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
     from gateway.platforms.base import MessageType
     from gateway import rich_sent_store
 
@@ -1049,7 +1120,7 @@ async def test_rich_reply_native_quote_wins_over_lookup(monkeypatch, tmp_path):
 @pytest.mark.asyncio
 async def test_rich_reply_caption_wins_over_lookup(monkeypatch, tmp_path):
     """When Telegram DOES echo a caption, it wins over the index fallback."""
-    monkeypatch.setenv("LUCIFEX_HOME", str(tmp_path))
+    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
     from gateway.platforms.base import MessageType
     from gateway import rich_sent_store
 
@@ -1064,7 +1135,7 @@ async def test_rich_reply_caption_wins_over_lookup(monkeypatch, tmp_path):
 @pytest.mark.asyncio
 async def test_rich_reply_native_blocks_fill_reply_text_without_index(monkeypatch, tmp_path):
     """Echoed rich_message blocks should recover reply text natively."""
-    monkeypatch.setenv("LUCIFEX_HOME", str(tmp_path))
+    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
     from gateway.platforms.base import MessageType
 
     adapter = _make_adapter()
@@ -1084,7 +1155,7 @@ async def test_rich_reply_native_blocks_fill_reply_text_without_index(monkeypatc
 @pytest.mark.asyncio
 async def test_rich_reply_native_blocks_win_over_index(monkeypatch, tmp_path):
     """Native rich echo should beat the local send-time index fallback."""
-    monkeypatch.setenv("LUCIFEX_HOME", str(tmp_path))
+    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
     from gateway.platforms.base import MessageType
     from gateway import rich_sent_store
 
@@ -1103,7 +1174,7 @@ async def test_rich_reply_native_blocks_win_over_index(monkeypatch, tmp_path):
 @pytest.mark.asyncio
 async def test_rich_reply_native_blocks_support_mappingproxy_like_api_kwargs(monkeypatch, tmp_path):
     """Duck-type api_kwargs via .get() so mappingproxy-like objects also work."""
-    monkeypatch.setenv("LUCIFEX_HOME", str(tmp_path))
+    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
     from gateway.platforms.base import MessageType
 
     class MappingProxyLike(dict):
@@ -1132,7 +1203,7 @@ async def test_try_edit_rich_records_streamed_final_for_reply_recovery(monkeypat
     bot's first rich send have no echo — so editMessageText must mirror the
     fresh-send index the same way _try_send_rich does.
     """
-    monkeypatch.setenv("LUCIFEX_HOME", str(tmp_path))
+    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
     from gateway import rich_sent_store
 
     adapter = _make_adapter()

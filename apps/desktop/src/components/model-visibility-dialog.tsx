@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { GlyphSpinner } from '@/components/ui/glyph-spinner'
 import { Switch } from '@/components/ui/switch'
-import type { LucifexGateway } from '@/lucifex'
-import { getGlobalModelOptions } from '@/lucifex'
+import type { HermesGateway } from '@/hermes'
+import { getGlobalModelOptions } from '@/hermes'
 import { useI18n } from '@/i18n'
 import { displayModelName, modelDisplayParts } from '@/lib/model-status-label'
 import { normalize } from '@/lib/text'
@@ -19,10 +19,10 @@ import {
   setVisibleModels,
   toggleModelVisibility
 } from '@/store/model-visibility'
-import type { ModelOptionProvider, ModelOptionsResponse } from '@/types/lucifex'
+import type { ModelOptionProvider, ModelOptionsResponse } from '@/types/hermes'
 
 interface ModelVisibilityDialogProps {
-  gw?: LucifexGateway
+  gw?: HermesGateway
   onOpenChange: (open: boolean) => void
   onOpenProviders: () => void
   open: boolean
@@ -45,7 +45,10 @@ export function ModelVisibilityDialog({
     queryKey: ['model-options', sessionId || 'global'],
     queryFn: (): Promise<ModelOptionsResponse> => {
       if (gw && sessionId) {
-        return gw.request<ModelOptionsResponse>('model.options', { session_id: sessionId })
+        return gw.request<ModelOptionsResponse>('model.options', {
+          session_id: sessionId,
+          explicit_only: true
+        })
       }
 
       return getGlobalModelOptions()

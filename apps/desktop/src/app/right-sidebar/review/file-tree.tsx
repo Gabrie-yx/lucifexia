@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/context-menu'
 import { DiffCount } from '@/components/ui/diff-count'
 import { Tip } from '@/components/ui/tooltip'
-import type { LucifexReviewFile } from '@/global'
+import type { HermesReviewFile } from '@/global'
 import { useI18n } from '@/i18n'
 import { isDesktopFsRemoteMode } from '@/lib/desktop-fs'
 import { normalizeOrLocalPreviewTarget } from '@/lib/local-preview'
@@ -218,6 +218,7 @@ function ReviewDirRow({
         <span className="min-w-0 flex-1 truncate" title={node.name}>
           {node.name}
         </span>
+        {!open && <DiffCount added={node.added} className="text-[0.64rem] leading-4" removed={node.removed} />}
       </div>
       {open && node.children && (
         <ReviewNodeList animate={animate} depth={depth + 1} motion={useMotion} nodes={node.children} />
@@ -311,7 +312,7 @@ function ReviewFileRow({ node, depth }: { node: ReviewTreeNode; depth: number })
         onDragStart={event => {
           event.dataTransfer.effectAllowed = 'copy'
           event.dataTransfer.setData(
-            'application/x-lucifex-paths',
+            'application/x-hermes-paths',
             JSON.stringify([{ isDirectory: false, path: dragPath }])
           )
           event.dataTransfer.setData('text/plain', dragPath)
@@ -392,7 +393,7 @@ function ReviewFileContextMenu({
   children: ReactNode
   cwd: null | string
   dragPath: string
-  file: LucifexReviewFile
+  file: HermesReviewFile
   onOpenChanges: () => void
   onOpenFile: () => void
 }) {

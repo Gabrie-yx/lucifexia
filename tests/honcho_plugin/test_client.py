@@ -3,10 +3,12 @@
 import importlib.util
 import json
 import os
+import sys
+import types
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
-from lucifex_cli.profiles import _get_default_lucifex_home
+from hermes_cli.profiles import _get_default_hermes_home
 
 import pytest
 
@@ -24,8 +26,8 @@ from plugins.memory.honcho.client import (
 class TestHonchoClientConfigDefaults:
     def test_default_values(self):
         config = HonchoClientConfig()
-        assert config.host == "lucifex"
-        assert config.workspace_id == "lucifex"
+        assert config.host == "hermes"
+        assert config.workspace_id == "hermes"
         assert config.api_key is None
         assert config.environment == "production"
         assert config.timeout is None
@@ -103,7 +105,7 @@ class TestFromGlobalConfig:
             "workspace": "my-workspace",
             "environment": "staging",
             "peerName": "alice",
-            "aiPeer": "lucifex-custom",
+            "aiPeer": "hermes-custom",
             "enabled": True,
             "saveMessages": False,
             "contextTokens": 2000,
@@ -111,14 +113,14 @@ class TestFromGlobalConfig:
             "sessionPeerPrefix": True,
             "sessions": {"/home/user/proj": "my-session"},
             "hosts": {
-                "lucifex": {
+                "hermes": {
                     "workspace": "override-ws",
                     "aiPeer": "override-ai",
                 }
             }
         }))
-        # Isolate from real ~/.lucifex/honcho.json
-        monkeypatch.setenv("LUCIFEX_HOME", str(tmp_path / "isolated"))
+        # Isolate from real ~/.hermes/honcho.json
+        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "isolated"))
 
         config = HonchoClientConfig.from_global_config(config_path=config_file)
         assert config.api_key == "***"
@@ -139,7 +141,7 @@ class TestFromGlobalConfig:
             "workspace": "root-ws",
             "aiPeer": "root-ai",
             "hosts": {
-                "lucifex": {
+                "hermes": {
                     "workspace": "host-ws",
                     "aiPeer": "host-ai",
                 }
@@ -196,7 +198,7 @@ class TestFromGlobalConfig:
         config_file.write_text(json.dumps({
             "apiKey": "key",
             "contextTokens": 1000,
-            "hosts": {"lucifex": {"contextTokens": 2000}},
+            "hosts": {"hermes": {"contextTokens": 2000}},
         }))
         config = HonchoClientConfig.from_global_config(config_path=config_file)
         assert config.context_tokens == 2000
@@ -207,7 +209,7 @@ class TestFromGlobalConfig:
         config_file.write_text(json.dumps({
             "apiKey": "key",
             "recallMode": "tools",
-            "hosts": {"lucifex": {"recallMode": "context"}},
+            "hosts": {"hermes": {"recallMode": "context"}},
         }))
         config = HonchoClientConfig.from_global_config(config_path=config_file)
         assert config.recall_mode == "context"
@@ -258,7 +260,7 @@ class TestFromGlobalConfig:
         config_file = tmp_path / "config.json"
         config_file.write_text(json.dumps({
             "baseUrl": "http://root:9000",
-            "hosts": {"lucifex": {"baseUrl": "http://host-block:9001"}},
+            "hosts": {"hermes": {"baseUrl": "http://host-block:9001"}},
         }))
 
         config = HonchoClientConfig.from_global_config(config_path=config_file)
@@ -308,10 +310,10 @@ class TestResolveSessionName:
     def test_per_repo_uses_git_root(self):
         config = HonchoClientConfig(session_strategy="per-repo")
         with patch.object(
-            HonchoClientConfig, "_git_repo_name", return_value="lucifex-agent"
+            HonchoClientConfig, "_git_repo_name", return_value="hermes-agent"
         ):
-            result = config.resolve_session_name("/home/user/lucifex-agent/subdir")
-        assert result == "lucifex-agent"
+            result = config.resolve_session_name("/home/user/hermes-agent/subdir")
+        assert result == "hermes-agent"
 
     def test_per_repo_with_peer_prefix(self):
         config = HonchoClientConfig(
@@ -341,63 +343,63 @@ class TestResolveSessionName:
 
 
 class TestResolveConfigPath:
-    def test_prefers_lucifex_home_when_exists(self, tmp_path):
-        lucifex_home = tmp_path / "lucifex"
-        lucifex_home.mkdir()
-        local_cfg = lucifex_home / "honcho.json"
+    def test_prefers_hermes_home_when_exists(self, tmp_path):
+        hermes_home = tmp_path / "hermes"
+        hermes_home.mkdir()
+        local_cfg = hermes_home / "honcho.json"
         local_cfg.write_text('{"apiKey": "local"}')
 
-        with patch.dict(os.environ, {"LUCIFEX_HOME": str(lucifex_home)}):
+        with patch.dict(os.environ, {"HERMES_HOME": str(hermes_home)}):
             result = resolve_config_path()
         assert result == local_cfg
 
     def test_falls_back_to_default_profile_when_no_local(self, tmp_path, monkeypatch):
-        # Profile mode: LUCIFEX_HOME points at ~/.lucifex/profiles/<name>, so
-        # _get_default_lucifex_home() must resolve back to ~/.lucifex — that's
+        # Profile mode: HERMES_HOME points at ~/.hermes/profiles/<name>, so
+        # _get_default_hermes_home() must resolve back to ~/.hermes — that's
         # the bug the HOME-anchored helper fixes (vs. blindly using Path.home()).
         fake_home = tmp_path / "fakehome"
         fake_home.mkdir()
-        default_home = fake_home / ".lucifex"
+        default_home = fake_home / ".hermes"
         profile_home = default_home / "profiles" / "work"
         profile_home.mkdir(parents=True)
         default_cfg = default_home / "honcho.json"
         default_cfg.write_text('{"apiKey": "default-key"}')
 
         monkeypatch.setattr(Path, "home", lambda: fake_home)
-        monkeypatch.setenv("LUCIFEX_HOME", str(profile_home))
+        monkeypatch.setenv("HERMES_HOME", str(profile_home))
 
         result = resolve_config_path()
 
-        assert _get_default_lucifex_home() == default_home
+        assert _get_default_hermes_home() == default_home
         assert result == default_cfg
 
-    def test_falls_back_to_global_without_lucifex_home_env(self, tmp_path):
+    def test_falls_back_to_global_without_hermes_home_env(self, tmp_path):
         fake_home = tmp_path / "fakehome"
         fake_home.mkdir()
 
         with patch.dict(os.environ, {}, clear=False), \
              patch.object(Path, "home", return_value=fake_home):
-            os.environ.pop("LUCIFEX_HOME", None)
+            os.environ.pop("HERMES_HOME", None)
             result = resolve_config_path()
         assert result == fake_home / ".honcho" / "config.json"
 
     def test_global_fallback_uses_home_at_call_time(self, tmp_path):
         fake_home = tmp_path / "fakehome"
         fake_home.mkdir()
-        lucifex_home = tmp_path / "lucifex"
-        lucifex_home.mkdir()
+        hermes_home = tmp_path / "hermes"
+        hermes_home.mkdir()
 
-        with patch.dict(os.environ, {"LUCIFEX_HOME": str(lucifex_home)}), \
+        with patch.dict(os.environ, {"HERMES_HOME": str(hermes_home)}), \
              patch.object(Path, "home", return_value=fake_home):
             assert resolve_global_config_path() == fake_home / ".honcho" / "config.json"
             assert resolve_config_path() == fake_home / ".honcho" / "config.json"
 
     def test_from_global_config_uses_default_profile_fallback(self, tmp_path, monkeypatch):
         # Profile mode: from_global_config() reads the default-profile honcho.json
-        # via the HOME-anchored helper, not Path.home() / ".lucifex".
+        # via the HOME-anchored helper, not Path.home() / ".hermes".
         fake_home = tmp_path / "fakehome"
         fake_home.mkdir()
-        default_home = fake_home / ".lucifex"
+        default_home = fake_home / ".hermes"
         profile_home = default_home / "profiles" / "work"
         profile_home.mkdir(parents=True)
         default_cfg = default_home / "honcho.json"
@@ -407,7 +409,7 @@ class TestResolveConfigPath:
         }))
 
         monkeypatch.setattr(Path, "home", lambda: fake_home)
-        monkeypatch.setenv("LUCIFEX_HOME", str(profile_home))
+        monkeypatch.setenv("HERMES_HOME", str(profile_home))
 
         config = HonchoClientConfig.from_global_config()
 
@@ -415,15 +417,15 @@ class TestResolveConfigPath:
         assert config.workspace_id == "default-ws"
 
     def test_from_global_config_uses_local_path(self, tmp_path):
-        lucifex_home = tmp_path / "lucifex"
-        lucifex_home.mkdir()
-        local_cfg = lucifex_home / "honcho.json"
+        hermes_home = tmp_path / "hermes"
+        hermes_home.mkdir()
+        local_cfg = hermes_home / "honcho.json"
         local_cfg.write_text(json.dumps({
             "apiKey": "***",
             "workspace": "local-ws",
         }))
 
-        with patch.dict(os.environ, {"LUCIFEX_HOME": str(lucifex_home)}), \
+        with patch.dict(os.environ, {"HERMES_HOME": str(hermes_home)}), \
              patch.object(Path, "home", return_value=tmp_path):
             config = HonchoClientConfig.from_global_config()
         assert config.api_key == "***"
@@ -432,86 +434,129 @@ class TestResolveConfigPath:
 
 class TestResolveActiveHost:
     def test_profile_host_key_uses_honcho_safe_separator(self):
-        assert profile_host_key("coder") == "lucifex_coder"
-        assert profile_host_key("default") == "lucifex"
+        assert profile_host_key("coder") == "hermes_coder"
+        assert profile_host_key("default") == "hermes"
 
-    def test_default_returns_lucifex(self):
+    def test_default_returns_hermes(self):
         with patch.dict(os.environ, {}, clear=True):
-            os.environ.pop("LUCIFEX_HONCHO_HOST", None)
-            os.environ.pop("LUCIFEX_HOME", None)
-            assert resolve_active_host() == "lucifex"
+            os.environ.pop("HERMES_HONCHO_HOST", None)
+            os.environ.pop("HERMES_HOME", None)
+            with patch(
+                "plugins.memory.honcho.client.resolve_config_path",
+                return_value=Path("/nonexistent/honcho.json"),
+            ):
+                assert resolve_active_host() == "hermes"
 
     def test_explicit_env_var_wins(self):
-        with patch.dict(os.environ, {"LUCIFEX_HONCHO_HOST": "lucifex.coder"}):
-            assert resolve_active_host() == "lucifex.coder"
+        with patch.dict(os.environ, {"HERMES_HONCHO_HOST": "hermes.coder"}):
+            assert resolve_active_host() == "hermes.coder"
 
     def test_profile_name_derives_host(self):
         with patch.dict(os.environ, {}, clear=False):
-            os.environ.pop("LUCIFEX_HONCHO_HOST", None)
-            with patch("lucifex_cli.profiles.get_active_profile_name", return_value="coder"):
-                assert resolve_active_host() == "lucifex_coder"
+            os.environ.pop("HERMES_HONCHO_HOST", None)
+            with patch("hermes_cli.profiles.get_active_profile_name", return_value="coder"):
+                assert resolve_active_host() == "hermes_coder"
 
-    def test_default_profile_returns_lucifex(self):
-        with patch.dict(os.environ, {}, clear=False):
-            os.environ.pop("LUCIFEX_HONCHO_HOST", None)
-            with patch("lucifex_cli.profiles.get_active_profile_name", return_value="default"):
-                assert resolve_active_host() == "lucifex"
+    def test_default_host_does_not_override_named_profile(self, tmp_path):
+        """defaultHost is not applied before active-profile resolution."""
+        config_file = tmp_path / "honcho.json"
+        config_file.write_text(json.dumps({
+            "defaultHost": "local",
+            "hosts": {"local": {"workspace": "local-ws"}},
+        }))
 
-    def test_custom_profile_returns_lucifex(self):
         with patch.dict(os.environ, {}, clear=False):
-            os.environ.pop("LUCIFEX_HONCHO_HOST", None)
-            with patch("lucifex_cli.profiles.get_active_profile_name", return_value="custom"):
-                assert resolve_active_host() == "lucifex"
+            os.environ.pop("HERMES_HONCHO_HOST", None)
+            with patch("hermes_cli.profiles.get_active_profile_name", return_value="coder"), \
+                 patch("plugins.memory.honcho.client.resolve_config_path", return_value=config_file):
+                assert resolve_active_host() == "hermes_coder"
+
+    def test_default_host_applies_to_default_profile_only(self, tmp_path):
+        """default profile can use setup-generated defaultHost without leaking to other profiles."""
+        config_file = tmp_path / "honcho.json"
+        config_file.write_text(json.dumps({
+            "defaultHost": "local",
+            "hosts": {"local": {"workspace": "local-ws"}},
+        }))
+
+        with patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("HERMES_HONCHO_HOST", None)
+            with patch("hermes_cli.profiles.get_active_profile_name", return_value="default"), \
+                 patch("plugins.memory.honcho.client.resolve_config_path", return_value=config_file):
+                assert resolve_active_host() == "local"
+
+    def test_default_profile_returns_hermes(self):
+        with patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("HERMES_HONCHO_HOST", None)
+            with patch("hermes_cli.profiles.get_active_profile_name", return_value="default"), \
+                 patch(
+                     "plugins.memory.honcho.client.resolve_config_path",
+                     return_value=Path("/nonexistent/honcho.json"),
+                 ):
+                assert resolve_active_host() == "hermes"
+
+    def test_custom_profile_returns_hermes(self):
+        with patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("HERMES_HONCHO_HOST", None)
+            with patch("hermes_cli.profiles.get_active_profile_name", return_value="custom"), \
+                 patch(
+                     "plugins.memory.honcho.client.resolve_config_path",
+                     return_value=Path("/nonexistent/honcho.json"),
+                 ):
+                assert resolve_active_host() == "hermes"
 
     def test_profiles_import_failure_falls_back(self):
         import sys
-        with patch.dict(os.environ, {}, clear=False):
-            os.environ.pop("LUCIFEX_HONCHO_HOST", None)
-            # Temporarily remove lucifex_cli.profiles to simulate import failure
-            saved = sys.modules.get("lucifex_cli.profiles")
-            sys.modules["lucifex_cli.profiles"] = None  # type: ignore
+        with patch.dict(os.environ, {}, clear=False), patch(
+            "plugins.memory.honcho.client.resolve_config_path",
+            return_value=Path("/nonexistent/test-honcho-config.json"),
+        ):
+            os.environ.pop("HERMES_HONCHO_HOST", None)
+            # Temporarily remove hermes_cli.profiles to simulate import failure
+            saved = sys.modules.get("hermes_cli.profiles")
+            sys.modules["hermes_cli.profiles"] = None  # type: ignore
             try:
-                assert resolve_active_host() == "lucifex"
+                assert resolve_active_host() == "hermes"
             finally:
                 if saved is not None:
-                    sys.modules["lucifex_cli.profiles"] = saved
+                    sys.modules["hermes_cli.profiles"] = saved
                 else:
-                    sys.modules.pop("lucifex_cli.profiles", None)
+                    sys.modules.pop("hermes_cli.profiles", None)
 
 
 class TestProfileScopedConfig:
     def test_from_env_uses_profile_host(self):
         with patch.dict(os.environ, {"HONCHO_API_KEY": "key"}):
-            config = HonchoClientConfig.from_env(host="lucifex_coder")
-        assert config.host == "lucifex_coder"
-        assert config.workspace_id == "lucifex"  # shared workspace
-        assert config.ai_peer == "lucifex_coder"
+            config = HonchoClientConfig.from_env(host="hermes_coder")
+        assert config.host == "hermes_coder"
+        assert config.workspace_id == "hermes"  # shared workspace
+        assert config.ai_peer == "hermes_coder"
 
     def test_from_env_default_workspace_preserved_for_default_host(self):
         with patch.dict(os.environ, {"HONCHO_API_KEY": "key"}):
-            config = HonchoClientConfig.from_env(host="lucifex")
-        assert config.host == "lucifex"
-        assert config.workspace_id == "lucifex"
+            config = HonchoClientConfig.from_env(host="hermes")
+        assert config.host == "hermes"
+        assert config.workspace_id == "hermes"
 
     def test_from_global_config_reads_profile_host_block(self, tmp_path):
         config_file = tmp_path / "config.json"
         config_file.write_text(json.dumps({
             "apiKey": "shared-key",
             "hosts": {
-                "lucifex": {"aiPeer": "lucifex", "peerName": "alice"},
-                "lucifex_coder": {
-                    "aiPeer": "lucifex_coder",
+                "hermes": {"aiPeer": "hermes", "peerName": "alice"},
+                "hermes_coder": {
+                    "aiPeer": "hermes_coder",
                     "peerName": "alice-coder",
                     "workspace": "coder-ws",
                 },
             },
         }))
         config = HonchoClientConfig.from_global_config(
-            host="lucifex_coder", config_path=config_file,
+            host="hermes_coder", config_path=config_file,
         )
-        assert config.host == "lucifex_coder"
+        assert config.host == "hermes_coder"
         assert config.workspace_id == "coder-ws"
-        assert config.ai_peer == "lucifex_coder"
+        assert config.ai_peer == "hermes_coder"
         assert config.peer_name == "alice-coder"
 
     def test_from_global_config_auto_resolves_host(self, tmp_path):
@@ -519,12 +564,12 @@ class TestProfileScopedConfig:
         config_file.write_text(json.dumps({
             "apiKey": "key",
             "hosts": {
-                "lucifex_dreamer": {"peerName": "dreamer-user"},
+                "hermes_dreamer": {"peerName": "dreamer-user"},
             },
         }))
-        with patch("plugins.memory.honcho.client.resolve_active_host", return_value="lucifex_dreamer"):
+        with patch("plugins.memory.honcho.client.resolve_active_host", return_value="hermes_dreamer"):
             config = HonchoClientConfig.from_global_config(config_path=config_file)
-        assert config.host == "lucifex_dreamer"
+        assert config.host == "hermes_dreamer"
         assert config.peer_name == "dreamer-user"
 
     def test_from_global_config_reads_legacy_dot_profile_host_block(self, tmp_path):
@@ -532,16 +577,16 @@ class TestProfileScopedConfig:
         config_file.write_text(json.dumps({
             "apiKey": "key",
             "hosts": {
-                "lucifex.dreamer": {"peerName": "dreamer-user"},
+                "hermes.dreamer": {"peerName": "dreamer-user"},
             },
         }))
         config = HonchoClientConfig.from_global_config(
-            host="lucifex_dreamer",
+            host="hermes_dreamer",
             config_path=config_file,
         )
-        assert config.host == "lucifex_dreamer"
+        assert config.host == "hermes_dreamer"
         assert config.peer_name == "dreamer-user"
-        assert config.workspace_id == "lucifex_dreamer"
+        assert config.workspace_id == "hermes_dreamer"
 
 
 class TestObservationModeMigration:
@@ -552,7 +597,7 @@ class TestObservationModeMigration:
         cfg_file = tmp_path / "config.json"
         cfg_file.write_text(json.dumps({
             "apiKey": "k",
-            "hosts": {"lucifex": {"enabled": True, "aiPeer": "lucifex"}},
+            "hosts": {"hermes": {"enabled": True, "aiPeer": "hermes"}},
         }))
         cfg = HonchoClientConfig.from_global_config(config_path=cfg_file)
         assert cfg.observation_mode == "unified"
@@ -569,7 +614,7 @@ class TestObservationModeMigration:
         cfg_file = tmp_path / "config.json"
         cfg_file.write_text(json.dumps({
             "apiKey": "k",
-            "hosts": {"lucifex": {"enabled": True, "observationMode": "directional"}},
+            "hosts": {"hermes": {"enabled": True, "observationMode": "directional"}},
         }))
         cfg = HonchoClientConfig.from_global_config(config_path=cfg_file)
         assert cfg.observation_mode == "directional"
@@ -580,7 +625,7 @@ class TestObservationModeMigration:
         cfg_file.write_text(json.dumps({
             "apiKey": "k",
             "observationMode": "unified",
-            "hosts": {"lucifex": {"enabled": True}},
+            "hosts": {"hermes": {"enabled": True}},
         }))
         cfg = HonchoClientConfig.from_global_config(config_path=cfg_file)
         assert cfg.observation_mode == "unified"
@@ -590,7 +635,7 @@ class TestObservationModeMigration:
         cfg_file = tmp_path / "config.json"
         cfg_file.write_text(json.dumps({
             "apiKey": "k",
-            "hosts": {"lucifex": {
+            "hosts": {"hermes": {
                 "enabled": True,
                 "observation": {
                     "user": {"observeMe": True, "observeOthers": False},
@@ -620,7 +665,7 @@ class TestGetHonchoClient:
         cfg = HonchoClientConfig(
             api_key="test-key",
             timeout=91.0,
-            workspace_id="lucifex",
+            workspace_id="hermes",
             environment="production",
         )
 
@@ -635,16 +680,16 @@ class TestGetHonchoClient:
         not importlib.util.find_spec("honcho"),
         reason="honcho SDK not installed"
     )
-    def test_lucifex_config_timeout_override_used_when_config_timeout_missing(self):
+    def test_hermes_config_timeout_override_used_when_config_timeout_missing(self):
         fake_honcho = MagicMock(name="Honcho")
         cfg = HonchoClientConfig(
             api_key="test-key",
-            workspace_id="lucifex",
+            workspace_id="hermes",
             environment="production",
         )
 
         with patch("honcho.Honcho", return_value=fake_honcho) as mock_honcho, \
-             patch("lucifex_cli.config.load_config", return_value={"honcho": {"timeout": 88}}):
+             patch("hermes_cli.config.load_config", return_value={"honcho": {"timeout": 88}}):
             client = get_honcho_client(cfg)
 
         assert client is fake_honcho
@@ -661,12 +706,12 @@ class TestGetHonchoClient:
         fake_honcho = MagicMock(name="Honcho")
         cfg = HonchoClientConfig(
             api_key="test-key",
-            workspace_id="lucifex",
+            workspace_id="hermes",
             environment="production",
         )
 
         with patch("honcho.Honcho", return_value=fake_honcho) as mock_honcho, \
-             patch("lucifex_cli.config.load_config", return_value={}):
+             patch("hermes_cli.config.load_config", return_value={}):
             client = get_honcho_client(cfg)
 
         assert client is fake_honcho
@@ -677,21 +722,159 @@ class TestGetHonchoClient:
         not importlib.util.find_spec("honcho"),
         reason="honcho SDK not installed"
     )
-    def test_lucifex_request_timeout_alias_used(self):
+    def test_hermes_request_timeout_alias_used(self):
         fake_honcho = MagicMock(name="Honcho")
         cfg = HonchoClientConfig(
             api_key="test-key",
-            workspace_id="lucifex",
+            workspace_id="hermes",
             environment="production",
         )
 
         with patch("honcho.Honcho", return_value=fake_honcho) as mock_honcho, \
-             patch("lucifex_cli.config.load_config", return_value={"honcho": {"request_timeout": "77.5"}}):
+             patch("hermes_cli.config.load_config", return_value={"honcho": {"request_timeout": "77.5"}}):
             client = get_honcho_client(cfg)
 
         assert client is fake_honcho
         mock_honcho.assert_called_once()
         assert mock_honcho.call_args.kwargs["timeout"] == 77.5
+
+    @pytest.mark.skipif(
+        not importlib.util.find_spec("honcho"),
+        reason="honcho SDK not installed"
+    )
+    def test_timeout_change_triggers_client_rebuild(self):
+        """Changing timeout config must rebuild the cached client."""
+        from hermes_constants import get_hermes_home
+
+        cfg_yaml = get_hermes_home() / "config.yaml"
+        cfg_yaml.write_text("honcho:\n  timeout: 30\n")
+
+        fake_honcho_1 = MagicMock(name="Honcho_v1")
+        fake_honcho_2 = MagicMock(name="Honcho_v2")
+        cfg = HonchoClientConfig(
+            api_key="test-key",
+            workspace_id="hermes",
+            environment="production",
+        )
+
+        with patch("honcho.Honcho", return_value=fake_honcho_1) as mock_h1:
+            client1 = get_honcho_client(cfg)
+
+        assert client1 is fake_honcho_1
+        assert mock_h1.call_args.kwargs["timeout"] == 30.0
+
+        # Same config — should return cached client (no rebuild)
+        with patch("honcho.Honcho", return_value=fake_honcho_2) as mock_h2:
+            client2 = get_honcho_client(cfg)
+
+        assert client2 is fake_honcho_1  # still cached
+        mock_h2.assert_not_called()
+
+        # Changed timeout — must rebuild
+        cfg_yaml.write_text("honcho:\n  timeout: 300\n")
+        st = cfg_yaml.stat()
+        os.utime(cfg_yaml, ns=(st.st_atime_ns, st.st_mtime_ns + 1_000_000))
+
+        with patch("honcho.Honcho", return_value=fake_honcho_2) as mock_h3:
+            client3 = get_honcho_client(cfg)
+
+        assert client3 is fake_honcho_2  # rebuilt
+        mock_h3.assert_called_once()
+        assert mock_h3.call_args.kwargs["timeout"] == 300.0
+
+    @pytest.mark.skipif(
+        not importlib.util.find_spec("honcho"),
+        reason="honcho SDK not installed"
+    )
+    def test_managed_config_timeout_does_not_thrash_singleton(self, tmp_path, monkeypatch):
+        """A managed-scope honcho.timeout with no user config.yaml must be seen
+        by the staleness check (stable reuse), and a managed edit must trigger
+        a rebuild. Regression for a memo that keyed only on the user file."""
+        managed_dir = tmp_path / "managed"
+        managed_dir.mkdir()
+        managed_cfg = managed_dir / "config.yaml"
+        managed_cfg.write_text("honcho:\n  timeout: 88\n")
+        monkeypatch.setenv("HERMES_MANAGED_DIR", str(managed_dir))
+
+        fake_honcho_1 = MagicMock(name="Honcho_v1")
+        fake_honcho_2 = MagicMock(name="Honcho_v2")
+        cfg = HonchoClientConfig(
+            api_key="test-key",
+            workspace_id="hermes",
+            environment="production",
+        )
+
+        with patch("honcho.Honcho", return_value=fake_honcho_1) as mock_h1:
+            client1 = get_honcho_client(cfg)
+            client2 = get_honcho_client(cfg)
+
+        assert client1 is fake_honcho_1
+        assert client2 is fake_honcho_1
+        assert mock_h1.call_count == 1
+        assert mock_h1.call_args.kwargs["timeout"] == 88.0
+
+        # A managed-timeout edit is detected (same-size write, so bump mtime).
+        managed_cfg.write_text("honcho:\n  timeout: 99\n")
+        st = managed_cfg.stat()
+        os.utime(managed_cfg, ns=(st.st_atime_ns, st.st_mtime_ns + 1_000_000))
+
+        with patch("honcho.Honcho", return_value=fake_honcho_2) as mock_h2:
+            client3 = get_honcho_client(cfg)
+
+        assert client3 is fake_honcho_2
+        mock_h2.assert_called_once()
+        assert mock_h2.call_args.kwargs["timeout"] == 99.0
+
+    @pytest.mark.skipif(
+        not importlib.util.find_spec("honcho"),
+        reason="honcho SDK not installed"
+    )
+    def test_honcho_json_timeout_does_not_thrash_singleton(self, tmp_path):
+        """Regression: a timeout configured in honcho.json must not rebuild the
+        client on every no-config call. The staleness check used to resolve the
+        timeout without reading honcho.json, so it permanently disagreed with
+        the built client and reset the singleton on each access."""
+        config_file = tmp_path / "honcho.json"
+        config_file.write_text(json.dumps({
+            "apiKey": "cloud-key",
+            "hosts": {"hermes": {"workspace": "ws", "requestTimeout": 120}},
+        }))
+
+        fake_honcho_1 = MagicMock(name="Honcho_v1")
+        fake_honcho_2 = MagicMock(name="Honcho_v2")
+
+        with patch("plugins.memory.honcho.client.resolve_config_path", return_value=config_file), \
+             patch("hermes_cli.profiles.get_active_profile_name", return_value="default"):
+            with patch("honcho.Honcho", return_value=fake_honcho_1) as mock_h1:
+                client1 = get_honcho_client()
+
+            assert client1 is fake_honcho_1
+            assert mock_h1.call_args.kwargs["timeout"] == 120.0
+
+            # Repeated no-config calls (the session manager hot path) must
+            # return the cached client, not rebuild.
+            with patch("honcho.Honcho", return_value=fake_honcho_2) as mock_h2:
+                client2 = get_honcho_client()
+                client3 = get_honcho_client()
+
+            assert client2 is fake_honcho_1
+            assert client3 is fake_honcho_1
+            mock_h2.assert_not_called()
+
+            # A real honcho.json timeout change is still detected.
+            config_file.write_text(json.dumps({
+                "apiKey": "cloud-key",
+                "hosts": {"hermes": {"workspace": "ws", "requestTimeout": 240}},
+            }))
+            st = config_file.stat()
+            os.utime(config_file, ns=(st.st_atime_ns, st.st_mtime_ns + 1_000_000))
+
+            with patch("honcho.Honcho", return_value=fake_honcho_2) as mock_h3:
+                client4 = get_honcho_client()
+
+            assert client4 is fake_honcho_2
+            mock_h3.assert_called_once()
+            assert mock_h3.call_args.kwargs["timeout"] == 240.0
 
 
 class TestResolveSessionNameGatewayKey:
@@ -853,7 +1036,7 @@ class TestDialecticDepthParsing:
         config_file.write_text(json.dumps({
             "apiKey": "***",
             "dialecticDepth": 1,
-            "hosts": {"lucifex": {"dialecticDepth": 3}},
+            "hosts": {"hermes": {"dialecticDepth": 3}},
         }))
         config = HonchoClientConfig.from_global_config(config_path=config_file)
         assert config.dialectic_depth == 3
@@ -938,12 +1121,12 @@ class TestGetHonchoClientBaseUrlDoublePrefixFix:
         cfg = HonchoClientConfig(
             api_key=None,
             base_url="http://localhost:38000/v3",
-            workspace_id="lucifex",
+            workspace_id="hermes",
             environment="production",
         )
 
         with patch("honcho.Honcho", return_value=fake_honcho) as mock_honcho, \
-             patch("lucifex_cli.config.load_config", return_value={}):
+             patch("hermes_cli.config.load_config", return_value={}):
             get_honcho_client(cfg)
 
         mock_honcho.assert_called_once()
@@ -962,12 +1145,12 @@ class TestGetHonchoClientBaseUrlDoublePrefixFix:
         cfg = HonchoClientConfig(
             api_key=None,
             base_url="http://localhost:38000",
-            workspace_id="lucifex",
+            workspace_id="hermes",
             environment="production",
         )
 
         with patch("honcho.Honcho", return_value=fake_honcho) as mock_honcho, \
-             patch("lucifex_cli.config.load_config", return_value={}):
+             patch("hermes_cli.config.load_config", return_value={}):
             get_honcho_client(cfg)
 
         mock_honcho.assert_called_once()
@@ -975,6 +1158,74 @@ class TestGetHonchoClientBaseUrlDoublePrefixFix:
         assert passed_base_url == "http://localhost:38000", (
             f"Expected 'http://localhost:38000', got {passed_base_url!r}"
         )
+
+    def test_lan_default_host_empty_key_uses_local_placeholder(self, tmp_path):
+        """Regression for #61661: setup-style root baseUrl + defaultHost + LAN IP
+        must not pass an empty/None api_key to the SDK for a no-auth local server."""
+        config_file = tmp_path / "honcho.json"
+        config_file.write_text(json.dumps({
+            "defaultHost": "local",
+            "baseUrl": "http://192.168.2.112:8000",
+            "hosts": {
+                "local": {
+                    "workspace": "local-ws",
+                    "aiPeer": "local-ai",
+                    "apiKey": "",
+                },
+            },
+        }))
+
+        with patch.dict(os.environ, {}, clear=True), \
+             patch("hermes_cli.profiles.get_active_profile_name", return_value="default"), \
+             patch("plugins.memory.honcho.client.resolve_config_path", return_value=config_file):
+            cfg = HonchoClientConfig.from_global_config(config_path=config_file)
+
+        assert cfg.host == "local"
+        assert cfg.workspace_id == "local-ws"
+        assert cfg.ai_peer == "local-ai"
+        assert cfg.api_key is None
+        assert cfg.base_url == "http://192.168.2.112:8000"
+
+        fake_honcho = MagicMock(name="Honcho")
+        mock_honcho = MagicMock(return_value=fake_honcho)
+        fake_honcho_module = types.SimpleNamespace(Honcho=mock_honcho)
+        with patch.dict(sys.modules, {"honcho": fake_honcho_module}), \
+             patch("hermes_cli.config.load_config", return_value={}):
+            get_honcho_client(cfg)
+
+        mock_honcho.assert_called_once()
+        assert mock_honcho.call_args.kwargs["api_key"] == "local"
+        assert mock_honcho.call_args.kwargs["base_url"] == "http://192.168.2.112:8000"
+
+    def test_lan_default_host_explicit_host_key_preserved(self, tmp_path):
+        """A host-block local JWT still wins for LAN/VPN local URLs."""
+        config_file = tmp_path / "honcho.json"
+        config_file.write_text(json.dumps({
+            "defaultHost": "local",
+            "baseUrl": "http://192.168.2.112:8000",
+            "hosts": {
+                "local": {
+                    "workspace": "local-ws",
+                    "aiPeer": "local-ai",
+                    "apiKey": "local-jwt",
+                },
+            },
+        }))
+
+        with patch.dict(os.environ, {}, clear=True), \
+             patch("hermes_cli.profiles.get_active_profile_name", return_value="default"), \
+             patch("plugins.memory.honcho.client.resolve_config_path", return_value=config_file):
+            cfg = HonchoClientConfig.from_global_config(config_path=config_file)
+
+        fake_honcho = MagicMock(name="Honcho")
+        mock_honcho = MagicMock(return_value=fake_honcho)
+        fake_honcho_module = types.SimpleNamespace(Honcho=mock_honcho)
+        with patch.dict(sys.modules, {"honcho": fake_honcho_module}), \
+             patch("hermes_cli.config.load_config", return_value={}):
+            get_honcho_client(cfg)
+
+        mock_honcho.assert_called_once()
+        assert mock_honcho.call_args.kwargs["api_key"] == "local-jwt"
 
     @pytest.mark.skipif(
         not importlib.util.find_spec("honcho"),
@@ -986,12 +1237,12 @@ class TestGetHonchoClientBaseUrlDoublePrefixFix:
         cfg = HonchoClientConfig(
             api_key="cloud-key",
             base_url="https://api.honcho.dev",
-            workspace_id="lucifex",
+            workspace_id="hermes",
             environment="production",
         )
 
         with patch("honcho.Honcho", return_value=fake_honcho) as mock_honcho, \
-             patch("lucifex_cli.config.load_config", return_value={}):
+             patch("hermes_cli.config.load_config", return_value={}):
             get_honcho_client(cfg)
 
         mock_honcho.assert_called_once()
@@ -1011,12 +1262,12 @@ class TestGetHonchoClientBaseUrlDoublePrefixFix:
         cfg = HonchoClientConfig(
             api_key="cloud-key",
             base_url="https://api.honcho.dev/v3",
-            workspace_id="lucifex",
+            workspace_id="hermes",
             environment="production",
         )
 
         with patch("honcho.Honcho", return_value=fake_honcho) as mock_honcho, \
-             patch("lucifex_cli.config.load_config", return_value={}):
+             patch("hermes_cli.config.load_config", return_value={}):
             get_honcho_client(cfg)
 
         mock_honcho.assert_called_once()
@@ -1054,12 +1305,12 @@ class TestGetHonchoClientBaseUrlDoublePrefixFix:
         cfg = HonchoClientConfig(
             api_key="self-host-key",
             base_url=raw_url,
-            workspace_id="lucifex",
+            workspace_id="hermes",
             environment="production",
         )
 
         with patch("honcho.Honcho", return_value=fake_honcho) as mock_honcho, \
-             patch("lucifex_cli.config.load_config", return_value={}):
+             patch("hermes_cli.config.load_config", return_value={}):
             get_honcho_client(cfg)
 
         mock_honcho.assert_called_once()
@@ -1078,12 +1329,12 @@ class TestGetHonchoClientBaseUrlDoublePrefixFix:
         cfg = HonchoClientConfig(
             api_key=None,
             base_url="http://127.0.0.1:38000/v3/",
-            workspace_id="lucifex",
+            workspace_id="hermes",
             environment="production",
         )
 
         with patch("honcho.Honcho", return_value=fake_honcho) as mock_honcho, \
-             patch("lucifex_cli.config.load_config", return_value={}):
+             patch("hermes_cli.config.load_config", return_value={}):
             get_honcho_client(cfg)
 
         mock_honcho.assert_called_once()

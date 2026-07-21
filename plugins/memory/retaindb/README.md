@@ -10,13 +10,13 @@ Cloud memory API with hybrid search (Vector + BM25 + Reranking) and 7 memory typ
 ## Setup
 
 ```bash
-lucifex memory setup    # select "retaindb"
+hermes memory setup    # select "retaindb"
 ```
 
 Or manually:
 ```bash
-lucifex config set memory.provider retaindb
-echo "RETAINDB_API_KEY=your-key" >> ~/.lucifex/.env
+hermes config set memory.provider retaindb
+echo "RETAINDB_API_KEY=your-key" >> ~/.hermes/.env
 ```
 
 ## Config

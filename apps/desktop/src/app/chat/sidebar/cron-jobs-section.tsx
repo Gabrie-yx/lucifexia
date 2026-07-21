@@ -6,12 +6,12 @@ import { DisclosureCaret } from '@/components/ui/disclosure-caret'
 import { GlyphSpinner } from '@/components/ui/glyph-spinner'
 import { SidebarGroup, SidebarGroupContent } from '@/components/ui/sidebar'
 import { Tip } from '@/components/ui/tooltip'
-import { getCronJobRuns, type SessionInfo } from '@/lucifex'
+import { getCronJobRuns, type SessionInfo } from '@/hermes'
 import { useI18n } from '@/i18n'
 import { fmtDayTime, relativeTime } from '@/lib/time'
 import { cn } from '@/lib/utils'
 import { $selectedStoredSessionId } from '@/store/session'
-import type { CronJob } from '@/types/lucifex'
+import type { CronJob } from '@/types/hermes'
 
 import { jobState, jobTitle, STATE_DOT } from '../../cron/job-state'
 import { SidebarPanelLabel } from '../../shell/sidebar-label'
@@ -201,35 +201,36 @@ function CronJobSidebarRow({
             so the cron dots line up with the sessions above; the caret sits next
             to the label (matching the other sidebar disclosures) and the whole
             label area toggles the run peek. */}
-        <button
-          aria-expanded={expanded}
-          aria-label={expanded ? c.hideRuns : c.showRuns}
-          className="flex min-w-0 items-center gap-1.5 bg-transparent py-0.5 pl-2 pr-1 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
-          onClick={onTogglePeek}
-          title={label}
-          type="button"
-        >
-          <span className="grid w-3.5 shrink-0 place-items-center">
-            <span
-              aria-hidden="true"
+        <Tip label={label}>
+          <button
+            aria-expanded={expanded}
+            aria-label={expanded ? c.hideRuns : c.showRuns}
+            className="flex min-w-0 items-center gap-1.5 bg-transparent py-0.5 pl-2 pr-1 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+            onClick={onTogglePeek}
+            type="button"
+          >
+            <span className="grid w-3.5 shrink-0 place-items-center">
+              <span
+                aria-hidden="true"
+                className={cn(
+                  'size-1 rounded-full',
+                  STATE_DOT[state] ?? 'bg-(--ui-text-quaternary)',
+                  state === 'running' && 'size-1.5 animate-pulse'
+                )}
+              />
+            </span>
+            <span className="min-w-0 truncate text-[0.8125rem] text-(--ui-text-secondary) group-hover/cron:text-foreground">
+              {label}
+            </span>
+            <DisclosureCaret
               className={cn(
-                'size-1 rounded-full',
-                STATE_DOT[state] ?? 'bg-(--ui-text-quaternary)',
-                state === 'running' && 'size-1.5 animate-pulse'
+                'shrink-0 text-(--ui-text-tertiary) transition',
+                expanded ? 'opacity-100' : 'opacity-0 group-hover/cron:opacity-100'
               )}
+              open={expanded}
             />
-          </span>
-          <span className="min-w-0 truncate text-[0.8125rem] text-(--ui-text-secondary) group-hover/cron:text-foreground">
-            {label}
-          </span>
-          <DisclosureCaret
-            className={cn(
-              'shrink-0 text-(--ui-text-tertiary) transition',
-              expanded ? 'opacity-100' : 'opacity-0 group-hover/cron:opacity-100'
-            )}
-            open={expanded}
-          />
-        </button>
+          </button>
+        </Tip>
         {/* Trailing cluster: countdown by default, quick actions on hover. */}
         <div className="flex items-center gap-0.5 justify-self-end pr-1">
           <span className="text-[0.6875rem] text-(--ui-text-tertiary) tabular-nums group-hover/cron:hidden">

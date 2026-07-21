@@ -1,4 +1,4 @@
-"""Tests for file write safety and LUCIFEX_WRITE_SAFE_ROOT sandboxing.
+"""Tests for file write safety and HERMES_WRITE_SAFE_ROOT sandboxing.
 
 Based on PR #1085 by ismoilh (salvaged).
 """
@@ -26,21 +26,21 @@ class TestStaticDenyList:
 
 
 class TestSafeWriteRoot:
-    """LUCIFEX_WRITE_SAFE_ROOT should sandbox writes to a specific subtree."""
+    """HERMES_WRITE_SAFE_ROOT should sandbox writes to a specific subtree."""
 
     def test_writes_inside_safe_root_are_allowed(self, tmp_path: Path, monkeypatch):
         safe_root = tmp_path / "workspace"
         child = safe_root / "subdir" / "file.txt"
         os.makedirs(child.parent, exist_ok=True)
 
-        monkeypatch.setenv("LUCIFEX_WRITE_SAFE_ROOT", str(safe_root))
+        monkeypatch.setenv("HERMES_WRITE_SAFE_ROOT", str(safe_root))
         assert _is_write_denied(str(child)) is False
 
     def test_writes_to_safe_root_itself_are_allowed(self, tmp_path: Path, monkeypatch):
         safe_root = tmp_path / "workspace"
         os.makedirs(safe_root, exist_ok=True)
 
-        monkeypatch.setenv("LUCIFEX_WRITE_SAFE_ROOT", str(safe_root))
+        monkeypatch.setenv("HERMES_WRITE_SAFE_ROOT", str(safe_root))
         assert _is_write_denied(str(safe_root)) is False
 
     def test_writes_outside_safe_root_are_denied(self, tmp_path: Path, monkeypatch):
@@ -49,38 +49,38 @@ class TestSafeWriteRoot:
         os.makedirs(safe_root, exist_ok=True)
         os.makedirs(outside.parent, exist_ok=True)
 
-        monkeypatch.setenv("LUCIFEX_WRITE_SAFE_ROOT", str(safe_root))
+        monkeypatch.setenv("HERMES_WRITE_SAFE_ROOT", str(safe_root))
         assert _is_write_denied(str(outside)) is True
 
     def test_safe_root_env_ignores_empty_value(self, tmp_path: Path, monkeypatch):
         target = tmp_path / "regular.txt"
-        monkeypatch.setenv("LUCIFEX_WRITE_SAFE_ROOT", "")
+        monkeypatch.setenv("HERMES_WRITE_SAFE_ROOT", "")
         assert _is_write_denied(str(target)) is False
 
     def test_safe_root_unset_allows_all(self, tmp_path: Path, monkeypatch):
         target = tmp_path / "regular.txt"
-        monkeypatch.delenv("LUCIFEX_WRITE_SAFE_ROOT", raising=False)
+        monkeypatch.delenv("HERMES_WRITE_SAFE_ROOT", raising=False)
         assert _is_write_denied(str(target)) is False
 
     def test_safe_root_with_tilde_expansion(self, tmp_path: Path, monkeypatch):
-        """~ in LUCIFEX_WRITE_SAFE_ROOT should be expanded."""
+        """~ in HERMES_WRITE_SAFE_ROOT should be expanded."""
         # Use a real subdirectory of tmp_path so we can test tilde-style paths
         safe_root = tmp_path / "workspace"
         inside = safe_root / "file.txt"
         os.makedirs(safe_root, exist_ok=True)
 
-        monkeypatch.setenv("LUCIFEX_WRITE_SAFE_ROOT", str(safe_root))
+        monkeypatch.setenv("HERMES_WRITE_SAFE_ROOT", str(safe_root))
         assert _is_write_denied(str(inside)) is False
 
     def test_safe_root_does_not_override_static_deny(self, tmp_path: Path, monkeypatch):
         """Even if a static-denied path is inside the safe root, it's still denied."""
         # Point safe root at home to include ~/.ssh
-        monkeypatch.setenv("LUCIFEX_WRITE_SAFE_ROOT", os.path.expanduser("~"))
+        monkeypatch.setenv("HERMES_WRITE_SAFE_ROOT", os.path.expanduser("~"))
         assert _is_write_denied(os.path.expanduser("~/.ssh/id_rsa")) is True
 
 
 class TestMultipleSafeWriteRoots:
-    """LUCIFEX_WRITE_SAFE_ROOT with multiple colon-separated directories."""
+    """HERMES_WRITE_SAFE_ROOT with multiple colon-separated directories."""
 
     def test_write_inside_first_root_allowed(self, tmp_path: Path, monkeypatch):
         root_a = tmp_path / "workspace_a"
@@ -89,7 +89,7 @@ class TestMultipleSafeWriteRoots:
         os.makedirs(child.parent, exist_ok=True)
         os.makedirs(root_b, exist_ok=True)
 
-        monkeypatch.setenv("LUCIFEX_WRITE_SAFE_ROOT", f"{root_a}{os.pathsep}{root_b}")
+        monkeypatch.setenv("HERMES_WRITE_SAFE_ROOT", f"{root_a}{os.pathsep}{root_b}")
         assert _is_write_denied(str(child)) is False
 
     def test_write_inside_second_root_allowed(self, tmp_path: Path, monkeypatch):
@@ -99,7 +99,7 @@ class TestMultipleSafeWriteRoots:
         os.makedirs(child.parent, exist_ok=True)
         os.makedirs(root_a, exist_ok=True)
 
-        monkeypatch.setenv("LUCIFEX_WRITE_SAFE_ROOT", f"{root_a}{os.pathsep}{root_b}")
+        monkeypatch.setenv("HERMES_WRITE_SAFE_ROOT", f"{root_a}{os.pathsep}{root_b}")
         assert _is_write_denied(str(child)) is False
 
     def test_write_outside_all_roots_denied(self, tmp_path: Path, monkeypatch):
@@ -110,7 +110,7 @@ class TestMultipleSafeWriteRoots:
         os.makedirs(root_b, exist_ok=True)
         os.makedirs(outside.parent, exist_ok=True)
 
-        monkeypatch.setenv("LUCIFEX_WRITE_SAFE_ROOT", f"{root_a}{os.pathsep}{root_b}")
+        monkeypatch.setenv("HERMES_WRITE_SAFE_ROOT", f"{root_a}{os.pathsep}{root_b}")
         assert _is_write_denied(str(outside)) is True
 
     def test_trailing_separator_ignored(self, tmp_path: Path, monkeypatch):
@@ -118,7 +118,7 @@ class TestMultipleSafeWriteRoots:
         inside = root / "file.txt"
         os.makedirs(root, exist_ok=True)
 
-        monkeypatch.setenv("LUCIFEX_WRITE_SAFE_ROOT", f"{root}{os.pathsep}")
+        monkeypatch.setenv("HERMES_WRITE_SAFE_ROOT", f"{root}{os.pathsep}")
         assert _is_write_denied(str(inside)) is False
 
     def test_leading_separator_ignored(self, tmp_path: Path, monkeypatch):
@@ -126,7 +126,7 @@ class TestMultipleSafeWriteRoots:
         inside = root / "file.txt"
         os.makedirs(root, exist_ok=True)
 
-        monkeypatch.setenv("LUCIFEX_WRITE_SAFE_ROOT", f"{os.pathsep}{root}")
+        monkeypatch.setenv("HERMES_WRITE_SAFE_ROOT", f"{os.pathsep}{root}")
         assert _is_write_denied(str(inside)) is False
 
     def test_double_separator_ignored(self, tmp_path: Path, monkeypatch):
@@ -135,14 +135,14 @@ class TestMultipleSafeWriteRoots:
         os.makedirs(root_a, exist_ok=True)
         os.makedirs(root_b, exist_ok=True)
 
-        monkeypatch.setenv("LUCIFEX_WRITE_SAFE_ROOT", f"{root_a}{os.pathsep}{os.pathsep}{root_b}")
+        monkeypatch.setenv("HERMES_WRITE_SAFE_ROOT", f"{root_a}{os.pathsep}{os.pathsep}{root_b}")
         # Both roots should still be active
         assert _is_write_denied(str(root_a / "file.txt")) is False
         assert _is_write_denied(str(root_b / "file.txt")) is False
 
     def test_all_separators_yields_empty_set(self, tmp_path: Path, monkeypatch):
         target = tmp_path / "regular.txt"
-        monkeypatch.setenv("LUCIFEX_WRITE_SAFE_ROOT", os.pathsep * 3)
+        monkeypatch.setenv("HERMES_WRITE_SAFE_ROOT", os.pathsep * 3)
         assert _is_write_denied(str(target)) is False
 
     def test_static_deny_still_wins_with_multiple_roots(self, tmp_path: Path, monkeypatch):
@@ -151,7 +151,7 @@ class TestMultipleSafeWriteRoots:
         os.makedirs(root, exist_ok=True)
 
         monkeypatch.setenv(
-            "LUCIFEX_WRITE_SAFE_ROOT",
+            "HERMES_WRITE_SAFE_ROOT",
             f"{root}{os.pathsep}{os.path.expanduser('~')}",
         )
         assert _is_write_denied(os.path.expanduser("~/.ssh/id_rsa")) is True
@@ -162,10 +162,111 @@ class TestMultipleSafeWriteRoots:
         os.makedirs(root, exist_ok=True)
 
         monkeypatch.setenv(
-            "LUCIFEX_WRITE_SAFE_ROOT",
+            "HERMES_WRITE_SAFE_ROOT",
             f"{root}{os.pathsep}{root}",
         )
         assert _is_write_denied(str(inside)) is False
+
+
+class TestGetWriteDeniedError:
+    """get_write_denied_error() should distinguish credential vs safe-root blocks."""
+
+    def test_credential_path_message(self):
+        from agent.file_safety import get_write_denied_error
+
+        err = get_write_denied_error(os.path.expanduser("~/.ssh/id_rsa"))
+        assert err is not None
+        assert "protected system/credential file" in err
+        assert "HERMES_WRITE_SAFE_ROOT" not in err
+
+    def test_safe_root_message(self, tmp_path: Path, monkeypatch):
+        from agent.file_safety import get_write_denied_error
+
+        safe_root = tmp_path / "workspace"
+        outside = tmp_path / "outside.txt"
+        os.makedirs(safe_root, exist_ok=True)
+
+        monkeypatch.setenv("HERMES_WRITE_SAFE_ROOT", str(safe_root))
+        err = get_write_denied_error(str(outside))
+        assert err is not None
+        assert "outside HERMES_WRITE_SAFE_ROOT" in err
+        assert str(safe_root) in err
+        assert "protected system/credential file" not in err
+
+    def test_allowed_path_returns_none(self, tmp_path: Path):
+        from agent.file_safety import get_write_denied_error
+
+        target = tmp_path / "ok.txt"
+        assert get_write_denied_error(str(target)) is None
+
+
+class TestSafeRootDenialMessageIntegration:
+    """Regression tests verifying that file-tools surface the correct denial
+    message when HERMES_WRITE_SAFE_ROOT blocks a path.
+
+    Prior to this fix, ALL write denials returned the same "protected
+    system/credential file" message regardless of root cause.  These tests
+    exercise the actual write_file / patch_replace code path, not just
+    the get_write_denied_error() helper in isolation.
+    """
+
+    @pytest.fixture
+    def ops(self, tmp_path: Path):
+        from tools.environments.local import LocalEnvironment
+        from tools.file_operations import ShellFileOperations
+        env = LocalEnvironment(cwd=str(tmp_path))
+        return ShellFileOperations(env, cwd=str(tmp_path))
+
+    def test_write_file_safe_root_outside_shows_safe_root_message(
+        self, ops, tmp_path: Path, monkeypatch
+    ):
+        safe_root = tmp_path / "workspace"
+        safe_root.mkdir()
+        outside = tmp_path / "other" / "file.txt"
+        outside.parent.mkdir()
+        monkeypatch.setenv("HERMES_WRITE_SAFE_ROOT", str(safe_root))
+
+        res = ops.write_file(str(outside), "content")
+        assert res.error is not None
+        assert "outside HERMES_WRITE_SAFE_ROOT" in res.error
+        assert str(safe_root) in res.error
+        assert "credential" not in res.error
+        assert not outside.exists()
+
+    def test_patch_replace_safe_root_outside_shows_safe_root_message(
+        self, ops, tmp_path: Path, monkeypatch
+    ):
+        safe_root = tmp_path / "workspace"
+        safe_root.mkdir()
+        outside = tmp_path / "other" / "file.txt"
+        outside.parent.mkdir()
+        outside.write_text("old content")
+        monkeypatch.setenv("HERMES_WRITE_SAFE_ROOT", str(safe_root))
+
+        res = ops.patch_replace(str(outside), "old", "new")
+        assert res.error is not None
+        assert "outside HERMES_WRITE_SAFE_ROOT" in res.error
+        assert "credential" not in res.error
+
+    def test_write_file_credential_path_shows_credential_message(
+        self, ops, tmp_path: Path
+    ):
+        res = ops.write_file("/etc/shadow", "content")
+        assert res.error is not None
+        assert "protected system/credential file" in res.error
+        assert "outside" not in res.error
+
+    def test_write_file_allowed_path_returns_no_error(
+        self, ops, tmp_path: Path, monkeypatch
+    ):
+        safe_root = tmp_path / "workspace"
+        safe_root.mkdir()
+        inside = safe_root / "file.txt"
+        monkeypatch.setenv("HERMES_WRITE_SAFE_ROOT", str(safe_root))
+
+        res = ops.write_file(str(inside), "content")
+        assert res.error is None
+        assert inside.read_text() == "content"
 
 
 class TestCheckSensitivePathMacOSBypass:
@@ -248,12 +349,12 @@ class TestAtomicWrite:
             os.chmod(locked, 0o700)  # restore for cleanup
         assert res.error is not None
         assert target.read_text() == "ORIGINAL\n"
-        assert [p for p in os.listdir(locked) if ".lucifex-tmp" in p] == []
+        assert [p for p in os.listdir(locked) if ".hermes-tmp" in p] == []
 
     def test_no_temp_file_leaked_on_success(self, ops, tmp_path: Path):
         target = tmp_path / "f.txt"
         ops.write_file(str(target), "hello\n")
-        assert [p for p in os.listdir(tmp_path) if ".lucifex-tmp" in p] == []
+        assert [p for p in os.listdir(tmp_path) if ".hermes-tmp" in p] == []
 
     def test_special_chars_roundtrip(self, ops, tmp_path: Path):
         target = tmp_path / "special.txt"

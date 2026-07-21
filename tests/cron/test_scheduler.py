@@ -1,6 +1,7 @@
 """Tests for cron/scheduler.py — origin resolution, delivery routing, and error logging."""
 
 import contextlib
+import itertools
 import json
 import logging
 import os
@@ -68,7 +69,7 @@ class TestPerJobToolsetMcpMerge:
         # it is the path taken and its result is returned.
         job = {"enabled_toolsets": None}
         sentinel = ["web", "finnhub"]
-        with patch("lucifex_cli.tools_config._get_platform_tools",
+        with patch("hermes_cli.tools_config._get_platform_tools",
                    return_value=set(sentinel)) as m_platform:
             result = _resolve_cron_enabled_toolsets(job, self.CFG)
         m_platform.assert_called_once()
@@ -965,13 +966,13 @@ class TestRunJobSessionPersistence:
         }
         fake_db = MagicMock()
 
-        with patch("cron.scheduler._lucifex_home", tmp_path), \
+        with patch("cron.scheduler._hermes_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("lucifex_cli.env_loader.load_lucifex_dotenv"), \
-             patch("lucifex_cli.env_loader.reset_secret_source_cache"), \
-             patch("lucifex_state.SessionDB", return_value=fake_db), \
+             patch("hermes_cli.env_loader.load_hermes_dotenv"), \
+             patch("hermes_cli.env_loader.reset_secret_source_cache"), \
+             patch("hermes_state.SessionDB", return_value=fake_db), \
              patch(
-                 "lucifex_cli.runtime_provider.resolve_runtime_provider",
+                 "hermes_cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "test-key",
                      "base_url": "https://example.invalid/v1",
@@ -1012,13 +1013,13 @@ class TestRunJobSessionPersistence:
         job = {"id": "test-job", "name": "test", "prompt": "hello"}
         fake_db = MagicMock()
 
-        with patch("cron.scheduler._lucifex_home", tmp_path), \
+        with patch("cron.scheduler._hermes_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("lucifex_cli.env_loader.load_lucifex_dotenv"), \
-             patch("lucifex_cli.env_loader.reset_secret_source_cache"), \
-             patch("lucifex_state.SessionDB", return_value=fake_db), \
+             patch("hermes_cli.env_loader.load_hermes_dotenv"), \
+             patch("hermes_cli.env_loader.reset_secret_source_cache"), \
+             patch("hermes_state.SessionDB", return_value=fake_db), \
              patch(
-                 "lucifex_cli.runtime_provider.resolve_runtime_provider",
+                 "hermes_cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "test-key",
                      "base_url": "https://example.invalid/v1",
@@ -1056,13 +1057,13 @@ class TestRunJobSessionPersistence:
         job = {"id": "test-job", "name": "test", "prompt": "hello"}
         fake_db = MagicMock()
 
-        with patch("cron.scheduler._lucifex_home", tmp_path), \
+        with patch("cron.scheduler._hermes_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("lucifex_cli.env_loader.load_lucifex_dotenv"), \
-             patch("lucifex_cli.env_loader.reset_secret_source_cache"), \
-             patch("lucifex_state.SessionDB", return_value=fake_db), \
+             patch("hermes_cli.env_loader.load_hermes_dotenv"), \
+             patch("hermes_cli.env_loader.reset_secret_source_cache"), \
+             patch("hermes_state.SessionDB", return_value=fake_db), \
              patch(
-                 "lucifex_cli.runtime_provider.resolve_runtime_provider",
+                 "hermes_cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "test-key",
                      "base_url": "https://example.invalid/v1",
@@ -1097,13 +1098,13 @@ class TestRunJobSessionPersistence:
         }
         fake_db = MagicMock()
 
-        with patch("cron.scheduler._lucifex_home", tmp_path), \
+        with patch("cron.scheduler._hermes_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("lucifex_cli.env_loader.load_lucifex_dotenv"), \
-             patch("lucifex_cli.env_loader.reset_secret_source_cache"), \
-             patch("lucifex_state.SessionDB", return_value=fake_db), \
+             patch("hermes_cli.env_loader.load_hermes_dotenv"), \
+             patch("hermes_cli.env_loader.reset_secret_source_cache"), \
+             patch("hermes_state.SessionDB", return_value=fake_db), \
              patch(
-                 "lucifex_cli.runtime_provider.resolve_runtime_provider",
+                 "hermes_cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "test-key",
                      "base_url": "https://example.invalid/v1",
@@ -1135,13 +1136,13 @@ class TestRunJobSessionPersistence:
         }
         fake_db = MagicMock()
 
-        with patch("cron.scheduler._lucifex_home", tmp_path), \
+        with patch("cron.scheduler._hermes_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("lucifex_cli.env_loader.load_lucifex_dotenv"), \
-             patch("lucifex_cli.env_loader.reset_secret_source_cache"), \
-             patch("lucifex_state.SessionDB", return_value=fake_db), \
+             patch("hermes_cli.env_loader.load_hermes_dotenv"), \
+             patch("hermes_cli.env_loader.reset_secret_source_cache"), \
+             patch("hermes_state.SessionDB", return_value=fake_db), \
              patch(
-                 "lucifex_cli.runtime_provider.resolve_runtime_provider",
+                 "hermes_cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -1173,13 +1174,13 @@ class TestRunJobSessionPersistence:
         }
         fake_db = MagicMock()
 
-        with patch("cron.scheduler._lucifex_home", tmp_path), \
+        with patch("cron.scheduler._hermes_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("lucifex_cli.env_loader.load_lucifex_dotenv"), \
-             patch("lucifex_cli.env_loader.reset_secret_source_cache"), \
-             patch("lucifex_state.SessionDB", return_value=fake_db), \
+             patch("hermes_cli.env_loader.load_hermes_dotenv"), \
+             patch("hermes_cli.env_loader.reset_secret_source_cache"), \
+             patch("hermes_state.SessionDB", return_value=fake_db), \
              patch(
-                 "lucifex_cli.runtime_provider.resolve_runtime_provider",
+                 "hermes_cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -1216,13 +1217,13 @@ class TestRunJobSessionPersistence:
         mock_agent = MagicMock()
         mock_agent.run_conversation.return_value = {"final_response": "ok"}
         base = [
-            patch("cron.scheduler._lucifex_home", tmp_path),
+            patch("cron.scheduler._hermes_home", tmp_path),
             patch("cron.scheduler._resolve_origin", return_value=None),
-            patch("lucifex_cli.env_loader.load_lucifex_dotenv"),
-            patch("lucifex_cli.env_loader.reset_secret_source_cache"),
-            patch("lucifex_state.SessionDB", return_value=fake_db),
+            patch("hermes_cli.env_loader.load_hermes_dotenv"),
+            patch("hermes_cli.env_loader.reset_secret_source_cache"),
+            patch("hermes_state.SessionDB", return_value=fake_db),
             patch(
-                "lucifex_cli.runtime_provider.resolve_runtime_provider",
+                "hermes_cli.runtime_provider.resolve_runtime_provider",
                 return_value={
                     "api_key": "test-key",
                     "base_url": "https://example.invalid/v1",
@@ -1285,7 +1286,7 @@ class TestRunJobSessionPersistence:
 
     def test_run_job_enabled_toolsets_resolves_from_platform_config_when_not_set(self, tmp_path):
         """When a job has no explicit enabled_toolsets, the scheduler now
-        resolves them from ``lucifex tools`` platform config for ``cron``
+        resolves them from ``hermes tools`` platform config for ``cron``
         (PR #14xxx — blanket fix for Norbert's surprise ``moa`` run).
 
         The legacy "pass None → AIAgent loads full default" path is still
@@ -1303,7 +1304,7 @@ class TestRunJobSessionPersistence:
         kwargs = mock_agent_cls.call_args.kwargs
         # Resolution happened — not None, is a list.
         assert isinstance(kwargs["enabled_toolsets"], list)
-        # The cron default is _LUCIFEX_CORE_TOOLS with _DEFAULT_OFF_TOOLSETS
+        # The cron default is _HERMES_CORE_TOOLS with _DEFAULT_OFF_TOOLSETS
         # (``moa``, ``homeassistant``, ``rl``) removed. The most important
         # invariant: ``moa`` is NOT in the default cron toolset, so a cron
         # run cannot accidentally spin up frontier models.
@@ -1311,16 +1312,16 @@ class TestRunJobSessionPersistence:
 
     def test_run_job_per_job_toolsets_win_over_platform_config(self, tmp_path):
         """Per-job enabled_toolsets (via cronjob tool) always take precedence
-        over the platform-level ``lucifex tools`` config."""
+        over the platform-level ``hermes tools`` config."""
         job = {
             "id": "override-job",
             "name": "test",
             "prompt": "hello",
             "enabled_toolsets": ["terminal"],
         }
-        # Even if the user has ``lucifex tools`` configured to enable web+file
+        # Even if the user has ``hermes tools`` configured to enable web+file
         # for cron, the per-job override wins.
-        extra = [patch("lucifex_cli.tools_config._get_platform_tools", return_value={"web", "file"})]
+        extra = [patch("hermes_cli.tools_config._get_platform_tools", return_value={"web", "file"})]
         with self._run_job_patches(tmp_path, extra=extra) as (_fake_db, mock_agent_cls):
             run_job(job)
 
@@ -1340,13 +1341,13 @@ class TestRunJobSessionPersistence:
         }
         fake_db = MagicMock()
 
-        with patch("cron.scheduler._lucifex_home", tmp_path), \
+        with patch("cron.scheduler._hermes_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("lucifex_cli.env_loader.load_lucifex_dotenv"), \
-             patch("lucifex_cli.env_loader.reset_secret_source_cache"), \
-             patch("lucifex_state.SessionDB", return_value=fake_db), \
+             patch("hermes_cli.env_loader.load_hermes_dotenv"), \
+             patch("hermes_cli.env_loader.reset_secret_source_cache"), \
+             patch("hermes_state.SessionDB", return_value=fake_db), \
              patch(
-                 "lucifex_cli.runtime_provider.resolve_runtime_provider",
+                 "hermes_cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -1417,13 +1418,13 @@ class TestRunJobSessionPersistence:
         }
         fake_db = MagicMock()
 
-        with patch("cron.scheduler._lucifex_home", tmp_path), \
+        with patch("cron.scheduler._hermes_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("lucifex_cli.env_loader.load_lucifex_dotenv"), \
-             patch("lucifex_cli.env_loader.reset_secret_source_cache"), \
-             patch("lucifex_state.SessionDB", return_value=fake_db), \
+             patch("hermes_cli.env_loader.load_hermes_dotenv"), \
+             patch("hermes_cli.env_loader.reset_secret_source_cache"), \
+             patch("hermes_state.SessionDB", return_value=fake_db), \
              patch(
-                 "lucifex_cli.runtime_provider.resolve_runtime_provider",
+                 "hermes_cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -1457,13 +1458,13 @@ class TestRunJobSessionPersistence:
         }
         fake_db = MagicMock()
 
-        with patch("cron.scheduler._lucifex_home", tmp_path), \
+        with patch("cron.scheduler._hermes_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("lucifex_cli.env_loader.load_lucifex_dotenv"), \
-             patch("lucifex_cli.env_loader.reset_secret_source_cache"), \
-             patch("lucifex_state.SessionDB", return_value=fake_db), \
+             patch("hermes_cli.env_loader.load_hermes_dotenv"), \
+             patch("hermes_cli.env_loader.reset_secret_source_cache"), \
+             patch("hermes_state.SessionDB", return_value=fake_db), \
              patch(
-                 "lucifex_cli.runtime_provider.resolve_runtime_provider",
+                 "hermes_cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -1500,13 +1501,13 @@ class TestRunJobSessionPersistence:
         }
         fake_db = MagicMock()
 
-        with patch("cron.scheduler._lucifex_home", tmp_path), \
+        with patch("cron.scheduler._hermes_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("lucifex_cli.env_loader.load_lucifex_dotenv"), \
-             patch("lucifex_cli.env_loader.reset_secret_source_cache"), \
-             patch("lucifex_state.SessionDB", return_value=fake_db), \
+             patch("hermes_cli.env_loader.load_hermes_dotenv"), \
+             patch("hermes_cli.env_loader.reset_secret_source_cache"), \
+             patch("hermes_state.SessionDB", return_value=fake_db), \
              patch(
-                 "lucifex_cli.runtime_provider.resolve_runtime_provider",
+                 "hermes_cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -1532,6 +1533,25 @@ class TestRunJobSessionPersistence:
         assert "final fallback report" in output
         assert "(FAILED)" not in output
 
+    def test_tick_skips_due_jobs_while_dispatch_is_paused(self, tmp_path):
+        """The drain gate runs before advancing a due job's schedule."""
+        from cron.scheduler import tick
+
+        job = {
+            "id": "paused-due-job",
+            "name": "paused due job",
+            "schedule": {"kind": "interval", "seconds": 60},
+            "next_run_at": "2020-01-01T00:00:00+00:00",
+            "enabled": True,
+        }
+        with patch("cron.scheduler.get_due_jobs", return_value=[job]), patch(
+            "cron.scheduler.advance_next_run"
+        ) as advance, patch("cron.scheduler.run_one_job") as run_one:
+            assert tick(verbose=False, sync=True, can_dispatch=lambda: False) == 0
+
+        advance.assert_not_called()
+        run_one.assert_not_called()
+
     def test_tick_marks_empty_response_as_error(self, tmp_path):
         """When run_job returns success=True but final_response is empty,
         tick() should mark the job as error so last_status != 'ok'.
@@ -1552,7 +1572,7 @@ class TestRunJobSessionPersistence:
 
         fake_db = MagicMock()
 
-        with patch("cron.scheduler._lucifex_home", tmp_path), \
+        with patch("cron.scheduler._hermes_home", tmp_path), \
              patch("cron.scheduler.get_due_jobs", return_value=[job]), \
              patch("cron.scheduler.advance_next_run"), \
              patch("cron.scheduler.mark_job_run") as mock_mark, \
@@ -1580,9 +1600,9 @@ class TestRunJobSessionPersistence:
 
         (tmp_path / ".env").write_text("TELEGRAM_HOME_CHANNEL=-2002\n")
         monkeypatch.delenv("TELEGRAM_HOME_CHANNEL", raising=False)
-        monkeypatch.delenv("LUCIFEX_CRON_AUTO_DELIVER_PLATFORM", raising=False)
-        monkeypatch.delenv("LUCIFEX_CRON_AUTO_DELIVER_CHAT_ID", raising=False)
-        monkeypatch.delenv("LUCIFEX_CRON_AUTO_DELIVER_THREAD_ID", raising=False)
+        monkeypatch.delenv("HERMES_CRON_AUTO_DELIVER_PLATFORM", raising=False)
+        monkeypatch.delenv("HERMES_CRON_AUTO_DELIVER_CHAT_ID", raising=False)
+        monkeypatch.delenv("HERMES_CRON_AUTO_DELIVER_THREAD_ID", raising=False)
 
         class FakeAgent:
             def __init__(self, *args, **kwargs):
@@ -1590,15 +1610,15 @@ class TestRunJobSessionPersistence:
 
             def run_conversation(self, *args, **kwargs):
                 from gateway.session_context import get_session_env
-                seen["platform"] = get_session_env("LUCIFEX_CRON_AUTO_DELIVER_PLATFORM") or None
-                seen["chat_id"] = get_session_env("LUCIFEX_CRON_AUTO_DELIVER_CHAT_ID") or None
-                seen["thread_id"] = get_session_env("LUCIFEX_CRON_AUTO_DELIVER_THREAD_ID") or None
+                seen["platform"] = get_session_env("HERMES_CRON_AUTO_DELIVER_PLATFORM") or None
+                seen["chat_id"] = get_session_env("HERMES_CRON_AUTO_DELIVER_CHAT_ID") or None
+                seen["thread_id"] = get_session_env("HERMES_CRON_AUTO_DELIVER_THREAD_ID") or None
                 return {"final_response": "ok"}
 
-        with patch("cron.scheduler._lucifex_home", tmp_path), \
-             patch("lucifex_state.SessionDB", return_value=fake_db), \
+        with patch("cron.scheduler._hermes_home", tmp_path), \
+             patch("hermes_state.SessionDB", return_value=fake_db), \
              patch(
-                 "lucifex_cli.runtime_provider.resolve_runtime_provider",
+                 "hermes_cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -1618,10 +1638,67 @@ class TestRunJobSessionPersistence:
             "chat_id": "-2002",
             "thread_id": None,
         }
-        assert os.getenv("LUCIFEX_CRON_AUTO_DELIVER_PLATFORM") is None
-        assert os.getenv("LUCIFEX_CRON_AUTO_DELIVER_CHAT_ID") is None
-        assert os.getenv("LUCIFEX_CRON_AUTO_DELIVER_THREAD_ID") is None
+        assert os.getenv("HERMES_CRON_AUTO_DELIVER_PLATFORM") is None
+        assert os.getenv("HERMES_CRON_AUTO_DELIVER_CHAT_ID") is None
+        assert os.getenv("HERMES_CRON_AUTO_DELIVER_THREAD_ID") is None
         fake_db.close.assert_called_once()
+
+    @pytest.mark.parametrize("timeout_value", ["600", "0"])
+    def test_run_job_heartbeats_oneshot_claim_in_both_wait_modes(
+        self, tmp_path, monkeypatch, timeout_value
+    ):
+        """Timed and unlimited one-shot monitors both refresh their owned claim."""
+        job = {
+            "id": "heartbeat-job",
+            "name": "heartbeat",
+            "prompt": "hello",
+            "schedule": {"kind": "once", "run_at": "2026-07-10T12:00:00Z"},
+            "run_claim": {"at": "2026-07-10T12:00:00Z", "by": "owner-token"},
+        }
+        fake_db = MagicMock()
+
+        class FakeAgent:
+            def __init__(self, *args, **kwargs):
+                pass
+
+            def run_conversation(self, *args, **kwargs):
+                return {"final_response": "ok"}
+
+        class FakeFuture:
+            def result(self):
+                return {"final_response": "ok"}
+
+        fake_future = FakeFuture()
+        fake_pool = MagicMock()
+        fake_pool.submit.return_value = fake_future
+        wait_results = [(set(), set()), ({fake_future}, set())]
+        monotonic_ticks = itertools.count(step=61.0)
+        monkeypatch.setenv("HERMES_CRON_TIMEOUT", timeout_value)
+
+        with patch("cron.scheduler._hermes_home", tmp_path), \
+             patch("hermes_state.SessionDB", return_value=fake_db), \
+             patch(
+                 "hermes_cli.runtime_provider.resolve_runtime_provider",
+                 return_value={
+                     "api_key": "***",
+                     "base_url": "https://example.invalid/v1",
+                     "provider": "openrouter",
+                     "api_mode": "chat_completions",
+                 },
+             ), \
+             patch("run_agent.AIAgent", FakeAgent), \
+             patch("cron.scheduler.concurrent.futures.ThreadPoolExecutor", return_value=fake_pool), \
+             patch("cron.scheduler.concurrent.futures.wait", side_effect=wait_results), \
+             patch("cron.scheduler.time.monotonic", side_effect=monotonic_ticks.__next__), \
+             patch("cron.scheduler.heartbeat_run_claim", return_value=True) as heartbeat:
+            success, _output, final_response, error = run_job(job)
+
+        assert success is True
+        assert error is None
+        assert final_response == "ok"
+        heartbeat.assert_called_once_with(
+            "heartbeat-job", expected_owner="owner-token"
+        )
 
     def test_run_job_resets_secret_source_cache_before_reload(self, tmp_path, monkeypatch):
         """Each run must clear the secret-source cache before re-reading the
@@ -1629,10 +1706,10 @@ class TestRunJobSessionPersistence:
         instead of leaving the startup .env placeholder in place (#33465).
 
         A bare ``load_dotenv`` re-load can't do this: startup already recorded
-        this LUCIFEX_HOME in ``_APPLIED_HOMES``, so the external-secret pull
+        this HERMES_HOME in ``_APPLIED_HOMES``, so the external-secret pull
         no-ops and only the placeholder is re-applied. The scheduler must call
         ``reset_secret_source_cache()`` (forcing the re-pull) and route through
-        ``load_lucifex_dotenv`` (which then re-applies external secret sources).
+        ``load_hermes_dotenv`` (which then re-applies external secret sources).
         """
         job = {"id": "bsm-job", "name": "bsm", "prompt": "hello"}
         fake_db = MagicMock()
@@ -1645,13 +1722,13 @@ class TestRunJobSessionPersistence:
             call_order.append("load")
             return []
 
-        with patch("cron.scheduler._lucifex_home", tmp_path), \
+        with patch("cron.scheduler._hermes_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("lucifex_cli.env_loader.reset_secret_source_cache", _record_reset), \
-             patch("lucifex_cli.env_loader.load_lucifex_dotenv", _record_load), \
-             patch("lucifex_state.SessionDB", return_value=fake_db), \
+             patch("hermes_cli.env_loader.reset_secret_source_cache", _record_reset), \
+             patch("hermes_cli.env_loader.load_hermes_dotenv", _record_load), \
+             patch("hermes_state.SessionDB", return_value=fake_db), \
              patch(
-                 "lucifex_cli.runtime_provider.resolve_runtime_provider",
+                 "hermes_cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -1688,9 +1765,9 @@ class TestRunJobSessionPersistence:
         fake_db = MagicMock()
         seen = []
 
-        monkeypatch.delenv("LUCIFEX_CRON_AUTO_DELIVER_PLATFORM", raising=False)
-        monkeypatch.delenv("LUCIFEX_CRON_AUTO_DELIVER_CHAT_ID", raising=False)
-        monkeypatch.delenv("LUCIFEX_CRON_AUTO_DELIVER_THREAD_ID", raising=False)
+        monkeypatch.delenv("HERMES_CRON_AUTO_DELIVER_PLATFORM", raising=False)
+        monkeypatch.delenv("HERMES_CRON_AUTO_DELIVER_CHAT_ID", raising=False)
+        monkeypatch.delenv("HERMES_CRON_AUTO_DELIVER_THREAD_ID", raising=False)
 
         class FakeAgent:
             def __init__(self, *args, **kwargs):
@@ -1701,17 +1778,17 @@ class TestRunJobSessionPersistence:
 
                 seen.append(
                     {
-                        "platform": get_session_env("LUCIFEX_CRON_AUTO_DELIVER_PLATFORM") or None,
-                        "chat_id": get_session_env("LUCIFEX_CRON_AUTO_DELIVER_CHAT_ID") or None,
-                        "thread_id": get_session_env("LUCIFEX_CRON_AUTO_DELIVER_THREAD_ID") or None,
+                        "platform": get_session_env("HERMES_CRON_AUTO_DELIVER_PLATFORM") or None,
+                        "chat_id": get_session_env("HERMES_CRON_AUTO_DELIVER_CHAT_ID") or None,
+                        "thread_id": get_session_env("HERMES_CRON_AUTO_DELIVER_THREAD_ID") or None,
                     }
                 )
                 return {"final_response": "ok"}
 
-        with patch("cron.scheduler._lucifex_home", tmp_path), \
-             patch("lucifex_state.SessionDB", return_value=fake_db), \
+        with patch("cron.scheduler._hermes_home", tmp_path), \
+             patch("hermes_state.SessionDB", return_value=fake_db), \
              patch(
-                 "lucifex_cli.runtime_provider.resolve_runtime_provider",
+                 "hermes_cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -1739,9 +1816,9 @@ class TestRunJobSessionPersistence:
                 "thread_id": None,
             },
         ]
-        assert os.getenv("LUCIFEX_CRON_AUTO_DELIVER_PLATFORM") is None
-        assert os.getenv("LUCIFEX_CRON_AUTO_DELIVER_CHAT_ID") is None
-        assert os.getenv("LUCIFEX_CRON_AUTO_DELIVER_THREAD_ID") is None
+        assert os.getenv("HERMES_CRON_AUTO_DELIVER_PLATFORM") is None
+        assert os.getenv("HERMES_CRON_AUTO_DELIVER_CHAT_ID") is None
+        assert os.getenv("HERMES_CRON_AUTO_DELIVER_THREAD_ID") is None
         assert fake_db.close.call_count == 2
 
 
@@ -1764,11 +1841,11 @@ class TestRunJobConfigLogging:
         # resolution and MCP discovery, both of which can spawn subprocesses
         # / hit the network and have caused this test to time out on CI
         # (>30s wall clock) under load. See PR #33661 follow-up.
-        with patch("cron.scheduler._lucifex_home", tmp_path), \
+        with patch("cron.scheduler._hermes_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("lucifex_cli.env_loader.load_lucifex_dotenv"), \
-             patch("lucifex_cli.env_loader.reset_secret_source_cache"), \
-             patch("lucifex_cli.runtime_provider.resolve_runtime_provider",
+             patch("hermes_cli.env_loader.load_hermes_dotenv"), \
+             patch("hermes_cli.env_loader.reset_secret_source_cache"), \
+             patch("hermes_cli.runtime_provider.resolve_runtime_provider",
                    return_value={"provider": "openrouter", "api_key": "x",
                                  "base_url": "https://example.invalid",
                                  "api_mode": "chat_completions"}), \
@@ -1799,11 +1876,11 @@ class TestRunJobConfigLogging:
             "prompt": "hello",
         }
 
-        with patch("cron.scheduler._lucifex_home", tmp_path), \
+        with patch("cron.scheduler._hermes_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("lucifex_cli.env_loader.load_lucifex_dotenv"), \
-             patch("lucifex_cli.env_loader.reset_secret_source_cache"), \
-             patch("lucifex_cli.runtime_provider.resolve_runtime_provider",
+             patch("hermes_cli.env_loader.load_hermes_dotenv"), \
+             patch("hermes_cli.env_loader.reset_secret_source_cache"), \
+             patch("hermes_cli.runtime_provider.resolve_runtime_provider",
                    return_value={"provider": "openrouter", "api_key": "x",
                                  "base_url": "https://example.invalid",
                                  "api_mode": "chat_completions"}), \
@@ -1832,18 +1909,18 @@ class TestRunJobConfigEnvVarExpansion:
 
     def test_model_env_ref_in_config_yaml_is_expanded(self, tmp_path, monkeypatch):
         """${VAR} in config.yaml model: is expanded using env after .env is loaded."""
-        (tmp_path / "config.yaml").write_text("model: ${_LUCIFEX_TEST_CRON_MODEL}\n")
-        monkeypatch.setenv("_LUCIFEX_TEST_CRON_MODEL", "gpt-4o-mini-cron-test")
+        (tmp_path / "config.yaml").write_text("model: ${_HERMES_TEST_CRON_MODEL}\n")
+        monkeypatch.setenv("_HERMES_TEST_CRON_MODEL", "gpt-4o-mini-cron-test")
 
         job = {"id": "env-job", "name": "env test", "prompt": "hi"}
         fake_db = MagicMock()
 
-        with patch("cron.scheduler._lucifex_home", tmp_path), \
+        with patch("cron.scheduler._hermes_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("lucifex_cli.env_loader.load_lucifex_dotenv"), \
-             patch("lucifex_cli.env_loader.reset_secret_source_cache"), \
-             patch("lucifex_state.SessionDB", return_value=fake_db), \
-             patch("lucifex_cli.runtime_provider.resolve_runtime_provider",
+             patch("hermes_cli.env_loader.load_hermes_dotenv"), \
+             patch("hermes_cli.env_loader.reset_secret_source_cache"), \
+             patch("hermes_state.SessionDB", return_value=fake_db), \
+             patch("hermes_cli.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("run_agent.AIAgent") as mock_agent_cls:
             mock_agent = MagicMock()
@@ -1872,12 +1949,12 @@ class TestRunJobConfigEnvVarExpansion:
         job = {"id": "prefill-job", "name": "prefill test", "prompt": "hi"}
         fake_db = MagicMock()
 
-        with patch("cron.scheduler._lucifex_home", tmp_path), \
+        with patch("cron.scheduler._hermes_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("lucifex_cli.env_loader.load_lucifex_dotenv"), \
-             patch("lucifex_cli.env_loader.reset_secret_source_cache"), \
-             patch("lucifex_state.SessionDB", return_value=fake_db), \
-             patch("lucifex_cli.runtime_provider.resolve_runtime_provider",
+             patch("hermes_cli.env_loader.load_hermes_dotenv"), \
+             patch("hermes_cli.env_loader.reset_secret_source_cache"), \
+             patch("hermes_state.SessionDB", return_value=fake_db), \
+             patch("hermes_cli.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("tools.mcp_tool.discover_mcp_tools", return_value=[]), \
              patch("run_agent.AIAgent") as mock_agent_cls:
@@ -1896,19 +1973,19 @@ class TestRunJobConfigEnvVarExpansion:
             "model: primary-model\n"
             "fallback_providers:\n"
             "  - provider: openrouter\n"
-            "    model: ${_LUCIFEX_TEST_CRON_FALLBACK}\n"
+            "    model: ${_HERMES_TEST_CRON_FALLBACK}\n"
         )
-        monkeypatch.setenv("_LUCIFEX_TEST_CRON_FALLBACK", "gpt-4o-fallback-test")
+        monkeypatch.setenv("_HERMES_TEST_CRON_FALLBACK", "gpt-4o-fallback-test")
 
         job = {"id": "fb-job", "name": "fallback test", "prompt": "hi"}
         fake_db = MagicMock()
 
-        with patch("cron.scheduler._lucifex_home", tmp_path), \
+        with patch("cron.scheduler._hermes_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("lucifex_cli.env_loader.load_lucifex_dotenv"), \
-             patch("lucifex_cli.env_loader.reset_secret_source_cache"), \
-             patch("lucifex_state.SessionDB", return_value=fake_db), \
-             patch("lucifex_cli.runtime_provider.resolve_runtime_provider",
+             patch("hermes_cli.env_loader.load_hermes_dotenv"), \
+             patch("hermes_cli.env_loader.reset_secret_source_cache"), \
+             patch("hermes_state.SessionDB", return_value=fake_db), \
+             patch("hermes_cli.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("run_agent.AIAgent") as mock_agent_cls:
             mock_agent = MagicMock()
@@ -1925,6 +2002,61 @@ class TestRunJobConfigEnvVarExpansion:
             "config.yaml ${VAR} in fallback_providers was not expanded."
         )
 
+    def test_auth_fallback_switches_provider_and_model_together(self, tmp_path):
+        """Codex auth failure must produce OpenRouter+GLM, never OpenRouter+GPT."""
+        from hermes_cli.auth import AuthError
+
+        (tmp_path / "config.yaml").write_text(
+            "model:\n"
+            "  default: gpt-5.6-sol\n"
+            "  provider: openai-codex\n"
+            "fallback_providers:\n"
+            "  - provider: anthropic\n"
+            "  - provider: openrouter\n"
+            "    model: z-ai/glm-5.2\n",
+            encoding="utf-8",
+        )
+        job = {
+            "id": "auth-fallback",
+            "name": "auth fallback",
+            "prompt": "hi",
+            "provider_snapshot": "openai-codex",
+            "model_snapshot": "gpt-5.6-sol",
+        }
+        fake_db = MagicMock()
+        requested = []
+
+        def resolve_runtime(**kwargs):
+            requested.append(kwargs.get("requested"))
+            if kwargs.get("requested") in (None, "openai-codex"):
+                # Cron must retain the configured primary provider for drift
+                # comparison even when older/custom AuthError sites omit it.
+                raise AuthError("No Codex credentials stored")
+            assert kwargs["requested"] == "openrouter"
+            assert kwargs["target_model"] == "z-ai/glm-5.2"
+            return {**self._RUNTIME, "provider": "openrouter"}
+
+        with patch("cron.scheduler._hermes_home", tmp_path), \
+             patch("cron.scheduler._resolve_origin", return_value=None), \
+             patch("hermes_cli.env_loader.load_hermes_dotenv"), \
+             patch("hermes_cli.env_loader.reset_secret_source_cache"), \
+             patch("hermes_state.SessionDB", return_value=fake_db), \
+             patch("hermes_cli.runtime_provider.resolve_runtime_provider",
+                   side_effect=resolve_runtime), \
+             patch("tools.mcp_tool.discover_mcp_tools", return_value=[]), \
+             patch("run_agent.AIAgent") as mock_agent_cls:
+            mock_agent = MagicMock()
+            mock_agent.run_conversation.return_value = {"final_response": "ok"}
+            mock_agent_cls.return_value = mock_agent
+            success, _, _, error = run_job(job)
+
+        assert success is True
+        assert error is None
+        assert requested == [None, "openrouter"]
+        kwargs = mock_agent_cls.call_args.kwargs
+        assert kwargs["provider"] == "openrouter"
+        assert kwargs["model"] == "z-ai/glm-5.2"
+
     def test_fallback_chain_merges_providers_and_legacy_model(self, tmp_path, monkeypatch):
         """Cron uses get_fallback_chain so legacy fallback_model is not dropped."""
         (tmp_path / "config.yaml").write_text(
@@ -1939,11 +2071,11 @@ class TestRunJobConfigEnvVarExpansion:
         job = {"id": "fb-merge", "name": "fallback merge", "prompt": "hi"}
         fake_db = MagicMock()
 
-        with patch("cron.scheduler._lucifex_home", tmp_path), \
+        with patch("cron.scheduler._hermes_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
              patch("dotenv.load_dotenv"), \
-             patch("lucifex_state.SessionDB", return_value=fake_db), \
-             patch("lucifex_cli.runtime_provider.resolve_runtime_provider",
+             patch("hermes_state.SessionDB", return_value=fake_db), \
+             patch("hermes_cli.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("run_agent.AIAgent") as mock_agent_cls:
             mock_agent = MagicMock()
@@ -1957,18 +2089,18 @@ class TestRunJobConfigEnvVarExpansion:
 
     def test_unexpanded_ref_passthrough_when_var_unset(self, tmp_path, monkeypatch):
         """When the env var is not set, the literal ${VAR} is kept verbatim (not crashed)."""
-        (tmp_path / "config.yaml").write_text("model: ${_LUCIFEX_TEST_CRON_UNSET_VAR}\n")
-        monkeypatch.delenv("_LUCIFEX_TEST_CRON_UNSET_VAR", raising=False)
+        (tmp_path / "config.yaml").write_text("model: ${_HERMES_TEST_CRON_UNSET_VAR}\n")
+        monkeypatch.delenv("_HERMES_TEST_CRON_UNSET_VAR", raising=False)
 
         job = {"id": "unset-job", "name": "unset var test", "prompt": "hi"}
         fake_db = MagicMock()
 
-        with patch("cron.scheduler._lucifex_home", tmp_path), \
+        with patch("cron.scheduler._hermes_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("lucifex_cli.env_loader.load_lucifex_dotenv"), \
-             patch("lucifex_cli.env_loader.reset_secret_source_cache"), \
-             patch("lucifex_state.SessionDB", return_value=fake_db), \
-             patch("lucifex_cli.runtime_provider.resolve_runtime_provider",
+             patch("hermes_cli.env_loader.load_hermes_dotenv"), \
+             patch("hermes_cli.env_loader.reset_secret_source_cache"), \
+             patch("hermes_state.SessionDB", return_value=fake_db), \
+             patch("hermes_cli.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("run_agent.AIAgent") as mock_agent_cls:
             mock_agent = MagicMock()
@@ -1979,7 +2111,7 @@ class TestRunJobConfigEnvVarExpansion:
         assert success is True
         kwargs = mock_agent_cls.call_args.kwargs
         # Unresolved refs are kept verbatim — _expand_env_vars contract
-        assert kwargs["model"] == "${_LUCIFEX_TEST_CRON_UNSET_VAR}"
+        assert kwargs["model"] == "${_HERMES_TEST_CRON_UNSET_VAR}"
 
 
 class TestRunJobModelResolution:
@@ -1987,7 +2119,7 @@ class TestRunJobModelResolution:
 
     Issue #23979: a cron job created without an explicit model is stored as
     ``model: null``. At fire time the scheduler must:
-      1. fall back to ``LUCIFEX_MODEL`` env if set,
+      1. fall back to ``HERMES_MODEL`` env if set,
       2. else fall back to config.yaml ``model.default`` if set,
       3. else fail fast with an actionable error — never let an empty string
          reach the provider where it surfaces as an opaque 400.
@@ -2001,19 +2133,19 @@ class TestRunJobModelResolution:
     }
 
     def test_null_job_model_falls_back_to_env(self, tmp_path, monkeypatch):
-        """``model: null`` on the job uses LUCIFEX_MODEL when set."""
+        """``model: null`` on the job uses HERMES_MODEL when set."""
         (tmp_path / "config.yaml").write_text("")
-        monkeypatch.setenv("LUCIFEX_MODEL", "env-model")
+        monkeypatch.setenv("HERMES_MODEL", "env-model")
 
         job = {"id": "null-model-job", "name": "null model", "prompt": "hi", "model": None}
         fake_db = MagicMock()
 
-        with patch("cron.scheduler._lucifex_home", tmp_path), \
+        with patch("cron.scheduler._hermes_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("lucifex_cli.env_loader.load_lucifex_dotenv"), \
-             patch("lucifex_cli.env_loader.reset_secret_source_cache"), \
-             patch("lucifex_state.SessionDB", return_value=fake_db), \
-             patch("lucifex_cli.runtime_provider.resolve_runtime_provider",
+             patch("hermes_cli.env_loader.load_hermes_dotenv"), \
+             patch("hermes_cli.env_loader.reset_secret_source_cache"), \
+             patch("hermes_state.SessionDB", return_value=fake_db), \
+             patch("hermes_cli.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("run_agent.AIAgent") as mock_agent_cls:
             mock_agent = MagicMock()
@@ -2028,17 +2160,17 @@ class TestRunJobModelResolution:
     def test_null_job_model_falls_back_to_config_default(self, tmp_path, monkeypatch):
         """``model: null`` on the job uses config.yaml model.default when env is empty."""
         (tmp_path / "config.yaml").write_text("model:\n  default: config-default-model\n")
-        monkeypatch.delenv("LUCIFEX_MODEL", raising=False)
+        monkeypatch.delenv("HERMES_MODEL", raising=False)
 
         job = {"id": "cfg-default-job", "name": "cfg default", "prompt": "hi", "model": None}
         fake_db = MagicMock()
 
-        with patch("cron.scheduler._lucifex_home", tmp_path), \
+        with patch("cron.scheduler._hermes_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("lucifex_cli.env_loader.load_lucifex_dotenv"), \
-             patch("lucifex_cli.env_loader.reset_secret_source_cache"), \
-             patch("lucifex_state.SessionDB", return_value=fake_db), \
-             patch("lucifex_cli.runtime_provider.resolve_runtime_provider",
+             patch("hermes_cli.env_loader.load_hermes_dotenv"), \
+             patch("hermes_cli.env_loader.reset_secret_source_cache"), \
+             patch("hermes_state.SessionDB", return_value=fake_db), \
+             patch("hermes_cli.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("run_agent.AIAgent") as mock_agent_cls:
             mock_agent = MagicMock()
@@ -2051,7 +2183,7 @@ class TestRunJobModelResolution:
         assert mock_agent_cls.call_args.kwargs["model"] == "config-default-model"
 
     def test_explicit_null_model_block_in_config_does_not_overwrite_env(self, tmp_path, monkeypatch):
-        """``model: null`` in config.yaml must not overwrite a resolved LUCIFEX_MODEL.
+        """``model: null`` in config.yaml must not overwrite a resolved HERMES_MODEL.
 
         Regression: before #23979 the resolver coerced ``model: null`` to
         ``{}`` only via the ``.get("model", {})`` default — which does not
@@ -2061,17 +2193,17 @@ class TestRunJobModelResolution:
         which returns ``None`` and clobbered ``model``.
         """
         (tmp_path / "config.yaml").write_text("model:\n  default: null\n")
-        monkeypatch.setenv("LUCIFEX_MODEL", "env-model")
+        monkeypatch.setenv("HERMES_MODEL", "env-model")
 
         job = {"id": "null-default-job", "name": "null default", "prompt": "hi", "model": None}
         fake_db = MagicMock()
 
-        with patch("cron.scheduler._lucifex_home", tmp_path), \
+        with patch("cron.scheduler._hermes_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("lucifex_cli.env_loader.load_lucifex_dotenv"), \
-             patch("lucifex_cli.env_loader.reset_secret_source_cache"), \
-             patch("lucifex_state.SessionDB", return_value=fake_db), \
-             patch("lucifex_cli.runtime_provider.resolve_runtime_provider",
+             patch("hermes_cli.env_loader.load_hermes_dotenv"), \
+             patch("hermes_cli.env_loader.reset_secret_source_cache"), \
+             patch("hermes_state.SessionDB", return_value=fake_db), \
+             patch("hermes_cli.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("run_agent.AIAgent") as mock_agent_cls:
             mock_agent = MagicMock()
@@ -2085,17 +2217,17 @@ class TestRunJobModelResolution:
     def test_no_model_anywhere_fails_with_actionable_error(self, tmp_path, monkeypatch):
         """All three sources empty → fail fast with a clear message, not an opaque 400."""
         (tmp_path / "config.yaml").write_text("")
-        monkeypatch.delenv("LUCIFEX_MODEL", raising=False)
+        monkeypatch.delenv("HERMES_MODEL", raising=False)
 
         job = {"id": "no-model-job", "name": "no model anywhere", "prompt": "hi", "model": None}
         fake_db = MagicMock()
 
-        with patch("cron.scheduler._lucifex_home", tmp_path), \
+        with patch("cron.scheduler._hermes_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("lucifex_cli.env_loader.load_lucifex_dotenv"), \
-             patch("lucifex_cli.env_loader.reset_secret_source_cache"), \
-             patch("lucifex_state.SessionDB", return_value=fake_db), \
-             patch("lucifex_cli.runtime_provider.resolve_runtime_provider",
+             patch("hermes_cli.env_loader.load_hermes_dotenv"), \
+             patch("hermes_cli.env_loader.reset_secret_source_cache"), \
+             patch("hermes_state.SessionDB", return_value=fake_db), \
+             patch("hermes_cli.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("run_agent.AIAgent") as mock_agent_cls:
             success, _, _, error = run_job(job)
@@ -2115,17 +2247,17 @@ class TestRunJobModelResolution:
         calls, simulating the storage update flow.
         """
         (tmp_path / "config.yaml").write_text("")
-        monkeypatch.delenv("LUCIFEX_MODEL", raising=False)
+        monkeypatch.delenv("HERMES_MODEL", raising=False)
 
         job = {"id": "updated-model-job", "name": "updated", "prompt": "hi", "model": "first-model"}
         fake_db = MagicMock()
 
-        with patch("cron.scheduler._lucifex_home", tmp_path), \
+        with patch("cron.scheduler._hermes_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("lucifex_cli.env_loader.load_lucifex_dotenv"), \
-             patch("lucifex_cli.env_loader.reset_secret_source_cache"), \
-             patch("lucifex_state.SessionDB", return_value=fake_db), \
-             patch("lucifex_cli.runtime_provider.resolve_runtime_provider",
+             patch("hermes_cli.env_loader.load_hermes_dotenv"), \
+             patch("hermes_cli.env_loader.reset_secret_source_cache"), \
+             patch("hermes_state.SessionDB", return_value=fake_db), \
+             patch("hermes_cli.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("run_agent.AIAgent") as mock_agent_cls:
             mock_agent = MagicMock()
@@ -2142,17 +2274,17 @@ class TestRunJobModelResolution:
     def test_config_model_as_plain_string(self, tmp_path, monkeypatch):
         """config.yaml ``model:`` given as a bare string is used directly."""
         (tmp_path / "config.yaml").write_text("model: string-form-model\n")
-        monkeypatch.delenv("LUCIFEX_MODEL", raising=False)
+        monkeypatch.delenv("HERMES_MODEL", raising=False)
 
         job = {"id": "string-cfg-job", "name": "string cfg", "prompt": "hi", "model": None}
         fake_db = MagicMock()
 
-        with patch("cron.scheduler._lucifex_home", tmp_path), \
+        with patch("cron.scheduler._hermes_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("lucifex_cli.env_loader.load_lucifex_dotenv"), \
-             patch("lucifex_cli.env_loader.reset_secret_source_cache"), \
-             patch("lucifex_state.SessionDB", return_value=fake_db), \
-             patch("lucifex_cli.runtime_provider.resolve_runtime_provider",
+             patch("hermes_cli.env_loader.load_hermes_dotenv"), \
+             patch("hermes_cli.env_loader.reset_secret_source_cache"), \
+             patch("hermes_state.SessionDB", return_value=fake_db), \
+             patch("hermes_cli.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("run_agent.AIAgent") as mock_agent_cls:
             mock_agent = MagicMock()
@@ -2167,23 +2299,23 @@ class TestRunJobModelResolution:
     def test_config_model_alias_key_resolves(self, tmp_path, monkeypatch):
         """A ``model: {model: ...}`` alias key resolves like the CLI sibling.
 
-        ``lucifex_cli/oneshot.py``, ``fallback_cmd.py`` and ``prompt_size.py``
+        ``hermes_cli/oneshot.py``, ``fallback_cmd.py`` and ``prompt_size.py``
         all accept ``model.model`` as an alias for ``model.default``. The cron
         resolver mirrors that so a config that works in the CLI also works in
         cron.
         """
         (tmp_path / "config.yaml").write_text("model:\n  model: alias-key-model\n")
-        monkeypatch.delenv("LUCIFEX_MODEL", raising=False)
+        monkeypatch.delenv("HERMES_MODEL", raising=False)
 
         job = {"id": "alias-job", "name": "alias", "prompt": "hi", "model": None}
         fake_db = MagicMock()
 
-        with patch("cron.scheduler._lucifex_home", tmp_path), \
+        with patch("cron.scheduler._hermes_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("lucifex_cli.env_loader.load_lucifex_dotenv"), \
-             patch("lucifex_cli.env_loader.reset_secret_source_cache"), \
-             patch("lucifex_state.SessionDB", return_value=fake_db), \
-             patch("lucifex_cli.runtime_provider.resolve_runtime_provider",
+             patch("hermes_cli.env_loader.load_hermes_dotenv"), \
+             patch("hermes_cli.env_loader.reset_secret_source_cache"), \
+             patch("hermes_state.SessionDB", return_value=fake_db), \
+             patch("hermes_cli.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("run_agent.AIAgent") as mock_agent_cls:
             mock_agent = MagicMock()
@@ -2198,17 +2330,17 @@ class TestRunJobModelResolution:
     def test_corrupt_config_yaml_does_not_crash_with_job_model(self, tmp_path, monkeypatch):
         """A malformed config.yaml degrades gracefully when the job has a model."""
         (tmp_path / "config.yaml").write_text("{{{invalid yaml!!!")
-        monkeypatch.delenv("LUCIFEX_MODEL", raising=False)
+        monkeypatch.delenv("HERMES_MODEL", raising=False)
 
         job = {"id": "corrupt-job", "name": "corrupt", "prompt": "hi", "model": "explicit-model"}
         fake_db = MagicMock()
 
-        with patch("cron.scheduler._lucifex_home", tmp_path), \
+        with patch("cron.scheduler._hermes_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("lucifex_cli.env_loader.load_lucifex_dotenv"), \
-             patch("lucifex_cli.env_loader.reset_secret_source_cache"), \
-             patch("lucifex_state.SessionDB", return_value=fake_db), \
-             patch("lucifex_cli.runtime_provider.resolve_runtime_provider",
+             patch("hermes_cli.env_loader.load_hermes_dotenv"), \
+             patch("hermes_cli.env_loader.reset_secret_source_cache"), \
+             patch("hermes_state.SessionDB", return_value=fake_db), \
+             patch("hermes_cli.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("run_agent.AIAgent") as mock_agent_cls:
             mock_agent = MagicMock()
@@ -2246,13 +2378,13 @@ class TestRunJobSkillBacked:
             assert "NOTION_API_KEY" in get_all_passthrough()
             return {"final_response": "ok"}
 
-        with patch("cron.scheduler._lucifex_home", tmp_path), \
+        with patch("cron.scheduler._hermes_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("lucifex_cli.env_loader.load_lucifex_dotenv"), \
-             patch("lucifex_cli.env_loader.reset_secret_source_cache"), \
-             patch("lucifex_state.SessionDB", return_value=fake_db), \
+             patch("hermes_cli.env_loader.load_hermes_dotenv"), \
+             patch("hermes_cli.env_loader.reset_secret_source_cache"), \
+             patch("hermes_state.SessionDB", return_value=fake_db), \
              patch(
-                 "lucifex_cli.runtime_provider.resolve_runtime_provider",
+                 "hermes_cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -2306,14 +2438,14 @@ class TestRunJobSkillBacked:
             assert any("google_token.json" in v for v in registered.values())
             return {"final_response": "ok"}
 
-        with patch("cron.scheduler._lucifex_home", tmp_path), \
+        with patch("cron.scheduler._hermes_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("tools.credential_files._resolve_lucifex_home", return_value=tmp_path), \
-             patch("lucifex_cli.env_loader.load_lucifex_dotenv"), \
-             patch("lucifex_cli.env_loader.reset_secret_source_cache"), \
-             patch("lucifex_state.SessionDB", return_value=fake_db), \
+             patch("tools.credential_files._resolve_hermes_home", return_value=tmp_path), \
+             patch("hermes_cli.env_loader.load_hermes_dotenv"), \
+             patch("hermes_cli.env_loader.reset_secret_source_cache"), \
+             patch("hermes_state.SessionDB", return_value=fake_db), \
              patch(
-                 "lucifex_cli.runtime_provider.resolve_runtime_provider",
+                 "hermes_cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -2346,13 +2478,13 @@ class TestRunJobSkillBacked:
 
         fake_db = MagicMock()
 
-        with patch("cron.scheduler._lucifex_home", tmp_path), \
+        with patch("cron.scheduler._hermes_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("lucifex_cli.env_loader.load_lucifex_dotenv"), \
-             patch("lucifex_cli.env_loader.reset_secret_source_cache"), \
-             patch("lucifex_state.SessionDB", return_value=fake_db), \
+             patch("hermes_cli.env_loader.load_hermes_dotenv"), \
+             patch("hermes_cli.env_loader.reset_secret_source_cache"), \
+             patch("hermes_state.SessionDB", return_value=fake_db), \
              patch(
-                 "lucifex_cli.runtime_provider.resolve_runtime_provider",
+                 "hermes_cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -2393,13 +2525,13 @@ class TestRunJobSkillBacked:
         def _skill_view(name):
             return json.dumps({"success": True, "content": f"# {name}\nInstructions for {name}."})
 
-        with patch("cron.scheduler._lucifex_home", tmp_path), \
+        with patch("cron.scheduler._hermes_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("lucifex_cli.env_loader.load_lucifex_dotenv"), \
-             patch("lucifex_cli.env_loader.reset_secret_source_cache"), \
-             patch("lucifex_state.SessionDB", return_value=fake_db), \
+             patch("hermes_cli.env_loader.load_hermes_dotenv"), \
+             patch("hermes_cli.env_loader.reset_secret_source_cache"), \
+             patch("hermes_state.SessionDB", return_value=fake_db), \
              patch(
-                 "lucifex_cli.runtime_provider.resolve_runtime_provider",
+                 "hermes_cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -2589,7 +2721,7 @@ class TestOneShotDispatchClaim:
         order = []
         with patch("cron.scheduler.get_due_jobs", return_value=[self._oneshot()]), \
              patch("cron.scheduler.claim_dispatch", side_effect=lambda _id: order.append("claim") or True), \
-             patch("cron.scheduler.run_job", side_effect=lambda _j: order.append("run") or (True, "# out", "ok", None)), \
+             patch("cron.scheduler.run_job", side_effect=lambda _j, **_kw: order.append("run") or (True, "# out", "ok", None)), \
              patch("cron.scheduler.save_job_output", return_value="/tmp/out.md"), \
              patch("cron.scheduler._deliver_result"), \
              patch("cron.scheduler.mark_job_run"):
@@ -2729,7 +2861,7 @@ class TestRunJobWakeGate:
             "requested_provider": None,
         }
         with patch(
-            "lucifex_cli.runtime_provider.resolve_runtime_provider",
+            "hermes_cli.runtime_provider.resolve_runtime_provider",
             return_value=fake_runtime,
         ):
             yield
@@ -2885,6 +3017,31 @@ class TestBuildJobPromptMissingSkill:
         assert "go" in result
 
 
+class TestBuildJobPromptAbsoluteSkillPath:
+    """Cron jobs may store absolute skill paths; normalize before skill_view."""
+
+    def test_absolute_skill_path_normalized_before_skill_view(self, tmp_path):
+        skills_dir = tmp_path / "skills"
+        skill_dir = skills_dir / "alpha-skill"
+        skill_dir.mkdir(parents=True)
+        (skill_dir / "SKILL.md").write_text("# Alpha\nDo alpha.")
+        absolute_path = str(skill_dir)
+        seen_names: list[str] = []
+
+        def _skill_view(name: str) -> str:
+            seen_names.append(name)
+            if name == "alpha-skill":
+                return json.dumps({"success": True, "content": "# Alpha\nDo alpha."})
+            return json.dumps({"success": False, "error": f"Skill '{name}' not found."})
+
+        with patch("tools.skills_tool.SKILLS_DIR", skills_dir), \
+             patch("tools.skills_tool.skill_view", side_effect=_skill_view):
+            result = _build_job_prompt({"skills": [absolute_path], "prompt": "go"})
+
+        assert seen_names == ["alpha-skill"]
+        assert "Do alpha." in result
+
+
 class TestBuildJobPromptBumpUse:
     """Verify that cron jobs bump skill usage counters so the curator sees them as active."""
 
@@ -3010,7 +3167,7 @@ class TestParallelTick:
         barrier = threading.Barrier(2, timeout=5)
         call_order = []
 
-        def mock_run_job(job):
+        def mock_run_job(job, *, defer_agent_teardown=None):
             """Each job hits a barrier — both must be active simultaneously."""
             call_order.append(("start", job["id"]))
             barrier.wait()  # blocks until both threads reach here
@@ -3044,7 +3201,7 @@ class TestParallelTick:
         from gateway.session_context import get_session_env
         seen = {}
 
-        def mock_run_job(job):
+        def mock_run_job(job, *, defer_agent_teardown=None):
             origin = job.get("origin", {})
             # run_job sets ContextVars — verify each job sees its own
             from gateway.session_context import set_session_vars, clear_session_vars
@@ -3054,8 +3211,8 @@ class TestParallelTick:
             )
             import time
             time.sleep(0.05)  # give other thread time to set its vars
-            platform = get_session_env("LUCIFEX_SESSION_PLATFORM")
-            chat_id = get_session_env("LUCIFEX_SESSION_CHAT_ID")
+            platform = get_session_env("HERMES_SESSION_PLATFORM")
+            chat_id = get_session_env("HERMES_SESSION_CHAT_ID")
             seen[job["id"]] = {"platform": platform, "chat_id": chat_id}
             clear_session_vars(tokens)
             return (True, "output", "response", None)
@@ -3080,11 +3237,11 @@ class TestParallelTick:
         assert seen["dc-job"] == {"platform": "discord", "chat_id": "222"}
 
     def test_max_parallel_env_var(self, monkeypatch):
-        """LUCIFEX_CRON_MAX_PARALLEL=1 should restore serial behaviour."""
-        monkeypatch.setenv("LUCIFEX_CRON_MAX_PARALLEL", "1")
+        """HERMES_CRON_MAX_PARALLEL=1 should restore serial behaviour."""
+        monkeypatch.setenv("HERMES_CRON_MAX_PARALLEL", "1")
         call_times = []
 
-        def mock_run_job(job):
+        def mock_run_job(job, *, defer_agent_teardown=None):
             import time
             call_times.append(("start", job["id"], time.monotonic()))
             time.sleep(0.05)
@@ -4059,7 +4216,7 @@ class TestCronDeliveryTargets:
 class TestHomeTargetEnvVarRegistry:
     """Regression: ``_HOME_TARGET_ENV_VARS`` must include every gateway
     platform that supports cron-driven outbound delivery. Missing an
-    entry means ``lucifex cron create --deliver=<platform>`` silently
+    entry means ``hermes cron create --deliver=<platform>`` silently
     fails to route through the platform's home channel."""
 
     def test_whatsapp_cloud_registered(self):
@@ -4785,3 +4942,43 @@ class TestMultiTargetDeliveryContinuesOnFailure:
         assert "a@example.com" in result
         assert "b@example.com" in result
         assert mock_pool.submit.call_count == 2
+
+
+class TestSetCronSessionTitle:
+    """Robust cron session titling: #50535/#50536/#50537."""
+
+    def test_sets_title_when_no_collision(self):
+        from cron.scheduler import _set_cron_session_title
+        db = MagicMock()
+        db.set_session_title.return_value = True
+        out = _set_cron_session_title(db, "sess-1", "Nightly Synthesis")
+        assert out == "Nightly Synthesis"
+        db.set_session_title.assert_called_once_with("sess-1", "Nightly Synthesis")
+
+    def test_dedupes_on_duplicate_title(self):
+        # First write collides (ValueError); helper falls back to lineage #N.
+        from cron.scheduler import _set_cron_session_title
+        db = MagicMock()
+        db.set_session_title.side_effect = [ValueError("in use"), True]
+        db.get_next_title_in_lineage.return_value = "Nightly Synthesis #2"
+        out = _set_cron_session_title(db, "sess-1", "Nightly Synthesis")
+        assert out == "Nightly Synthesis #2"
+        db.get_next_title_in_lineage.assert_called_once_with("Nightly Synthesis")
+
+    def test_reraises_when_no_lineage_support(self):
+        from cron.scheduler import _set_cron_session_title
+        db = MagicMock(spec=["set_session_title"])
+        db.set_session_title.side_effect = ValueError("in use")
+        with pytest.raises(ValueError):
+            _set_cron_session_title(db, "sess-1", "Dup")
+
+    def test_returns_none_for_blank_base(self):
+        from cron.scheduler import _set_cron_session_title
+        db = MagicMock()
+        assert _set_cron_session_title(db, "sess-1", "   ") is None
+        db.set_session_title.assert_not_called()
+
+    def test_returns_none_without_db_or_session(self):
+        from cron.scheduler import _set_cron_session_title
+        assert _set_cron_session_title(None, "sess-1", "X") is None
+        assert _set_cron_session_title(MagicMock(), "", "X") is None

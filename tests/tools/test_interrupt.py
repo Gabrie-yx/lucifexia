@@ -50,10 +50,39 @@ class TestInterruptModule:
 
         # Target the checker thread's ident so it sees the interrupt
         set_interrupt(True, thread_id=t.ident)
-        t.join(timeout=1)
+        t.join(timeout=5)
         assert seen["value"]
 
         set_interrupt(False, thread_id=t.ident)
+
+    def test_clear_current_thread_interrupt(self):
+        from tools.interrupt import (
+            set_interrupt, is_interrupted, clear_current_thread_interrupt,
+        )
+        set_interrupt(True)
+        assert is_interrupted()
+        clear_current_thread_interrupt()
+        assert not is_interrupted()
+
+    def test_clear_current_thread_interrupt_leaves_other_threads(self):
+        """clear_current_thread_interrupt only touches the calling thread."""
+        from tools.interrupt import (
+            set_interrupt, is_interrupted, clear_current_thread_interrupt,
+            _interrupted_threads, _lock,
+        )
+        with _lock:
+            _interrupted_threads.clear()
+        other_tid = threading.get_ident() + 1  # an ident that isn't us
+        set_interrupt(True, thread_id=other_tid)
+        set_interrupt(True)  # current thread
+        assert is_interrupted()
+
+        clear_current_thread_interrupt()
+
+        assert not is_interrupted()  # ours cleared
+        with _lock:
+            assert other_tid in _interrupted_threads  # other thread untouched
+            _interrupted_threads.discard(other_tid)
 
 
 # ---------------------------------------------------------------------------
@@ -287,7 +316,7 @@ class TestRunToolCleanupOnBaseException:
 SMOKE_TESTS = """
 Manual Smoke Test Checklist:
 
-1. CLI: Run `lucifex`, ask it to `sleep 30` in terminal, type "stop" + Enter.
+1. CLI: Run `hermes`, ask it to `sleep 30` in terminal, type "stop" + Enter.
    Expected: command dies within 2s, agent responds to "stop".
 
 2. CLI: Ask it to extract content from 5 URLs, type interrupt mid-way.

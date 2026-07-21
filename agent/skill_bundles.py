@@ -7,8 +7,8 @@ referenced skill's full content into a single user message, the same way
 
 Storage
 -------
-Bundles live in ``~/.lucifex/skill-bundles/*.yaml`` (and the equivalent
-profile-aware directory under ``LUCIFEX_HOME``). Each file looks like::
+Bundles live in ``~/.hermes/skill-bundles/*.yaml`` (and the equivalent
+profile-aware directory under ``HERMES_HOME``). Each file looks like::
 
     name: backend-dev
     description: Backend feature work — code review, testing, PR workflow.
@@ -36,7 +36,7 @@ Public API
 - :func:`resolve_bundle_command_key` — map a user-typed command to its slug
 - :func:`build_bundle_invocation_message` — produce the full user message
 - :func:`reload_bundles` — re-scan disk and return a diff
-- :func:`list_bundles` — return rich info for display (``lucifex bundles``)
+- :func:`list_bundles` — return rich info for display (``hermes bundles``)
 - :func:`save_bundle` / :func:`delete_bundle` — file-level operations
 """
 
@@ -50,7 +50,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import yaml
 
-from lucifex_constants import get_lucifex_home
+from hermes_constants import get_hermes_home
 
 logger = logging.getLogger(__name__)
 
@@ -64,15 +64,15 @@ _bundles_cache_mtime: Optional[float] = None
 
 
 def _bundles_dir() -> Path:
-    """Return the canonical bundles directory under LUCIFEX_HOME.
+    """Return the canonical bundles directory under HERMES_HOME.
 
-    Honors ``LUCIFEX_BUNDLES_DIR`` for tests; falls back to
-    ``<LUCIFEX_HOME>/skill-bundles``.
+    Honors ``HERMES_BUNDLES_DIR`` for tests; falls back to
+    ``<HERMES_HOME>/skill-bundles``.
     """
-    override = os.environ.get("LUCIFEX_BUNDLES_DIR")
+    override = os.environ.get("HERMES_BUNDLES_DIR")
     if override:
         return Path(override).expanduser()
-    return get_lucifex_home() / "skill-bundles"
+    return get_hermes_home() / "skill-bundles"
 
 
 def _slugify(name: str) -> str:
@@ -254,6 +254,7 @@ def build_bundle_invocation_message(
     cmd_key: str,
     user_instruction: str = "",
     task_id: str | None = None,
+    platform: str | None = None,
 ) -> Optional[Tuple[str, List[str], List[str]]]:
     """Build the user message content for a bundle slash command invocation.
 
@@ -264,6 +265,16 @@ def build_bundle_invocation_message(
     loads — the agent gets a note about which ones were skipped. This is
     the same forgiving stance ``build_preloaded_skills_prompt`` uses for
     ``-s`` CLI preloading.
+
+    Disabled skills are also skipped: bundles load members via
+    ``_load_skill_payload`` directly, bypassing the scan-time disabled
+    filter in ``get_skill_commands()``, so the disabled list must be
+    re-applied here.  ``platform`` scopes the check to a specific
+    platform's ``skills.platform_disabled`` config (gateway dispatch
+    passes it explicitly because the gateway handles multiple platforms
+    in one process); when *None*, the platform resolves from session env
+    vars and the global disabled list still applies.  Mirrors the
+    stacked-skill gate in gateway dispatch (#58888).
     """
     bundles = get_skill_bundles()
     info = bundles.get(cmd_key)
@@ -274,8 +285,15 @@ def build_bundle_invocation_message(
     # keep skill_bundles cheap to import in test environments.
     from agent.skill_commands import _load_skill_payload, _build_skill_message
 
+    try:
+        from agent.skill_utils import get_disabled_skill_names
+        disabled_names = get_disabled_skill_names(platform=platform)
+    except Exception:
+        disabled_names = set()
+
     loaded_names: List[str] = []
     missing: List[str] = []
+    disabled: List[str] = []
     skill_blocks: List[str] = []
     seen: set[str] = set()
 
@@ -294,6 +312,12 @@ def build_bundle_invocation_message(
             missing.append(identifier)
             continue
         loaded_skill, skill_dir, skill_name = loaded
+
+        # Per-platform / global disabled gate. Checked against the loaded
+        # skill's canonical name (identifiers may be paths or aliases).
+        if skill_name in disabled_names or identifier in disabled_names:
+            disabled.append(skill_name or identifier)
+            continue
 
         try:
             from tools.skill_usage import bump_use
@@ -329,6 +353,10 @@ def build_bundle_invocation_message(
     ]
     if missing:
         header_lines.append(f"Skills missing (skipped): {', '.join(missing)}")
+    if disabled:
+        header_lines.append(
+            f"Skills disabled for this platform (skipped): {', '.join(disabled)}"
+        )
     if extra_instruction:
         header_lines.extend(["", f"Bundle instruction: {extra_instruction}"])
     if user_instruction:
@@ -341,7 +369,7 @@ def build_bundle_invocation_message(
 
 
 # ---------------------------------------------------------------------------
-# File-level CRUD helpers — used by `lucifex bundles` CLI subcommand.
+# File-level CRUD helpers — used by `hermes bundles` CLI subcommand.
 # ---------------------------------------------------------------------------
 
 

@@ -1,29 +1,29 @@
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LucifexReadDirResult } from '@/global'
+import type { HermesReadDirResult } from '@/global'
 import { $connection } from '@/store/session'
 
 import { clearProjectDirCache, readProjectDir } from './ipc'
 import { resetProjectTreeState, useProjectTree } from './use-project-tree'
 
-const readDir = vi.fn<(path: string) => Promise<LucifexReadDirResult>>()
+const readDir = vi.fn<(path: string) => Promise<HermesReadDirResult>>()
 
 beforeEach(() => {
   $connection.set(null)
   resetProjectTreeState()
   readDir.mockReset()
-  ;(window as unknown as { lucifexDesktop: { readDir: typeof readDir } }).lucifexDesktop = { readDir }
+  ;(window as unknown as { hermesDesktop: { readDir: typeof readDir } }).hermesDesktop = { readDir }
 })
 
 afterEach(() => {
   cleanup()
   $connection.set(null)
   resetProjectTreeState()
-  delete (window as unknown as { lucifexDesktop?: unknown }).lucifexDesktop
+  delete (window as unknown as { hermesDesktop?: unknown }).hermesDesktop
 })
 
-function ok(entries: { name: string; path: string; isDirectory: boolean }[]): LucifexReadDirResult {
+function ok(entries: { name: string; path: string; isDirectory: boolean }[]): HermesReadDirResult {
   return { entries }
 }
 
@@ -128,7 +128,7 @@ describe('useProjectTree', () => {
 
       throw new Error(`unexpected path ${path}`)
     })
-    ;(window as unknown as { lucifexDesktop: unknown }).lucifexDesktop = { gitRoot, readDir, readFileDataUrl }
+    ;(window as unknown as { hermesDesktop: unknown }).hermesDesktop = { gitRoot, readDir, readFileDataUrl }
 
     $connection.set({ baseUrl: 'local-a', mode: 'local' } as never)
     await expect(readProjectDir('/repo/src', '/repo')).resolves.toMatchObject({
@@ -171,10 +171,10 @@ describe('useProjectTree', () => {
   it('dedupes concurrent loadChildren calls for the same id', async () => {
     readDir.mockResolvedValueOnce(ok([{ name: 'src', path: '/p/src', isDirectory: true }]))
 
-    let resolveChildren: ((value: LucifexReadDirResult) => void) | undefined
+    let resolveChildren: ((value: HermesReadDirResult) => void) | undefined
     readDir.mockImplementationOnce(
       () =>
-        new Promise<LucifexReadDirResult>(resolve => {
+        new Promise<HermesReadDirResult>(resolve => {
           resolveChildren = resolve
         })
     )
@@ -238,7 +238,7 @@ describe('useProjectTree', () => {
 
       throw new Error(`unexpected path ${path}`)
     })
-    ;(window as unknown as { lucifexDesktop: unknown }).lucifexDesktop = { readDir, sanitizeWorkspaceCwd }
+    ;(window as unknown as { hermesDesktop: unknown }).hermesDesktop = { readDir, sanitizeWorkspaceCwd }
 
     const { result } = renderHook(() => useProjectTree('/deleted/worktree'))
 
@@ -253,7 +253,7 @@ describe('useProjectTree', () => {
   it('keeps the root error when sanitize offers no usable fallback', async () => {
     const sanitizeWorkspaceCwd = vi.fn(async () => ({ cwd: '/deleted/worktree', sanitized: false }))
     readDir.mockResolvedValue({ entries: [], error: 'ENOENT' })
-    ;(window as unknown as { lucifexDesktop: unknown }).lucifexDesktop = { readDir, sanitizeWorkspaceCwd }
+    ;(window as unknown as { hermesDesktop: unknown }).hermesDesktop = { readDir, sanitizeWorkspaceCwd }
 
     const { result } = renderHook(() => useProjectTree('/deleted/worktree'))
 
@@ -261,8 +261,8 @@ describe('useProjectTree', () => {
     expect(result.current.effectiveCwd).toBe('/deleted/worktree')
   })
 
-  it('returns no-bridge gracefully when window.lucifexDesktop is missing', async () => {
-    delete (window as unknown as { lucifexDesktop?: unknown }).lucifexDesktop
+  it('returns no-bridge gracefully when window.hermesDesktop is missing', async () => {
+    delete (window as unknown as { hermesDesktop?: unknown }).hermesDesktop
 
     const { result } = renderHook(() => useProjectTree('/p'))
 

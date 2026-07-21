@@ -1,6 +1,6 @@
 """Chronos — NAS-mediated managed cron provider (scale-to-zero).
 
-Chronos (the Greek god of time, alongside Lucifex) is the first non-default
+Chronos (the Greek god of time, alongside Hermes) is the first non-default
 ``CronScheduler``. It lets a hosted gateway scale to zero while idle and still
 fire cron jobs: instead of a 60s in-process ticker, it asks NAS to arm exactly
 one external one-shot per job at that job's real next-fire time. NAS calls the
@@ -38,7 +38,7 @@ logger = logging.getLogger("cron.chronos")
 def _cfg(*keys: str, default: Any = "") -> Any:
     """Read a cron.chronos.* config value (no network)."""
     try:
-        from lucifex_cli.config import cfg_get, load_config
+        from hermes_cli.config import cfg_get, load_config
         return cfg_get(load_config(), *keys, default=default)
     except Exception:
         return default
@@ -81,7 +81,7 @@ class ChronosCronScheduler(CronScheduler):
         refresh-aware token is resolved lazily at provision time.
         """
         try:
-            from lucifex_cli.auth import get_provider_auth_state
+            from hermes_cli.auth import get_provider_auth_state
             state = get_provider_auth_state("nous") or {}
             return bool(state.get("access_token"))
         except Exception:
@@ -106,6 +106,10 @@ class ChronosCronScheduler(CronScheduler):
         Does NOT block and does NOT spawn a 60s wake (DQ-1) — that is the whole
         point of scale-to-zero. The machine wakes only on a NAS→agent fire.
         """
+        # A new provider lifecycle cannot prove what an interrupted prior
+        # process did. Classify those attempts unknown for audit only; do not
+        # requeue them here.
+        self.recover_interrupted()
         try:
             self.reconcile()
         except Exception as e:

@@ -19,8 +19,8 @@ export async function writeClipboardText(text: string) {
     return
   }
 
-  if (window.lucifexDesktop?.writeClipboard) {
-    await window.lucifexDesktop.writeClipboard(text)
+  if (window.hermesDesktop?.writeClipboard) {
+    await window.hermesDesktop.writeClipboard(text)
 
     return
   }
@@ -233,5 +233,11 @@ export function CopyButton({
   )
 
   // Only icon-only buttons need a tooltip; the text variant already shows its label.
-  return appearance === 'icon' ? <Tip label={feedbackLabel} side={side ?? 'bottom'}>{button}</Tip> : button
+  return appearance === 'icon' ? (
+    <Tip label={feedbackLabel} side={side ?? 'bottom'}>
+      {button}
+    </Tip>
+  ) : (
+    button
+  )
 }

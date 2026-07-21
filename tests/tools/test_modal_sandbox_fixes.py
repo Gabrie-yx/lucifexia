@@ -23,7 +23,7 @@ try:
     import tools.terminal_tool  # noqa: F401
     _tt_mod = sys.modules["tools.terminal_tool"]
 except ImportError:
-    pytest.skip("lucifex-agent tools not importable (missing deps)", allow_module_level=True)
+    pytest.skip("hermes-agent tools not importable (missing deps)", allow_module_level=True)
 
 
 # =========================================================================
@@ -65,7 +65,7 @@ class TestCwdHandling:
     def test_home_path_replaced_for_modal(self, monkeypatch):
         """TERMINAL_CWD=/home/user/... should be replaced with /root for modal."""
         monkeypatch.setenv("TERMINAL_ENV", "modal")
-        monkeypatch.setenv("TERMINAL_CWD", "/home/dakota/github/lucifex-agent")
+        monkeypatch.setenv("TERMINAL_CWD", "/home/dakota/github/hermes-agent")
         config = _tt_mod._get_env_config()
         assert config["cwd"] == "/root", (
             f"Expected /root, got {config['cwd']}. "
@@ -350,7 +350,8 @@ class TestDockerHostBindApproval:
     def test_isolated_docker_keeps_fast_path(self, monkeypatch):
         """Isolated Docker still bypasses dangerous-command approval."""
         import tools.approval as A
-        monkeypatch.setenv("LUCIFEX_EXEC_ASK", "1")
+        self._isolate_approval_state(monkeypatch)
+        monkeypatch.setenv("HERMES_EXEC_ASK", "1")
         monkeypatch.setattr(
             "tools.tirith_security.check_command_security",
             lambda _c: {"action": "allow", "findings": [], "summary": ""})
@@ -358,10 +359,27 @@ class TestDockerHostBindApproval:
                                          has_host_access=False)
         assert res["approved"] is True
 
+    @staticmethod
+    def _isolate_approval_state(monkeypatch):
+        """Clear approval state that leaks in from the real user config.
+
+        ``tools.approval`` loads ``command_allowlist`` into module-level
+        ``_permanent_approved`` at import time. This file imports
+        ``tools.terminal_tool`` at module level (collection time — BEFORE the
+        hermetic HERMES_HOME fixture runs), so on a dev machine whose real
+        config permanently allowlists e.g. "delete in root path" the guard
+        under test silently approves and the assertions flip. CI never has
+        such an allowlist, making this a local-only flake.
+        """
+        import tools.approval as A
+        monkeypatch.setattr(A, "_permanent_approved", set())
+        monkeypatch.setattr(A, "_session_approved", {})
+
     def test_host_bound_docker_requires_approval(self, monkeypatch):
         """Host-bound Docker dangerous command escalates instead of bypassing."""
         import tools.approval as A
-        monkeypatch.setenv("LUCIFEX_EXEC_ASK", "1")
+        self._isolate_approval_state(monkeypatch)
+        monkeypatch.setenv("HERMES_EXEC_ASK", "1")
         monkeypatch.setattr(
             "tools.tirith_security.check_command_security",
             lambda _c: {"action": "allow", "findings": [], "summary": ""})
@@ -374,7 +392,8 @@ class TestDockerHostBindApproval:
     def test_execute_code_isolated_docker_keeps_fast_path(self, monkeypatch):
         """Isolated Docker execute_code still bypasses the guard."""
         import tools.approval as A
-        monkeypatch.setenv("LUCIFEX_EXEC_ASK", "1")
+        self._isolate_approval_state(monkeypatch)
+        monkeypatch.setenv("HERMES_EXEC_ASK", "1")
         res = A.check_execute_code_guard("import os", "docker",
                                          has_host_access=False)
         assert res["approved"] is True
@@ -382,7 +401,8 @@ class TestDockerHostBindApproval:
     def test_execute_code_host_bound_docker_requires_approval(self, monkeypatch):
         """Host-bound Docker execute_code does not get the container fast-path."""
         import tools.approval as A
-        monkeypatch.setenv("LUCIFEX_EXEC_ASK", "1")
+        self._isolate_approval_state(monkeypatch)
+        monkeypatch.setenv("HERMES_EXEC_ASK", "1")
         res = A.check_execute_code_guard(
             "import os; os.system('rm -rf /workspace')", "docker",
             has_host_access=True)
@@ -392,7 +412,7 @@ class TestDockerHostBindApproval:
     def test_execute_code_vercel_sandbox_always_skips(self, monkeypatch):
         """vercel_sandbox has no host-bind concept and stays always-skipped."""
         import tools.approval as A
-        monkeypatch.setenv("LUCIFEX_EXEC_ASK", "1")
+        monkeypatch.setenv("HERMES_EXEC_ASK", "1")
         res = A.check_execute_code_guard("import os", "vercel_sandbox",
                                          has_host_access=True)
         assert res["approved"] is True

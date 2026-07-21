@@ -29,7 +29,7 @@ _REF_CAPABLE = ("nous", "openai", "openai-codex", "openrouter", "krea")
 # Friendly display label per reference-capable provider, surfaced in the desktop
 # pet-gen picker.
 _PROVIDER_LABELS: dict[str, str] = {
-    "nous": "LUCIFEXIA (Ollama)",
+    "nous": "Nous Portal",
     "openrouter": "OpenRouter",
     "openai": "OpenAI",
     "openai-codex": "OpenAI (Codex)",
@@ -40,11 +40,11 @@ _PROVIDER_LABELS: dict[str, str] = {
 def _forced_provider_from_env() -> str | None:
     """Optional QA override to force a pet-gen backend.
 
-    `LUCIFEX_PET_IMAGE_PROVIDER=<name>` (e.g. `openrouter`) bypasses the normal
+    `HERMES_PET_IMAGE_PROVIDER=<name>` (e.g. `openrouter`) bypasses the normal
     active/default provider resolution for pet generation only. Unknown values are
     ignored so existing users are unaffected.
     """
-    forced = os.environ.get("LUCIFEX_PET_IMAGE_PROVIDER", "").strip().lower()
+    forced = os.environ.get("HERMES_PET_IMAGE_PROVIDER", "").strip().lower()
     return forced if forced in _REF_CAPABLE else None
 
 
@@ -63,7 +63,7 @@ class SpriteProvider:
 
 def _discover() -> None:
     try:
-        from lucifex_cli.plugins import _ensure_plugins_discovered
+        from hermes_cli.plugins import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()
     except Exception as exc:  # noqa: BLE001 - discovery is best-effort
@@ -121,7 +121,7 @@ def resolve_provider(*, require_references: bool = True, prefer: str | None = No
 
     raise GenerationError(
         "Pet generation needs an image backend that supports reference images. "
-        "Open `lucifex tools` → Image Generation and configure Nous Portal, "
+        "Open `hermes tools` → Image Generation and configure Nous Portal, "
         "OpenRouter, or OpenAI (gpt-image-2) with an API key."
     )
 

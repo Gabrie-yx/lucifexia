@@ -18,22 +18,22 @@ from plugins.memory.mem0._setup import (
 )
 
 
-def _inject_fake_lucifex_cli(monkeypatch):
-    """Inject fake lucifex_cli modules so yaml/curses aren't required."""
-    fake_config_mod = types.ModuleType("lucifex_cli.config")
+def _inject_fake_hermes_cli(monkeypatch):
+    """Inject fake hermes_cli modules so yaml/curses aren't required."""
+    fake_config_mod = types.ModuleType("hermes_cli.config")
     fake_config_mod.save_config = lambda c: None
 
-    fake_setup_mod = types.ModuleType("lucifex_cli.memory_setup")
+    fake_setup_mod = types.ModuleType("hermes_cli.memory_setup")
     fake_setup_mod._curses_select = lambda *a, **kw: 0
     fake_setup_mod._prompt = lambda label, default=None, secret=False: default or ""
 
-    fake_lucifex_cli = types.ModuleType("lucifex_cli")
-    fake_lucifex_cli.config = fake_config_mod
-    fake_lucifex_cli.memory_setup = fake_setup_mod
+    fake_hermes_cli = types.ModuleType("hermes_cli")
+    fake_hermes_cli.config = fake_config_mod
+    fake_hermes_cli.memory_setup = fake_setup_mod
 
-    monkeypatch.setitem(sys.modules, "lucifex_cli", fake_lucifex_cli)
-    monkeypatch.setitem(sys.modules, "lucifex_cli.config", fake_config_mod)
-    monkeypatch.setitem(sys.modules, "lucifex_cli.memory_setup", fake_setup_mod)
+    monkeypatch.setitem(sys.modules, "hermes_cli", fake_hermes_cli)
+    monkeypatch.setitem(sys.modules, "hermes_cli.config", fake_config_mod)
+    monkeypatch.setitem(sys.modules, "hermes_cli.memory_setup", fake_setup_mod)
 
     monkeypatch.setattr("plugins.memory.mem0._setup._curses_select", lambda *a, **kw: 0)
     monkeypatch.setattr("plugins.memory.mem0._setup._prompt", lambda label, default=None, secret=False: default or "")
@@ -96,11 +96,28 @@ class TestBuildOSSConfig:
         assert oss["vector_store"]["provider"] == "qdrant"
         assert env_writes["OPENAI_API_KEY"] == "sk-oai"
 
+    def test_openai_custom_urls_use_mem0_provider_specific_keys(self):
+        flags = parse_flags([
+            "--mode", "oss",
+            "--oss-llm-key", "sk-oai",
+            "--oss-llm-url", "https://llm.example/v1",
+            "--oss-embedder-url", "https://embed.example/v1",
+        ])
+
+        oss, _ = build_oss_config(flags)
+
+        assert oss["llm"]["config"]["openai_base_url"] == "https://llm.example/v1"
+        assert oss["embedder"]["config"]["openai_base_url"] == "https://embed.example/v1"
+        assert "api_base" not in oss["llm"]["config"]
+        assert "api_base" not in oss["embedder"]["config"]
+
     def test_ollama_no_key_needed(self):
         flags = parse_flags(["--mode", "oss", "--oss-llm", "ollama", "--oss-embedder", "ollama"])
         oss, env_writes = build_oss_config(flags)
         assert oss["llm"]["provider"] == "ollama"
         assert "model" in oss["llm"]["config"]
+        assert oss["llm"]["config"]["ollama_base_url"] == "http://localhost:11434"
+        assert oss["embedder"]["config"]["ollama_base_url"] == "http://localhost:11434"
         assert env_writes == {}
 
     def test_embedder_reuses_llm_key(self):
@@ -168,9 +185,9 @@ class TestWriteEnv:
 class TestPostSetup:
 
     def test_platform_flag_mode(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("sys.argv", ["lucifex", "--mode", "platform", "--api-key", "sk-test"])
-        monkeypatch.setattr("plugins.memory.mem0._setup.get_lucifex_home", lambda: tmp_path)
-        _inject_fake_lucifex_cli(monkeypatch)
+        monkeypatch.setattr("sys.argv", ["hermes", "--mode", "platform", "--api-key", "sk-test"])
+        monkeypatch.setattr("plugins.memory.mem0._setup.get_hermes_home", lambda: tmp_path)
+        _inject_fake_hermes_cli(monkeypatch)
         config = {"memory": {}}
         post_setup(str(tmp_path), config)
         assert config["memory"]["provider"] == "mem0"
@@ -179,12 +196,28 @@ class TestPostSetup:
         mem0_json = json.loads((tmp_path / "mem0.json").read_text())
         assert mem0_json["mode"] == "platform"
 
+    def test_platform_setup_clears_stale_host(self, tmp_path, monkeypatch):
+        # A user who previously ran self-hosted has host in mem0.json. Switching
+        # to platform must drop host — otherwise routing (host > platform) keeps
+        # sending them to the self-hosted server despite --mode platform.
+        (tmp_path / "mem0.json").write_text(
+            json.dumps({"mode": "platform", "host": "http://old-selfhosted:8888"})
+        )
+        monkeypatch.setattr("sys.argv", ["hermes", "--mode", "platform", "--api-key", "sk-test"])
+        monkeypatch.setattr("plugins.memory.mem0._setup.get_hermes_home", lambda: tmp_path)
+        _inject_fake_hermes_cli(monkeypatch)
+        config = {"memory": {}}
+        post_setup(str(tmp_path), config)
+        mem0_json = json.loads((tmp_path / "mem0.json").read_text())
+        assert mem0_json["mode"] == "platform"
+        assert not mem0_json.get("host")  # cleared to falsy so routing → platform
+
     def test_oss_flag_mode(self, tmp_path, monkeypatch):
         monkeypatch.setattr("sys.argv", [
-            "lucifex", "--mode", "oss", "--oss-llm-key", "sk-oai",
+            "hermes", "--mode", "oss", "--oss-llm-key", "sk-oai",
         ])
-        monkeypatch.setattr("plugins.memory.mem0._setup.get_lucifex_home", lambda: tmp_path)
-        _inject_fake_lucifex_cli(monkeypatch)
+        monkeypatch.setattr("plugins.memory.mem0._setup.get_hermes_home", lambda: tmp_path)
+        _inject_fake_hermes_cli(monkeypatch)
         monkeypatch.setattr("plugins.memory.mem0._setup._install_provider_deps", lambda l, e, v: None)
         config = {"memory": {}}
         post_setup(str(tmp_path), config)
@@ -192,6 +225,52 @@ class TestPostSetup:
         mem0_json = json.loads((tmp_path / "mem0.json").read_text())
         assert mem0_json["mode"] == "oss"
         assert mem0_json["oss"]["llm"]["provider"] == "openai"
+
+    def test_selfhosted_flag_mode(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("sys.argv", [
+            "hermes", "--mode", "selfhosted",
+            "--host", "http://localhost:8888/", "--api-key", "admin-key",
+        ])
+        monkeypatch.setattr("plugins.memory.mem0._setup.get_hermes_home", lambda: tmp_path)
+        _inject_fake_hermes_cli(monkeypatch)
+        monkeypatch.setattr("plugins.memory.mem0._setup._check_selfhosted_server", lambda h: None)
+        config = {"memory": {}}
+        post_setup(str(tmp_path), config)
+        assert config["memory"]["provider"] == "mem0"
+        env_content = (tmp_path / ".env").read_text()
+        assert "MEM0_API_KEY=admin-key" in env_content
+        mem0_json = json.loads((tmp_path / "mem0.json").read_text())
+        assert mem0_json["host"] == "http://localhost:8888"  # trailing slash stripped
+        assert mem0_json["user_id"] == "hermes-user"
+
+    def test_selfhosted_no_api_key_auth_disabled(self, tmp_path, monkeypatch):
+        # AUTH_DISABLED servers need no key — setup must not write one.
+        monkeypatch.setattr("sys.argv", [
+            "hermes", "--mode", "self-hosted", "--host", "http://mem0.lan:8888",
+        ])
+        monkeypatch.setattr("plugins.memory.mem0._setup.get_hermes_home", lambda: tmp_path)
+        monkeypatch.delenv("MEM0_API_KEY", raising=False)
+        _inject_fake_hermes_cli(monkeypatch)
+        monkeypatch.setattr("plugins.memory.mem0._setup._check_selfhosted_server", lambda h: None)
+        config = {"memory": {}}
+        post_setup(str(tmp_path), config)
+        assert not (tmp_path / ".env").exists()
+        mem0_json = json.loads((tmp_path / "mem0.json").read_text())
+        assert mem0_json["host"] == "http://mem0.lan:8888"
+
+    def test_selfhosted_dry_run_no_files(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("sys.argv", [
+            "hermes", "--mode", "selfhosted",
+            "--host", "http://localhost:8888", "--api-key", "k", "--dry-run",
+        ])
+        monkeypatch.setattr("plugins.memory.mem0._setup.get_hermes_home", lambda: tmp_path)
+        _inject_fake_hermes_cli(monkeypatch)
+        monkeypatch.setattr("plugins.memory.mem0._setup._check_selfhosted_server", lambda h: None)
+        config = {"memory": {}}
+        post_setup(str(tmp_path), config)
+        assert not (tmp_path / ".env").exists()
+        assert not (tmp_path / "mem0.json").exists()
+        assert "provider" not in config["memory"]
 
 
 class TestDryRun:
@@ -205,9 +284,9 @@ class TestDryRun:
         assert flags["dry_run"] is False
 
     def test_dry_run_platform_no_files(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("sys.argv", ["lucifex", "--mode", "platform", "--api-key", "sk-test", "--dry-run"])
-        monkeypatch.setattr("plugins.memory.mem0._setup.get_lucifex_home", lambda: tmp_path)
-        _inject_fake_lucifex_cli(monkeypatch)
+        monkeypatch.setattr("sys.argv", ["hermes", "--mode", "platform", "--api-key", "sk-test", "--dry-run"])
+        monkeypatch.setattr("plugins.memory.mem0._setup.get_hermes_home", lambda: tmp_path)
+        _inject_fake_hermes_cli(monkeypatch)
         config = {"memory": {}}
         post_setup(str(tmp_path), config)
         assert not (tmp_path / ".env").exists()
@@ -216,10 +295,10 @@ class TestDryRun:
 
     def test_dry_run_oss_no_files(self, tmp_path, monkeypatch):
         monkeypatch.setattr("sys.argv", [
-            "lucifex", "--mode", "oss", "--oss-llm-key", "sk-oai", "--dry-run",
+            "hermes", "--mode", "oss", "--oss-llm-key", "sk-oai", "--dry-run",
         ])
-        monkeypatch.setattr("plugins.memory.mem0._setup.get_lucifex_home", lambda: tmp_path)
-        _inject_fake_lucifex_cli(monkeypatch)
+        monkeypatch.setattr("plugins.memory.mem0._setup.get_hermes_home", lambda: tmp_path)
+        _inject_fake_hermes_cli(monkeypatch)
         monkeypatch.setattr("plugins.memory.mem0._setup._install_provider_deps", lambda l, e, v: None)
         config = {"memory": {}}
         post_setup(str(tmp_path), config)

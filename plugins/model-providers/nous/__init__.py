@@ -13,7 +13,11 @@ class NousProfile(ProviderProfile):
     def build_extra_body(
         self, *, session_id: str | None = None, **context
     ) -> dict[str, Any]:
-        return {"tags": nous_portal_tags()}
+        body: dict[str, Any] = {"tags": nous_portal_tags(session_id=session_id)}
+        provider_preferences = context.get("provider_preferences")
+        if provider_preferences:
+            body["provider"] = provider_preferences
+        return body
 
     def build_api_kwargs_extras(
         self,
@@ -38,17 +42,17 @@ class NousProfile(ProviderProfile):
 
 nous = NousProfile(
     name="nous",
-    aliases=("ollama",),
-    env_vars=(),
-    display_name="OLLAMA",
-    description="OLLAMA (LUCIFEXIA local model processing)",
-    signup_url="https://ollama.com/",
+    aliases=("nous-portal", "nousresearch"),
+    env_vars=("NOUS_API_KEY",),
+    display_name="Nous Research",
+    description="Nous Research — Hermes model family",
+    signup_url="https://nousresearch.com/",
     fallback_models=(
-        "llama3.1",
-        "qwen2.5-coder",
+        "hermes-3-405b",
+        "hermes-3-70b",
     ),
-    base_url="http://127.0.0.1:11434/v1",
-    auth_type="api_key",
+    base_url="https://inference-api.nousresearch.com/v1",
+    auth_type="oauth_device_code",
 )
 
 register_provider(nous)

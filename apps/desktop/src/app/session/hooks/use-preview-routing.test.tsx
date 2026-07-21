@@ -10,7 +10,7 @@ import {
   registerSessionPreview
 } from '@/store/preview'
 import { $currentCwd, $messages } from '@/store/session'
-import type { RpcEvent } from '@/types/lucifex'
+import type { RpcEvent } from '@/types/hermes'
 
 import { usePreviewRouting } from './use-preview-routing'
 
@@ -62,11 +62,11 @@ describe('usePreviewRouting', () => {
     $currentCwd.set('/work')
     $messages.set([])
     $previewTarget.set(null)
-    window.localStorage.clear()
     clearSessionPreviewRegistry()
     handleEvent = () => undefined
+    window.localStorage.clear()
 
-    Object.defineProperty(window, 'lucifexDesktop', {
+    Object.defineProperty(window, 'hermesDesktop', {
       configurable: true,
       value: {
         normalizePreviewTarget: vi.fn(async (target: string) => previewTarget(target))
@@ -78,9 +78,9 @@ describe('usePreviewRouting', () => {
     cleanup()
     $messages.set([])
     $previewTarget.set(null)
-    window.localStorage.clear()
-    clearSessionPreviewRegistry()
     vi.restoreAllMocks()
+    clearSessionPreviewRegistry()
+    window.localStorage.clear()
   })
 
   it('opens the active session preview from the registry', async () => {
@@ -117,7 +117,7 @@ describe('usePreviewRouting', () => {
     })
 
     expect($previewTarget.get()).toBeNull()
-    expect(window.lucifexDesktop.normalizePreviewTarget).not.toHaveBeenCalled()
+    expect(window.hermesDesktop.normalizePreviewTarget).not.toHaveBeenCalled()
   })
 
   it('does not auto-open a preview from tool results', async () => {
@@ -139,7 +139,6 @@ describe('usePreviewRouting', () => {
     act(() => handleEvent({ payload: { path: './dist/index.html' }, session_id: 'session-1', type: 'tool.complete' }))
 
     expect($previewTarget.get()).toBeNull()
-    const registry = window.localStorage.getItem('lucifex.desktop.sessionPreviews.v1')
-    expect(!registry || registry === '{}').toBe(true)
+    expect(window.localStorage.getItem('hermes.desktop.sessionPreviews.v1')).toBeNull()
   })
 })

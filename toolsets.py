@@ -28,17 +28,17 @@ from typing import List, Dict, Any, Set, Optional
 
 # Shared tool list for CLI and all messaging platform toolsets.
 # Edit this once to update all platforms simultaneously.
-_LUCIFEX_CORE_TOOLS = [
+_HERMES_CORE_TOOLS = [
     # Web
     "web_search", "web_extract",
     # Terminal + process management
     "terminal", "process",
     # Read the desktop GUI's embedded terminal pane, and close an agent's
-    # read-only terminal tab (both gated on LUCIFEX_DESKTOP via check_fn —
+    # read-only terminal tab (both gated on HERMES_DESKTOP via check_fn —
     # hidden outside the GUI).
     "read_terminal", "close_terminal",
     # File manipulation
-    "read_file", "write_file", "patch", "search_files", "open_preview",
+    "read_file", "write_file", "patch", "search_files",
     # Vision + image generation
     "vision_analyze", "image_generate",
     # Skills
@@ -68,41 +68,22 @@ _LUCIFEX_CORE_TOOLS = [
     # Home Assistant smart home control (gated on HASS_TOKEN via check_fn)
     "ha_list_entities", "ha_get_state", "ha_list_services", "ha_call_service",
     # Kanban multi-agent coordination — only in schema when the agent is
-    # spawned as a kanban worker (LUCIFEX_KANBAN_TASK env set) or the current
+    # spawned as a kanban worker (HERMES_KANBAN_TASK env set) or the current
     # profile explicitly enables the kanban toolset. Gated via check_fn in
     # tools/kanban_tools.py.
     "kanban_show", "kanban_list",
     "kanban_complete", "kanban_block", "kanban_heartbeat",
     "kanban_comment", "kanban_create", "kanban_link",
     "kanban_unblock",
+    "kanban_attach", "kanban_attach_url", "kanban_attachments",
     # Computer use (macOS, gated on cua-driver being installed via check_fn)
     "computer_use",
-    # ── Phase 2: Computer (OS Control) Toolset ───────────────────────────────
-    "screenshot", "read_screen", "ask_about_screen", "find_text_on_screen",
-    "clipboard_get", "clipboard_set", "clipboard_search", "clipboard_format",
-    "window_list", "window_focus", "window_arrange", "layout_save", "layout_restore",
-    "ui_click", "ui_type", "ui_press", "ui_scroll", "ui_find_and_click",
-    "macro_record", "macro_run", "get_mouse_position",
-    "network_block", "network_unblock", "network_focus", "network_status", "network_monitor_suspicious",
-    "file_watch", "file_organize", "file_recent", "file_rename_smart",
-    "meeting_list", "meeting_prep", "meeting_register",
-    # ── Phase 3: AGI Capability Toolset ──────────────────────────────────────
-    "world_model_query", "world_model_add", "world_model_connect", "world_model_impact",
-    "goal_add", "goal_list", "goal_log_progress",
-    "pre_flight_simulate", "get_user_knowledge_model", "find_analogous_solution",
-    "run_specialist_panel", "get_agent_evolution_stats", "get_active_commitments_tool",
-    "supersede_commitment_tool", "get_cognitive_state", "get_project_ontology",
-    "trace_consequences", "set_persona", "get_current_persona",
-    # ── Playbook tool ────────────────────────────────────────────────────────
-    "playbook_sync",
-    # ── Inner Life tool ──────────────────────────────────────────────────────
-    "get_inner_state",
 ]
 
 # Webhook events may originate from untrusted third-party content (for example,
 # public PR titles/comments). Keep the default webhook toolset intentionally
 # constrained to avoid local file/system execution by prompt injection.
-_LUCIFEX_WEBHOOK_SAFE_TOOLS = [
+_HERMES_WEBHOOK_SAFE_TOOLS = [
     "web_search",
     "web_extract",
     "vision_analyze",
@@ -131,7 +112,7 @@ TOOLSETS = {
             "Search X (Twitter) posts and threads via xAI's built-in "
             "x_search Responses tool. Available when xAI credentials are "
             "configured (SuperGrok OAuth or XAI_API_KEY). Off by default; "
-            "enable in `lucifex tools` → X (Twitter) Search."
+            "enable in `hermes tools` → X (Twitter) Search."
         ),
         "tools": ["x_search"],
         "includes": []
@@ -161,7 +142,7 @@ TOOLSETS = {
             "text-to-video (prompt only) and image-to-video (prompt + "
             "image_url), plus reference-to-video. Provider-specific edit/"
             "extend workflows may appear as separate tools. Configure via "
-            "``lucifex tools`` → Video Generation."
+            "``hermes tools`` → Video Generation."
         ),
         "tools": ["video_generate", "xai_video_edit", "xai_video_extend"],
         "includes": []
@@ -174,34 +155,6 @@ TOOLSETS = {
             "user's cursor or keyboard focus. Works with any tool-capable model."
         ),
         "tools": ["computer_use"],
-        "includes": []
-    },
-
-    "computer": {
-        "description": "Visual screen understanding, clipboard monitor, named window layouts, UI macro automation, network control, file watcher, and meeting prep.",
-        "tools": [
-            "screenshot", "read_screen", "ask_about_screen", "find_text_on_screen",
-            "clipboard_get", "clipboard_set", "clipboard_search", "clipboard_format",
-            "window_list", "window_focus", "window_arrange", "layout_save", "layout_restore",
-            "ui_click", "ui_type", "ui_press", "ui_scroll", "ui_find_and_click",
-            "macro_record", "macro_run", "get_mouse_position",
-            "network_block", "network_unblock", "network_focus", "network_status", "network_monitor_suspicious",
-            "file_watch", "file_organize", "file_recent", "file_rename_smart",
-            "meeting_list", "meeting_prep", "meeting_register"
-        ],
-        "includes": []
-    },
-
-    "agi": {
-        "description": "AGI Cognition and Self-Awareness: world model graph, long-horizon goal tracking, adversarial Red Teaming, domain expertise modeling, cross-domain pattern transfer, autonomous skill acquisition, and consequence propagation.",
-        "tools": [
-            "world_model_query", "world_model_add", "world_model_connect", "world_model_impact",
-            "goal_add", "goal_list", "goal_log_progress",
-            "pre_flight_simulate", "get_user_knowledge_model", "find_analogous_solution",
-            "run_specialist_panel", "get_agent_evolution_stats", "get_active_commitments_tool",
-            "supersede_commitment_tool", "get_cognitive_state", "get_project_ontology",
-            "trace_consequences", "set_persona", "get_current_persona"
-        ],
         "includes": []
     },
 
@@ -239,12 +192,6 @@ TOOLSETS = {
     "file": {
         "description": "File manipulation tools: read, write, patch (with fuzzy matching), and search (content + files)",
         "tools": ["read_file", "write_file", "patch", "search_files"],
-        "includes": []
-    },
-
-    "preview": {
-        "description": "Preview files or URLs in the Lucifex Desktop preview panel",
-        "tools": ["open_preview"],
         "includes": []
     },
     
@@ -314,18 +261,19 @@ TOOLSETS = {
     "kanban": {
         "description": (
             "Kanban multi-agent coordination — only active when the agent "
-            "is spawned by the kanban dispatcher (LUCIFEX_KANBAN_TASK env "
+            "is spawned by the kanban dispatcher (HERMES_KANBAN_TASK env "
             "set). The dispatcher runs inside the gateway by default; see "
             "`kanban.dispatch_in_gateway` in config.yaml. Lets workers mark "
             "tasks done with structured handoffs, block for human input, "
-            "heartbeat during long ops, comment on threads, and (for "
-            "orchestrators) list, unblock, and fan out tasks."
+            "heartbeat during long ops, comment on threads, attach files, and "
+            "(for orchestrators) list, unblock, and fan out tasks."
         ),
         "tools": [
             "kanban_show", "kanban_list", "kanban_complete", "kanban_block",
             "kanban_heartbeat", "kanban_comment",
             "kanban_create", "kanban_link",
             "kanban_unblock",
+            "kanban_attach", "kanban_attach_url", "kanban_attachments",
         ],
         "includes": [],
     },
@@ -393,7 +341,7 @@ TOOLSETS = {
         "includes": ["web", "vision", "image_gen"]
     },
 
-    # Coding posture (base Lucifex — CLI/TUI/desktop/ACP). Auto-selected in a
+    # Coding posture (base Hermes — CLI/TUI/desktop/ACP). Auto-selected in a
     # code workspace; see agent/coding_context.py. Keeps everything you reach
     # for while pairing on code and drops the rest (messaging, tts, image_gen,
     # spotify, home-assistant, cron, computer-use).
@@ -402,7 +350,7 @@ TOOLSETS = {
         "tools": [
             "web_search", "web_extract",
             "terminal", "process", "read_terminal", "close_terminal",
-            "read_file", "write_file", "patch", "search_files", "open_preview",
+            "read_file", "write_file", "patch", "search_files",
             "vision_analyze",
             "skills_list", "skill_view", "skill_manage",
             "browser_navigate", "browser_snapshot", "browser_click",
@@ -416,25 +364,25 @@ TOOLSETS = {
         "includes": [],
         # Posture toolset: selected per-session by agent/coding_context.py,
         # never auto-recovered into per-platform tool config (see the
-        # non-configurable-toolset recovery loop in lucifex_cli/tools_config.py).
+        # non-configurable-toolset recovery loop in hermes_cli/tools_config.py).
         "posture": True,
     },
     
     # ==========================================================================
-    # Full Lucifex toolsets (CLI + messaging platforms)
+    # Full Hermes toolsets (CLI + messaging platforms)
     #
     # All platforms share the same core tools. Note: agents do NOT get an
     # agent-callable send_message tool — outbound platform messaging is handled
     # outside the agent loop (cron delivery, the gateway kanban notifier, and
-    # the `lucifex send` CLI), not by the model deciding to send on its own.
+    # the `hermes send` CLI), not by the model deciding to send on its own.
     # ==========================================================================
 
-    "lucifex-acp": {
+    "hermes-acp": {
         "description": "Editor integration (VS Code, Zed, JetBrains) — coding-focused tools without messaging, audio, or clarify UI",
         "tools": [
             "web_search", "web_extract",
             "terminal", "process",
-            "read_file", "write_file", "patch", "search_files", "open_preview",
+            "read_file", "write_file", "patch", "search_files",
             "vision_analyze",
             "skills_list", "skill_view", "skill_manage",
             "browser_navigate", "browser_snapshot", "browser_click",
@@ -448,7 +396,7 @@ TOOLSETS = {
         "includes": []
     },
 
-    "lucifex-api-server": {
+    "hermes-api-server": {
         "description": "OpenAI-compatible API server — full agent tools accessible via HTTP (no interactive UI tools like clarify or send_message)",
         "tools": [
             # Web
@@ -481,95 +429,95 @@ TOOLSETS = {
         "includes": []
     },
     
-    "lucifex-cli": {
+    "hermes-cli": {
         "description": "Full interactive CLI toolset - all default tools plus cronjob management",
-        "tools": _LUCIFEX_CORE_TOOLS,
+        "tools": _HERMES_CORE_TOOLS,
         "includes": []
     },
 
-    "lucifex-cron": {
-        # Mirrors lucifex-cli so cron's "default" toolset is the same set of
-        # core tools users see interactively — then `lucifex tools` filters
+    "hermes-cron": {
+        # Mirrors hermes-cli so cron's "default" toolset is the same set of
+        # core tools users see interactively — then `hermes tools` filters
         # them down per the platform config. _DEFAULT_OFF_TOOLSETS (moa,
         # homeassistant) are excluded by _get_platform_tools() unless
         # the user explicitly enables them.
-        "description": "Default cron toolset - same core tools as lucifex-cli; gated by `lucifex tools`",
-        "tools": _LUCIFEX_CORE_TOOLS,
+        "description": "Default cron toolset - same core tools as hermes-cli; gated by `hermes tools`",
+        "tools": _HERMES_CORE_TOOLS,
         "includes": []
     },
 
-    "lucifex-telegram": {
+    "hermes-telegram": {
         "description": "Telegram bot toolset - full access for personal use (terminal has safety checks)",
-        "tools": _LUCIFEX_CORE_TOOLS,
+        "tools": _HERMES_CORE_TOOLS,
         "includes": []
     },
     
-    "lucifex-discord": {
+    "hermes-discord": {
         "description": "Discord bot toolset - full access (terminal has safety checks via dangerous command approval)",
-        "tools": _LUCIFEX_CORE_TOOLS + [
+        "tools": _HERMES_CORE_TOOLS + [
             "discord",
             "discord_admin",
         ],
         "includes": []
     },
     
-    "lucifex-whatsapp": {
+    "hermes-whatsapp": {
         "description": "WhatsApp bot toolset - similar to Telegram (personal messaging, more trusted)",
-        "tools": _LUCIFEX_CORE_TOOLS,
+        "tools": _HERMES_CORE_TOOLS,
         "includes": []
     },
     
-    "lucifex-slack": {
+    "hermes-slack": {
         "description": "Slack bot toolset - full access for workspace use (terminal has safety checks)",
-        "tools": _LUCIFEX_CORE_TOOLS,
+        "tools": _HERMES_CORE_TOOLS,
         "includes": []
     },
     
-    "lucifex-signal": {
+    "hermes-signal": {
         "description": "Signal bot toolset - encrypted messaging platform (full access)",
-        "tools": _LUCIFEX_CORE_TOOLS,
+        "tools": _HERMES_CORE_TOOLS,
         "includes": []
     },
 
-    "lucifex-bluebubbles": {
+    "hermes-bluebubbles": {
         "description": "BlueBubbles iMessage bot toolset - Apple iMessage via local BlueBubbles server",
-        "tools": _LUCIFEX_CORE_TOOLS,
+        "tools": _HERMES_CORE_TOOLS,
         "includes": []
     },
 
-    "lucifex-homeassistant": {
+    "hermes-homeassistant": {
         "description": "Home Assistant bot toolset - smart home event monitoring and control",
-        "tools": _LUCIFEX_CORE_TOOLS,
+        "tools": _HERMES_CORE_TOOLS,
         "includes": []
     },
 
-    "lucifex-email": {
-        "description": "Email bot toolset - interact with Lucifex via email (IMAP/SMTP)",
-        "tools": _LUCIFEX_CORE_TOOLS,
+    "hermes-email": {
+        "description": "Email bot toolset - interact with Hermes via email (IMAP/SMTP)",
+        "tools": _HERMES_CORE_TOOLS,
         "includes": []
     },
 
-    "lucifex-mattermost": {
+    "hermes-mattermost": {
         "description": "Mattermost bot toolset - self-hosted team messaging (full access)",
-        "tools": _LUCIFEX_CORE_TOOLS,
+        "tools": _HERMES_CORE_TOOLS,
         "includes": []
     },
 
-    "lucifex-matrix": {
+    "hermes-matrix": {
         "description": "Matrix bot toolset - decentralized encrypted messaging (full access)",
-        "tools": _LUCIFEX_CORE_TOOLS,
+        "tools": _HERMES_CORE_TOOLS,
         "includes": []
     },
 
-    "lucifex-dingtalk": {
+    "hermes-dingtalk": {
         "description": "DingTalk bot toolset - enterprise messaging platform (full access)",
-        "tools": _LUCIFEX_CORE_TOOLS,
+        "tools": _HERMES_CORE_TOOLS,
         "includes": []
     },
 
-    "lucifex-feishu": {
+    "hermes-feishu": {
         "description": "Feishu/Lark bot toolset - enterprise messaging via Feishu/Lark (full access)",
-        "tools": _LUCIFEX_CORE_TOOLS + [
+        "tools": _HERMES_CORE_TOOLS + [
             "feishu_doc_read",
             "feishu_drive_list_comments",
             "feishu_drive_list_comment_replies",
@@ -579,33 +527,33 @@ TOOLSETS = {
         "includes": []
     },
 
-    "lucifex-weixin": {
+    "hermes-weixin": {
         "description": "Weixin bot toolset - personal WeChat messaging via iLink (full access)",
-        "tools": _LUCIFEX_CORE_TOOLS,
+        "tools": _HERMES_CORE_TOOLS,
         "includes": []
     },
 
-    "lucifex-qqbot": {
+    "hermes-qqbot": {
         "description": "QQBot toolset - QQ messaging via Official Bot API v2 (full access)",
-        "tools": _LUCIFEX_CORE_TOOLS,
+        "tools": _HERMES_CORE_TOOLS,
         "includes": []
     },
 
-    "lucifex-wecom": {
+    "hermes-wecom": {
         "description": "WeCom bot toolset - enterprise WeChat messaging (full access)",
-        "tools": _LUCIFEX_CORE_TOOLS,
+        "tools": _HERMES_CORE_TOOLS,
         "includes": []
     },
 
-    "lucifex-wecom-callback": {
+    "hermes-wecom-callback": {
         "description": "WeCom callback toolset - enterprise self-built app messaging (full access)",
-        "tools": _LUCIFEX_CORE_TOOLS,
+        "tools": _HERMES_CORE_TOOLS,
         "includes": []
     },
 
-    "lucifex-yuanbao": {
+    "hermes-yuanbao": {
         "description": "Yuanbao Bot 元宝消息平台工具集 - 群信息、成员查询、私聊、贴纸表情",
-        "tools": _LUCIFEX_CORE_TOOLS + [
+        "tools": _HERMES_CORE_TOOLS + [
             "yb_query_group_info",
             "yb_query_group_members",
             "yb_send_dm",
@@ -616,22 +564,22 @@ TOOLSETS = {
         "includes": []
     },
 
-    "lucifex-sms": {
-        "description": "SMS bot toolset - interact with Lucifex via SMS (Twilio)",
-        "tools": _LUCIFEX_CORE_TOOLS,
+    "hermes-sms": {
+        "description": "SMS bot toolset - interact with Hermes via SMS (Twilio)",
+        "tools": _HERMES_CORE_TOOLS,
         "includes": []
     },
 
-    "lucifex-webhook": {
+    "hermes-webhook": {
         "description": "Webhook toolset - receive and process external webhook events",
-        "tools": _LUCIFEX_WEBHOOK_SAFE_TOOLS,
+        "tools": _HERMES_WEBHOOK_SAFE_TOOLS,
         "includes": []
     },
 
-    "lucifex-gateway": {
+    "hermes-gateway": {
         "description": "Gateway toolset - union of all messaging platform tools",
         "tools": [],
-        "includes": ["lucifex-telegram", "lucifex-discord", "lucifex-whatsapp", "lucifex-slack", "lucifex-signal", "lucifex-bluebubbles", "lucifex-homeassistant", "lucifex-email", "lucifex-sms", "lucifex-mattermost", "lucifex-matrix", "lucifex-dingtalk", "lucifex-feishu", "lucifex-wecom", "lucifex-wecom-callback", "lucifex-weixin", "lucifex-qqbot", "lucifex-webhook", "lucifex-yuanbao"]
+        "includes": ["hermes-telegram", "hermes-discord", "hermes-whatsapp", "hermes-slack", "hermes-signal", "hermes-bluebubbles", "hermes-homeassistant", "hermes-email", "hermes-sms", "hermes-mattermost", "hermes-matrix", "hermes-dingtalk", "hermes-feishu", "hermes-wecom", "hermes-wecom-callback", "hermes-weixin", "hermes-qqbot", "hermes-webhook", "hermes-yuanbao"]
     }
 }
 
@@ -711,9 +659,9 @@ def get_toolset(name: str, *, include_registry: bool = True) -> Optional[Dict[st
 
 
 def bundle_non_core_tools(toolset_name: str) -> Set[str]:
-    """Return a ``lucifex-*`` bundle's platform-specific tools, excluding core.
+    """Return a ``hermes-*`` bundle's platform-specific tools, excluding core.
 
-    Platform bundles are defined as ``_LUCIFEX_CORE_TOOLS + [platform extras]``.
+    Platform bundles are defined as ``_HERMES_CORE_TOOLS + [platform extras]``.
     When a bundle name appears in ``disabled_toolsets``, subtracting the whole
     bundle would strip core tools (terminal, read_file, …) shared by every
     other enabled toolset, emptying the model's tool list (#33924). This
@@ -721,12 +669,12 @@ def bundle_non_core_tools(toolset_name: str) -> Set[str]:
     one-level ``includes``), so disabling a bundle removes its platform tools
     while leaving core intact.
 
-    Bundle nesting is one level deep in practice (only ``lucifex-gateway``
+    Bundle nesting is one level deep in practice (only ``hermes-gateway``
     includes other bundles, and those leaves don't nest further), so a single
     ``includes`` pass is sufficient. Unknown/garbage names fall back to the
     full resolution minus core — never re-introducing the core wipe.
     """
-    core = set(_LUCIFEX_CORE_TOOLS)
+    core = set(_HERMES_CORE_TOOLS)
     ts_def = get_toolset(toolset_name)
     if not (ts_def and "tools" in ts_def):
         return set(resolve_toolset(toolset_name)) - core
@@ -782,17 +730,17 @@ def resolve_toolset(name: str, visited: Set[str] = None, *, include_registry: bo
     # Get toolset definition
     toolset = get_toolset(name, include_registry=include_registry)
     if not toolset:
-        # Auto-generate a toolset for plugin platforms (lucifex-<name>).
-        # Gives them _LUCIFEX_CORE_TOOLS plus any tools the plugin registered
+        # Auto-generate a toolset for plugin platforms (hermes-<name>).
+        # Gives them _HERMES_CORE_TOOLS plus any tools the plugin registered
         # into a toolset matching the platform name. This is a registry-derived
         # view, so it only applies when registry tools are requested; the static
         # view (include_registry=False) has no plugin-platform definition.
-        if include_registry and name.startswith("lucifex-"):
-            platform_name = name[len("lucifex-"):]
+        if include_registry and name.startswith("hermes-"):
+            platform_name = name[len("hermes-"):]
             try:
                 from gateway.platform_registry import platform_registry
                 if platform_registry.is_registered(platform_name):
-                    plugin_tools = set(_LUCIFEX_CORE_TOOLS)
+                    plugin_tools = set(_HERMES_CORE_TOOLS)
                     try:
                         from tools.registry import registry
                         plugin_tools.update(

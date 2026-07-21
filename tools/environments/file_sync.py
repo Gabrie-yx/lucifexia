@@ -25,7 +25,7 @@ except ImportError:
 from pathlib import Path
 from typing import Callable
 
-from lucifex_constants import get_lucifex_home
+from hermes_constants import get_hermes_home
 from tools.environments.base import _file_mtime_key
 
 logger = logging.getLogger(__name__)
@@ -35,9 +35,12 @@ logger = logging.getLogger(__name__)
 # ``time.sleep`` globally because ``time`` is the module object; under xdist
 # that lets unrelated background threads inflate retry-test call counts.
 _sleep = time.sleep
+# Same rationale for the rate-limit clock: tests patch ``_monotonic``
+# instead of ``time.monotonic`` on the shared module object.
+_monotonic = time.monotonic
 
 _SYNC_INTERVAL_SECONDS = 5.0
-_FORCE_SYNC_ENV = "LUCIFEX_FORCE_FILE_SYNC"
+_FORCE_SYNC_ENV = "HERMES_FORCE_FILE_SYNC"
 
 # Transport callbacks provided by each backend
 UploadFn = Callable[[str, str], None]  # (host_path, remote_path) -> raises on failure
@@ -47,12 +50,12 @@ DeleteFn = Callable[[list[str]], None]  # (remote_paths) -> raises on failure
 GetFilesFn = Callable[[], list[tuple[str, str]]]  # () -> [(host_path, remote_path), ...]
 
 
-def iter_sync_files(container_base: str = "/root/.lucifex") -> list[tuple[str, str]]:
+def iter_sync_files(container_base: str = "/root/.hermes") -> list[tuple[str, str]]:
     """Enumerate all files that should be synced to a remote environment.
 
     Combines credentials, skills, and cache into a single flat list of
     (host_path, remote_path) pairs.  Credential paths are remapped from
-    the hardcoded /root/.lucifex to *container_base* because the remote
+    the hardcoded /root/.hermes to *container_base* because the remote
     user's home may differ (e.g. /home/daytona, /home/user).
     """
     # Late import: credential_files imports agent modules that create
@@ -66,7 +69,7 @@ def iter_sync_files(container_base: str = "/root/.lucifex") -> list[tuple[str, s
     files: list[tuple[str, str]] = []
     for entry in get_credential_file_mounts():
         remote = entry["container_path"].replace(
-            "/root/.lucifex", container_base, 1
+            "/root/.hermes", container_base, 1
         )
         files.append((entry["host_path"], remote))
     for entry in iter_skills_files(container_base=container_base):
@@ -163,13 +166,13 @@ class FileSyncManager:
         """Run a sync cycle: upload changed files, delete removed files.
 
         Rate-limited to once per ``sync_interval`` unless *force* is True
-        or ``LUCIFEX_FORCE_FILE_SYNC=1`` is set.
+        or ``HERMES_FORCE_FILE_SYNC=1`` is set.
 
         Transactional: state only committed if ALL operations succeed.
         On failure, state rolls back so the next cycle retries everything.
         """
         if not force and not os.environ.get(_FORCE_SYNC_ENV):
-            now = time.monotonic()
+            now = _monotonic()
             if now - self._last_sync_time < self._sync_interval:
                 return
 
@@ -193,7 +196,7 @@ class FileSyncManager:
         to_delete = [p for p in self._synced_files if p not in current_remote_paths]
 
         if not to_upload and not to_delete:
-            self._last_sync_time = time.monotonic()
+            self._last_sync_time = _monotonic()
             return
 
         # Snapshot for rollback (only when there's work to do)
@@ -227,22 +230,27 @@ class FileSyncManager:
                 self._pushed_hashes.pop(p, None)
 
             self._synced_files = new_files
-            self._last_sync_time = time.monotonic()
+            self._last_sync_time = _monotonic()
 
         except Exception as exc:
             self._synced_files = prev_files
             self._pushed_hashes = prev_hashes
-            self._last_sync_time = time.monotonic()
+            # Do NOT advance _last_sync_time here: a failed cycle rolls state
+            # back so the next cycle can retry. Bumping the rate-limit clock on
+            # failure would make the next non-forced sync() return early (the
+            # guard above), suppressing that retry for up to _sync_interval and
+            # leaving the remote with stale files — contradicting this method's
+            # documented "next cycle retries everything" contract.
             logger.warning("file_sync: sync failed, rolled back state: %s", exc)
 
     # ------------------------------------------------------------------
     # Sync-back: pull remote changes to host on teardown
     # ------------------------------------------------------------------
 
-    def sync_back(self, lucifex_home: Path | None = None) -> None:
+    def sync_back(self, hermes_home: Path | None = None) -> None:
         """Pull remote changes back to the host filesystem.
 
-        Downloads the remote ``.lucifex/`` directory as a tar archive,
+        Downloads the remote ``.hermes/`` directory as a tar archive,
         unpacks it, and applies only files that differ from what was
         originally pushed (based on SHA-256 content hashes).
 
@@ -254,12 +262,12 @@ class FileSyncManager:
 
         # Nothing was ever committed through this manager — the initial
         # push failed or never ran. Skip sync_back to avoid retry storms
-        # against an uninitialized remote .lucifex/ directory.
+        # against an uninitialized remote .hermes/ directory.
         if not self._pushed_hashes and not self._synced_files:
             logger.debug("sync_back: no prior push state — skipping")
             return
 
-        lock_path = (lucifex_home or get_lucifex_home()) / ".sync.lock"
+        lock_path = (hermes_home or get_hermes_home()) / ".sync.lock"
         lock_path.parent.mkdir(parents=True, exist_ok=True)
 
         last_exc: Exception | None = None
@@ -302,7 +310,17 @@ class FileSyncManager:
             if on_main_thread and original_handler is not None:
                 signal.signal(signal.SIGINT, original_handler)
                 if deferred_sigint:
-                    os.kill(os.getpid(), signal.SIGINT)
+                    # Re-deliver the deferred Ctrl+C to the just-restored
+                    # handler. ``os.kill(os.getpid(), signal.SIGINT)`` is NOT a
+                    # graceful signal on Windows: os.kill only treats
+                    # CTRL_C_EVENT(0)/CTRL_BREAK_EVENT(1) as console events; any
+                    # other value (SIGINT == 2) routes to TerminateProcess(sig),
+                    # hard-killing the CLI (exit code 2) instead of raising
+                    # KeyboardInterrupt — so a Ctrl+C during a remote-backend
+                    # sync-back would kill the whole session on Windows.
+                    # ``signal.raise_signal`` (3.8+) invokes the handler via C
+                    # ``raise()`` on every platform.
+                    signal.raise_signal(signal.SIGINT)
 
     def _sync_back_locked(self, lock_path: Path) -> None:
         """Sync-back under file lock (serializes concurrent gateways)."""
@@ -348,7 +366,7 @@ class FileSyncManager:
                 )
                 return
 
-            with tempfile.TemporaryDirectory(prefix="lucifex-sync-back-") as staging:
+            with tempfile.TemporaryDirectory(prefix="hermes-sync-back-") as staging:
                 with tarfile.open(tf.name) as tar:
                     tar.extractall(staging, filter="data")
 
@@ -430,9 +448,9 @@ class FileSyncManager:
 
         Uses the existing file mapping to find a remote->host directory
         pair, then applies the same prefix substitution to the new file.
-        For example, if the mapping has ``/root/.lucifex/skills/a.md`` →
-        ``~/.lucifex/skills/a.md``, a new remote file at
-        ``/root/.lucifex/skills/b.md`` maps to ``~/.lucifex/skills/b.md``.
+        For example, if the mapping has ``/root/.hermes/skills/a.md`` →
+        ``~/.hermes/skills/a.md``, a new remote file at
+        ``/root/.hermes/skills/b.md`` maps to ``~/.hermes/skills/b.md``.
         """
         mapping = file_mapping if file_mapping is not None else []
         upload_only_host_paths = upload_only_host_paths or set()

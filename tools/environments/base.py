@@ -1,4 +1,4 @@
-"""Base class for all Lucifex execution environment backends.
+"""Base class for all Hermes execution environment backends.
 
 Unified spawn-per-call model: every command spawns a fresh ``bash -c`` process.
 A session snapshot (env vars, functions, aliases) is captured once at init and
@@ -17,20 +17,21 @@ import threading
 import time
 import uuid
 from abc import ABC, abstractmethod
+from collections import deque
 from pathlib import Path
 from typing import IO, Callable, Protocol
 
-from lucifex_constants import get_lucifex_home
-from lucifex_cli._subprocess_compat import windows_hide_flags
+from hermes_constants import get_hermes_home
+from hermes_cli._subprocess_compat import windows_hide_flags
 from tools.interrupt import is_interrupted
 
 logger = logging.getLogger(__name__)
 
 # Opt-in debug tracing for the interrupt/activity/poll machinery.  Set
-# LUCIFEX_DEBUG_INTERRUPT=1 to log loop entry/exit, periodic heartbeats, and
+# HERMES_DEBUG_INTERRUPT=1 to log loop entry/exit, periodic heartbeats, and
 # every is_interrupted() state change from _wait_for_process.  Off by default
 # to avoid flooding production gateway logs.
-_DEBUG_INTERRUPT = bool(os.getenv("LUCIFEX_DEBUG_INTERRUPT"))
+_DEBUG_INTERRUPT = bool(os.getenv("HERMES_DEBUG_INTERRUPT"))
 
 if _DEBUG_INTERRUPT:
     # AIAgent's quiet_mode path (run_agent.py) forces the `tools` logger to
@@ -42,6 +43,105 @@ if _DEBUG_INTERRUPT:
 # Thread-local activity callback.  The agent sets this before a tool call so
 # long-running _wait_for_process loops can report liveness to the gateway.
 _activity_callback_local = threading.local()
+
+
+# Sentinel capacity for full-fidelity capture (internal consumers). Large
+# enough that the collector never evicts in practice, keeping a single code
+# path for both bounded and unbounded modes.
+_UNBOUNDED_CAPTURE_CHARS = 2**63 - 1
+
+
+class _BoundedOutputCollector:
+    """Retain a bounded 40/60 head-tail window of streamed text."""
+    def __init__(self, max_chars: int):
+        self.max_chars = max(1, int(max_chars))
+        self._head_limit = int(self.max_chars * 0.4)
+        self._tail_limit = self.max_chars - self._head_limit
+        self._head: list[str] = []
+        self._tail: deque[str] = deque()
+        self._head_chars = 0
+        self._tail_chars = 0
+        self._total_chars = 0
+        self._lock = threading.Lock()
+
+    @property
+    def buffered_chars(self) -> int:
+        with self._lock:
+            return self._head_chars + self._tail_chars
+
+    @property
+    def total_chars(self) -> int:
+        with self._lock:
+            return self._total_chars
+
+    def append(self, text: str) -> None:
+        if not text:
+            return
+        with self._lock:
+            text_len = len(text)
+            self._total_chars += text_len
+            start = 0
+
+            if self._head_chars < self._head_limit:
+                take = min(self._head_limit - self._head_chars, text_len)
+                if take:
+                    self._head.append(text[:take])
+                    self._head_chars += take
+                    start = take
+
+            remaining = text_len - start
+            if remaining <= 0 or self._tail_limit <= 0:
+                return
+            if remaining >= self._tail_limit:
+                self._tail.clear()
+                self._tail.append(text[-self._tail_limit :])
+                self._tail_chars = self._tail_limit
+                return
+
+            chunk = text[start:]
+            self._tail.append(chunk)
+            self._tail_chars += len(chunk)
+            while self._tail_chars > self._tail_limit:
+                excess = self._tail_chars - self._tail_limit
+                first = self._tail[0]
+                if len(first) <= excess:
+                    self._tail.popleft()
+                    self._tail_chars -= len(first)
+                else:
+                    self._tail[0] = first[excess:]
+                    self._tail_chars -= excess
+
+    def render(self, *, suffix: str = "") -> str:
+        """Render within ``max_chars``, preserving a required status suffix."""
+        with self._lock:
+            if len(suffix) >= self.max_chars:
+                return suffix[-self.max_chars :]
+
+            head = "".join(self._head)
+            tail = "".join(self._tail)
+            available = self.max_chars - len(suffix)
+            if self._total_chars <= available:
+                return head + tail + suffix
+
+            notice = ""
+            for _ in range(4):
+                content_budget = max(0, available - len(notice))
+                head_chars = int(content_budget * 0.4)
+                tail_chars = content_budget - head_chars
+                omitted = max(0, self._total_chars - head_chars - tail_chars)
+                updated = (
+                    f"\n\n... [OUTPUT TRUNCATED - {omitted:,} chars omitted "
+                    f"out of {self._total_chars:,} total] ...\n\n"
+                )
+                if updated == notice:
+                    break
+                notice = updated
+
+            content_budget = max(0, available - len(notice))
+            head_chars = int(content_budget * 0.4)
+            tail_chars = content_budget - head_chars
+            rendered_tail = tail[-tail_chars:] if tail_chars else ""
+            return head[:head_chars] + notice[:available] + rendered_tail + suffix
 
 
 def set_activity_callback(cb: Callable[[str], None] | None) -> None:
@@ -83,13 +183,13 @@ def get_sandbox_dir() -> Path:
     """Return the host-side root for all sandbox storage (Docker workspaces,
     Singularity overlays/SIF cache, etc.).
 
-    Configurable via TERMINAL_SANDBOX_DIR. Defaults to {LUCIFEX_HOME}/sandboxes/.
+    Configurable via TERMINAL_SANDBOX_DIR. Defaults to {HERMES_HOME}/sandboxes/.
     """
     custom = os.getenv("TERMINAL_SANDBOX_DIR")
     if custom:
         p = Path(custom)
     else:
-        p = get_lucifex_home() / "sandboxes"
+        p = get_hermes_home() / "sandboxes"
     p.mkdir(parents=True, exist_ok=True)
     return p
 
@@ -279,7 +379,7 @@ class _ThreadedProcessHandle:
 
 
 def _cwd_marker(session_id: str) -> str:
-    return f"__LUCIFEX_CWD_{session_id}__"
+    return f"__HERMES_CWD_{session_id}__"
 
 
 # ---------------------------------------------------------------------------
@@ -288,7 +388,7 @@ def _cwd_marker(session_id: str) -> str:
 
 
 class BaseEnvironment(ABC):
-    """Common interface and unified execution flow for all Lucifex backends.
+    """Common interface and unified execution flow for all Hermes backends.
 
     Subclasses implement ``_run_bash()`` and ``cleanup()``.  The base class
     provides ``execute()`` with session snapshot sourcing, CWD tracking,
@@ -317,10 +417,14 @@ class BaseEnvironment(ABC):
 
         self._session_id = uuid.uuid4().hex[:12]
         temp_dir = self.get_temp_dir().rstrip("/") or "/"
-        self._snapshot_path = f"{temp_dir}/lucifex-snap-{self._session_id}.sh"
-        self._cwd_file = f"{temp_dir}/lucifex-cwd-{self._session_id}.txt"
+        self._snapshot_path = f"{temp_dir}/hermes-snap-{self._session_id}.sh"
+        self._cwd_file = f"{temp_dir}/hermes-cwd-{self._session_id}.txt"
         self._cwd_marker = _cwd_marker(self._session_id)
         self._snapshot_ready = False
+        # When True, login bash is unusable (e.g. broken Git-for-Windows
+        # ``Directory \\drivers\\etc`` startup) so execute() must not fall
+        # back to ``bash -l`` per command — use non-login ``bash -c`` instead.
+        self._prefer_nonlogin = False
 
     # ------------------------------------------------------------------
     # Abstract methods
@@ -367,15 +471,13 @@ class BaseEnvironment(ABC):
         # Without this the snapshot bootstrap ``cd`` below fails on Windows and
         # ``pwd -P`` captures the login shell's directory, not ``terminal.cwd``.
         _quoted_cwd = self._quote_cwd_for_cd(self.cwd)
-        # Quote the snapshot / cwd-file paths so Git Bash on Windows handles
-        # ``C:/Users/...``-shaped paths without glob-splitting the colon or
-        # tripping on drive letters.  On POSIX this is a no-op (no colons /
-        # special chars in a /tmp path).  Previously unquoted interpolation
-        # caused ``C:/Users/.../lucifex-snap-*.sh: No such file or directory``
-        # errors on Windows, leaking via stderr (merged into stdout on Linux
-        # backends) into every terminal-tool response.
-        _quoted_snap = shlex.quote(self._snapshot_path)
-        _quoted_cwd_file = shlex.quote(self._cwd_file)
+        # Quote snapshot / cwd-file paths via ``_quote_shell_path`` so the
+        # LocalEnvironment override can rewrite ``C:/...`` (and mixed
+        # ``/c/Users\\...``) to ``/c/...`` before quoting — bare drive paths
+        # in the bootstrap script trip MSYS into the
+        # ``Directory \\drivers\\etc does not exist`` failure class.
+        # On POSIX this is plain ``shlex.quote``.
+        _quoted_snap = self._quote_shell_path(self._snapshot_path)
         # Use atomic file replacement: assemble the snapshot in a temp file,
         # then mv it over the final path.  This prevents concurrent source()
         # calls from reading a half-written snapshot when another terminal
@@ -391,10 +493,11 @@ class BaseEnvironment(ABC):
         # mid-write, and mv would then publish a torn file (the corruption is
         # only narrowed, not closed).  ``$BASHPID`` is the actual subshell PID
         # and is genuinely unique per writer, which closes the race.  The
-        # static path is shlex-quoted (Windows/Git-Bash drive letters, spaces)
+        # static path is shell-quoted (Windows/Git-Bash drive letters, spaces)
         # with ``$BASHPID`` left outside the quotes so it still expands.
-        _snap_tmp = shlex.quote(self._snapshot_path + ".tmp.") + "$BASHPID"
+        _snap_tmp = self._quote_shell_path(self._snapshot_path + ".tmp.") + "$BASHPID"
         bootstrap = (
+            f"umask 077\n"
             f"export -p > {_snap_tmp}\n"
             # Dump function definitions, filtering out private (``_``-prefixed)
             # helpers — mainly bash-completion internals (``_git``, ``_make``…)
@@ -408,8 +511,8 @@ class BaseEnvironment(ABC):
             # ``declare -f`` with no name args dumps ALL functions, so an empty
             # name list (only private funcs present) would otherwise leak the
             # very functions we meant to drop.
-            f"__lucifex_fns=$(declare -F | awk '{{print $3}}' | grep -vE '^_[^_]') || true\n"
-            f"[ -n \"$__lucifex_fns\" ] && declare -f $__lucifex_fns "
+            f"__hermes_fns=$(declare -F | awk '{{print $3}}' | grep -vE '^_[^_]') || true\n"
+            f"[ -n \"$__hermes_fns\" ] && declare -f $__hermes_fns "
             f">> {_snap_tmp} 2>/dev/null || true\n"
             f"alias -p >> {_snap_tmp}\n"
             f"echo 'shopt -s expand_aliases' >> {_snap_tmp}\n"
@@ -419,7 +522,6 @@ class BaseEnvironment(ABC):
             # partial temp rather than leave it to be sourced or orphaned.
             f"mv -f {_snap_tmp} {_quoted_snap} || rm -f {_snap_tmp}\n"
             f"builtin cd -- {_quoted_cwd} 2>/dev/null || true\n"
-            f"pwd -P > {_quoted_cwd_file} 2>/dev/null || true\n"
             f"printf '\\n{self._cwd_marker}%s{self._cwd_marker}\\n' \"$(pwd -P)\"\n"
         )
         try:
@@ -437,13 +539,37 @@ class BaseEnvironment(ABC):
                 self.cwd,
             )
         except Exception as exc:
-            logger.warning(
-                "init_session failed (session=%s): %s — "
-                "falling back to bash -l per command",
-                self._session_id,
-                exc,
-            )
             self._snapshot_ready = False
+            # Default fallback is bash -l per command so PATH/nvm/etc still
+            # load.  If login itself is dead (classic Windows Git Bash
+            # ``Directory \\drivers\\etc does not exist``), that fallback
+            # would brick every tool — prefer non-login bash -c instead.
+            detail = str(exc)
+            prefer_nonlogin = False
+            try:
+                probe = self._run_bash("true", login=False, timeout=min(15, self._snapshot_timeout))
+                probe_result = self._wait_for_process(probe, timeout=min(15, self._snapshot_timeout))
+                prefer_nonlogin = int(probe_result.get("returncode") or 0) == 0
+                if not prefer_nonlogin:
+                    detail = (probe_result.get("stdout") or detail).strip() or detail
+            except Exception as probe_exc:
+                detail = f"{detail}; non-login probe: {probe_exc}"
+
+            self._prefer_nonlogin = prefer_nonlogin
+            if prefer_nonlogin:
+                logger.warning(
+                    "init_session failed (session=%s): %s — "
+                    "login bash unusable; falling back to non-login bash -c",
+                    self._session_id,
+                    exc,
+                )
+            else:
+                logger.warning(
+                    "init_session failed (session=%s): %s — "
+                    "falling back to bash -l per command",
+                    self._session_id,
+                    detail,
+                )
 
     # ------------------------------------------------------------------
     # Command wrapping
@@ -460,25 +586,31 @@ class BaseEnvironment(ABC):
             return f"$HOME/{shlex.quote(cwd[2:])}"
         return shlex.quote(cwd)
 
+    def _quote_shell_path(self, path: str) -> str:
+        """Quote *path* for interpolation into a bash script.
+
+        LocalEnvironment overrides this to rewrite native/mixed Windows
+        paths to ``/c/...`` before quoting. Remote backends leave paths
+        as-is (they already speak POSIX).
+        """
+        return shlex.quote(path)
+
     def _wrap_command(self, command: str, cwd: str) -> str:
         """Build the full bash script that sources snapshot, cd's, runs command,
         re-dumps env vars, and emits CWD markers."""
         escaped = command.replace("'", "'\\''")
 
-        # Quote the snapshot / cwd-file paths so Git Bash on Windows handles
-        # ``C:/Users/...``-shaped paths without glob-splitting the colon or
-        # tripping on drive letters.  POSIX paths are unaffected.  See
-        # :meth:`init_session` for the same fix on the bootstrap block.
-        _quoted_snap = shlex.quote(self._snapshot_path)
-        _quoted_cwd_file = shlex.quote(self._cwd_file)
+        # Quote the snapshot path (see init_session — LocalEnvironment
+        # rewrites ``C:/...`` to ``/c/...`` so MSYS doesn't mangle it).
+        _quoted_snap = self._quote_shell_path(self._snapshot_path)
         # Use atomic file replacement for env snapshot updates (issue #38249).
         # Assemble into a per-writer-unique temp file, then mv to atomically
         # replace the snapshot so concurrent source() calls never read a
         # truncated/half-written file.  ``$BASHPID`` (not ``$$``) is the actual
         # subshell PID — unique per concurrent ``&``-launched writer — so two
         # writers never share a temp name and clobber each other before the mv.
-        # Static path shlex-quoted (Windows/spaces); ``$BASHPID`` left to expand.
-        _snap_tmp = shlex.quote(self._snapshot_path + ".tmp.") + "$BASHPID"
+        # Static path shell-quoted (Windows/spaces); ``$BASHPID`` left to expand.
+        _snap_tmp = self._quote_shell_path(self._snapshot_path + ".tmp.") + "$BASHPID"
 
         parts = []
 
@@ -501,7 +633,10 @@ class BaseEnvironment(ABC):
 
         # Run the actual command
         parts.append(f"eval '{escaped}'")
-        parts.append("__lucifex_ec=$?")
+        parts.append("__hermes_ec=$?")
+        # Restrict Hermes metadata files without changing the user's command
+        # umask. Snapshot files may contain env-carried secrets.
+        parts.append("umask 077")
 
         # Re-dump env vars to snapshot (atomic replacement to avoid races).
         # Chain mv on the export succeeding so a failed/partial dump never
@@ -513,8 +648,8 @@ class BaseEnvironment(ABC):
                 f"2>/dev/null || rm -f {_snap_tmp} 2>/dev/null || true"
             )
 
-        # Write CWD to file (local reads this) and stdout marker (remote parses this)
-        parts.append(f"pwd -P > {_quoted_cwd_file} 2>/dev/null || true")
+        # Emit the CWD stdout marker; all backends (including local, since
+        # PR #63255) parse it from output — no temp-file write needed.
         # Use a distinct line for the marker. The leading \n ensures
         # the marker starts on its own line even if the command doesn't
         # end with a newline (e.g. printf 'exact'). We'll strip this
@@ -522,7 +657,7 @@ class BaseEnvironment(ABC):
         parts.append(
             f"printf '\\n{self._cwd_marker}%s{self._cwd_marker}\\n' \"$(pwd -P)\""
         )
-        parts.append("exit $__lucifex_ec")
+        parts.append("exit $__hermes_ec")
 
         return "\n".join(parts)
 
@@ -533,17 +668,27 @@ class BaseEnvironment(ABC):
     @staticmethod
     def _embed_stdin_heredoc(command: str, stdin_data: str) -> str:
         """Append stdin_data as a shell heredoc to the command string."""
-        delimiter = f"LUCIFEX_STDIN_{uuid.uuid4().hex[:12]}"
+        delimiter = f"HERMES_STDIN_{uuid.uuid4().hex[:12]}"
         return f"{command} << '{delimiter}'\n{stdin_data}\n{delimiter}"
 
     # ------------------------------------------------------------------
     # Process lifecycle
     # ------------------------------------------------------------------
 
-    def _wait_for_process(self, proc: ProcessHandle, timeout: int = 120) -> dict:
+    def _wait_for_process(
+        self, proc: ProcessHandle, timeout: int = 120, *, bounded_capture: bool = False
+    ) -> dict:
         """Poll-based wait with interrupt checking and stdout draining.
 
         Shared across all backends — not overridden.
+
+        ``bounded_capture=True`` (foreground terminal-tool path only) retains
+        at most ``tool_output.max_bytes`` of output in a head/tail window
+        while draining, so a verbose subprocess cannot OOM the process
+        (#64435). The default (False) preserves full-fidelity capture for
+        internal consumers — file-operation ``cat`` reads feeding the patch
+        engine, code-execution RPC reads, log reads — where truncation would
+        corrupt data.
 
         Fires the ``activity_callback`` (if set on this instance) every 10s
         while the process is running so the gateway's inactivity timeout
@@ -556,7 +701,19 @@ class BaseEnvironment(ABC):
         an orphan with ``PPID=1`` when python is shut down mid-tool — the
         ``sleep 300``-survives-30-min bug Physikal and I both hit.
         """
-        output_chunks: list[str] = []
+        if bounded_capture:
+            try:
+                from tools.tool_output_limits import get_max_bytes
+
+                capture_limit = get_max_bytes()
+            except Exception:
+                capture_limit = 50_000
+        else:
+            # Full fidelity: effectively unbounded collector (single head
+            # segment, no eviction) so behavior matches the historical
+            # accumulate-everything semantics.
+            capture_limit = _UNBOUNDED_CAPTURE_CHARS
+        output = _BoundedOutputCollector(capture_limit)
 
         # Non-blocking drain via select().
         #
@@ -597,16 +754,16 @@ class BaseEnvironment(ABC):
                     if piece is None:
                         continue
                     if isinstance(piece, bytes):
-                        output_chunks.append(decoder.decode(piece))
+                        output.append(decoder.decode(piece))
                     else:
-                        output_chunks.append(str(piece))
+                        output.append(str(piece))
             except Exception:
                 pass
             finally:
                 try:
                     tail = decoder.decode(b"", final=True)
                     if tail:
-                        output_chunks.append(tail)
+                        output.append(tail)
                 except Exception:
                     pass
 
@@ -637,14 +794,14 @@ class BaseEnvironment(ABC):
                         chunk = os.read(fd, 4096)
                         if not chunk:
                             break
-                        output_chunks.append(decoder.decode(chunk))
+                        output.append(decoder.decode(chunk))
                 except (ValueError, OSError):
                     pass
                 finally:
                     try:
                         tail = decoder.decode(b"", final=True)
                         if tail:
-                            output_chunks.append(tail)
+                            output.append(tail)
                     except Exception:
                         pass
                 return
@@ -662,7 +819,7 @@ class BaseEnvironment(ABC):
                             break
                         if not chunk:
                             break  # true EOF — all writers closed
-                        output_chunks.append(decoder.decode(chunk))
+                        output.append(decoder.decode(chunk))
                         idle_after_exit = 0
                     elif proc.poll() is not None:
                         # bash is gone and the pipe was idle for ~100ms.  Give
@@ -678,7 +835,7 @@ class BaseEnvironment(ABC):
                 try:
                     tail = decoder.decode(b"", final=True)
                     if tail:
-                        output_chunks.append(tail)
+                        output.append(tail)
                 except Exception:
                     pass
 
@@ -691,7 +848,7 @@ class BaseEnvironment(ABC):
             "start": _now,
         }
 
-        # --- Debug tracing (opt-in via LUCIFEX_DEBUG_INTERRUPT=1) -------------
+        # --- Debug tracing (opt-in via HERMES_DEBUG_INTERRUPT=1) -------------
         # Captures loop entry/exit, interrupt state changes, and periodic
         # heartbeats so we can diagnose "agent never sees the interrupt"
         # reports without reproducing locally.
@@ -724,7 +881,7 @@ class BaseEnvironment(ABC):
                     self._kill_process(proc)
                     drain_thread.join(timeout=2)
                     return {
-                        "output": "".join(output_chunks) + "\n[Command interrupted]",
+                        "output": output.render(suffix="\n[Command interrupted]"),
                         "returncode": 130,
                     }
                 if time.monotonic() > deadline:
@@ -736,12 +893,11 @@ class BaseEnvironment(ABC):
                         )
                     self._kill_process(proc)
                     drain_thread.join(timeout=2)
-                    partial = "".join(output_chunks)
                     timeout_msg = f"\n[Command timed out after {timeout}s]"
                     return {
-                        "output": partial + timeout_msg
-                        if partial
-                        else timeout_msg.lstrip(),
+                        "output": output.render(suffix=timeout_msg).lstrip()
+                        if output.total_chars == 0
+                        else output.render(suffix=timeout_msg),
                         "returncode": 124,
                     }
                 # Periodic activity touch so the gateway knows we're alive
@@ -817,7 +973,7 @@ class BaseEnvironment(ABC):
                 proc.returncode,
             )
 
-        return {"output": "".join(output_chunks), "returncode": proc.returncode}
+        return {"output": output.render(), "returncode": proc.returncode}
 
     def _kill_process(self, proc: ProcessHandle):
         """Terminate a process. Subclasses may override for process-group kill."""
@@ -835,7 +991,7 @@ class BaseEnvironment(ABC):
         self._extract_cwd_from_output(result)
 
     def _extract_cwd_from_output(self, result: dict):
-        """Parse the __LUCIFEX_CWD_{session}__ marker from stdout output.
+        """Parse the __HERMES_CWD_{session}__ marker from stdout output.
 
         Updates self.cwd and strips the marker from result["output"].
         Used by remote backends (Docker, SSH, Modal, Daytona, Singularity).
@@ -894,8 +1050,19 @@ class BaseEnvironment(ABC):
         timeout: int | None = None,
         stdin_data: str | None = None,
         rewrite_compound_background: bool = True,
+        bounded_capture: bool = False,
     ) -> dict:
-        """Execute a command, return {"output": str, "returncode": int}."""
+        """Execute a command, return {"output": str, "returncode": int}.
+
+        ``bounded_capture=True`` caps stdout/stderr retention at
+        ``tool_output.max_bytes`` WHILE the stream is drained (head/tail
+        window) instead of holding the full output in memory (#64435).
+        It must only be set by callers whose output is destined for the
+        model/tool payload (the foreground terminal tool). Internal
+        full-fidelity consumers — file operations ``cat`` reads that feed
+        the patch engine, code-execution RPC reads, log reads — MUST leave
+        it False: truncating those corrupts data, not just display.
+        """
         self._before_execute()
 
         exec_command, sudo_stdin = self._prepare_command(command)
@@ -923,13 +1090,16 @@ class BaseEnvironment(ABC):
 
         wrapped = self._wrap_command(exec_command, effective_cwd)
 
-        # Use login shell if snapshot failed (so user's profile still loads)
-        login = not self._snapshot_ready
+        # Use login shell if snapshot failed (so user's profile still loads),
+        # unless login itself is broken — then non-login is the only path.
+        login = not self._snapshot_ready and not self._prefer_nonlogin
 
         proc = self._run_bash(
             wrapped, login=login, timeout=effective_timeout, stdin_data=effective_stdin
         )
-        result = self._wait_for_process(proc, timeout=effective_timeout)
+        result = self._wait_for_process(
+            proc, timeout=effective_timeout, bounded_capture=bounded_capture
+        )
         self._update_cwd(result)
 
         return result

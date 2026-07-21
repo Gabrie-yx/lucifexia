@@ -1,4 +1,4 @@
-﻿"""Shared helpers for tool backend selection."""
+"""Shared helpers for tool backend selection."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ _VALID_MODAL_MODES = {"auto", "direct", "managed"}
 def managed_nous_tools_enabled(*, force_fresh: bool = False) -> bool:
     """Return True when the user is entitled to the Nous Tool Gateway.
 
-    Entitlement is paid Ollama service access OR a live free tool pool
+    Entitlement is paid Nous Portal service access OR a live free tool pool
     (``tool_gateway_entitled``). Per-category coverage (the pool funds image but
     not video, etc.) is narrowed by callers via ``tool_gateway_entitled_for``;
     this coarse gate only answers "is any managed tool usable at all".
@@ -28,7 +28,7 @@ def managed_nous_tools_enabled(*, force_fresh: bool = False) -> bool:
     reflect a just-purchased subscription, credits, or pool grant immediately.
     """
     try:
-        from lucifex_cli.nous_account import get_nous_portal_account_info
+        from hermes_cli.nous_account import get_nous_portal_account_info
 
         if force_fresh:
             account_info = get_nous_portal_account_info(force_fresh=True)
@@ -48,7 +48,7 @@ def nous_tool_gateway_unavailable_message(
 ) -> str:
     """Return account-aware guidance for an unavailable Nous Tool Gateway path."""
     try:
-        from lucifex_cli.nous_account import (
+        from hermes_cli.nous_account import (
             format_nous_portal_entitlement_message,
             get_nous_portal_account_info,
         )
@@ -63,8 +63,8 @@ def nous_tool_gateway_unavailable_message(
     except Exception:
         pass
     return (
-        f"{capability} is unavailable. Run `lucifex model` to refresh your "
-        "Ollama login and billing status."
+        f"{capability} is unavailable. Run `hermes model` to refresh your "
+        "Nous Portal login and billing status."
     )
 
 
@@ -152,7 +152,7 @@ def prefers_gateway(config_section: str) -> bool:
     Reads ``<section>.use_gateway`` from config.yaml.  Never raises.
     """
     try:
-        from lucifex_cli.config import load_config
+        from hermes_cli.config import load_config
         section = (load_config() or {}).get(config_section)
         if isinstance(section, dict):
             return is_truthy_value(section.get("use_gateway"), default=False)
@@ -164,8 +164,8 @@ def prefers_gateway(config_section: str) -> bool:
 def fal_key_is_configured() -> bool:
     """Return True when FAL_KEY is set to a non-whitespace value.
 
-    Consults both ``os.environ`` and ``~/.lucifex/.env`` (via
-    ``lucifex_cli.config.get_env_value`` when available) so tool-side
+    Consults both ``os.environ`` and ``~/.hermes/.env`` (via
+    ``hermes_cli.config.get_env_value`` when available) so tool-side
     checks and CLI setup-time checks agree.  A whitespace-only value
     is treated as unset everywhere.
     """
@@ -174,7 +174,7 @@ def fal_key_is_configured() -> bool:
         # Fall back to the .env file for CLI paths that may run before
         # dotenv is loaded into os.environ.
         try:
-            from lucifex_cli.config import get_env_value
+            from hermes_cli.config import get_env_value
 
             value = get_env_value("FAL_KEY")
         except Exception:

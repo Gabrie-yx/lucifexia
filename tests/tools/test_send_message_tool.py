@@ -39,6 +39,8 @@ from tools.send_message_tool import (
 # and provide a thin ``_send_discord(token, ...)`` shim that mirrors the
 # pre-migration signature so the existing test bodies keep working.
 from plugins.platforms.discord.adapter import (
+    _DISCORD_STANDALONE_ERROR_BODY_LIMIT_BYTES,
+    _DISCORD_STANDALONE_JSON_BODY_LIMIT_BYTES,
     _derive_forum_thread_name,
     _probe_is_forum_cached,
     _remember_channel_is_forum,
@@ -68,10 +70,58 @@ async def _send_discord(
     )
 
 
+class _StreamingAiohttpContent:
+    def __init__(self, body: bytes):
+        self._body = body
+        self.read_sizes = []
+
+    async def read(self, size=-1):
+        self.read_sizes.append(size)
+        if not self._body:
+            return b""
+        if size is None or size < 0:
+            chunk = self._body
+            self._body = b""
+            return chunk
+        chunk = self._body[:size]
+        self._body = self._body[size:]
+        return chunk
+
+
+class _StreamingAiohttpResponse:
+    def __init__(self, status: int, body: bytes):
+        self.status = status
+        self.content = _StreamingAiohttpContent(body)
+        self.closed = False
+        self.json = AsyncMock(side_effect=AssertionError("resp.json() should not be used"))
+        self.text = AsyncMock(side_effect=AssertionError("resp.text() should not be used"))
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *_args):
+        return None
+
+    def close(self):
+        self.closed = True
+
+
+class _StreamingAiohttpSession:
+    def __init__(self, response: _StreamingAiohttpResponse):
+        self.response = response
+        self.post = MagicMock(return_value=response)
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *_args):
+        return None
+
+
 def _discord_entry():
     """Return the live Discord PlatformEntry, importing lazily so plugin
     discovery is forced exactly once and patches survive across tests."""
-    from lucifex_cli.plugins import discover_plugins
+    from hermes_cli.plugins import discover_plugins
     from gateway.platform_registry import platform_registry
     discover_plugins()
     return platform_registry.get("discord")
@@ -96,11 +146,14 @@ class _patch_discord_sender:
         self._entry = None
         self._original = None
 
-    async def _adapter(self, pconfig, chat_id, message, *, thread_id=None, media_files=None):
+    async def _adapter(self, pconfig, chat_id, message, *, thread_id=None, media_files=None, caption=None):
         token = getattr(pconfig, "token", None)
+        # Only forward caption= when set, so mocks written against the
+        # pre-caption signature (no caption kwarg) keep working.
+        extra = {"caption": caption} if caption is not None else {}
         return await self._mock(
             token, chat_id, message,
-            thread_id=thread_id, media_files=media_files,
+            thread_id=thread_id, media_files=media_files, **extra,
         )
 
     def __enter__(self):
@@ -118,7 +171,7 @@ class _patch_discord_sender:
 def _slack_entry():
     """Return the live Slack PlatformEntry, importing lazily so plugin
     discovery is forced exactly once and patches survive across tests."""
-    from lucifex_cli.plugins import discover_plugins
+    from hermes_cli.plugins import discover_plugins
     from gateway.platform_registry import platform_registry
     discover_plugins()
     return platform_registry.get("slack")
@@ -233,7 +286,7 @@ class TestSendMessageTool:
 
     def test_ntfy_topic_target_bypasses_channel_directory(self):
         ntfy_platform = Platform("ntfy")
-        ntfy_cfg = SimpleNamespace(enabled=True, token=None, extra={"topic": "lucifex-in"})
+        ntfy_cfg = SimpleNamespace(enabled=True, token=None, extra={"topic": "hermes-in"})
         config = SimpleNamespace(
             platforms={ntfy_platform: ntfy_cfg},
             get_home_channel=lambda _platform: None,
@@ -274,8 +327,8 @@ class TestSendMessageTool:
         with patch.dict(
             os.environ,
             {
-                "LUCIFEX_CRON_AUTO_DELIVER_PLATFORM": "telegram",
-                "LUCIFEX_CRON_AUTO_DELIVER_CHAT_ID": "-1001",
+                "HERMES_CRON_AUTO_DELIVER_PLATFORM": "telegram",
+                "HERMES_CRON_AUTO_DELIVER_CHAT_ID": "-1001",
             },
             clear=False,
         ), \
@@ -455,8 +508,8 @@ class TestSendMessageTool:
              patch("gateway.session_context.get_session_env") as get_session_env_mock, \
              patch("gateway.mirror.mirror_to_session", return_value=True) as mirror_mock:
             get_session_env_mock.side_effect = lambda name, default="": {
-                "LUCIFEX_SESSION_PLATFORM": "telegram",
-                "LUCIFEX_SESSION_USER_ID": "user-123",
+                "HERMES_SESSION_PLATFORM": "telegram",
+                "HERMES_SESSION_USER_ID": "user-123",
             }.get(name, default)
             result = json.loads(
                 send_message_tool(
@@ -484,8 +537,8 @@ class TestSendMessageTool:
         # not auto-accepted by the trust window. (Recency trust is covered
         # in test_platform_base.py. The public default flipped to non-strict
         # in 2026-05; this test pins strict on explicitly.)
-        monkeypatch.setenv("LUCIFEX_MEDIA_DELIVERY_STRICT", "1")
-        monkeypatch.setenv("LUCIFEX_MEDIA_TRUST_RECENT_FILES", "0")
+        monkeypatch.setenv("HERMES_MEDIA_DELIVERY_STRICT", "1")
+        monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_FILES", "0")
         config, telegram_cfg = _make_config()
         secret = tmp_path / "secret.pdf"
         secret.write_bytes(b"%PDF secret")
@@ -545,7 +598,9 @@ class TestSendMessageTool:
 
 
 class TestSendTelegramMediaDelivery:
-    def test_sends_text_then_photo_for_media_tag(self, tmp_path, monkeypatch):
+    def test_sends_photo_with_caption_for_media_tag(self, tmp_path, monkeypatch):
+        # A single captionable image + short text now rides as the photo's
+        # native caption (MEDIA:<path> caption), not a separate text message.
         image_path = tmp_path / "photo.png"
         image_path.write_bytes(b"\x89PNG\r\n\x1a\n" + b"\x00" * 32)
 
@@ -569,11 +624,10 @@ class TestSendTelegramMediaDelivery:
 
         assert result["success"] is True
         assert result["message_id"] == "2"
-        bot.send_message.assert_awaited_once()
+        # No separate text send — the caption rides the photo bubble.
+        bot.send_message.assert_not_awaited()
         bot.send_photo.assert_awaited_once()
-        sent_text = bot.send_message.await_args.kwargs["text"]
-        assert "MEDIA:" not in sent_text
-        assert sent_text == "Hello there"
+        assert bot.send_photo.await_args.kwargs.get("caption") == "Hello there"
 
     def test_sends_voice_for_ogg_with_voice_directive(self, tmp_path, monkeypatch):
         voice_path = tmp_path / "voice.ogg"
@@ -689,7 +743,7 @@ class TestSendToPlatformChunking:
                     Platform.SLACK,
                     SimpleNamespace(enabled=True, token="***", extra={}),
                     "C123",
-                    "**hello** from [Lucifex](<https://example.com>)",
+                    "**hello** from [Hermes](<https://example.com>)",
                 )
             )
 
@@ -697,7 +751,7 @@ class TestSendToPlatformChunking:
         send.assert_awaited_once_with(
             "***",
             "C123",
-            "*hello* from <https://example.com|Lucifex>",
+            "*hello* from <https://example.com|Hermes>",
             thread_ts=None,
         )
 
@@ -887,7 +941,7 @@ class TestSendToPlatformChunking:
         padlock. All Matrix sends now route through _send_matrix_via_adapter,
         which encrypts via the mautrix adapter (live gateway session when
         available, encryption-aware ephemeral adapter otherwise)."""
-        from lucifex_cli.plugins import discover_plugins
+        from hermes_cli.plugins import discover_plugins
         from gateway.platform_registry import platform_registry
         discover_plugins()
         helper = AsyncMock(return_value={"success": True, "platform": "matrix", "chat_id": "!room:ex.com", "message_id": "$txt"})
@@ -1113,7 +1167,7 @@ class TestSendToPlatformWhatsapp:
         """WhatsApp delivery routes through the plugin's registry
         standalone_sender_fn (was tools.send_message_tool._send_whatsapp
         before the #41112 plugin migration)."""
-        from lucifex_cli.plugins import discover_plugins
+        from hermes_cli.plugins import discover_plugins
         from gateway.platform_registry import platform_registry
         discover_plugins()
         chat_id = "test-user@lid"
@@ -1128,7 +1182,7 @@ class TestSendToPlatformWhatsapp:
                     Platform.WHATSAPP,
                     SimpleNamespace(enabled=True, token=None, extra={"bridge_port": 3000}),
                     chat_id,
-                    "hello from lucifex",
+                    "hello from hermes",
                 )
             )
         finally:
@@ -1139,7 +1193,7 @@ class TestSendToPlatformWhatsapp:
         async_mock.assert_awaited_once()
         _call = async_mock.await_args
         assert _call.args[1] == chat_id
-        assert _call.args[2] == "hello from lucifex"
+        assert _call.args[2] == "hello from hermes"
 
 
 class TestSendTelegramHtmlDetection:
@@ -1436,8 +1490,8 @@ class TestParseTargetRefMatrix:
 
     def test_matrix_user_mxid_is_explicit(self):
         """Matrix user MXIDs (@) are recognized as explicit targets."""
-        chat_id, thread_id, is_explicit = _parse_target_ref("matrix", "@lucifex:matrix.org")
-        assert chat_id == "@lucifex:matrix.org"
+        chat_id, thread_id, is_explicit = _parse_target_ref("matrix", "@hermes:matrix.org")
+        assert chat_id == "@hermes:matrix.org"
         assert thread_id is None
         assert is_explicit is True
 
@@ -1754,6 +1808,41 @@ class TestSendDiscordThreadId:
         assert "error" in result
         assert "403" in result["error"]
 
+    def test_success_response_json_read_is_bounded(self):
+        """Standalone Discord sends parse success JSON through the bounded reader."""
+        body = b'{"id":"bounded-json"}'
+        response = _StreamingAiohttpResponse(200, body)
+        session = _StreamingAiohttpSession(response)
+
+        with patch("aiohttp.ClientSession", return_value=session):
+            result = self._run("tok", "111", "hi", thread_id="999")
+
+        assert result["success"] is True
+        assert result["message_id"] == "bounded-json"
+        assert response.content.read_sizes[0] == _DISCORD_STANDALONE_JSON_BODY_LIMIT_BYTES + 1
+        response.json.assert_not_awaited()
+        response.text.assert_not_awaited()
+
+    def test_error_response_text_read_is_bounded(self):
+        """Oversized Discord API error bodies are capped before formatting."""
+        body = b"E" * (_DISCORD_STANDALONE_ERROR_BODY_LIMIT_BYTES + 1024)
+        response = _StreamingAiohttpResponse(500, body)
+        session = _StreamingAiohttpSession(response)
+
+        with patch("aiohttp.ClientSession", return_value=session):
+            result = self._run("tok", "111", "hi", thread_id="999")
+
+        assert "error" in result
+        assert "500" in result["error"]
+        assert response.content.read_sizes[0] == _DISCORD_STANDALONE_ERROR_BODY_LIMIT_BYTES + 1
+        assert response.closed is True
+        response.json.assert_not_awaited()
+        response.text.assert_not_awaited()
+        prefix = "Discord API error (500): "
+        assert len(result["error"].encode("utf-8")) <= (
+            len(prefix.encode("utf-8")) + _DISCORD_STANDALONE_ERROR_BODY_LIMIT_BYTES
+        )
+
 
 class TestSendToPlatformDiscordThread:
     """_send_to_platform passes thread_id through to _send_discord."""
@@ -1963,7 +2052,7 @@ class TestSendToPlatformDiscordMedia:
         assert call_log[1]["media_files"] == [("/fake/img.png", False)]  # Last chunk: media attached
 
     def test_single_chunk_gets_media(self):
-        """Short message (single chunk) gets media_files directly."""
+        """Short message + single image rides as the media caption."""
         send_mock = AsyncMock(return_value={"success": True, "message_id": "1"})
 
         with _patch_discord_sender(send_mock):
@@ -1981,6 +2070,9 @@ class TestSendToPlatformDiscordMedia:
         send_mock.assert_awaited_once()
         call_kwargs = send_mock.await_args.kwargs
         assert call_kwargs["media_files"] == [("/fake/img.png", False)]
+        # Text rides as the caption, not a separate positional message body.
+        assert call_kwargs.get("caption") == "short message"
+        assert send_mock.await_args.args[2] == ""
 
 
 class TestSendMatrixUrlEncoding:
@@ -2902,8 +2994,8 @@ class _FakePlatform:
 class TestSendViaAdapterStandaloneFallback:
     """Coverage for the out-of-process plugin-platform send path.
 
-    When the gateway runner is not in this process (e.g. ``lucifex cron``
-    runs separately from ``lucifex gateway``), ``_send_via_adapter`` should
+    When the gateway runner is not in this process (e.g. ``hermes cron``
+    runs separately from ``hermes gateway``), ``_send_via_adapter`` should
     fall through to the plugin's ``standalone_sender_fn`` registered on
     its ``PlatformEntry``.  Without the hook, the existing error string
     is returned (with a more helpful tail).
@@ -3104,61 +3196,61 @@ class TestCheckSendMessage:
     """The tool's check_fn governs whether the model sees ``send_message`` as
     callable for a given session. The four passing conditions are:
 
-    1. ``LUCIFEX_KANBAN_TASK`` is set (worker spawned by the kanban dispatcher
+    1. ``HERMES_KANBAN_TASK`` is set (worker spawned by the kanban dispatcher
        — parent gateway is by definition running, but the worker's
-       ``LUCIFEX_HOME`` may be a profile dir without a ``gateway.pid``).
-    2. ``LUCIFEX_SESSION_PLATFORM`` resolves to a non-empty, non-``local`` value
+       ``HERMES_HOME`` may be a profile dir without a ``gateway.pid``).
+    2. ``HERMES_SESSION_PLATFORM`` resolves to a non-empty, non-``local`` value
        (the session is wired to a messaging platform like Telegram).
     3. ``is_gateway_running()`` returns True (CLI / orchestrator profile with
-       a live gateway colocated under the same ``LUCIFEX_HOME``).
+       a live gateway colocated under the same ``HERMES_HOME``).
     4. None of the above → False, tool is hidden.
     """
 
     def test_kanban_task_env_grants_access(self, monkeypatch):
-        """Workers spawned by the dispatcher (LUCIFEX_KANBAN_TASK set) must be
+        """Workers spawned by the dispatcher (HERMES_KANBAN_TASK set) must be
         allowed regardless of session_platform / gateway-pid state."""
         from tools.send_message_tool import _check_send_message
 
-        monkeypatch.setenv("LUCIFEX_KANBAN_TASK", "t_abc12345")
-        monkeypatch.delenv("LUCIFEX_SESSION_PLATFORM", raising=False)
+        monkeypatch.setenv("HERMES_KANBAN_TASK", "t_abc12345")
+        monkeypatch.delenv("HERMES_SESSION_PLATFORM", raising=False)
 
         with patch("gateway.session_context.get_session_env", return_value=""), \
              patch("gateway.status.is_gateway_running", return_value=False):
             assert _check_send_message() is True
 
     def test_kanban_task_env_short_circuits_before_gateway_check(self, monkeypatch):
-        """Honoring LUCIFEX_KANBAN_TASK must not depend on importing or calling
-        gateway.status — the worker may run with a LUCIFEX_HOME that has no
+        """Honoring HERMES_KANBAN_TASK must not depend on importing or calling
+        gateway.status — the worker may run with a HERMES_HOME that has no
         gateway.pid, and we don't want that import path to be load-bearing."""
         from tools.send_message_tool import _check_send_message
 
-        monkeypatch.setenv("LUCIFEX_KANBAN_TASK", "t_abc12345")
+        monkeypatch.setenv("HERMES_KANBAN_TASK", "t_abc12345")
 
         with patch("gateway.session_context.get_session_env",
                    side_effect=AssertionError("session_context not consulted "
-                                              "when LUCIFEX_KANBAN_TASK is set")), \
+                                              "when HERMES_KANBAN_TASK is set")), \
              patch("gateway.status.is_gateway_running",
                    side_effect=AssertionError("gateway.status not consulted "
-                                              "when LUCIFEX_KANBAN_TASK is set")):
+                                              "when HERMES_KANBAN_TASK is set")):
             assert _check_send_message() is True
 
     def test_messaging_platform_session_grants_access(self, monkeypatch):
         """Telegram/Discord/etc. sessions pass via the platform branch even
-        without LUCIFEX_KANBAN_TASK."""
+        without HERMES_KANBAN_TASK."""
         from tools.send_message_tool import _check_send_message
 
-        monkeypatch.delenv("LUCIFEX_KANBAN_TASK", raising=False)
+        monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
 
         with patch("gateway.session_context.get_session_env", return_value="telegram"), \
              patch("gateway.status.is_gateway_running", return_value=False):
             assert _check_send_message() is True
 
     def test_local_platform_falls_through_to_gateway_check(self, monkeypatch):
-        """``LUCIFEX_SESSION_PLATFORM=local`` means CLI-style — must defer to
+        """``HERMES_SESSION_PLATFORM=local`` means CLI-style — must defer to
         is_gateway_running() rather than auto-grant."""
         from tools.send_message_tool import _check_send_message
 
-        monkeypatch.delenv("LUCIFEX_KANBAN_TASK", raising=False)
+        monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
 
         with patch("gateway.session_context.get_session_env", return_value="local"), \
              patch("gateway.status.is_gateway_running", return_value=True) as gw_mock:
@@ -3170,7 +3262,7 @@ class TestCheckSendMessage:
         gateway: tool is callable."""
         from tools.send_message_tool import _check_send_message
 
-        monkeypatch.delenv("LUCIFEX_KANBAN_TASK", raising=False)
+        monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
 
         with patch("gateway.session_context.get_session_env", return_value=""), \
              patch("gateway.status.is_gateway_running", return_value=True):
@@ -3180,7 +3272,7 @@ class TestCheckSendMessage:
         """No kanban task, no platform, no gateway: tool is hidden."""
         from tools.send_message_tool import _check_send_message
 
-        monkeypatch.delenv("LUCIFEX_KANBAN_TASK", raising=False)
+        monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
 
         with patch("gateway.session_context.get_session_env", return_value=""), \
              patch("gateway.status.is_gateway_running", return_value=False):
@@ -3191,7 +3283,7 @@ class TestCheckSendMessage:
         install), the check returns False rather than raising."""
         from tools.send_message_tool import _check_send_message
 
-        monkeypatch.delenv("LUCIFEX_KANBAN_TASK", raising=False)
+        monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
 
         with patch("gateway.session_context.get_session_env", return_value=""), \
              patch("gateway.status.is_gateway_running",
@@ -3249,13 +3341,17 @@ class TestSendTelegramThreadNotFoundRetry:
             "retry should drop message_thread_id after thread-not-found"
 
     def test_disable_web_page_preview_not_leaked_to_media_sends(self):
-        """disable_web_page_preview should only appear in text send, not media sends."""
-        text_kwargs_seen = []
+        """disable_web_page_preview must never leak into a media send.
+
+        A single captionable file + short text now rides as the document's
+        caption (no separate text send), so the invariant to protect is that
+        the captioned send_document does not inherit disable_web_page_preview
+        (valid only for send_message).
+        """
         media_kwargs_seen = []
 
         class FakeBot:
             async def send_message(self, **kwargs):
-                text_kwargs_seen.append(kwargs)
                 return SimpleNamespace(message_id=1)
 
             async def send_document(self, **kwargs):
@@ -3279,9 +3375,9 @@ class TestSendTelegramThreadNotFoundRetry:
 
             result = asyncio.run(run_test())
             assert result["success"] is True
-            # Text send should have disable_web_page_preview
-            assert text_kwargs_seen[0].get("disable_web_page_preview") is True
-            # Media send should NOT have disable_web_page_preview
+            # Caption rides the document bubble.
+            assert media_kwargs_seen[0].get("caption") == "check preview"
+            # Media send must NOT carry disable_web_page_preview.
             assert "disable_web_page_preview" not in media_kwargs_seen[0], \
                 "disable_web_page_preview leaked into send_document kwargs"
         finally:

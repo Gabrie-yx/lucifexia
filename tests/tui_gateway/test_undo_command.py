@@ -20,39 +20,44 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from lucifex_state import SessionDB
+from hermes_state import SessionDB
 
 
 @pytest.fixture()
-def lucifex_home(tmp_path, monkeypatch):
-    home = tmp_path / ".lucifex"
+def hermes_home(tmp_path, monkeypatch):
+    home = tmp_path / ".hermes"
     home.mkdir()
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("LUCIFEX_HOME", str(home))
+    monkeypatch.setenv("HERMES_HOME", str(home))
     yield home
 
 
 @pytest.fixture()
-def server(lucifex_home):
+def server(hermes_home):
     with patch.dict(
         "sys.modules",
         {
-            "lucifex_cli.env_loader": MagicMock(),
-            "lucifex_cli.banner": MagicMock(),
+            "hermes_cli.env_loader": MagicMock(),
+            "hermes_cli.banner": MagicMock(),
         },
     ):
         mod = importlib.import_module("tui_gateway.server")
         yield mod
+        # Reset module-level session state without re-importing. importlib.reload
+        # would re-register the module's atexit hooks; duplicated hooks race the
+        # stderr buffer at interpreter shutdown (Fatal Python error:
+        # _enter_buffered_busy) — same class as PR #34217.
         mod._sessions.clear()
         mod._pending.clear()
         mod._answers.clear()
-        mod._methods.clear()
-        importlib.reload(mod)
+        # NOTE: _methods is intentionally NOT cleared — it's populated at import
+        # time and would only repopulate via reload.
+        mod._db = None
 
 
 @pytest.fixture()
-def db(lucifex_home):
-    return SessionDB(db_path=lucifex_home / "state.db")
+def db(hermes_home):
+    return SessionDB(db_path=hermes_home / "state.db")
 
 
 @pytest.fixture()

@@ -13,7 +13,7 @@ export function BrandMark({ className, ...props }: React.ComponentProps<'span'>)
       )}
       {...props}
     >
-      <img alt="" className="size-full object-contain" src={assetPath('lucifex.png')} />
+      <img alt="" className="size-full object-contain" src={assetPath('nous-girl.jpg')} />
     </span>
   )
 }

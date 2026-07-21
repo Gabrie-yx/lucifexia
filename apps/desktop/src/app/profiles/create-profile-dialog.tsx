@@ -13,11 +13,11 @@ import {
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { createProfile, updateProfileSoul } from '@/lucifex'
+import { createProfile, updateProfileSoul } from '@/hermes'
 import { useI18n } from '@/i18n'
 import { AlertTriangle } from '@/lib/icons'
 import { cn } from '@/lib/utils'
-import type { ProfileInfo } from '@/types/lucifex'
+import type { ProfileInfo } from '@/types/hermes'
 
 const PROFILE_NAME_RE = /^[a-z0-9][a-z0-9_-]{0,63}$/
 

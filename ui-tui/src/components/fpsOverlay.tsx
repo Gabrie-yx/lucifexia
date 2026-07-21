@@ -1,6 +1,6 @@
-// FPS counter overlay (LUCIFEX_TUI_FPS=1). Zero-cost when disabled.
+// FPS counter overlay (HERMES_TUI_FPS=1). Zero-cost when disabled.
 
-import { Text } from '@lucifex/ink'
+import { Text } from '@hermes/ink'
 import { useStore } from '@nanostores/react'
 
 import { SHOW_FPS } from '../config/env.js'

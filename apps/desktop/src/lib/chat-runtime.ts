@@ -6,7 +6,7 @@ import { formatRefValue } from '@/components/assistant-ui/directive-text'
 import { type ChatMessage, type ChatMessagePart, chatMessageText, textPart } from '@/lib/chat-messages'
 import { normalize } from '@/lib/text'
 import type { ComposerAttachment } from '@/store/composer'
-import type { ModelOptionsResponse, SessionInfo } from '@/types/lucifex'
+import type { ModelOptionsResponse, SessionInfo } from '@/types/hermes'
 
 export const SLASH_COMMAND_RE = /^\/[^\s/]*(?:\s|$)/
 export const BUILTIN_PERSONALITIES = [
@@ -55,7 +55,8 @@ export function createClientSessionState(
     pendingBranchGroup: null,
     interrupted: false,
     needsInput: false,
-    turnStartedAt: null
+    turnStartedAt: null,
+    usage: null
   }
 }
 
@@ -120,7 +121,7 @@ export function coerceGatewayText(value: unknown): string {
 /**
  * Normalize a reasoning/thinking text payload from the gateway.
  *
- * Only the leading status prefix (e.g. "Lucifex is thinking...") and the
+ * Only the leading status prefix (e.g. "Hermes is thinking...") and the
  * obvious placeholder echoes are stripped. We deliberately do NOT trim
  * the delta — reasoning streams as small chunks (often individual tokens
  * with leading or trailing spaces), and trimming each chunk before
@@ -382,4 +383,62 @@ export function toRuntimeMessage(message: ChatMessage): ThreadMessage {
       custom: {}
     }
   } as ThreadMessage
+}
+
+export type ToolMergeCache = WeakMap<
+  ChatMessage,
+  { merged: ChatMessage; parts: ChatMessagePart[]; prev: ChatMessage; prevParts: ChatMessagePart[] }
+>
+
+export function createToolMergeCache(): ToolMergeCache {
+  return new WeakMap()
+}
+
+// A settled assistant message with only tool calls — no prose, no reasoning.
+// The model routinely emits a follow-up batch of calls as its own text-less
+// message; on screen it looks like one continuous run, but assistant-ui can't
+// group tool calls across a message boundary.
+function isToolOnlyAssistant(message: ChatMessage): boolean {
+  return (
+    message.role === 'assistant' &&
+    !message.pending &&
+    !message.error &&
+    !message.hidden &&
+    message.parts.length > 0 &&
+    message.parts.every(part => part.type === 'tool-call')
+  )
+}
+
+/**
+ * Fold each settled tool-only assistant message into the preceding assistant
+ * message so its calls join that message's tool group (and can collapse into
+ * the auto-scrolling window). Render-only — never mutates the `$messages` store
+ * — and settle-only: pending messages are left alone, so a live turn is never
+ * merged/un-merged mid-stream. `cache` keys merged results by source identity,
+ * so a stable turn yields stable merged objects (no re-render churn).
+ */
+export function coalesceToolOnlyAssistants(messages: ChatMessage[], cache: ToolMergeCache): ChatMessage[] {
+  const out: ChatMessage[] = []
+
+  for (const message of messages) {
+    const prev = out.at(-1)
+
+    if (prev && prev.role === 'assistant' && !prev.pending && !prev.hidden && isToolOnlyAssistant(message)) {
+      const cached = cache.get(message)
+
+      const merged =
+        cached && cached.prev === prev && cached.prevParts === prev.parts && cached.parts === message.parts
+          ? cached.merged
+          : { ...prev, parts: [...prev.parts, ...message.parts] }
+
+      cache.set(message, { merged, parts: message.parts, prev, prevParts: prev.parts })
+      out[out.length - 1] = merged
+
+      continue
+    }
+
+    out.push(message)
+  }
+
+  return out
 }

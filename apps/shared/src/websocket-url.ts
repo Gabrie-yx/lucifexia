@@ -65,7 +65,7 @@ export async function resolveGatewayWsUrl(deps: ResolveGatewayWsUrlDeps, conn: G
 
 export type WebSocketAuthParam = readonly [name: string, value: string]
 
-export interface LucifexWebSocketUrlOptions {
+export interface HermesWebSocketUrlOptions {
   /** Dashboard or gateway-relative endpoint path, e.g. "/api/ws". */
   path: string
   /** Optional URL prefix when the backend is reverse-proxied below a subpath. */
@@ -94,6 +94,7 @@ function normalizeBasePath(basePath: string | undefined): string {
   }
 
   const withLead = basePath.startsWith('/') ? basePath : `/${basePath}`
+
   return withLead.replace(/\/+$/, '')
 }
 
@@ -101,7 +102,7 @@ function normalizeEndpointPath(path: string): string {
   return path.startsWith('/') ? path : `/${path}`
 }
 
-export function buildLucifexWebSocketUrl(options: LucifexWebSocketUrlOptions): string {
+export function buildHermesWebSocketUrl(options: HermesWebSocketUrlOptions): string {
   const loc = readWindowLocation()
   const protocol = options.protocol ?? loc.protocol
   const host = options.host ?? loc.host

@@ -1,6 +1,6 @@
 import { readDesktopFileDataUrl } from '@/lib/desktop-fs'
 import { filePathFromMediaPath, isRemoteGateway, mediaExternalUrl } from '@/lib/media'
-import type { SessionInfo, SessionMessage } from '@/types/lucifex'
+import type { SessionInfo, SessionMessage } from '@/types/hermes'
 
 export type ArtifactKind = 'image' | 'file' | 'link'
 export type ArtifactFilter = 'all' | ArtifactKind
@@ -105,7 +105,7 @@ export async function artifactImageSrc(value: string, href = artifactHref(value)
     return href
   }
 
-  if (typeof window !== 'undefined' && window.lucifexDesktop && isRemoteGateway()) {
+  if (typeof window !== 'undefined' && window.hermesDesktop && isRemoteGateway()) {
     return readDesktopFileDataUrl(filePathFromMediaPath(value))
   }
 

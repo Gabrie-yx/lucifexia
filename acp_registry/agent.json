@@ -1,16 +1,16 @@
 {
-  "id": "lucifex-agent",
-  "name": "Lucifex Agent",
-  "version": "0.20.3",
-  "description": "Self-improving open-source AI agent by Gabrie-yx with ACP editor integration, persistent memory, skills, and rich tool support.",
-  "repository": "https://github.com/Gabrie-yx/lucifexia",
-  "website": "https://github.com/Gabrie-yx/lucifexia",
-  "authors": ["Gabriel Almeida"],
+  "id": "hermes-agent",
+  "name": "Hermes Agent",
+  "version": "0.18.2",
+  "description": "Self-improving open-source AI agent by Nous Research with ACP editor integration, persistent memory, skills, and rich tool support.",
+  "repository": "https://github.com/NousResearch/hermes-agent",
+  "website": "https://hermes-agent.nousresearch.com/docs/user-guide/features/acp",
+  "authors": ["Nous Research"],
   "license": "MIT",
   "distribution": {
     "uvx": {
-      "package": "lucifex-agent[acp]==0.20.3",
-      "args": ["lucifex-acp"]
+      "package": "hermes-agent[acp]==0.18.2",
+      "args": ["hermes-acp"]
     }
   }
 }

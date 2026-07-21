@@ -3,7 +3,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { type FC, useCallback, useRef } from 'react'
 
-import type { SessionInfo } from '@/lucifex'
+import type { SessionInfo } from '@/hermes'
 import { type SidebarSessionEntry } from '@/lib/session-branch-tree'
 import { cn } from '@/lib/utils'
 import { sessionPinId } from '@/store/session'
@@ -21,6 +21,7 @@ interface SessionRowCommonProps {
   onPin: () => void
   onResume: () => void
   reorderable?: boolean
+  showProfile?: boolean
 }
 
 interface VirtualSessionListProps {
@@ -33,6 +34,7 @@ interface VirtualSessionListProps {
   onResumeSession: (sessionId: string) => void
   onTogglePin: (sessionId: string) => void
   pinned: boolean
+  showProfileTags?: boolean
   sortable: boolean
   workingSessionIdSet: Set<string>
 }
@@ -50,6 +52,7 @@ export const VirtualSessionList: FC<VirtualSessionListProps> = ({
   onResumeSession,
   onTogglePin,
   pinned,
+  showProfileTags = false,
   sortable,
   workingSessionIdSet
 }) => {
@@ -90,7 +93,8 @@ export const VirtualSessionList: FC<VirtualSessionListProps> = ({
       onDelete: () => onDeleteSession(session.id),
       onPin: () => onTogglePin(sessionPinId(session)),
       onResume: () => onResumeSession(session.id),
-      reorderable
+      reorderable,
+      showProfile: showProfileTags
     }
 
     return reorderable ? (

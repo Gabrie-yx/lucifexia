@@ -60,8 +60,8 @@ export interface FilePreviewTab {
   target: PreviewTarget
 }
 
-const REGISTRY_STORAGE_KEY = 'lucifex.desktop.sessionPreviews.v1'
-const TABS_STORAGE_KEY = 'lucifex.desktop.filePreviewTabs.v1'
+const REGISTRY_STORAGE_KEY = 'hermes.desktop.sessionPreviews.v1'
+const TABS_STORAGE_KEY = 'hermes.desktop.filePreviewTabs.v1'
 const MAX_RECORDS_PER_SESSION = 1
 const MAX_SESSIONS = 120
 
@@ -97,8 +97,6 @@ export const $filePreviewTarget = computed([$filePreviewTabs, $rightRailActiveTa
 export const $previewReloadRequest = atom(0)
 export const $previewServerRestart = atom<PreviewServerRestart | null>(null)
 export const $previewServerRestartStatus = computed($previewServerRestart, restart => restart?.status ?? 'idle')
-export const $isPreviewMaximized = atom(false)
-export const togglePreviewMaximized = () => $isPreviewMaximized.set(!$isPreviewMaximized.get())
 export const $sessionPreviewRegistry = atom<SessionPreviewRegistry>(loadSessionPreviewRegistry())
 
 $sessionPreviewRegistry.subscribe(persistSessionPreviewRegistry)

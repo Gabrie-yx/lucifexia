@@ -1,6 +1,5 @@
 import { useStore } from '@nanostores/react'
-import { useCallback, useEffect, useMemo } from 'react'
-import { createPortal } from 'react-dom'
+import { useEffect, useMemo } from 'react'
 
 import type { SetTitlebarToolGroup } from '@/app/shell/titlebar-controls'
 import { Codicon } from '@/components/ui/codicon'
@@ -11,6 +10,7 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger
 } from '@/components/ui/context-menu'
+import { PANE_TAB_STRIP_LINE, PaneTab, PaneTabLabel } from '@/components/ui/pane-tab'
 import { Tip } from '@/components/ui/tooltip'
 import { translateNow, useI18n } from '@/i18n'
 import { formatCombo } from '@/lib/keybinds/combo'
@@ -19,37 +19,25 @@ import {
   $panesFlipped,
   $rightRailActiveTabId,
   RIGHT_RAIL_PREVIEW_TAB_ID,
-  RIGHT_RAIL_BROWSER_TAB_ID,
   type RightRailTabId,
   selectRightRailTab
 } from '@/store/layout'
 import {
   $filePreviewTabs,
-  $isPreviewMaximized,
   $previewReloadRequest,
   $previewTarget,
   closeOtherRightRailTabs,
   closeRightRail,
   closeRightRailTab,
   closeRightRailTabsToRight,
-  togglePreviewMaximized,
   type PreviewTarget
 } from '@/store/preview'
 import { $dirtyPreviewUrls } from '@/store/preview-edit'
 
 import { PreviewPane } from './preview-pane'
-import { LiveBrowserPane } from './live-browser-pane'
 
 export const PREVIEW_RAIL_MIN_WIDTH = '18rem'
 export const PREVIEW_RAIL_MAX_WIDTH = '38rem'
-
-const INTRINSIC = `clamp(${PREVIEW_RAIL_MIN_WIDTH}, 36vw, 32rem)`
-
-// Track for <Pane id="preview">. Folds the intrinsic clamp with a min-floor
-// against --chat-min-width so the chat surface never gets squeezed below it.
-// Subtracts the project browser width so preview yields rather than crushing
-// the chat when both right-side panes are open.
-export const PREVIEW_RAIL_PANE_WIDTH = `min(${INTRINSIC}, max(0rem, calc(100vw - var(--pane-chat-sidebar-width) - var(--pane-file-browser-width, 0rem) - var(--chat-min-width))))`
 
 interface ChatPreviewRailProps {
   onRestartServer?: (url: string, context?: string) => Promise<string>
@@ -59,7 +47,7 @@ interface ChatPreviewRailProps {
 interface RailTab {
   id: RightRailTabId
   label: string
-  target?: PreviewTarget
+  target: PreviewTarget
 }
 
 function tabLabelFor(target: PreviewTarget): string {
@@ -77,11 +65,9 @@ export function ChatPreviewRail({ onRestartServer, setTitlebarToolGroup }: ChatP
   const filePreviewTabs = useStore($filePreviewTabs)
   const previewTarget = useStore($previewTarget)
   const dirtyPreviewUrls = useStore($dirtyPreviewUrls)
-  const isMaximized = useStore($isPreviewMaximized)
 
   const tabs = useMemo<readonly RailTab[]>(
     () => [
-      { id: RIGHT_RAIL_BROWSER_TAB_ID, label: 'Live Browser' },
       ...(previewTarget
         ? [{ id: RIGHT_RAIL_PREVIEW_TAB_ID, label: t.preview.tab, target: previewTarget } as RailTab]
         : []),
@@ -98,42 +84,31 @@ export function ChatPreviewRail({ onRestartServer, setTitlebarToolGroup }: ChatP
     }
   }, [activeTab, activeTabId])
 
-  // ESC exits fullscreen — matches VS Code / browser fullscreen conventions.
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (e.key === 'Escape' && isMaximized) {
-      togglePreviewMaximized()
-    }
-  }, [isMaximized])
-
-  useEffect(() => {
-    if (!isMaximized) return
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [isMaximized, handleKeyDown])
-
   if (!activeTab) {
     return null
   }
 
   const isPreview = activeTab.id === RIGHT_RAIL_PREVIEW_TAB_ID
 
-  const content = (
+  return (
     <aside
       className={cn(
-        'flex h-full w-full min-w-0 flex-col overflow-hidden border-(--ui-stroke-tertiary) bg-(--ui-editor-surface-background) text-(--ui-text-tertiary)',
-        panesFlipped ? 'border-r' : 'border-l',
-        isMaximized
-          ? 'fixed inset-0 z-[100] w-screen h-screen border-0'
-          : 'relative'
+        'relative flex h-full w-full min-w-0 flex-col overflow-hidden border-(--ui-stroke-tertiary) bg-(--ui-editor-surface-background) text-(--ui-text-tertiary)',
+        panesFlipped ? 'border-r' : 'border-l'
       )}
       // Windows/WSLg paint Electron's Window Controls Overlay across our
       // titlebar band, so the editor-style tab strip (which normally sits IN that
       // band) would land under the fixed titlebar tools. --right-rail-top-inset
       // (set by AppShell only when the overlay is present) drops the rail one
       // titlebar-height so it opens below the band. 0px elsewhere → unchanged.
-      style={{ paddingTop: isMaximized ? 0 : 'var(--right-rail-top-inset, 0px)' }}
+      style={{ paddingTop: 'var(--right-rail-top-inset, 0px)' }}
     >
-      <div className="group/rail-tabs flex h-(--titlebar-height) shrink-0 border-b border-(--ui-stroke-tertiary) bg-(--ui-sidebar-surface-background)">
+      <div
+        className={cn(
+          'group/rail-tabs flex h-(--titlebar-height) shrink-0 bg-(--ui-sidebar-surface-background)',
+          PANE_TAB_STRIP_LINE
+        )}
+      >
         <div
           className="flex min-w-0 flex-1 overflow-x-auto overflow-y-hidden overscroll-x-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           role="tablist"
@@ -142,72 +117,25 @@ export function ChatPreviewRail({ onRestartServer, setTitlebarToolGroup }: ChatP
             const active = tab.id === activeTab.id
             const hasOthers = tabs.length > 1
             const hasTabsToRight = index < tabs.length - 1
-            const dirty = Boolean(tab.target && dirtyPreviewUrls[tab.target.url])
+            const dirty = Boolean(dirtyPreviewUrls[tab.target.url])
 
             return (
               <ContextMenu key={tab.id}>
                 <ContextMenuTrigger asChild>
-                  <div
-                    className={cn(
-                      'group/tab relative flex h-full min-w-0 max-w-48 shrink-0 items-center text-[0.6875rem] font-medium [-webkit-app-region:no-drag] last:border-r last:border-(--ui-stroke-quaternary)',
-                      active
-                        ? 'bg-(--ui-editor-surface-background) text-foreground [--tab-bg:var(--ui-editor-surface-background)]'
-                        : 'border-r border-(--ui-stroke-quaternary) text-(--ui-text-tertiary) [--tab-bg:var(--ui-sidebar-surface-background)] hover:bg-(--chrome-action-hover) hover:text-foreground'
-                    )}
-                    // Middle-click closes the tab, matching browser/IDE muscle
-                    // memory. `onMouseDown` swallows the middle-button press so
-                    // Chromium doesn't switch into autoscroll mode.
-                    onAuxClick={event => {
-                      if (event.button !== 1) {
-                        return
-                      }
-
-                      event.preventDefault()
-                      closeRightRailTab(tab.id)
-                    }}
-                    onMouseDown={event => {
-                      if (event.button === 1) {
-                        event.preventDefault()
-                      }
-                    }}
-                  >
-                    {active && (
-                      <span aria-hidden="true" className="absolute inset-x-0 top-0 h-px bg-(--ui-stroke-primary)" />
-                    )}
-                    <Tip label={tab.target ? (tab.target.path || tab.target.url) : tab.label}>
-                      <button
+                  <PaneTab active={active} dirty={dirty} onClose={() => closeRightRailTab(tab.id)}>
+                    <Tip label={tab.target.path || tab.target.url || tab.label}>
+                      <PaneTabLabel
                         aria-selected={active}
-                        className="flex h-full min-w-0 max-w-full items-center overflow-hidden pl-3 pr-2 text-left outline-none"
+                        as="button"
+                        className="normal-case tracking-normal"
                         onClick={() => selectRightRailTab(tab.id)}
                         role="tab"
                         type="button"
                       >
-                        <span className="block min-w-0 truncate">{tab.label}</span>
-                      </button>
+                        {tab.label}
+                      </PaneTabLabel>
                     </Tip>
-                    <span
-                      aria-hidden="true"
-                      className="pointer-events-none absolute inset-y-0 right-0 w-9 bg-[linear-gradient(to_right,transparent,var(--tab-bg)_55%)] opacity-0 transition-opacity group-hover/tab:opacity-100 group-focus-within/tab:opacity-100"
-                    />
-                    {dirty && (
-                      <span
-                        aria-hidden="true"
-                        className="pointer-events-none absolute right-1.5 top-1/2 grid size-4 -translate-y-1/2 place-items-center opacity-100 transition-opacity group-hover/tab:opacity-0 group-focus-within/tab:opacity-0"
-                      >
-                        {/* Amber (our warn color); a tab-bg ring + soft drop keeps it
-                            legible where it overlaps the filename. */}
-                        <span className="size-2 rounded-full bg-amber-500 shadow-[0_0_0_2px_var(--tab-bg),0_1px_2px_rgba(0,0,0,0.45)] dark:bg-amber-400" />
-                      </span>
-                    )}
-                    <button
-                      aria-label={t.preview.closeTab(tab.label)}
-                      className="pointer-events-none absolute right-1.5 top-1/2 grid size-4 -translate-y-1/2 place-items-center rounded-sm text-(--ui-text-tertiary) opacity-0 transition-[background-color,color,opacity] hover:bg-(--ui-bg-secondary) hover:text-foreground focus-visible:pointer-events-auto focus-visible:opacity-100 group-hover/tab:pointer-events-auto group-hover/tab:opacity-100 group-focus-within/tab:pointer-events-auto group-focus-within/tab:opacity-100"
-                      onClick={() => closeRightRailTab(tab.id)}
-                      type="button"
-                    >
-                      <Codicon name="close" size="0.75rem" />
-                    </button>
-                  </div>
+                  </PaneTab>
                 </ContextMenuTrigger>
                 <ContextMenuContent>
                   <ContextMenuItem onSelect={() => closeRightRailTab(tab.id)}>
@@ -227,25 +155,9 @@ export function ChatPreviewRail({ onRestartServer, setTitlebarToolGroup }: ChatP
             )
           })}
         </div>
-        <Tip label={isMaximized ? 'Restaurar preview (ESC)' : 'Expandir preview'}>
-          <button
-            aria-label={isMaximized ? 'Restaurar preview' : 'Expandir preview'}
-            className={cn(
-              'mr-0.5 grid size-6 shrink-0 self-center place-items-center rounded-md text-(--ui-text-tertiary) transition-opacity hover:bg-(--ui-control-hover-background) hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring [-webkit-app-region:no-drag]',
-              isMaximized ? 'opacity-100' : 'opacity-0 group-hover/rail-tabs:opacity-100'
-            )}
-            onClick={togglePreviewMaximized}
-            type="button"
-          >
-            <Codicon name={isMaximized ? 'screen-normal' : 'screen-full'} size="0.75rem" />
-          </button>
-        </Tip>
         <button
           aria-label={t.preview.closePane}
-          className={cn(
-            'mr-1.5 grid size-6 shrink-0 self-center place-items-center rounded-md text-(--ui-text-tertiary) transition-opacity hover:bg-(--ui-control-hover-background) hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring [-webkit-app-region:no-drag]',
-            isMaximized ? 'opacity-100' : 'opacity-0 group-hover/rail-tabs:opacity-100'
-          )}
+          className="mr-1.5 grid size-6 shrink-0 self-center place-items-center rounded-md text-(--ui-text-tertiary) opacity-0 transition-opacity hover:bg-(--ui-control-hover-background) hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring group-hover/rail-tabs:opacity-100 [-webkit-app-region:no-drag]"
           onClick={closeRightRail}
           type="button"
         >
@@ -254,24 +166,14 @@ export function ChatPreviewRail({ onRestartServer, setTitlebarToolGroup }: ChatP
       </div>
 
       <div className="min-h-0 flex-1 overflow-hidden">
-        {activeTab.id === RIGHT_RAIL_BROWSER_TAB_ID ? (
-          <LiveBrowserPane />
-        ) : (
-          <PreviewPane
-            embedded
-            onRestartServer={isPreview ? onRestartServer : undefined}
-            reloadRequest={previewReloadRequest}
-            setTitlebarToolGroup={setTitlebarToolGroup}
-            target={activeTab.target!}
-          />
-        )}
+        <PreviewPane
+          embedded
+          onRestartServer={isPreview ? onRestartServer : undefined}
+          reloadRequest={previewReloadRequest}
+          setTitlebarToolGroup={setTitlebarToolGroup}
+          target={activeTab.target}
+        />
       </div>
     </aside>
   )
-
-  if (isMaximized && typeof window !== 'undefined') {
-    return createPortal(content, document.body)
-  }
-
-  return content
 }

@@ -1,10 +1,10 @@
-"""Native Spotify tools for Lucifex (registered via plugins/spotify)."""
+"""Native Spotify tools for Hermes (registered via plugins/spotify)."""
 
 from __future__ import annotations
 
 from typing import Any, List
 
-from lucifex_cli.auth import get_auth_status
+from hermes_cli.auth import get_auth_status
 from plugins.spotify.client import (
     SpotifyAPIError,
     SpotifyAuthRequiredError,

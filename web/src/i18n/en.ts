@@ -53,7 +53,7 @@ export const en: Translations = {
   },
 
   app: {
-    brand: "Lucifex Agent",
+    brand: "Hermes Agent",
     brandShort: "HA",
     closeNavigation: "Close navigation",
     closeModelTools: "Close model and tools",
@@ -122,7 +122,7 @@ export const en: Translations = {
     recentSessions: "Recent Sessions",
     restartGateway: "Restart Gateway",
     restartGatewayConfirmMessage:
-      "This restarts the Lucifex gateway process. Connected channels and active sessions will reconnect afterward.",
+      "This restarts the Hermes gateway process. Connected channels and active sessions will reconnect afterward.",
     restartGatewayConfirmTitle: "Restart gateway?",
     restartingGateway: "Restarting gateway…",
     running: "Running",
@@ -131,12 +131,12 @@ export const en: Translations = {
     starting: "Starting",
     startedInBackground: "Started in background — check logs for progress",
     stopped: "Stopped",
-    updateLucifex: "Update Lucifex",
-    updateLucifexConfirmMessage:
-      "This runs lucifex update and restarts the gateway when it finishes. Active sessions keep their prompt cache until then.",
-    updateLucifexConfirmNow: "Update now",
-    updateLucifexConfirmTitle: "Update Lucifex?",
-    updatingLucifex: "Updating Lucifex…",
+    updateHermes: "Update Hermes",
+    updateHermesConfirmMessage:
+      "This runs hermes update and restarts the gateway when it finishes. Active sessions keep their prompt cache until then.",
+    updateHermesConfirmNow: "Update now",
+    updateHermesConfirmTitle: "Update Hermes?",
+    updatingHermes: "Updating Hermes…",
     waitingForOutput: "Waiting for output…",
   },
 
@@ -371,7 +371,7 @@ export const en: Translations = {
     enableRuntime: "Enable",
     forceReinstall: "Force reinstall (delete existing folder first)",
     headline:
-      "Discover, install, enable, and update Lucifex plugins (`lucifex plugins` parity).",
+      "Discover, install, enable, and update Hermes plugins (`hermes plugins` parity).",
     identifierLabel: "Git URL or owner/repo",
     inactive: "inactive",
     installBtn: "Install",
@@ -388,8 +388,8 @@ export const en: Translations = {
     providersHint:
       "Writes memory.provider (empty = built-in) and context.engine to config.yaml. Takes effect next session.",
     refreshDashboard: "Rescan dashboard extensions",
-    removeConfirm: "Remove this plugin from ~/.lucifex/plugins/?",
-    removeHint: "Only user-installed plugins under ~/.lucifex/plugins can be removed.",
+    removeConfirm: "Remove this plugin from ~/.hermes/plugins/?",
+    removeHint: "Only user-installed plugins under ~/.hermes/plugins can be removed.",
     rescanHeading: "SPA plugin registry",
     rescanHint: "Rescan after adding files on disk so the dashboard sidebar picks up new manifests.",
     runtimeHeading: "Gateway runtime (YAML plugins)",
@@ -411,7 +411,7 @@ export const en: Translations = {
     all: "All",
     categories: "Categories",
     filters: "Filters",
-    noSkills: "No skills found. Skills are loaded from ~/.lucifex/skills/",
+    noSkills: "No skills found. Skills are loaded from ~/.hermes/skills/",
     noSkillsMatch: "No skills match your search or filter.",
     skillCount: "{count} skill{s}",
     resultCount: "{count} result{s}",
@@ -429,7 +429,7 @@ export const en: Translations = {
   },
 
   config: {
-    configPath: "~/.lucifex/config.yaml",
+    configPath: "~/.hermes/config.yaml",
     filters: "Filters",
     sections: "Sections",
     exportConfig: "Export config as JSON",
@@ -489,7 +489,7 @@ export const en: Translations = {
     showValue: "Show real value",
     hideValue: "Hide value",
     customTitle: "Custom Keys",
-    customHint: "Arbitrary environment variables stored in your .env that Lucifex doesn't recognise. Use these to inject env vars for skills, MCP servers, or your own tooling.",
+    customHint: "Arbitrary environment variables stored in your .env that Hermes doesn't recognise. Use these to inject env vars for skills, MCP servers, or your own tooling.",
     customConfigured: "{count} custom key{s} set",
     addCustomKey: "Add a custom key",
     customKeyName: "Variable name",
@@ -501,16 +501,19 @@ export const en: Translations = {
   oauth: {
     title: "Provider Logins (OAuth)",
     providerLogins: "Provider Logins (OAuth)",
-    description: "{connected} of {total} OAuth providers connected. Login flows currently run via the CLI; click Copy command and paste into a terminal to set up.",
+    description:
+      "{connected} of {total} OAuth providers connected. Use Login for dashboard-supported flows; CLI commands remain available for external or fallback setup.",
     connected: "Connected",
     expired: "Expired",
-    notConnected: "Not connected. Run {command} in a terminal.",
+    notConnected: "Not connected. Use Login when available, or run {command} in a terminal.",
     runInTerminal: "in a terminal.",
     noProviders: "No OAuth-capable providers detected.",
     login: "Login",
     disconnect: "Disconnect",
     managedExternally: "Managed externally",
     copied: "Copied ✓",
+    copyCode: "Copy code",
+    copyFailed: "Could not copy automatically. Select the code and copy it manually.",
     cli: "Copy",
     copyCliCommand: "Copy CLI command (for external / fallback)",
     connect: "Connect",
@@ -555,11 +558,11 @@ export const en: Translations = {
   achievements: {
     hero: {
       kicker: "Agentic Gamerscore",
-      title: "Lucifex Achievements",
+      title: "Hermes Achievements",
       subtitle:
-        "Collectible Lucifex badges earned from real session history. Known unfinished achievements are shown as Discovered; Secret achievements stay hidden until the first matching behavior appears.",
+        "Collectible Hermes badges earned from real session history. Known unfinished achievements are shown as Discovered; Secret achievements stay hidden until the first matching behavior appears.",
       scan_subtitle:
-        "Scanning Lucifex session history. First scan can take 5–10 seconds on large histories.",
+        "Scanning Hermes session history. First scan can take 5–10 seconds on large histories.",
     },
     actions: {
       rescan: "Rescan",
@@ -574,7 +577,7 @@ export const en: Translations = {
       highest_tier: "Highest tier",
       highest_tier_hint: "Copper → Silver → Gold → Diamond → Olympian",
       latest: "Latest",
-      latest_hint_empty: "run Lucifex more",
+      latest_hint_empty: "run Hermes more",
       none_yet: "None yet",
     },
     state: {
@@ -605,10 +608,10 @@ export const en: Translations = {
       tiers_header: "Tiers",
       secret_header: "Secret achievements",
       secret_body:
-        "Secrets hide their exact trigger. Once Lucifex sees a related signal, the card becomes Discovered and shows its requirement.",
+        "Secrets hide their exact trigger. Once Hermes sees a related signal, the card becomes Discovered and shows its requirement.",
       scan_status_header: "Scan status",
       scan_status_body:
-        "Lucifex is scanning local history once, then cards will appear automatically. Nothing is stuck if this takes a few seconds.",
+        "Hermes is scanning local history once, then cards will appear automatically. Nothing is stuck if this takes a few seconds.",
       what_scanned_header: "What is scanned",
       what_scanned_body:
         "Sessions, tool calls, model metadata, errors, achievements, and local unlock state.",
@@ -655,7 +658,7 @@ export const en: Translations = {
         "Share on X opens a pre-filled post in a new tab. Click Copy image first if you want the 1200×630 badge attached — X lets you paste it right into the tweet composer. Download PNG saves the file for use anywhere.",
       clipboard_unsupported:
         "Clipboard image copy not supported in this browser — use Download instead.",
-      tweet_text: "Just unlocked {tier_part}\"{name}\" in Lucifex Agent ☤",
+      tweet_text: "Just unlocked {tier_part}\"{name}\" in Hermes Agent ☤",
     },
   },
 
@@ -825,5 +828,25 @@ export const en: Translations = {
       "workspace path (optional, derived from assignee if blank)",
     logTruncated: "(showing last 100 KB — full log at ",
     logAt: ")",
+    newTaskTitle: "New task — {column}",
+    taskTitleLabel: "Title",
+    assigneeLabel: "Assignee",
+    assigneeLabelHint: "(blank = dispatcher picks)",
+    skillsLabel: "Skills",
+    skillsLabelHint: "(optional, comma-separated)",
+    parentLabel: "Parent task",
+    parentLabelHint: "(child stays blocked until the parent is done)",
+    create: "Create",
+    boardSettings: "Settings",
+    boardSettingsTitle:
+      "Board settings — name, description, and the default project directory new tasks inherit",
+    boardSettingsTitleFor: "Board settings — {name}",
+    projectDirectoryOverrideHint:
+      "New tasks inherit this as their workspace default; each task can still override it in the create dialog.",
+    saving: "Saving…",
+    commentHint:
+      "Comments reach the worker on its next run or kanban_show() — no need to block the task first.",
+    commentHintTitle:
+      "Comments are the channel for talking to a task's worker. They land on the thread immediately — no need to block the task first. A running worker picks the thread up on its next kanban_show() or respawn; blocking is only for when you want the worker to STOP and wait for your input.",
   },
 };

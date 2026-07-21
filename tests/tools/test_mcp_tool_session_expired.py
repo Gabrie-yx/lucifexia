@@ -112,22 +112,46 @@ def _install_stub_server(name: str = "wpcom"):
 
     server = MagicMock()
     server.name = name
+
+    ready_flag = threading.Event()
+    ready_flag.set()
+
+    class _ReadyAdapter:
+        def is_set(self):
+            return ready_flag.is_set()
+
+        def clear(self):
+            ready_flag.clear()
+
+        def set(self):
+            ready_flag.set()
+
+    server._ready = _ReadyAdapter()
+
     # _reconnect_event is called via loop.call_soon_threadsafe(…set); use
-    # a threading-safe substitute.
+    # a threading-safe substitute.  The production reconnect path must not
+    # treat the old stale session as fresh, so this test double swaps in a
+    # distinct session object when reconnect is requested.
     reconnect_flag = threading.Event()
 
     class _EventAdapter:
         def set(self):
             reconnect_flag.set()
+            old_session = server.session
+            new_session = MagicMock()
+            for method_name in (
+                "call_tool",
+                "list_resources",
+                "read_resource",
+                "list_prompts",
+                "get_prompt",
+            ):
+                if hasattr(old_session, method_name):
+                    setattr(new_session, method_name, getattr(old_session, method_name))
+            server.session = new_session
+            ready_flag.set()
 
     server._reconnect_event = _EventAdapter()
-
-    # Immediately "ready" — simulates a fast reconnect (_ready.is_set()
-    # is polled by _handle_session_expired_and_retry until the timeout).
-    ready_flag = threading.Event()
-    ready_flag.set()
-    server._ready = MagicMock()
-    server._ready.is_set = ready_flag.is_set
 
     # session attr must be truthy for the handler's initial check
     # (``if not server or not server.session``) and for the post-
@@ -140,7 +164,7 @@ def test_call_tool_handler_reconnects_on_session_expired(monkeypatch, tmp_path):
     """Reporter's exact repro: call_tool raises "Invalid or expired
     session", handler triggers reconnect, retries once, and returns
     the retry's successful JSON (not the generic error)."""
-    monkeypatch.setenv("LUCIFEX_HOME", str(tmp_path))
+    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
 
     from tools import mcp_tool
     from tools.mcp_tool import _make_tool_handler
@@ -188,13 +212,81 @@ def test_call_tool_handler_reconnects_on_session_expired(monkeypatch, tmp_path):
         mcp_tool._server_error_counts.pop("wpcom", None)
 
 
+def test_session_expired_retry_waits_for_new_session(monkeypatch, tmp_path):
+    """Regression for long-lived HTTP/stream MCP sessions.
+
+    If the reconnect helper only checks ``_ready.is_set()`` and
+    ``session is not None``, it can return immediately while ``session`` still
+    points at the stale transport. The retry then hits the same dead session
+    and the circuit breaker eventually reports the server as unreachable. The
+    handler must wait for a distinct session object before retrying.
+    """
+    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+
+    from tools import mcp_tool
+    from tools.mcp_tool import _make_tool_handler
+
+    mcp_tool._ensure_mcp_loop()
+    server = MagicMock()
+    server.name = "hindsight"
+    ready_flag = threading.Event()
+    ready_flag.set()
+
+    class _ReadyAdapter:
+        def is_set(self):
+            return ready_flag.is_set()
+
+        def clear(self):
+            ready_flag.clear()
+
+        def set(self):
+            ready_flag.set()
+
+    old_session = MagicMock()
+
+    async def _old_call(*a, **kw):
+        raise RuntimeError("Session terminated")
+
+    old_session.call_tool = _old_call
+    new_session = MagicMock()
+
+    async def _new_call(*a, **kw):
+        result = MagicMock()
+        result.isError = False
+        result.content = [MagicMock(type="text", text="bank ok")]
+        result.structuredContent = None
+        return result
+
+    new_session.call_tool = _new_call
+    server.session = old_session
+    server._ready = _ReadyAdapter()
+
+    class _ReconnectAdapter:
+        def set(self):
+            server.session = new_session
+            ready_flag.set()
+
+    server._reconnect_event = _ReconnectAdapter()
+    mcp_tool._servers["hindsight"] = server
+    mcp_tool._server_error_counts.pop("hindsight", None)
+
+    try:
+        handler = _make_tool_handler("hindsight", "get_bank", 10.0)
+        parsed = json.loads(handler({}))
+        assert parsed.get("result") == "bank ok", parsed
+        assert mcp_tool._server_error_counts.get("hindsight", 0) == 0
+    finally:
+        mcp_tool._servers.pop("hindsight", None)
+        mcp_tool._server_error_counts.pop("hindsight", None)
+
+
 def test_call_tool_handler_non_session_expired_error_falls_through(
     monkeypatch, tmp_path
 ):
     """Preserved-behaviour canary: a non-session-expired exception must
     NOT trigger reconnect — it must fall through to the generic error
     path so the caller sees the real failure."""
-    monkeypatch.setenv("LUCIFEX_HOME", str(tmp_path))
+    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
 
     from tools import mcp_tool
     from tools.mcp_tool import _make_tool_handler
@@ -276,7 +368,7 @@ def test_session_expired_handler_returns_none_when_retry_also_fails(
     """If the retry after reconnect also raises, fall through to the
     generic error path (don't loop forever, don't mask the second
     failure)."""
-    monkeypatch.setenv("LUCIFEX_HOME", str(tmp_path))
+    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
 
     from tools import mcp_tool
     from tools.mcp_tool import _handle_session_expired_and_retry
@@ -322,7 +414,7 @@ def test_non_tool_handlers_also_reconnect_on_session_expired(
 ):
     """All four non-``tools/call`` MCP handlers share the recovery
     pattern and must reconnect the same way on session-expired."""
-    monkeypatch.setenv("LUCIFEX_HOME", str(tmp_path))
+    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
 
     from tools import mcp_tool
 

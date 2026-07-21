@@ -1,6 +1,6 @@
 """Tests for Telegram topic/thread routing fallbacks.
 
-Supergroup forum topics route with ``message_thread_id``. Lucifex-created
+Supergroup forum topics route with ``message_thread_id``. Hermes-created
 private DM topic lanes are different: live Telegram testing showed they only
 stay in the expected lane when sends include both the private topic
 ``message_thread_id`` and a ``reply_to_message_id`` anchor to the triggering
@@ -303,7 +303,7 @@ async def test_send_typing_does_not_fall_back_to_root_for_dm_topic():
 
 @pytest.mark.asyncio
 async def test_send_typing_attempts_api_call_for_dm_topic_reply_fallback():
-    """Lucifex-created DM topic lanes should still attempt scoped typing.
+    """Hermes-created DM topic lanes should still attempt scoped typing.
 
     Some private DM topic lanes route message sends through reply-anchor
     fallback, but live Telegram testing shows sendChatAction accepts the lane's
@@ -458,6 +458,81 @@ async def test_send_private_dm_topic_uses_direct_messages_topic_id():
     assert call_log[0]["direct_messages_topic_id"] == 99999
 
 
+@pytest.mark.asyncio
+async def test_private_chat_explicit_thread_id_uses_message_thread_id_without_anchor():
+    """Cron-resolved private-chat forum topics route by message_thread_id."""
+    adapter = _make_adapter()
+    call_log = []
+
+    async def mock_send_message(**kwargs):
+        call_log.append(dict(kwargs))
+        return SimpleNamespace(message_id=270454)
+
+    adapter._bot = SimpleNamespace(send_message=mock_send_message)
+
+    result = await adapter.send(
+        chat_id="775566675",
+        content="cron topic delivery",
+        metadata={"thread_id": "270453"},
+    )
+
+    assert result.success is True
+    assert call_log[0]["reply_to_message_id"] is None
+    assert call_log[0]["message_thread_id"] == 270453
+    assert "direct_messages_topic_id" not in call_log[0]
+
+
+@pytest.mark.asyncio
+async def test_private_chat_explicit_direct_messages_topic_id_uses_direct_topic_without_anchor():
+    """Explicit Bot API Direct Messages topics do not need a reply anchor."""
+    adapter = _make_adapter()
+    call_log = []
+
+    async def mock_send_message(**kwargs):
+        call_log.append(dict(kwargs))
+        return SimpleNamespace(message_id=270454)
+
+    adapter._bot = SimpleNamespace(send_message=mock_send_message)
+
+    result = await adapter.send(
+        chat_id="775566675",
+        content="direct topic delivery",
+        metadata={"direct_messages_topic_id": "270453"},
+    )
+
+    assert result.success is True
+    assert call_log[0]["reply_to_message_id"] is None
+    assert call_log[0]["message_thread_id"] is None
+    assert call_log[0]["direct_messages_topic_id"] == 270453
+
+
+@pytest.mark.asyncio
+async def test_private_dm_topic_reply_fallback_without_anchor_fails_loud():
+    """Anchor-required DM topic fallback must not silently send elsewhere."""
+    adapter = _make_adapter()
+    call_log = []
+
+    async def mock_send_message(**kwargs):
+        call_log.append(dict(kwargs))
+        return SimpleNamespace(message_id=270454)
+
+    adapter._bot = SimpleNamespace(send_message=mock_send_message)
+
+    result = await adapter.send(
+        chat_id="775566675",
+        content="missing anchor",
+        metadata={
+            "thread_id": "270453",
+            "telegram_dm_topic_reply_fallback": True,
+        },
+    )
+
+    assert result.success is False
+    assert result.retryable is False
+    assert result.error == adapter._dm_topic_missing_anchor_error()
+    assert call_log == []
+
+
 def test_base_gateway_metadata_marks_telegram_dm_topics_as_reply_fallback():
     source = SimpleNamespace(
         platform=Platform.TELEGRAM,
@@ -512,7 +587,7 @@ async def test_gateway_runner_busy_ack_replies_to_triggering_message_for_telegra
     """GatewayRunner's duplicate thread metadata must match the base helper."""
     from gateway import run as gateway_run
 
-    monkeypatch.setattr(gateway_run, "_lucifex_home", tmp_path)
+    monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
     GatewayRunner = gateway_run.GatewayRunner
 
     class BusyAdapter:
@@ -571,8 +646,8 @@ async def test_gateway_runner_busy_ack_replies_to_triggering_message_for_telegra
 
 
 @pytest.mark.asyncio
-async def test_send_uses_reply_fallback_for_lucifex_dm_topics():
-    """Lucifex-created Telegram DM topics route with thread id plus reply anchor."""
+async def test_send_uses_reply_fallback_for_hermes_dm_topics():
+    """Hermes-created Telegram DM topics route with thread id plus reply anchor."""
     adapter = _make_adapter()
     call_log = []
 
@@ -683,7 +758,7 @@ async def test_created_private_topic_thread_not_found_fails_without_root_fallbac
 
 @pytest.mark.asyncio
 async def test_send_uses_metadata_reply_fallback_for_streaming_dm_topics():
-    """Metadata-only sends still stay in Lucifex-created Telegram DM topics."""
+    """Metadata-only sends still stay in Hermes-created Telegram DM topics."""
     adapter = _make_adapter()
     call_log = []
 

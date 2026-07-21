@@ -28,6 +28,7 @@ import logging
 import os
 import socket
 import asyncio
+import re
 from typing import Any, Optional
 from urllib.parse import parse_qsl, quote, unquote, urljoin, urlparse, urlsplit, urlunsplit
 
@@ -37,7 +38,7 @@ logger = logging.getLogger(__name__)
 
 
 def normalize_url_for_request(url: str) -> str:
-    """Return an ASCII-safe HTTP URL for Lucifex-owned URL tools.
+    """Return an ASCII-safe HTTP URL for Hermes-owned URL tools.
 
     Browsers and HTTP clients expect URIs, but users and models often provide
     IRIs such as ``https://wttr.in/Köln``.  Preserve URL syntax and existing
@@ -51,6 +52,13 @@ def normalize_url_for_request(url: str) -> str:
     raw = url.strip()
     if not raw:
         return raw
+
+    # Models sometimes emit otherwise valid URLs with whitespace between the
+    # scheme separator and authority (``https:// docs.example``). That position
+    # is never meaningful in HTTP(S) URLs, and repairing it before parsing keeps
+    # web tools from failing on a formatting artifact while leaving path/query
+    # whitespace to the normal percent-encoding path below.
+    raw = re.sub(r"^([A-Za-z][A-Za-z0-9+.-]*://)\s+", r"\1", raw)
 
     try:
         parsed = urlsplit(raw)
@@ -193,7 +201,7 @@ def _global_allow_private_urls() -> bool:
     """Return True when the user has opted out of private-IP blocking.
 
     Checks (in priority order):
-    1. ``LUCIFEX_ALLOW_PRIVATE_URLS`` env var  (``true``/``1``/``yes``)
+    1. ``HERMES_ALLOW_PRIVATE_URLS`` env var  (``true``/``1``/``yes``)
     2. ``security.allow_private_urls`` in config.yaml
     3. ``browser.allow_private_urls`` in config.yaml  (legacy / backward compat)
 
@@ -207,7 +215,7 @@ def _global_allow_private_urls() -> bool:
     _cached_allow_private = False  # safe default
 
     # 1. Env var override (highest priority)
-    env_val = os.getenv("LUCIFEX_ALLOW_PRIVATE_URLS", "").strip().lower()
+    env_val = os.getenv("HERMES_ALLOW_PRIVATE_URLS", "").strip().lower()
     if env_val in {"true", "1", "yes"}:
         _cached_allow_private = True
         return _cached_allow_private
@@ -217,7 +225,7 @@ def _global_allow_private_urls() -> bool:
 
     # 2. Config file
     try:
-        from lucifex_cli.config import read_raw_config
+        from hermes_cli.config import read_raw_config
         cfg = read_raw_config()
         # security.allow_private_urls (preferred)
         sec = cfg.get("security", {})
@@ -380,7 +388,7 @@ def is_safe_url(url: str) -> bool:
     Fails closed: DNS errors and unexpected exceptions block the request.
 
     When ``security.allow_private_urls`` is enabled (or the env var
-    ``LUCIFEX_ALLOW_PRIVATE_URLS=true``), private-IP blocking is skipped.
+    ``HERMES_ALLOW_PRIVATE_URLS=true``), private-IP blocking is skipped.
     Cloud metadata endpoints (169.254.169.254, metadata.google.internal)
     remain blocked regardless — they are never legitimate agent targets.
     """

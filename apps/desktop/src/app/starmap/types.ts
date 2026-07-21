@@ -1,6 +1,6 @@
 import type { SimulationLinkDatum, SimulationNodeDatum } from 'd3-force'
 
-import type { StarmapGraph, StarmapNode } from '@/types/lucifex'
+import type { StarmapGraph, StarmapNode } from '@/types/hermes'
 
 export type MemoryCard = StarmapGraph['memory'][number]
 

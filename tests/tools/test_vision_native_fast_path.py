@@ -119,7 +119,9 @@ class TestVisionAnalyzeNative:
         assert isinstance(result, str)
         parsed = json.loads(result)
         assert parsed.get("success") is False
-        assert "Invalid image source" in parsed.get("error", "")
+        # Unified resolver: local backend reports a clean not-found.
+        err = parsed.get("error", "").lower()
+        assert "image file not found" in err or "no active sandbox" in err
 
     def test_empty_image_url_returns_error(self):
         result = asyncio.get_event_loop().run_until_complete(
@@ -260,7 +262,7 @@ class TestHandleVisionAnalyzeFastPath:
         set_runtime_main("brand-new-provider", "llava-v1.6")
         try:
             with patch(
-                "lucifex_cli.config.load_config",
+                "hermes_cli.config.load_config",
                 return_value={"model": {"supports_vision": True}},
             ), patch(
                 "tools.vision_tools.vision_analyze_tool", side_effect=_aux_sentinel,
@@ -285,7 +287,7 @@ class TestHandleVisionAnalyzeFastPath:
         set_runtime_main("brand-new-provider", "llava-v1.6")
         try:
             with patch(
-                "lucifex_cli.config.load_config",
+                "hermes_cli.config.load_config",
                 return_value={
                     "agent": {"image_input_mode": "text"},
                     "model": {"supports_vision": True},

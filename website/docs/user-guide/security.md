@@ -6,31 +6,32 @@ description: "Security model, dangerous command approval, user authorization, co
 
 # Security
 
-Lucifex Agent is designed with a defense-in-depth security model. This page covers every security boundary — from command approval to container isolation to user authorization on messaging platforms.
+Hermes Agent is designed with a defense-in-depth security model. This page covers every security boundary — from command approval to container isolation to user authorization on messaging platforms.
 
 ## Overview
 
-The security model has seven layers:
+The security model has eight layers:
 
 1. **User authorization** — who can talk to the agent (allowlists, DM pairing)
 2. **Dangerous command approval** — human-in-the-loop for destructive operations
-3. **Container isolation** — Docker/Singularity/Modal sandboxing with hardened settings
-4. **MCP credential filtering** — environment variable isolation for MCP subprocesses
-5. **Context file scanning** — prompt injection detection in project files
-6. **Cross-session isolation** — sessions cannot access each other's data or state; cron job storage paths are hardened against path traversal attacks
-7. **Input sanitization** — working directory parameters in terminal tool backends are validated against an allowlist to prevent shell injection
+3. **File write safety** — denylist and optional write sandbox for `write_file`/`patch`
+4. **Container isolation** — Docker/Singularity/Modal sandboxing with hardened settings
+5. **MCP credential filtering** — environment variable isolation for MCP subprocesses
+6. **Context file scanning** — prompt injection detection in project files
+7. **Cross-session isolation** — sessions cannot access each other's data or state; cron job storage paths are hardened against path traversal attacks
+8. **Input sanitization** — working directory parameters in terminal tool backends are validated against an allowlist to prevent shell injection
 
 ## Dangerous Command Approval
 
-Before executing any command, Lucifex checks it against a curated list of dangerous patterns. If a match is found, the user must explicitly approve it.
+Before executing any command, Hermes checks it against a curated list of dangerous patterns. If a match is found, the user must explicitly approve it.
 
 ### Approval Modes
 
-The approval system supports three modes, configured via `approvals.mode` in `~/.lucifex/config.yaml`:
+The approval system supports three modes, configured via `approvals.mode` in `~/.hermes/config.yaml`:
 
 ```yaml
 approvals:
-  mode: manual                    # manual | smart | off
+  mode: smart                     # smart | manual | off
   timeout: 60                     # seconds to wait for user response (default: 60)
   cron_mode: deny                 # deny | approve — what cron jobs do when they hit a dangerous command
   mcp_reload_confirm: true        # /reload-mcp asks before invalidating the MCP tool cache
@@ -41,16 +42,16 @@ The full set of keys:
 
 | Key | Default | What it controls |
 |---|---|---|
-| `mode` | `manual` | Approval policy for dangerous shell commands — see the table below. |
-| `timeout` | `60` | Seconds Lucifex waits for an approval reply before timing out. |
+| `mode` | `smart` | Approval policy for dangerous shell commands — see the table below. |
+| `timeout` | `60` | Seconds Hermes waits for an approval reply before timing out. |
 | `cron_mode` | `deny` | How [cron jobs](./features/cron.md) behave headlessly when they trigger a dangerous-command prompt. `deny` blocks the command (the agent must find another path); `approve` auto-approves everything in cron context. |
 | `mcp_reload_confirm` | `true` | When true, `/reload-mcp` asks before rebuilding the MCP tool set. Rebuilding invalidates the provider prompt cache (tool schemas live in the system prompt), so the next message re-sends full input tokens. Users who click **Always Approve** flip this key to `false`. |
-| `destructive_slash_confirm` | `true` | When true, destructive session slash commands (`/clear`, `/new`, `/reset`, `/undo`) prompt before discarding conversation state. Three-option dialog (Approve Once / Always Approve / Cancel) routed through native yes/no buttons on Telegram, Discord, and Slack; text fallback elsewhere. Users who click **Always Approve** flip this key to `false`. TUI uses its own modal overlay (set `LUCIFEX_TUI_NO_CONFIRM=1` to opt out there). |
+| `destructive_slash_confirm` | `true` | When true, destructive session slash commands (`/clear`, `/new`, `/reset`, `/undo`) prompt before discarding conversation state. Three-option dialog (Approve Once / Always Approve / Cancel) routed through native yes/no buttons on Telegram, Discord, and Slack; text fallback elsewhere. Users who click **Always Approve** flip this key to `false`. TUI uses its own modal overlay (set `HERMES_TUI_NO_CONFIRM=1` to opt out there). |
 
 | Mode | Behavior |
 |------|----------|
-| **manual** (default) | Always prompt the user for approval on dangerous commands |
-| **smart** | Use an auxiliary LLM to assess risk. Low-risk commands (e.g., `python -c "print('hello')"`) are auto-approved. Genuinely dangerous commands are auto-denied. Uncertain cases escalate to a manual prompt. |
+| **smart** (default) | Use an auxiliary LLM to assess risk. Low-risk commands (e.g., `python -c "print('hello')"`) are auto-approved for that command only. Genuinely dangerous commands are auto-denied. Uncertain cases escalate to a manual prompt. |
+| **manual** | Always prompt the user for approval on dangerous commands. |
 | **off** | Disable all approval checks — equivalent to running with `--yolo`. All commands execute without prompts. |
 
 :::warning
@@ -61,9 +62,9 @@ Setting `approvals.mode: off` disables all safety prompts. Use only in trusted e
 
 YOLO mode bypasses **all** dangerous command approval prompts for the current session. It can be activated three ways:
 
-1. **CLI flag**: Start a session with `lucifex --yolo` or `lucifex chat --yolo`
+1. **CLI flag**: Start a session with `hermes --yolo` or `hermes chat --yolo`
 2. **Slash command**: Type `/yolo` during a session to toggle it on/off
-3. **Environment variable**: Set `LUCIFEX_YOLO_MODE=1`
+3. **Environment variable**: Set `HERMES_YOLO_MODE=1`
 
 The `/yolo` command is a **toggle** — each use flips the mode on or off:
 
@@ -75,9 +76,9 @@ The `/yolo` command is a **toggle** — each use flips the mode on or off:
   ⚠ YOLO mode OFF — dangerous commands will require approval.
 ```
 
-YOLO mode is available in both CLI and gateway sessions. Internally, it sets the `LUCIFEX_YOLO_MODE` environment variable which is checked before every command execution.
+YOLO mode is available in both CLI and gateway sessions. Internally, it sets the `HERMES_YOLO_MODE` environment variable which is checked before every command execution.
 
-When YOLO is active, Lucifex shows two persistent visual reminders so it's hard to forget that approval prompts are bypassed:
+When YOLO is active, Hermes shows two persistent visual reminders so it's hard to forget that approval prompts are bypassed:
 
 - A red banner line at session start when YOLO is already active: `⚠ YOLO mode — all approval prompts bypassed`. Hidden when YOLO is off so the default banner stays uncluttered.
 - A `⚠ YOLO` fragment in the status bar across all width tiers, updated live as you toggle YOLO on or off (rich-text renderer and plain-text fallback).
@@ -90,7 +91,7 @@ For destructive session slash commands (`/clear`, `/new` / `/reset`, `/undo`, `/
 
 ### Hardline Blocklist (Always-On Floor)
 
-Some commands are so catastrophic — irreversible filesystem wipes, fork bombs, direct block-device writes — that Lucifex refuses to run them **regardless** of:
+Some commands are so catastrophic — irreversible filesystem wipes, fork bombs, direct block-device writes — that Hermes refuses to run them **regardless** of:
 
 - `--yolo` / `/yolo` toggled on
 - `approvals.mode: off`
@@ -110,11 +111,37 @@ The blocklist is the floor below `--yolo`. It trips **before** the approval laye
 
 If you hit the blocklist, the tool call returns an explanatory error to the agent and nothing runs. If a legitimate workflow needs one of these commands (you're the operator of a wipe-and-reinstall pipeline, for example), run it outside the agent.
 
+### User-Defined Deny Rules (`approvals.deny`)
+
+The hardline blocklist is fixed and code-shipped. `approvals.deny` is its user-editable counterpart: a list of glob patterns that block matching terminal commands unconditionally — **before** `--yolo`, `/yolo`, and `approvals.mode: off` are consulted. Use it to run yolo-with-exceptions: "let the agent do everything, except these specific things, ever."
+
+```yaml
+approvals:
+  deny:
+    - "git push --force*"
+    - "*curl*|*sh*"
+    - "dd if=* of=/dev/*"
+```
+
+Details:
+
+- Patterns are [fnmatch](https://docs.python.org/3/library/fnmatch.html) globs (`*`, `?`, `[...]`) matched **case-insensitively** against the whole command text. `git push --force*` matches `git push --force origin main` but not `git push origin main`.
+- Matching runs over the same normalized/deobfuscated command variants the dangerous-pattern detector uses, so simple quoting tricks (`git pu""sh --force`) don't slip past a rule.
+- **YAML quoting:** always quote patterns. A bare leading `*` is a YAML alias and fails to parse; `{`, `!`, and `: ` have their own YAML meanings. Single quotes are safest for shell-ish content.
+- Deny rules apply to host-reaching backends (local, SSH, host-mounted Docker). Isolated container backends skip the guard stack entirely, as they always have — nothing they run can touch the host.
+- A denied command returns a BLOCKED error to the agent telling it not to retry or rephrase. Nothing runs.
+
+Like the rest of the approval config, changes take effect immediately (the config cache is mtime-keyed) — no session restart needed.
+
+:::note Threat model
+Deny rules are a guardrail against an honest-but-wrong agent, the same threat model as the dangerous-pattern detector. They are not a sandbox against a deliberately adversarial process — for that, use an isolated backend (Docker, Modal) or an egress-restricted environment.
+:::
+
 ### Approval Timeout
 
 When a dangerous command prompt appears, the user has a configurable amount of time to respond. If no response is given within the timeout, the command is **denied** by default (fail-closed).
 
-Configure the timeout in `~/.lucifex/config.yaml`:
+Configure the timeout in `~/.hermes/config.yaml`:
 
 ```yaml
 approvals:
@@ -147,13 +174,13 @@ The following patterns trigger approval prompts (defined in `tools/approval.py`)
 | `python -e` / `perl -e` / `ruby -e` / `node -c` | Script execution via `-e`/`-c` flag |
 | `curl ... \| sh` / `wget ... \| sh` | Pipe remote content to shell |
 | `bash <(curl ...)` / `sh <(wget ...)` | Execute remote script via process substitution |
-| `tee` to `/etc/`, `~/.ssh/`, `~/.lucifex/.env` | Overwrite sensitive file via tee |
-| `>` / `>>` to `/etc/`, `~/.ssh/`, `~/.lucifex/.env` | Overwrite sensitive file via redirection |
+| `tee` to `/etc/`, `~/.ssh/`, `~/.hermes/.env` | Overwrite sensitive file via tee |
+| `>` / `>>` to `/etc/`, `~/.ssh/`, `~/.hermes/.env` | Overwrite sensitive file via redirection |
 | `xargs rm` | xargs with rm |
 | `find -exec rm` / `find -delete` | Find with destructive actions |
 | `cp`/`mv`/`install` to `/etc/` | Copy/move file into system config |
 | `sed -i` / `sed --in-place` on `/etc/` | In-place edit of system config |
-| `pkill`/`killall` lucifex/gateway | Self-termination prevention |
+| `pkill`/`killall` hermes/gateway | Self-termination prevention |
 | `gateway run` with `&`/`disown`/`nohup`/`setsid` | Prevents starting gateway outside service manager |
 
 :::info
@@ -187,11 +214,11 @@ On messaging platforms, the agent sends the dangerous command details to the cha
 - Reply **yes**, **y**, **approve**, **ok**, or **go** to approve
 - Reply **no**, **n**, **deny**, or **cancel** to deny
 
-The `LUCIFEX_EXEC_ASK=1` environment variable is automatically set when running the gateway.
+The `HERMES_EXEC_ASK=1` environment variable is automatically set when running the gateway.
 
 ### Permanent Allowlist
 
-Commands approved with "always" are saved to `~/.lucifex/config.yaml`:
+Commands approved with "always" are saved to `~/.hermes/config.yaml`:
 
 ```yaml
 # Permanently allowed dangerous command patterns
@@ -203,12 +230,54 @@ command_allowlist:
 These patterns are loaded at startup and silently approved in all future sessions.
 
 :::tip
-Use `lucifex config edit` to review or remove patterns from your permanent allowlist.
+Use `hermes config edit` to review or remove patterns from your permanent allowlist.
+:::
+
+## File Write Safety {#file-write-safety}
+
+Before `write_file` or `patch` touches disk, Hermes checks the target path against a denylist and an optional sandbox. Blocked writes return an error to the agent immediately — **there is no approval prompt** and no way to override from the chat UI. The model may still claim the edit succeeded; when `display.file_mutation_verifier` is on (default), trust the [file-mutation verifier footer](./configuration.md#file-mutation-verifier) over the assistant's closing summary.
+
+### Protected paths (always blocked)
+
+These categories are always denied, even when `HERMES_WRITE_SAFE_ROOT` is unset:
+
+| Category | Examples |
+|----------|----------|
+| OS credential stores | `~/.ssh/`, `~/.aws/`, `~/.kube/`, `/etc/sudoers`, `~/.netrc` |
+| Hermes credential stores | `auth.json`, `.env`, `.anthropic_oauth.json`, `mcp-tokens/`, `pairing/` under HERMES_HOME (active profile and global root) |
+| Project secret files | `.env`, `.env.local`, `.env.production`, `.envrc` anywhere on disk |
+
+Sensitive paths inside the safe root are still blocked — pointing `HERMES_WRITE_SAFE_ROOT` at `$HOME` does not allow writing `~/.ssh/id_rsa`.
+
+Safe-root violations return `Write denied: '…' is outside HERMES_WRITE_SAFE_ROOT (…)`. Credential-path blocks use `Write denied: '…' is a protected system/credential file.`
+
+### HERMES_WRITE_SAFE_ROOT (optional sandbox)
+
+When set, `write_file` and `patch` may only target paths inside the listed directory prefix(es). Anything outside is **hard-blocked** — not routed through dangerous-command approval.
+
+- Set automatically in the [official Docker image](https://github.com/NousResearch/hermes-agent) (`HERMES_WRITE_SAFE_ROOT=/opt/data`)
+- Supports multiple roots separated by `:` on Unix or `;` on Windows
+- **Do not add to `~/.hermes/.env` casually.** If you set it to a project directory, the agent cannot write to `~/.hermes/cron/jobs.json`, profile skills, or other Hermes state outside that prefix
+
+To allow both a workspace and Hermes home:
+
+```bash
+export HERMES_WRITE_SAFE_ROOT=/path/to/project:/home/you/.hermes
+```
+
+Unset the variable to restore unrestricted writes (subject to the protected-path denylist). Full reference: [HERMES_WRITE_SAFE_ROOT](../reference/environment-variables.md#hermes_write_safe_root).
+
+### Cron and other Hermes state
+
+Do not ask the agent to `patch` `~/.hermes/cron/jobs.json` directly. Use the `cronjob` tool, [`hermes cron`](./features/cron.md), or `/cron` — they update the job store through the supported API. The same applies to other Hermes control files when write safety blocks direct edits.
+
+:::note Defense-in-depth, not a hard boundary
+Write guards apply to `write_file` and `patch` only. The `terminal` tool runs as the same OS user and can still `cat` or overwrite denied paths via shell commands. The denylist reduces accidental damage and gives models a clear stop signal; it does not sandbox a hostile or compromised agent.
 :::
 
 ## User Authorization (Gateway)
 
-When running the messaging gateway, Lucifex controls who can interact with the bot through a layered authorization system.
+When running the messaging gateway, Hermes controls who can interact with the bot through a layered authorization system.
 
 ### Authorization Check Order
 
@@ -223,7 +292,7 @@ The `_is_user_authorized()` method checks in this order:
 
 ### Platform Allowlists
 
-Set allowed user IDs as comma-separated values in `~/.lucifex/.env`:
+Set allowed user IDs as comma-separated values in `~/.hermes/.env`:
 
 ```bash
 # Platform-specific allowlists
@@ -247,23 +316,23 @@ If **no allowlists are configured** and `GATEWAY_ALLOW_ALL_USERS` is not set, **
 
 ```
 No user allowlists configured. All unauthorized users will be denied.
-Set GATEWAY_ALLOW_ALL_USERS=true in ~/.lucifex/.env to allow open access,
+Set GATEWAY_ALLOW_ALL_USERS=true in ~/.hermes/.env to allow open access,
 or configure platform allowlists (e.g., TELEGRAM_ALLOWED_USERS=your_id).
 ```
 :::
 
 ### DM Pairing System
 
-For more flexible authorization, Lucifex includes a code-based pairing system. Instead of requiring user IDs upfront, unknown users receive a one-time pairing code that the bot owner approves via the CLI.
+For more flexible authorization, Hermes includes a code-based pairing system. Instead of requiring user IDs upfront, unknown users receive a one-time pairing code that the bot owner approves via the CLI.
 
 **How it works:**
 
 1. An unknown user sends a DM to the bot
 2. The bot replies with an 8-character pairing code
-3. The bot owner runs `lucifex pairing approve <platform> <code>` on the CLI
+3. The bot owner runs `hermes pairing approve <platform> <code>` on the CLI
 4. The user is permanently approved for that platform
 
-Control how unauthorized direct messages are handled in `~/.lucifex/config.yaml`:
+Control how unauthorized direct messages are handled in `~/.hermes/config.yaml`:
 
 ```yaml
 unauthorized_dm_behavior: pair
@@ -294,26 +363,44 @@ whatsapp:
 
 ```bash
 # List pending and approved users
-lucifex pairing list
+hermes pairing list
 
 # Approve a pairing code
-lucifex pairing approve telegram ABC12DEF
+hermes pairing approve telegram ABC12DEF
 
 # Revoke a user's access
-lucifex pairing revoke telegram 123456789
+hermes pairing revoke telegram 123456789
 
 # Clear all pending codes
-lucifex pairing clear-pending
+hermes pairing clear-pending
 ```
 
-**Storage:** Pairing data is stored in `~/.lucifex/pairing/` with per-platform JSON files:
+:::tip Docker users: run pairing commands as the `hermes` user
+The official Docker image runs the gateway as the unprivileged `hermes` user
+(uid 10000) via `gosu`, but `docker exec` defaults to root. Approval files
+created by root are written with mode `0600 root:root` and the gateway
+cannot read them — the approval is silently ignored ([#10270][i10270]).
+
+Always pass `-u hermes`:
+
+```bash
+docker exec -u hermes hermes-agent hermes pairing approve telegram ABC12DEF
+```
+
+If you already ran the command as root and the user is still unauthorized,
+restart the container — the entrypoint will fix ownership on the next start.
+
+[i10270]: https://github.com/NousResearch/hermes-agent/issues/10270
+:::
+
+**Storage:** Pairing data is stored in `~/.hermes/pairing/` with per-platform JSON files:
 - `{platform}-pending.json` — pending pairing requests
 - `{platform}-approved.json` — approved users
 - `_rate_limits.json` — rate limit and lockout tracking
 
 ## Container Isolation
 
-When using the `docker` terminal backend, Lucifex applies strict security hardening to every container.
+When using the `docker` terminal backend, Hermes applies strict security hardening to every container.
 
 ### Docker Security Flags
 
@@ -336,7 +423,7 @@ _BASE_SECURITY_ARGS = [
 
 ### Resource Limits
 
-Container resources are configurable in `~/.lucifex/config.yaml`:
+Container resources are configurable in `~/.hermes/config.yaml`:
 
 ```yaml
 terminal:
@@ -351,7 +438,7 @@ terminal:
 
 ### Filesystem Persistence
 
-- **Persistent mode** (`container_persistent: true`): Bind-mounts `/workspace` and `/root` from `~/.lucifex/sandboxes/docker/<task_id>/`
+- **Persistent mode** (`container_persistent: true`): Bind-mounts `/workspace` and `/root` from `~/.hermes/sandboxes/docker/<task_id>/`
 - **Ephemeral mode** (`container_persistent: false`): Uses tmpfs for workspace — everything is lost on cleanup
 
 :::tip
@@ -412,7 +499,7 @@ terminal:
 
 ### Credential File Passthrough (OAuth tokens, etc.) {#credential-file-passthrough}
 
-Some skills need **files** (not just env vars) in the sandbox — for example, Google Workspace stores OAuth tokens as `google_token.json` under the active profile's `LUCIFEX_HOME`. Skills declare these in frontmatter:
+Some skills need **files** (not just env vars) in the sandbox — for example, Google Workspace stores OAuth tokens as `google_token.json` under the active profile's `HERMES_HOME`. Skills declare these in frontmatter:
 
 ```yaml
 required_credential_files:
@@ -422,7 +509,7 @@ required_credential_files:
     description: Google OAuth2 client credentials
 ```
 
-When loaded, Lucifex checks if these files exist in the active profile's `LUCIFEX_HOME` and registers them for mounting:
+When loaded, Hermes checks if these files exist in the active profile's `HERMES_HOME` and registers them for mounting:
 
 - **Docker**: Read-only bind mounts (`-v host:container:ro`)
 - **Modal**: Mounted at sandbox creation + synced before each command (handles mid-session OAuth setup)
@@ -437,14 +524,14 @@ terminal:
     - my_custom_oauth_token.json
 ```
 
-Paths are relative to `~/.lucifex/`. Files are mounted to `/root/.lucifex/` inside the container. This list is read by `tools/credential_files.py` (`terminal.credential_files`) — it lives under the `terminal:` block but is loaded by the credential-files module, not the core terminal backend, so it isn't part of the bundled `DEFAULT_CONFIG` snapshot.
+Paths are relative to `~/.hermes/`. Files are mounted to `/root/.hermes/` inside the container. This list is read by `tools/credential_files.py` (`terminal.credential_files`) — it lives under the `terminal:` block but is loaded by the credential-files module, not the core terminal backend, so it isn't part of the bundled `DEFAULT_CONFIG` snapshot.
 
 ### What Each Sandbox Filters
 
 | Sandbox | Default Filter | Passthrough Override |
 |---------|---------------|---------------------|
 | **execute_code** | Blocks vars containing `KEY`, `TOKEN`, `SECRET`, `PASSWORD`, `CREDENTIAL`, `PASSWD`, `AUTH` in name; only allows safe-prefix vars through | ✅ Passthrough vars bypass both checks |
-| **terminal** (local) | Blocks explicit Lucifex infrastructure vars (provider keys, gateway tokens, tool API keys) | ✅ Passthrough vars bypass the blocklist |
+| **terminal** (local) | Blocks explicit Hermes infrastructure vars (provider keys, gateway tokens, tool API keys) | ✅ Passthrough vars bypass the blocklist |
 | **terminal** (Docker) | No host env vars by default | ✅ Passthrough vars + `docker_forward_env` forwarded via `-e` |
 | **terminal** (Modal) | No host env/files by default | ✅ Credential files mounted; env passthrough via sync |
 | **MCP** | Blocks everything except safe system vars + explicitly configured `env` | ❌ Not affected by passthrough (use MCP `env` config instead) |
@@ -455,7 +542,7 @@ Paths are relative to `~/.lucifex/`. Files are mounted to `/root/.lucifex/` insi
 - Credential files are mounted **read-only** into Docker containers
 - Skills Guard scans skill content for suspicious env access patterns before installation
 - Missing/unset vars are never registered (you can't leak what doesn't exist)
-- Lucifex infrastructure secrets (provider API keys, gateway tokens) should never be added to `env_passthrough` — they have dedicated mechanisms
+- Hermes infrastructure secrets (provider API keys, gateway tokens) should never be added to `env_passthrough` — they have dedicated mechanisms
 
 ## MCP Credential Handling
 
@@ -496,7 +583,7 @@ Error messages from MCP tools are sanitized before being returned to the LLM. Th
 You can restrict which websites the agent can access through its web and browser tools. This is useful for preventing the agent from accessing internal services, admin panels, or other sensitive URLs.
 
 ```yaml
-# In ~/.lucifex/config.yaml
+# In ~/.hermes/config.yaml
 security:
   website_blocklist:
     enabled: true
@@ -504,7 +591,7 @@ security:
       - "*.internal.company.com"
       - "admin.example.com"
     shared_files:
-      - "/etc/lucifex/blocked-sites.txt"
+      - "/etc/hermes/blocked-sites.txt"
 ```
 
 When a blocked URL is requested, the tool returns an error explaining the domain is blocked by policy. The blocklist is enforced across `web_search`, `web_extract`, `browser_navigate`, and all URL-capable tools.
@@ -539,7 +626,7 @@ The host-substring guard (which blocks lookalike Unicode domain tricks even when
 
 ### Tirith Pre-Exec Security Scanning
 
-Lucifex integrates [tirith](https://github.com/sheeki03/tirith) for content-level command scanning before execution. Tirith detects threats that pattern matching alone misses:
+Hermes integrates [tirith](https://github.com/sheeki03/tirith) for content-level command scanning before execution. Tirith detects threats that pattern matching alone misses:
 
 - Homograph URL spoofing (internationalized domain attacks)
 - Pipe-to-interpreter patterns (`curl | bash`, `wget | sh`)
@@ -548,7 +635,7 @@ Lucifex integrates [tirith](https://github.com/sheeki03/tirith) for content-leve
 Tirith auto-installs from GitHub releases on first use with SHA-256 checksum verification (and cosign provenance verification if cosign is available).
 
 ```yaml
-# In ~/.lucifex/config.yaml
+# In ~/.hermes/config.yaml
 security:
   tirith_enabled: true       # Enable/disable tirith scanning (default: true)
   tirith_path: "tirith"      # Path to tirith binary (default: PATH lookup)
@@ -558,7 +645,7 @@ security:
 
 When `tirith_fail_open` is `true` (default), commands proceed if tirith is not installed or times out. Set to `false` in high-security environments to block commands when tirith is unavailable.
 
-Tirith ships prebuilt binaries for Linux (x86_64 / aarch64) and macOS (x86_64 / arm64). On platforms with no prebuilt binary (Windows, etc.), tirith is silently skipped — pattern-matching guards still run, and the CLI does not surface an "unavailable" banner. To use tirith on Windows, run Lucifex under WSL.
+Tirith ships prebuilt binaries for Linux (x86_64 / aarch64) and macOS (x86_64 / arm64). On platforms with no prebuilt binary (Windows, etc.), tirith is silently skipped — pattern-matching guards still run, and the CLI does not surface an "unavailable" banner. To use tirith on Windows, run Hermes under WSL.
 
 Tirith's verdict integrates with the approval flow: safe commands pass through, while both suspicious and blocked commands trigger user approval with the full tirith findings (severity, title, description, safer alternatives). Users can approve or deny — the default choice is deny to keep unattended scenarios secure.
 
@@ -585,19 +672,19 @@ Blocked files show a warning:
 1. **Set explicit allowlists** — never use `GATEWAY_ALLOW_ALL_USERS=true` in production
 2. **Use container backend** — set `terminal.backend: docker` in config.yaml
 3. **Restrict resource limits** — set appropriate CPU, memory, and disk limits
-4. **Store secrets securely** — keep API keys in `~/.lucifex/.env` with proper file permissions
+4. **Store secrets securely** — keep API keys in `~/.hermes/.env` with proper file permissions
 5. **Enable DM pairing** — use pairing codes instead of hardcoding user IDs when possible
 6. **Review command allowlist** — periodically audit `command_allowlist` in config.yaml
 7. **Set `terminal.cwd`** — don't let the agent operate from sensitive directories
 8. **Run as non-root** — never run the gateway as root
-9. **Monitor logs** — check `~/.lucifex/logs/` for unauthorized access attempts
-10. **Keep updated** — run `lucifex update` regularly for security patches
+9. **Monitor logs** — check `~/.hermes/logs/` for unauthorized access attempts
+10. **Keep updated** — run `hermes update` regularly for security patches
 
 ### Securing API Keys
 
 ```bash
 # Set proper permissions on the .env file
-chmod 600 ~/.lucifex/.env
+chmod 600 ~/.hermes/.env
 
 # Keep separate keys for different services
 # Never commit .env files to version control
@@ -605,37 +692,37 @@ chmod 600 ~/.lucifex/.env
 
 ### Network Isolation
 
-For maximum security, run the gateway on a separate machine or VM. Set `terminal.backend: ssh` in `config.yaml`, then provide host details via environment variables in `~/.lucifex/.env`:
+For maximum security, run the gateway on a separate machine or VM. Set `terminal.backend: ssh` in `config.yaml`, then provide host details via environment variables in `~/.hermes/.env`:
 
 ```yaml
-# ~/.lucifex/config.yaml
+# ~/.hermes/config.yaml
 terminal:
   backend: ssh
 ```
 
 ```bash
-# ~/.lucifex/.env
+# ~/.hermes/.env
 TERMINAL_SSH_HOST=agent-worker.local
-TERMINAL_SSH_USER=lucifex
-TERMINAL_SSH_KEY=~/.ssh/lucifex_agent_key
+TERMINAL_SSH_USER=hermes
+TERMINAL_SSH_KEY=~/.ssh/hermes_agent_key
 ```
 
 The SSH connection details live in `.env` (not `config.yaml`) so they aren't checked in or shared along with profile exports. This keeps the gateway's messaging connections separate from the agent's command execution.
 
 ## Supply-chain advisory checking
 
-Lucifex ships with a built-in advisory scanner that flags Python packages in the active venv that match a curated catalog of known-compromised versions (supply-chain worms like the May 2026 `mistralai 2.4.6` poisoning). Implementation lives in `lucifex_cli/security_advisories.py`.
+Hermes ships with a built-in advisory scanner that flags Python packages in the active venv that match a curated catalog of known-compromised versions (supply-chain worms like the May 2026 `mistralai 2.4.6` poisoning). Implementation lives in `hermes_cli/security_advisories.py`.
 
 How it runs:
 
-- **CLI startup banner.** A one-line warning is printed if any advisory matches, with a pointer to `lucifex doctor` for the full remediation.
-- **`lucifex doctor`.** Surfaces every active advisory with version specifics and 2-4 step remediation instructions.
+- **CLI startup banner.** A one-line warning is printed if any advisory matches, with a pointer to `hermes doctor` for the full remediation.
+- **`hermes doctor`.** Surfaces every active advisory with version specifics and 2-4 step remediation instructions.
 - **Gateway startup.** Logged to `gateway.log`; the first interactive message gets a short operator banner.
 
 Each advisory carries a stable id. Once you have read and acted on it you can dismiss it for good:
 
 ```bash
-lucifex doctor --ack <advisory-id>
+hermes doctor --ack <advisory-id>
 ```
 
 The ack is persisted to `config.security.acked_advisories` and survives restart. Old advisories are intentionally **not** removed from the catalog — leaving them in place keeps fresh installs warned about historically poisoned versions that might still be cached in a private mirror.
@@ -644,7 +731,7 @@ The check itself is stdlib-only and runs from one `importlib.metadata.version()`
 
 ### Lazy install of optional dependencies
 
-Many features (Mistral TTS, ElevenLabs, Honcho memory, Bedrock, Slack, Matrix, …) depend on Python packages that not every user needs. Lucifex installs these **lazily** on first use rather than eagerly under `lucifex-agent[all]`. The implementation lives in `tools/lazy_deps.py`.
+Many features (Mistral TTS, ElevenLabs, Honcho memory, Bedrock, Slack, Matrix, …) depend on Python packages that not every user needs. Hermes installs these **lazily** on first use rather than eagerly under `hermes-agent[all]`. The implementation lives in `tools/lazy_deps.py`.
 
 The trade-off this fixes:
 
@@ -655,7 +742,7 @@ How it works:
 
 1. A backend module calls `ensure("feature.name")` at the top of its first-import path.
 2. If the deps are missing, `ensure` checks `security.allow_lazy_installs` in `config.yaml` (default `true`) and runs a venv-scoped `pip install` for the allowlisted specs.
-3. If the install fails or the user has disabled lazy installs, the call raises `FeatureUnavailable` with the actual pip stderr and a pointer at `lucifex tools`.
+3. If the install fails or the user has disabled lazy installs, the call raises `FeatureUnavailable` with the actual pip stderr and a pointer at `hermes tools`.
 
 Security guarantees enforced by `tools/lazy_deps.py`:
 
@@ -670,9 +757,9 @@ Security guarantees enforced by `tools/lazy_deps.py`:
 To disable runtime installs:
 
 ```yaml
-# ~/.lucifex/config.yaml
+# ~/.hermes/config.yaml
 security:
   allow_lazy_installs: false
 ```
 
-When disabled, backends that need optional deps will tell the user to run the install manually (`pip install …`) or pick a different backend via `lucifex tools`.
+When disabled, backends that need optional deps will tell the user to run the install manually (`pip install …`) or pick a different backend via `hermes tools`.

@@ -52,6 +52,18 @@ export function isSessionNotFoundError(error: unknown): boolean {
   return /session not found/i.test(message)
 }
 
+// Gateway JSON-RPC calls reject with "request timed out: <method>" when the
+// backend event loop is starved (e.g. a poller spin or a heavy async-injected
+// turn). For prompt.submit this is indistinguishable from a dead runtime
+// session on the client side — recovery must treat it like one (#55578):
+// resume the SELECTED stored session and retry, instead of surfacing an error
+// that leads to a null activeSessionId and a silently minted new session.
+export function isGatewayTimeoutError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error)
+
+  return /request timed out/i.test(message)
+}
+
 // The gateway refuses prompt.submit while a turn is running (4009 "session
 // busy"). It's a transient concurrency guard, never a user-facing error: a
 // submit racing the settle edge (or a rewind interrupting mid-turn) just waits
@@ -109,7 +121,7 @@ export function imageFilenameFromPath(filePath: string): string {
 export async function readImageForRemoteAttach(
   filePath: string
 ): Promise<{ contentBase64: string; filename: string } | null> {
-  const dataUrl = await window.lucifexDesktop?.readFileDataUrl(filePath)
+  const dataUrl = await window.hermesDesktop?.readFileDataUrl(filePath)
   const contentBase64 = dataUrl ? base64FromDataUrl(dataUrl) : ''
 
   return contentBase64 ? { contentBase64, filename: imageFilenameFromPath(filePath) } : null
@@ -118,7 +130,7 @@ export async function readImageForRemoteAttach(
 // Read a non-image file as a data URL for upload via file.attach. Returns null
 // when the desktop bridge can't read the file (e.g. it was moved/deleted).
 export async function readFileDataUrlForAttach(filePath: string): Promise<string | null> {
-  const reader = window.lucifexDesktop?.readFileDataUrl
+  const reader = window.hermesDesktop?.readFileDataUrl
 
   if (!reader) {
     return null
@@ -130,7 +142,7 @@ export async function readFileDataUrlForAttach(filePath: string): Promise<string
 }
 
 // The readFileDataUrl IPC base64-loads the whole file into memory and is
-// hard-capped (DATA_URL_READ_MAX_BYTES, 16 MB) in electron/hardening.cjs, which
+// hard-capped (DATA_URL_READ_MAX_BYTES, 16 MB) in electron/hardening.ts, which
 // rejects with a raw "file is too large (N bytes; limit M bytes)" string. In
 // remote mode every attachment's bytes go through that read, so a big file
 // surfaces that internal message verbatim in the failure toast. Translate it
@@ -214,4 +226,11 @@ export function visibleUserIndexAtOrdinal(messages: readonly ChatMessage[], targ
 export interface SubmitTextOptions {
   attachments?: ComposerAttachment[]
   fromQueue?: boolean
+  /** Runtime session id to submit into. Queue drains pass this so a
+   *  backgrounded/source session cannot be replaced by the current foreground
+   *  session between enqueue and drain. */
+  sessionId?: string | null
+  /** Stable stored session id for optimistic/cache updates and stale-runtime
+   *  recovery. Distinct from the runtime session id minted by the gateway. */
+  storedSessionId?: string | null
 }

@@ -10,12 +10,12 @@ covers the operational concerns: starting them all together, viewing logs
 across profiles, preventing the host from sleeping, and recovering from common
 launchd/systemd quirks.
 
-If you only run one Lucifex agent, you don't need this page — see
+If you only run one Hermes agent, you don't need this page — see
 [Profiles](./profiles.md) for the basics.
 
 ## When to use this
 
-You want this setup when you have two or more Lucifex agents that should all
+You want this setup when you have two or more Hermes agents that should all
 be online at the same time. Common reasons:
 
 - A personal assistant on one Telegram bot and a coding agent on another
@@ -25,17 +25,17 @@ be online at the same time. Common reasons:
   memory and skills
 
 Every profile already gets its own per-platform LaunchAgent
-(`ai.lucifex.gateway-<name>.plist`) or systemd user service
-(`lucifex-gateway-<name>.service`). This guide adds the patterns for managing
+(`ai.hermes.gateway-<name>.plist`) or systemd user service
+(`hermes-gateway-<name>.service`). This guide adds the patterns for managing
 them collectively.
 
 ## Quick start
 
 ```bash
 # Create profiles (once)
-lucifex profile create coder
-lucifex profile create personal-bot
-lucifex profile create research
+hermes profile create coder
+hermes profile create personal-bot
+hermes profile create research
 
 # Configure each
 coder setup
@@ -85,11 +85,11 @@ Set the flag on the **default profile** (it owns the multiplexer) and restart
 its gateway:
 
 ```bash
-lucifex config set gateway.multiplex_profiles true
-lucifex gateway restart
+hermes config set gateway.multiplex_profiles true
+hermes gateway restart
 ```
 
-Equivalently, in the default profile's `~/.lucifex/config.yaml`:
+Equivalently, in the default profile's `~/.hermes/config.yaml`:
 
 ```yaml
 gateway:
@@ -103,7 +103,7 @@ credentials, and routes each inbound message to the profile it belongs to. Each
 turn resolves the routed profile's config, skills, memory, SOUL, **and provider
 keys** — credentials are never shared across profiles.
 
-You do **not** run `lucifex gateway start` for the secondary profiles — the
+You do **not** run `hermes gateway start` for the secondary profiles — the
 default gateway serves them. See the contract changes below.
 
 ### What changes when multiplexing is on
@@ -113,7 +113,7 @@ moment the flag is off.
 
 #### 1. Secondary profiles must not start their own gateway
 
-With a multiplexer running, a named-profile `lucifex gateway start` / `run` is a
+With a multiplexer running, a named-profile `hermes gateway start` / `run` is a
 **hard error**, pointing you back at the multiplexer:
 
 ```
@@ -142,18 +142,26 @@ POST http://host:8644/p/coder/webhooks/<route>
 An unknown or unconfigured profile in the prefix returns `404`. Because the one
 shared listener already serves every profile this way, a **secondary profile
 must not enable a port-binding platform itself** — doing so is a config error
-and the gateway refuses to start, naming the profile and platform:
+that skips the entire secondary profile while the default and other healthy
+profiles continue. The warning names the skipped profile and every conflicting
+platform:
 
 ```
-Profile 'coder' enables the port-binding platform 'webhook', but
-gateway.multiplex_profiles is on. ... Remove platforms.webhook from profile
-'coder's config.yaml (configure it only on the default profile).
+Skipping secondary profile 'coder' due to port-binding config error: Profile
+'coder' enables port-binding platform(s) webhook, but gateway.multiplex_profiles
+is on. ... Remove these platform entries from profile 'coder's config.yaml or
+configure them only on the default profile.
 ```
 
 Port-binding platforms covered by this rule: `webhook`, `api_server`,
-`msgraph_webhook`, `feishu`, `wecom_callback`, `bluebubbles`, `sms`. Configure
-any of these **only on the default profile**; every profile is reachable through
-its `/p/<profile>/` prefix.
+`msgraph_webhook`, `feishu`, `wecom_callback`, `bluebubbles`, `sms`,
+`whatsapp_cloud`, `line`. Configure any of these **only on the default profile**;
+every profile is reachable through its `/p/<profile>/` prefix.
+
+Only this shared-listener conflict degrades to a skipped profile. Security
+configuration errors remain fatal: for example, an `open` own-policy platform
+without `GATEWAY_ALLOW_ALL_USERS` or its platform-specific allow-all opt-in
+still aborts gateway startup rather than silently dropping the unsafe profile.
 
 #### 3. Per-credential platforms still need their own token per profile
 
@@ -175,8 +183,8 @@ migration, no orphaned history.
 #### 5. One PID/lock and one status surface
 
 There is a single process-level PID and lock (the multiplexer, under the default
-home). `lucifex status` reports the multiplexer and the profiles it serves;
-`lucifex status -p <name>` slices to one profile. Each profile still writes its
+home). `hermes status` reports the multiplexer and the profiles it serves;
+`hermes status -p <name>` slices to one profile. Each profile still writes its
 own `runtime_status.json` under its own home, so existing per-profile readers
 keep working.
 
@@ -189,11 +197,55 @@ Kanban workers only ever see their own profile's secrets). Kanban,
 profile-scoped skills/memory/SOUL, and model routing all behave per-profile
 exactly as they do with separate gateways.
 
+### Routing shared-bot chats to profiles (`profile_routes`)
+
+Multiplexing selects a profile per **credential** (each profile's own bot
+token) or per **URL prefix** (`/p/<profile>/` for HTTP platforms). When several
+communities share **one** bot token — for example one Discord bot serving many
+guilds — you can additionally route specific guilds/channels/threads to
+different profiles with `gateway.profile_routes`:
+
+```yaml
+gateway:
+  multiplex_profiles: true
+  profile_routes:
+    # An entire Discord server → one profile
+    - name: acme-server
+      platform: discord
+      guild_id: "1234567890"
+      profile: acme
+
+    # One channel in that server → a different profile
+    - name: acme-support
+      platform: discord
+      guild_id: "1234567890"
+      chat_id: "9876543210"
+      profile: acme-support
+
+    # A Telegram group (no guild concept — chat_id only)
+    - name: tg-group
+      platform: telegram
+      chat_id: "-1001234567890"
+      profile: tg-profile
+```
+
+Routes are matched most-specific-first (`thread_id` > `chat_id` > `guild_id`),
+all declared fields must hold (AND), and a route keyed on a channel also
+matches threads/forum posts whose parent is that channel. Messages that match
+no route stay on the default/active profile. The routed profile gets the full
+per-profile isolation described above (config, skills, memory, credentials,
+session namespace). Routing works on every platform adapter, not just Discord.
+
+`profile_routes` requires `gateway.multiplex_profiles: true`; with
+multiplexing off the routes are ignored. If a route names a profile that does
+not exist on disk, the gateway logs a warning naming the profile and source and
+falls back to the default home.
+
 ## Start, stop, or restart all gateways at once
 
 The CLI ships with single-profile lifecycle commands. To act across every
 profile, wrap them in a shell loop. Put the snippet below in
-`~/.local/bin/lucifex-gateways` and `chmod +x` it:
+`~/.local/bin/hermes-gateways` and `chmod +x` it:
 
 ```sh
 #!/bin/sh
@@ -203,16 +255,16 @@ set -eu
 profiles="default coder personal-bot research"
 
 usage() {
-  echo "Usage: lucifex-gateways {start|stop|restart|status|list}"
+  echo "Usage: hermes-gateways {start|stop|restart|status|list}"
 }
 
 run_for_profile() {
   profile="$1"
   action="$2"
   if [ "$profile" = "default" ]; then
-    lucifex gateway "$action"
+    hermes gateway "$action"
   else
-    lucifex -p "$profile" gateway "$action"
+    hermes -p "$profile" gateway "$action"
   fi
 }
 
@@ -225,7 +277,7 @@ case "$action" in
     done
     ;;
   list)
-    lucifex gateway list
+    hermes gateway list
     ;;
   *)
     usage
@@ -237,16 +289,16 @@ esac
 Then:
 
 ```bash
-lucifex-gateways start      # start every configured profile
-lucifex-gateways stop       # stop every configured profile
-lucifex-gateways restart    # restart all
-lucifex-gateways status     # status across all
-lucifex-gateways list       # delegates to `lucifex gateway list`
+hermes-gateways start      # start every configured profile
+hermes-gateways stop       # stop every configured profile
+hermes-gateways restart    # restart all
+hermes-gateways status     # status across all
+hermes-gateways list       # delegates to `hermes gateway list`
 ```
 
 :::tip
-The `default` profile is targeted with `lucifex gateway <action>` (no `-p`),
-not `lucifex -p default gateway <action>`. The wrapper above handles both forms.
+The `default` profile is targeted with `hermes gateway <action>` (no `-p`),
+not `hermes -p default gateway <action>`. The wrapper above handles both forms.
 :::
 
 ## Manage one profile
@@ -263,7 +315,7 @@ coder gateway install    # create the LaunchAgent / systemd unit
 coder gateway uninstall  # remove the service file
 ```
 
-These are equivalent to `lucifex -p coder gateway <action>` — useful if a
+These are equivalent to `hermes -p coder gateway <action>` — useful if a
 profile alias is not on `PATH` or if you target profiles dynamically from a
 script.
 
@@ -274,11 +326,11 @@ never clash:
 
 | Platform | Path                                                              |
 | -------- | ----------------------------------------------------------------- |
-| macOS    | `~/Library/LaunchAgents/ai.lucifex.gateway-<profile>.plist`        |
-| Linux    | `~/.config/systemd/user/lucifex-gateway-<profile>.service`         |
+| macOS    | `~/Library/LaunchAgents/ai.hermes.gateway-<profile>.plist`        |
+| Linux    | `~/.config/systemd/user/hermes-gateway-<profile>.service`         |
 
-The default profile keeps the historical names: `ai.lucifex.gateway.plist` /
-`lucifex-gateway.service`.
+The default profile keeps the historical names: `ai.hermes.gateway.plist` /
+`hermes-gateway.service`.
 
 ## Viewing logs
 
@@ -286,35 +338,35 @@ Each profile writes to its own log files:
 
 ```bash
 # Default profile
-tail -f ~/.lucifex/logs/gateway.log
-tail -f ~/.lucifex/logs/gateway.error.log
+tail -f ~/.hermes/logs/gateway.log
+tail -f ~/.hermes/logs/gateway.error.log
 
 # Named profile
-tail -f ~/.lucifex/profiles/<name>/logs/gateway.log
-tail -f ~/.lucifex/profiles/<name>/logs/gateway.error.log
+tail -f ~/.hermes/profiles/<name>/logs/gateway.log
+tail -f ~/.hermes/profiles/<name>/logs/gateway.error.log
 ```
 
 Stream every profile's log simultaneously:
 
 ```bash
-tail -f ~/.lucifex/logs/gateway.log ~/.lucifex/profiles/*/logs/gateway.log
+tail -f ~/.hermes/logs/gateway.log ~/.hermes/profiles/*/logs/gateway.log
 ```
 
 The CLI also has a structured log viewer:
 
 ```bash
-lucifex logs -f                  # follow default profile
-lucifex -p coder logs -f         # follow one profile
-lucifex logs --help              # filters, levels, JSON output
+hermes logs -f                  # follow default profile
+hermes -p coder logs -f         # follow one profile
+hermes logs --help              # filters, levels, JSON output
 ```
 
 ## Identify what's actually running
 
 ```bash
-lucifex profile list             # profiles + model + gateway state
-lucifex-gateways status          # full status across every profile
-launchctl list | grep lucifex    # macOS — PIDs and labels
-systemctl --user list-units 'lucifex-gateway-*'   # Linux — units
+hermes profile list             # profiles + model + gateway state
+hermes-gateways status          # full status across every profile
+launchctl list | grep hermes    # macOS — PIDs and labels
+systemctl --user list-units 'hermes-gateway-*'   # Linux — units
 ```
 
 ## Editing configuration
@@ -322,18 +374,18 @@ systemctl --user list-units 'lucifex-gateway-*'   # Linux — units
 Every profile keeps its config inside its own directory:
 
 ```
-~/.lucifex/profiles/<name>/
+~/.hermes/profiles/<name>/
 ├── .env              # API keys, bot tokens (chmod 600)
 ├── config.yaml       # model, provider, toolsets, gateway settings
 └── SOUL.md           # personality / system prompt
 ```
 
-The default profile uses `~/.lucifex/` directly with the same three files.
+The default profile uses `~/.hermes/` directly with the same three files.
 
 Edit them with any editor or via the CLI:
 
 ```bash
-lucifex config set model.model anthropic/claude-sonnet-4    # default profile
+hermes config set model.model anthropic/claude-sonnet-4    # default profile
 coder config set model.model openai/gpt-5                  # named profile
 ```
 
@@ -342,7 +394,7 @@ After editing `.env` or `config.yaml`, restart the affected gateway:
 ```bash
 coder gateway restart
 # or, for everything:
-lucifex-gateways restart
+hermes-gateways restart
 ```
 
 ## Keeping the host awake
@@ -357,7 +409,7 @@ to sleep when idle. Two patterns:
 ```bash
 caffeinate -dis                    # block display, idle, and system sleep
 caffeinate -dis -t 28800           # same, auto-exit after 8 hours
-caffeinate -i -w $(cat ~/.lucifex/gateway.pid) &   # awake while default gateway runs
+caffeinate -i -w $(cat ~/.hermes/gateway.pid) &   # awake while default gateway runs
 
 # Persistent: run in background and forget
 nohup caffeinate -dis >/dev/null 2>&1 &
@@ -388,7 +440,7 @@ use a third-party tool.
 
 ```bash
 # Inhibit suspend while a command runs
-systemd-inhibit --what=idle:sleep --who=lucifex --why="gateways running" \
+systemd-inhibit --what=idle:sleep --who=hermes --why="gateways running" \
   sleep infinity &
 
 # Allow user services to keep running after logout (recommended)
@@ -396,7 +448,7 @@ sudo loginctl enable-linger "$USER"
 ```
 
 After enabling lingering, your systemd user units (including
-`lucifex-gateway-<profile>.service`) continue running across SSH disconnects
+`hermes-gateway-<profile>.service`) continue running across SSH disconnects
 and reboots.
 
 ## Token-conflict safety
@@ -409,17 +461,17 @@ To audit:
 
 ```bash
 grep -H 'TELEGRAM_BOT_TOKEN\|DISCORD_BOT_TOKEN' \
-     ~/.lucifex/.env ~/.lucifex/profiles/*/.env
+     ~/.hermes/.env ~/.hermes/profiles/*/.env
 ```
 
 ## Updating the code
 
-`lucifex update` pulls the latest code once and syncs new bundled skills into
+`hermes update` pulls the latest code once and syncs new bundled skills into
 every profile:
 
 ```bash
-lucifex update
-lucifex-gateways restart
+hermes update
+hermes-gateways restart
 ```
 
 User-modified skills are never overwritten.
@@ -428,7 +480,7 @@ User-modified skills are never overwritten.
 
 ### "Could not find service in domain for user gui: 501"
 
-You ran `lucifex gateway start` after a previous `lucifex gateway stop`. The
+You ran `hermes gateway start` after a previous `hermes gateway stop`. The
 CLI's `stop` does a full `launchctl unload`, which removes the service from
 launchd's registry. The CLI catches this specific error on `start` and
 automatically re-loads the plist (`↻ launchd job was unloaded; reloading
@@ -439,8 +491,8 @@ service definition`). The service starts normally. Nothing to fix.
 If a profile's gateway shows `not running` but a process is still alive:
 
 ```bash
-ps -ef | grep "lucifex_cli.*-p <profile>"
-cat ~/.lucifex/profiles/<profile>/gateway.pid
+ps -ef | grep "hermes_cli.*-p <profile>"
+cat ~/.hermes/profiles/<profile>/gateway.pid
 kill -TERM <pid>          # graceful
 kill -KILL <pid>          # if that fails after a few seconds
 <profile> gateway start
@@ -450,16 +502,16 @@ kill -KILL <pid>          # if that fails after a few seconds
 
 ```bash
 # macOS
-launchctl unload ~/Library/LaunchAgents/ai.lucifex.gateway-<profile>.plist
-launchctl load   ~/Library/LaunchAgents/ai.lucifex.gateway-<profile>.plist
+launchctl unload ~/Library/LaunchAgents/ai.hermes.gateway-<profile>.plist
+launchctl load   ~/Library/LaunchAgents/ai.hermes.gateway-<profile>.plist
 
 # Linux
-systemctl --user restart lucifex-gateway-<profile>.service
+systemctl --user restart hermes-gateway-<profile>.service
 ```
 
 ### Health check
 
 ```bash
-lucifex doctor                  # default profile
-lucifex -p <profile> doctor     # one profile
+hermes doctor                  # default profile
+hermes -p <profile> doctor     # one profile
 ```

@@ -112,7 +112,7 @@ class TestSyncExternalMemoryForTurn:
                 "role": "tool",
                 "name": "terminal",
                 "tool_call_id": "call-1",
-                "content": "final Lucifex-processed output",
+                "content": "final Hermes-processed output",
             }
         ]
 

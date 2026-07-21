@@ -22,17 +22,17 @@ OMIT_TEMPERATURE = object()
 
 
 def _profile_user_agent() -> str:
-    """Return a ``lucifex-cli/<version>`` UA string, with a stable fallback.
+    """Return a ``hermes-cli/<version>`` UA string, with a stable fallback.
 
     Used by ``ProviderProfile.fetch_models`` so the catalog probe is not
     served the default ``Python-urllib/<ver>`` UA — some providers
     (OpenCode Zen, etc.) sit behind a WAF that returns 403 for that.
     """
     try:
-        from lucifex_cli import __version__ as _ver  # lazy: avoid layer cycle at import time
-        return f"lucifex-cli/{_ver}"
+        from hermes_cli import __version__ as _ver  # lazy: avoid layer cycle at import time
+        return f"hermes-cli/{_ver}"
     except Exception:
-        return "lucifex-cli"
+        return "hermes-cli"
 
 
 @dataclass
@@ -145,6 +145,19 @@ class ProviderProfile:
         """
         return {}, {}
 
+    def default_vision_model(self) -> str | None:
+        """Return a default vision model id for this provider, or None.
+
+        Overrideable hook for providers that discover their vision default at
+        runtime (e.g. from a live catalog) rather than pinning one in code.
+        Keeps provider-specific vision discovery inside the provider's plugin
+        instead of a name-check branch in shared vision resolution.
+
+        Default: None (no provider-specific vision model — the caller falls
+        back to the user's chat model or the aggregator chain).
+        """
+        return None
+
     def get_max_tokens(self, model: str | None) -> int | None:
         """Return the default max_tokens cap for *model*.
 
@@ -196,19 +209,21 @@ class ProviderProfile:
         import json
         import urllib.request
 
+        from hermes_cli.urllib_security import open_credentialed_url
+
         req = urllib.request.Request(url)
         if api_key:
             req.add_header("Authorization", f"Bearer {api_key}")
         req.add_header("Accept", "application/json")
         # Some providers (e.g. OpenCode Zen) sit behind a WAF that blocks
         # the default ``Python-urllib/<ver>`` User-Agent.  Set a generic
-        # lucifex-cli UA so the catalog endpoint is reachable.
+        # hermes-cli UA so the catalog endpoint is reachable.
         req.add_header("User-Agent", _profile_user_agent())
         for k, v in self.default_headers.items():
             req.add_header(k, v)
 
         try:
-            with urllib.request.urlopen(req, timeout=timeout) as resp:
+            with open_credentialed_url(req, timeout=timeout) as resp:
                 data = json.loads(resp.read().decode())
             items = data if isinstance(data, list) else data.get("data", [])
             return [m["id"] for m in items if isinstance(m, dict) and "id" in m]

@@ -69,29 +69,42 @@ class TestRegisterProvider:
 
 class TestGetActiveProvider:
     def test_single_provider_autoresolves(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("LUCIFEX_HOME", str(tmp_path))
+        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
         video_gen_registry.register_provider(_FakeProvider("solo"))
         active = video_gen_registry.get_active_provider()
         assert active is not None and active.name == "solo"
 
     def test_no_provider_returns_none(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("LUCIFEX_HOME", str(tmp_path))
+        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
         assert video_gen_registry.get_active_provider() is None
 
     def test_multi_without_config_returns_none(self, tmp_path, monkeypatch):
         """Unlike image_gen (which falls back to 'fal'), video_gen has no
-        legacy default — when there are multiple providers and no config,
-        the registry returns None and the tool surfaces a helpful error.
+        legacy default — when there are multiple *available* providers and no
+        config, the registry returns None and the tool surfaces a helpful error.
         """
-        monkeypatch.setenv("LUCIFEX_HOME", str(tmp_path))
+        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
         video_gen_registry.register_provider(_FakeProvider("xai"))
         video_gen_registry.register_provider(_FakeProvider("fal"))
         assert video_gen_registry.get_active_provider() is None
 
+    def test_single_available_among_many_autoresolves(self, tmp_path, monkeypatch):
+        """When several providers are registered but only one has credentials
+        (is_available()), that one is auto-selected without config. This is the
+        DeepInfra-only-box case: fal/xai register unconditionally but lack keys.
+        Mirrors agent/image_gen_registry's availability-filtered fallback.
+        """
+        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        video_gen_registry.register_provider(_FakeProvider("fal", available=False))
+        video_gen_registry.register_provider(_FakeProvider("xai", available=False))
+        video_gen_registry.register_provider(_FakeProvider("deepinfra", available=True))
+        active = video_gen_registry.get_active_provider()
+        assert active is not None and active.name == "deepinfra"
+
     def test_config_selects_provider(self, tmp_path, monkeypatch):
         import yaml
 
-        monkeypatch.setenv("LUCIFEX_HOME", str(tmp_path))
+        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
         (tmp_path / "config.yaml").write_text(
             yaml.safe_dump({"video_gen": {"provider": "fal"}})
         )
@@ -100,15 +113,13 @@ class TestGetActiveProvider:
         active = video_gen_registry.get_active_provider()
         assert active is not None and active.name == "fal"
 
-    def test_unknown_config_falls_back(self, tmp_path, monkeypatch):
-        """If video_gen.provider names a provider that isn't registered,
-        the single-provider fallback still applies."""
+    def test_unknown_explicit_config_fails_closed(self, tmp_path, monkeypatch):
+        """A typo must not silently route a paid request to another backend."""
         import yaml
 
-        monkeypatch.setenv("LUCIFEX_HOME", str(tmp_path))
+        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
         (tmp_path / "config.yaml").write_text(
             yaml.safe_dump({"video_gen": {"provider": "ghost"}})
         )
         video_gen_registry.register_provider(_FakeProvider("only"))
-        active = video_gen_registry.get_active_provider()
-        assert active is not None and active.name == "only"
+        assert video_gen_registry.get_active_provider() is None

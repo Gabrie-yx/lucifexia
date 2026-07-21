@@ -5,28 +5,49 @@ Semantic long-term memory with profile recall, semantic search, explicit memory 
 ## Requirements
 
 - `pip install supermemory`
-- Supermemory API key from [app.supermemory.ai/integrations?connect=lucifex](http://app.supermemory.ai/integrations?connect=lucifex)
+- Hosted: API key from [app.supermemory.ai/integrations?connect=hermes](http://app.supermemory.ai/integrations?connect=hermes)
+- Self-hosted: a running [Supermemory local](https://supermemory.ai/docs/self-hosting/overview) server and the API key it prints on first boot
 
 ## Setup
 
 ```bash
-lucifex memory setup    # select "supermemory"
+hermes memory setup    # select "supermemory"
 ```
 
 Or manually:
 
 ```bash
-lucifex config set memory.provider supermemory
-echo 'SUPERMEMORY_API_KEY=***' >> ~/.lucifex/.env
+hermes config set memory.provider supermemory
+echo 'SUPERMEMORY_API_KEY=***' >> ~/.hermes/.env
 ```
+
+For a fully self-hosted setup, start Supermemory local and note the API key it
+prints on first boot:
+
+```bash
+npx supermemory local
+```
+
+Before running `hermes memory setup`, add the local endpoint to
+`$HERMES_HOME/supermemory.json`:
+
+```json
+{
+  "base_url": "http://localhost:6767"
+}
+```
+
+Then run `hermes memory setup` and enter the local server's API key. Configuring
+the endpoint first ensures the setup connection probe also stays local.
 
 ## Config
 
-Config file: `$LUCIFEX_HOME/supermemory.json`
+Config file: `$HERMES_HOME/supermemory.json`
 
 | Key | Default | Description |
 |-----|---------|-------------|
-| `container_tag` | `lucifex` | Container tag used for search and writes. Supports `{identity}` template for profile-scoped tags (e.g. `lucifex-{identity}` → `lucifex-coder`). |
+| `base_url` | `https://api.supermemory.ai` | API endpoint for hosted or self-hosted Supermemory. Takes priority over `SUPERMEMORY_BASE_URL`. |
+| `container_tag` | `hermes` | Container tag used for search and writes. Supports `{identity}` template for profile-scoped tags (e.g. `hermes-{identity}` → `hermes-coder`). |
 | `auto_recall` | `true` | Inject relevant memory context before turns |
 | `auto_capture` | `true` | Store cleaned user-assistant turns after each response |
 | `max_recall_results` | `10` | Max recalled items to format into context |
@@ -41,7 +62,12 @@ Config file: `$LUCIFEX_HOME/supermemory.json`
 | Variable | Description |
 |----------|-------------|
 | `SUPERMEMORY_API_KEY` | API key (required) |
+| `SUPERMEMORY_BASE_URL` | Compatibility fallback for the API endpoint when `base_url` is not configured |
 | `SUPERMEMORY_CONTAINER_TAG` | Override container tag (takes priority over config file) |
+
+Base URL precedence is `supermemory.json` → `SUPERMEMORY_BASE_URL` →
+`https://api.supermemory.ai`. Hermes resolves it once and uses the same endpoint
+for SDK operations, setup/status probes, and full-session conversation ingest.
 
 ## Tools
 
@@ -56,34 +82,35 @@ Kebab-case names are registered for the agent; snake_case aliases remain support
 
 ## Source attribution
 
-All Supermemory API calls send `x-sm-source: lucifex`, and document writes stamp
-`metadata.sm_source: lucifex`. This is a **functional routing key, not telemetry**:
-it groups Lucifex-written memories into a dedicated "Lucifex" Space in the
+All Supermemory API calls send `x-sm-source: hermes`, and document writes stamp
+`metadata.sm_source: hermes`. This is a **functional routing key, not telemetry**:
+it groups Hermes-written memories into a dedicated "Hermes" Space in the
 Supermemory app, so you can filter, browse, and bulk-manage them per source agent
 (alongside Codex, Claude Code, etc.) from the Supermemory UI.
 
 ## Behavior
 
-When enabled, Lucifex can:
+When enabled, Hermes can:
 
 - prefetch relevant memory context before each turn
 - buffer the full conversation and ingest it as **one session** at session end (or on `/reset`, branch, compression, or shutdown)
 - ingest the full session to the conversations endpoint for richer profile/graph updates
+- route every SDK, probe, and conversation-ingest request through the configured hosted or self-hosted endpoint
 - expose explicit tools for search, store, forget, and profile access
 
 The session is written once via the conversations endpoint, which drives Supermemory's entity extraction and profile building while keeping a clean, retrievable full transcript.
 
 ## Profile-Scoped Containers
 
-Use `{identity}` in the `container_tag` to scope memories per Lucifex profile:
+Use `{identity}` in the `container_tag` to scope memories per Hermes profile:
 
 ```json
 {
-  "container_tag": "lucifex-{identity}"
+  "container_tag": "hermes-{identity}"
 }
 ```
 
-For a profile named `coder`, this resolves to `lucifex-coder`. The default profile resolves to `lucifex-default`. Without `{identity}`, all profiles share the same container.
+For a profile named `coder`, this resolves to `hermes-coder`. The default profile resolves to `hermes-default`. Without `{identity}`, all profiles share the same container.
 
 ## Multi-Container Mode
 
@@ -91,7 +118,7 @@ For advanced setups (e.g. OpenClaw-style multi-workspace), you can enable custom
 
 ```json
 {
-  "container_tag": "lucifex",
+  "container_tag": "hermes",
   "enable_custom_container_tags": true,
   "custom_containers": ["project-alpha", "project-beta", "shared-knowledge"],
   "custom_container_instructions": "Use project-alpha for coding tasks, project-beta for research, and shared-knowledge for team-wide facts."

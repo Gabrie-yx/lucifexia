@@ -1,14 +1,14 @@
 ---
-title: "Petdex — Install and select animated petdex mascots for Lucifex"
+title: "Petdex — Install and select animated petdex mascots for Hermes"
 sidebar_label: "Petdex"
-description: "Install and select animated petdex mascots for Lucifex"
+description: "Install and select animated petdex mascots for Hermes"
 ---
 
 {/* This page is auto-generated from the skill's SKILL.md by website/scripts/generate-skill-docs.py. Edit the source SKILL.md, not this page. */}
 
 # Petdex
 
-Install and select animated petdex mascots for Lucifex.
+Install and select animated petdex mascots for Hermes.
 
 ## Skill metadata
 
@@ -17,7 +17,7 @@ Install and select animated petdex mascots for Lucifex.
 | Source | Bundled (installed by default) |
 | Path | `skills/productivity/petdex` |
 | Version | `1.0.0` |
-| Author | Lucifex Agent |
+| Author | Hermes Agent |
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `petdex`, `mascot`, `display`, `cli`, `tui`, `desktop` |
@@ -25,7 +25,7 @@ Install and select animated petdex mascots for Lucifex.
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that Lucifex loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that Hermes loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # Petdex Skill
@@ -33,7 +33,7 @@ The following is the complete skill definition that Lucifex loads when this skil
 Browse, install, and select animated "pet" mascots from the public
 [petdex](https://github.com/crafter-station/petdex) gallery. An installed pet
 reacts to agent activity (idle, running a tool, reviewing, error, done) across
-the Lucifex CLI, TUI, and desktop app. This skill drives the `lucifex pets` CLI
+the Hermes CLI, TUI, and desktop app. This skill drives the `hermes pets` CLI
 and the `display.pet` config — it does not generate sprites.
 
 ## When to Use
@@ -45,38 +45,38 @@ and the `display.pet` config — it does not generate sprites.
 ## Prerequisites
 
 - Network access to `petdex.dev` for the gallery/manifest (read-only, no auth).
-- Pillow (a core Lucifex dependency) for sprite decoding — already installed.
+- Pillow (a core Hermes dependency) for sprite decoding — already installed.
 - For full-fidelity terminal rendering: a graphics-capable terminal (kitty,
   Ghostty, WezTerm, iTerm2, or sixel). Otherwise a truecolor Unicode
   half-block fallback is used automatically.
 
 ## How to Run
 
-Use the `terminal` tool to run `lucifex pets <subcommand>`.
+Use the `terminal` tool to run `hermes pets <subcommand>`.
 
 ## Quick Reference
 
 | Goal | Command |
 | --- | --- |
-| Browse the gallery | `lucifex pets list` (add a substring to filter: `lucifex pets list cat`) |
-| List installed pets | `lucifex pets list --installed` |
-| Install a pet | `lucifex pets install <slug>` (add `--select` to make it active) |
-| Set the active pet | `lucifex pets select <slug>` (omit slug for a picker) |
-| Resize the pet everywhere | `lucifex pets scale <factor>` (e.g. `0.5`, clamped 0.1–3.0) |
-| Preview/animate in terminal | `lucifex pets show [slug] [--cycle] [--state run]` |
-| Disable the pet | `lucifex pets off` |
-| Remove a pet | `lucifex pets remove <slug>` |
-| Diagnose setup | `lucifex pets doctor` |
+| Browse the gallery | `hermes pets list` (add a substring to filter: `hermes pets list cat`) |
+| List installed pets | `hermes pets list --installed` |
+| Install a pet | `hermes pets install <slug>` (add `--select` to make it active) |
+| Set the active pet | `hermes pets select <slug>` (omit slug for a picker) |
+| Resize the pet everywhere | `hermes pets scale <factor>` (e.g. `0.5`, clamped 0.1–3.0) |
+| Preview/animate in terminal | `hermes pets show [slug] [--cycle] [--state run]` |
+| Disable the pet | `hermes pets off` |
+| Remove a pet | `hermes pets remove <slug>` |
+| Diagnose setup | `hermes pets doctor` |
 
 ## Procedure
 
-1. Find a pet: `lucifex pets list <query>` and note its `slug`.
-2. Install + activate: `lucifex pets install <slug> --select`.
-3. Preview it: `lucifex pets show` (Ctrl+C to stop).
-4. Confirm setup: `lucifex pets doctor` — shows the resolved pet, configured
+1. Find a pet: `hermes pets list <query>` and note its `slug`.
+2. Install + activate: `hermes pets install <slug> --select`.
+3. Preview it: `hermes pets show` (Ctrl+C to stop).
+4. Confirm setup: `hermes pets doctor` — shows the resolved pet, configured
    render mode, detected terminal graphics protocol, and effective mode.
 
-Pets install into `<LUCIFEX_HOME>/pets/<slug>/` (profile-aware). Selecting a pet
+Pets install into `<HERMES_HOME>/pets/<slug>/` (profile-aware). Selecting a pet
 writes `display.pet.slug` + `display.pet.enabled` to `config.yaml`.
 
 ## Configuration
@@ -88,7 +88,7 @@ Under `display.pet` in `config.yaml`:
 - `render_mode` — `auto` (detect) | `kitty` | `iterm` | `sixel` | `unicode` | `off`.
 - `scale` (float) — on-screen size of the native 192×208 frames (default 0.33,
   clamped 0.1–3.0). One knob resizes every surface; set it with
-  `lucifex pets scale <factor>`, the `/pet scale` slash command, or the desktop
+  `hermes pets scale <factor>`, the `/pet scale` slash command, or the desktop
   Appearance slider.
 - `unicode_cols` (int) — width in columns for the Unicode fallback.
 
@@ -96,10 +96,10 @@ Under `display.pet` in `config.yaml`:
 
 - A pet only shows once one is installed AND selected (`enabled: true`).
 - Inside a pipe/redirect (no TTY) terminal rendering is disabled by design.
-- The petdex npm CLI installs to `~/.codex/pets`; Lucifex uses its own
-  profile-scoped `<LUCIFEX_HOME>/pets/` instead — install through `lucifex pets`.
+- The petdex npm CLI installs to `~/.codex/pets`; Hermes uses its own
+  profile-scoped `<HERMES_HOME>/pets/` instead — install through `hermes pets`.
 
 ## Verification
 
-- `lucifex pets doctor` reports `✓ ready` when a pet is installed, selected,
+- `hermes pets doctor` reports `✓ ready` when a pet is installed, selected,
   enabled, and Pillow is importable.

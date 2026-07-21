@@ -41,6 +41,7 @@ from gateway.run import (
     _is_fresh_gateway_interruption,
     _last_transcript_timestamp,
     _should_clear_resume_pending_after_turn,
+    build_resume_recovery_note,
 )
 from gateway.session import SessionEntry, SessionSource, SessionStore
 from tests.gateway.restart_test_helpers import (
@@ -152,32 +153,9 @@ def _simulate_note_injection(
 
     if is_resume_pending:
         reason = getattr(resume_entry, "resume_reason", None) or "restart_timeout"
-        reason_phrase = (
-            "a gateway restart"
-            if reason == "restart_timeout"
-            else "a gateway shutdown"
-            if reason == "shutdown_timeout"
-            else "a gateway interruption"
-        )
-        if message:
-            resume_guidance = (
-                "Address the user's NEW message below FIRST and focus "
-                "on what the user is asking now."
-            )
-        else:
-            resume_guidance = (
-                "Report to the user that the session was restored "
-                "successfully and ask what they would like to do next."
-            )
-        message = (
-            f"[System note: The previous turn was interrupted by "
-            f"{reason_phrase}; the gateway is now back online. "
-            f"Any restart/shutdown command in the history has already "
-            f"run — do NOT re-execute or verify it. {resume_guidance} "
-            f"Do NOT re-execute old tool calls — skip any unfinished "
-            f"work from the conversation history.]"
-            + (f"\n\n{message}" if message else "")
-        )
+        # Real production note builder — extracted to module scope in
+        # gateway/run.py so tests exercise the actual strings.
+        message = build_resume_recovery_note(reason, message)
     elif has_fresh_tool_tail:
         message = (
             "[System note: A new message has arrived. The conversation "
@@ -196,23 +174,7 @@ def _simulate_note_injection(
         and getattr(resume_entry, "resume_pending", False)
     ):
         sn_reason = getattr(resume_entry, "resume_reason", None) or "restart_timeout"
-        sn_reason_phrase = (
-            "a gateway restart"
-            if sn_reason == "restart_timeout"
-            else "a gateway shutdown"
-            if sn_reason == "shutdown_timeout"
-            else "a gateway interruption"
-        )
-        message = (
-            f"[System note: The previous turn was interrupted by "
-            f"{sn_reason_phrase}; the gateway is now back online. "
-            f"Any restart/shutdown command in the history has already "
-            f"run — do NOT re-execute or verify it. Report to the user "
-            f"that the session was restored successfully and ask what "
-            f"they would like to do next. Do NOT re-execute old tool "
-            f"calls — skip any unfinished work from the conversation "
-            f"history.]"
-        )
+        message = build_resume_recovery_note(sn_reason, "")
     return message
 
 
@@ -520,6 +482,34 @@ class TestResumePendingSystemNote:
             resume_entry=entry,
         )
         assert "gateway shutdown" in result
+
+    def test_empty_message_interactive_note_asks_what_next(self):
+        """Interactive platforms: the startup auto-resume turn reports the
+        restore and asks the (present) human what to do next."""
+        note = build_resume_recovery_note("restart_timeout", "", interactive=True)
+        assert "session was restored" in note
+        assert "ask what they would like to do next" in note
+        assert "skip any unfinished work" in note
+
+    def test_empty_message_noninteractive_note_continues_task(self):
+        """Non-interactive platforms (webhook, API server): nobody can answer
+        'what next?', so the resumed turn must complete the interrupted work
+        instead of acknowledging (#57056)."""
+        note = build_resume_recovery_note("restart_timeout", "", interactive=False)
+        assert "CONTINUE the interrupted task" in note
+        assert "session was restored" not in note
+        assert "ask what they would like to do next" not in note
+        # Must not tell the model to skip the unfinished work it should finish.
+        assert "skip any unfinished work" not in note
+        # But still guards against re-running already-recorded tool calls.
+        assert "already appear in the history" in note
+
+    def test_new_message_guidance_identical_regardless_of_interactivity(self):
+        """A real NEW user message always wins — same guidance either way."""
+        a = build_resume_recovery_note("restart_timeout", "do the thing", interactive=True)
+        b = build_resume_recovery_note("restart_timeout", "do the thing", interactive=False)
+        assert a == b
+        assert "NEW message" in a
 
     def test_resume_pending_fires_without_tool_tail(self):
         """Key improvement over PR #9934: the restart-resume note fires
@@ -916,20 +906,20 @@ class TestFreshnessHelpers:
         assert _last_transcript_timestamp(history) is None
 
     def test_auto_continue_freshness_window_reads_env(self, monkeypatch):
-        monkeypatch.setenv("LUCIFEX_AUTO_CONTINUE_FRESHNESS", "7200")
+        monkeypatch.setenv("HERMES_AUTO_CONTINUE_FRESHNESS", "7200")
         assert _auto_continue_freshness_window() == 7200.0
 
     def test_auto_continue_freshness_window_default_when_unset(self, monkeypatch):
-        monkeypatch.delenv("LUCIFEX_AUTO_CONTINUE_FRESHNESS", raising=False)
+        monkeypatch.delenv("HERMES_AUTO_CONTINUE_FRESHNESS", raising=False)
         # Default is 1 hour
         assert _auto_continue_freshness_window() == 3600.0
 
     def test_auto_continue_freshness_window_malformed_falls_back(self, monkeypatch):
-        monkeypatch.setenv("LUCIFEX_AUTO_CONTINUE_FRESHNESS", "not-a-number")
+        monkeypatch.setenv("HERMES_AUTO_CONTINUE_FRESHNESS", "not-a-number")
         assert _auto_continue_freshness_window() == 3600.0
 
     def test_auto_continue_freshness_window_empty_falls_back(self, monkeypatch):
-        monkeypatch.setenv("LUCIFEX_AUTO_CONTINUE_FRESHNESS", "")
+        monkeypatch.setenv("HERMES_AUTO_CONTINUE_FRESHNESS", "")
         assert _auto_continue_freshness_window() == 3600.0
 
 
@@ -1655,7 +1645,7 @@ class TestStuckLoopEscalation:
         counts_file = tmp_path / ".restart_failure_counts"
         counts_file.write_text(json.dumps({entry.session_key: 3}))
 
-        monkeypatch.setattr("gateway.run._lucifex_home", tmp_path)
+        monkeypatch.setattr("gateway.run._hermes_home", tmp_path)
         runner = object.__new__(GatewayRunner)
         runner.session_store = store
 
@@ -1685,7 +1675,7 @@ class TestStuckLoopEscalation:
         counts_file = tmp_path / ".restart_failure_counts"
         counts_file.write_text(json.dumps({entry.session_key: 2}))
 
-        monkeypatch.setattr("gateway.run._lucifex_home", tmp_path)
+        monkeypatch.setattr("gateway.run._hermes_home", tmp_path)
         runner = object.__new__(GatewayRunner)
         runner.session_store = store
 
@@ -1703,7 +1693,7 @@ class TestStuckLoopEscalation:
         source = _make_source()
         session_key = _make_store(tmp_path).get_or_create_session(source).session_key
 
-        monkeypatch.setattr("gateway.run._lucifex_home", tmp_path)
+        monkeypatch.setattr("gateway.run._hermes_home", tmp_path)
         calls = []
 
         def _fake_atomic_json_write(path, payload, **kwargs):
@@ -1738,7 +1728,7 @@ class TestStuckLoopEscalation:
             encoding="utf-8",
         )
 
-        monkeypatch.setattr("gateway.run._lucifex_home", tmp_path)
+        monkeypatch.setattr("gateway.run._hermes_home", tmp_path)
         calls = []
 
         def _fake_atomic_json_write(path, payload, **kwargs):

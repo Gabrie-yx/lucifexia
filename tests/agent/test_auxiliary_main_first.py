@@ -62,7 +62,7 @@ class TestResolveAutoMainFirst:
         """
         import yaml
 
-        home = tmp_path / ".lucifex"
+        home = tmp_path / ".hermes"
         home.mkdir()
         (home / "config.yaml").write_text(
             yaml.safe_dump(
@@ -80,7 +80,7 @@ class TestResolveAutoMainFirst:
                 }
             )
         )
-        monkeypatch.setenv("LUCIFEX_HOME", str(home))
+        monkeypatch.setenv("HERMES_HOME", str(home))
 
         with patch(
             "agent.auxiliary_client.resolve_provider_client"
@@ -279,6 +279,34 @@ class TestResolveAutoMainFirst:
         assert mock_resolve.call_args.args[0] == "anthropic"
         assert mock_resolve.call_args.args[1] == "runtime-model"
 
+    def test_resolve_provider_auto_returns_runtime_model_not_stale_config_default(self):
+        """Blank auto aux requests must not pair a stale config model with live fallback provider."""
+        runtime_client = MagicMock()
+        with patch(
+            "agent.auxiliary_client._read_main_model",
+            return_value="claude-opus-4-8",
+        ) as mock_read_main_model, patch(
+            "agent.auxiliary_client._resolve_auto",
+            return_value=(runtime_client, "gpt-5.5"),
+        ) as mock_resolve_auto:
+            from agent.auxiliary_client import resolve_provider_client
+
+            client, model = resolve_provider_client(
+                "auto",
+                main_runtime={
+                    "provider": "openai-codex",
+                    "model": "gpt-5.5",
+                    "base_url": "",
+                    "api_key": "",
+                    "api_mode": "codex_responses",
+                },
+            )
+
+        assert client is runtime_client
+        assert model == "gpt-5.5"
+        mock_read_main_model.assert_not_called()
+        mock_resolve_auto.assert_called_once()
+
     def test_runtime_base_url_passed_for_named_api_key_provider(self):
         """Named API-key providers inherit the live session endpoint for aux work."""
         token_plan_url = "https://token-plan-sgp.xiaomimimo.com/v1"
@@ -436,14 +464,14 @@ class TestResolveVisionMainFirst:
         ), patch(
             "agent.auxiliary_client.OpenAI",
         ) as mock_openai, patch(
-            "lucifex_cli.auth.resolve_api_key_provider_credentials",
+            "hermes_cli.auth.resolve_api_key_provider_credentials",
             return_value={
                 "provider": "copilot",
                 "api_key": "copilot-api-token",
                 "base_url": "https://api.githubcopilot.com",
             },
         ), patch(
-            "lucifex_cli.copilot_auth.copilot_request_headers",
+            "hermes_cli.copilot_auth.copilot_request_headers",
             side_effect=fake_headers,
         ):
             mock_client = MagicMock()
@@ -473,14 +501,14 @@ class TestResolveVisionMainFirst:
         with patch(
             "agent.auxiliary_client.OpenAI",
         ) as mock_openai, patch(
-            "lucifex_cli.auth.resolve_api_key_provider_credentials",
+            "hermes_cli.auth.resolve_api_key_provider_credentials",
             return_value={
                 "provider": "copilot",
                 "api_key": "copilot-api-token",
                 "base_url": "https://api.githubcopilot.com",
             },
         ), patch(
-            "lucifex_cli.copilot_auth.copilot_request_headers",
+            "hermes_cli.copilot_auth.copilot_request_headers",
             side_effect=fake_headers,
         ):
             mock_client = MagicMock()

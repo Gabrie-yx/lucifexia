@@ -1,6 +1,6 @@
-"""ACP session manager — maps ACP sessions to Lucifex AIAgent instances.
+"""ACP session manager — maps ACP sessions to Hermes AIAgent instances.
 
-Sessions are persisted to the shared SessionDB (``~/.lucifex/state.db``) so they
+Sessions are persisted to the shared SessionDB (``~/.hermes/state.db``) so they
 survive process restarts and appear in ``session_search``.  When the editor
 reconnects after idle/restart, the ``load_session`` / ``resume_session`` calls
 find the persisted session in the database and restore the full conversation
@@ -8,7 +8,7 @@ history.
 """
 from __future__ import annotations
 
-from lucifex_constants import get_lucifex_home
+from hermes_constants import get_hermes_home
 
 import copy
 import json
@@ -26,31 +26,18 @@ from typing import Any, Dict, List, Optional
 logger = logging.getLogger(__name__)
 
 
-def _win_path_to_wsl(path: str) -> str | None:
-    """Convert a Windows drive path to its WSL /mnt/<drive>/... equivalent."""
-    match = re.match(r"^([A-Za-z]):[\\/](.*)$", path)
-    if not match:
-        return None
-    drive = match.group(1).lower()
-    tail = match.group(2).replace("\\", "/")
-    return f"/mnt/{drive}/{tail}"
-
-
 def _translate_acp_cwd(cwd: str) -> str:
-    """Translate Windows ACP cwd values when Lucifex itself is running in WSL.
+    """Translate Windows ACP cwd values when Hermes itself is running in WSL.
 
-    Windows ACP clients can launch ``lucifex acp`` inside WSL while still sending
-    editor workspaces as Windows drive paths such as ``E:\\Projects``. Store
-    and execute against the WSL mount path so agents, tools, and persisted ACP
-    sessions all agree on the usable workspace. Native Linux/macOS keeps the
-    original cwd unchanged.
+    Windows ACP clients can launch ``hermes acp`` inside WSL while still sending
+    editor workspaces as Windows drive paths (``E:\\Projects``) or
+    ``\\\\wsl.localhost\\`` UNC paths. Store and execute against the POSIX form so
+    agents, tools, and persisted ACP sessions all agree on the usable workspace.
+    Native Linux/macOS keeps the original cwd unchanged.
     """
-    from lucifex_constants import is_wsl
+    from hermes_constants import translate_cwd_for_wsl_backend
 
-    if not is_wsl():
-        return cwd
-    translated = _win_path_to_wsl(str(cwd))
-    return translated if translated is not None else cwd
+    return translate_cwd_for_wsl_backend(str(cwd))
 
 
 def _normalize_cwd_for_compare(cwd: str | None) -> str:
@@ -61,7 +48,9 @@ def _normalize_cwd_for_compare(cwd: str | None) -> str:
 
     # Normalize Windows drive paths into the equivalent WSL mount form so
     # ACP history filters match the same workspace across Windows and WSL.
-    translated = _win_path_to_wsl(expanded)
+    from hermes_constants import windows_path_to_wsl
+
+    translated = windows_path_to_wsl(expanded)
     if translated is not None:
         expanded = translated
     elif re.match(r"^/mnt/[A-Za-z]/", expanded):
@@ -123,7 +112,7 @@ def _acp_stderr_print(*args, **kwargs) -> None:
 def _register_task_cwd(task_id: str, cwd: str) -> None:
     """Bind a task/session id to the editor's working directory for tools.
 
-    Zed can launch Lucifex from a Windows workspace while the ACP process runs
+    Zed can launch Hermes from a Windows workspace while the ACP process runs
     inside WSL. In that case ACP sends cwd as e.g. ``E:\\Projects\\POTI``;
     local tools need the WSL mount equivalent or subprocess creation fails
     before the command can run.
@@ -143,7 +132,7 @@ def _expand_acp_enabled_toolsets(
 ) -> List[str]:
     """Return ACP toolsets plus explicit MCP server toolsets for this session."""
     expanded: List[str] = []
-    for name in list(toolsets or ["lucifex-acp"]):
+    for name in list(toolsets or ["hermes-acp"]):
         if name and name not in expanded:
             expanded.append(name)
 
@@ -168,7 +157,7 @@ def _clear_task_cwd(task_id: str) -> None:
 
 @dataclass
 class SessionState:
-    """Tracks per-session state for an ACP-managed Lucifex agent."""
+    """Tracks per-session state for an ACP-managed Hermes agent."""
 
     session_id: str
     agent: Any  # AIAgent instance
@@ -184,7 +173,7 @@ class SessionState:
 
 
 class SessionManager:
-    """Thread-safe manager for ACP sessions backed by Lucifex AIAgent instances.
+    """Thread-safe manager for ACP sessions backed by Hermes AIAgent instances.
 
     Sessions are held in-memory for fast access **and** persisted to the
     shared SessionDB so they survive process restarts and are searchable
@@ -196,9 +185,9 @@ class SessionManager:
         Args:
             agent_factory: Optional callable that creates an AIAgent-like object.
                            Used by tests. When omitted, a real AIAgent is created
-                           using the current Lucifex runtime provider configuration.
+                           using the current Hermes runtime provider configuration.
             db:            Optional SessionDB instance. When omitted, the default
-                           SessionDB (``~/.lucifex/state.db``) is lazily created.
+                           SessionDB (``~/.hermes/state.db``) is lazily created.
         """
         self._sessions: Dict[str, SessionState] = {}
         self._lock = Lock()
@@ -404,17 +393,17 @@ class SessionManager:
         Returns ``None`` if the DB is unavailable (e.g. import error in a
         minimal test environment).
 
-        Note: we resolve ``LUCIFEX_HOME`` dynamically rather than relying on
+        Note: we resolve ``HERMES_HOME`` dynamically rather than relying on
         the module-level ``DEFAULT_DB_PATH`` constant, because that constant
         is evaluated at import time and won't reflect env-var changes made
-        later (e.g. by the test fixture ``_isolate_lucifex_home``).
+        later (e.g. by the test fixture ``_isolate_hermes_home``).
         """
         if self._db_instance is not None:
             return self._db_instance
         try:
-            from lucifex_state import SessionDB
-            lucifex_home = get_lucifex_home()
-            self._db_instance = SessionDB(db_path=lucifex_home / "state.db")
+            from hermes_state import SessionDB
+            hermes_home = get_hermes_home()
+            self._db_instance = SessionDB(db_path=hermes_home / "state.db")
             return self._db_instance
         except Exception:
             logger.debug("SessionDB unavailable for ACP persistence", exc_info=True)
@@ -545,9 +534,15 @@ class SessionManager:
 
         model = row.get("model") or None
 
-        # Load conversation history.
+        # Load conversation history. repair_alternation: this restore feeds
+        # LIVE REPLAY — the loaded list becomes the resumed agent's working
+        # conversation. A durable ``user;user`` violation left in state.db would
+        # otherwise re-fire the pre-request defensive repair on every request
+        # for the rest of the session (see hermes_state.get_messages_as_conversation).
         try:
-            history = db.get_messages_as_conversation(session_id)
+            history = db.get_messages_as_conversation(
+                session_id, repair_alternation=True
+            )
         except Exception:
             logger.warning("Failed to load messages for ACP session %s", session_id, exc_info=True)
             history = []
@@ -606,8 +601,8 @@ class SessionManager:
             return self._agent_factory()
 
         from run_agent import AIAgent
-        from lucifex_cli.config import load_config
-        from lucifex_cli.runtime_provider import resolve_runtime_provider
+        from hermes_cli.config import load_config
+        from hermes_cli.runtime_provider import resolve_runtime_provider
 
         config = load_config()
         model_cfg = config.get("model")
@@ -628,7 +623,7 @@ class SessionManager:
         kwargs = {
             "platform": "acp",
             "enabled_toolsets": _expand_acp_enabled_toolsets(
-                ["lucifex-acp"],
+                ["hermes-acp"],
                 mcp_server_names=configured_mcp_servers,
             ),
             "quiet_mode": True,
@@ -656,7 +651,7 @@ class SessionManager:
         agent = AIAgent(**kwargs)
         # Codex app-server sessions are spawned lazily on the first turn. Stamp
         # the ACP workspace onto the agent so the Codex runtime starts from the
-        # editor/session cwd instead of the Lucifex daemon's process cwd.
+        # editor/session cwd instead of the Hermes daemon's process cwd.
         agent.session_cwd = cwd
         # ACP stdio transport requires stdout to remain protocol-only JSON-RPC.
         # Route any incidental human-readable agent output to stderr instead.

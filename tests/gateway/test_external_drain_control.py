@@ -2,12 +2,12 @@
 
 Task 2.2/2.3. Two layers:
   * drain_control.py — the presence-based marker contract (write/clear/read,
-    LUCIFEX_HOME-scoped, never-raises).
+    HERMES_HOME-scoped, never-raises).
   * GatewayRunner enter/exit/watcher + the new-turn accept gate — the
     reversible state machine driven by the marker.
 
 Mocked tests are necessary-not-sufficient here (the HARD live-validation gate,
-Q-B, exercises a real `lucifex gateway run`); these lock the unit contract.
+Q-B, exercises a real `hermes gateway run`); these lock the unit contract.
 """
 from __future__ import annotations
 
@@ -19,6 +19,7 @@ import pytest
 
 import gateway.drain_control as dc
 from gateway.run import GatewayRunner
+from gateway.config import Platform
 from gateway.platforms.base import MessageEvent, MessageType
 from tests.gateway.restart_test_helpers import make_restart_runner, make_restart_source
 
@@ -30,7 +31,7 @@ from tests.gateway.restart_test_helpers import make_restart_runner, make_restart
 
 @pytest.fixture
 def home(tmp_path, monkeypatch):
-    monkeypatch.setenv("LUCIFEX_HOME", str(tmp_path))
+    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
     return tmp_path
 
 
@@ -54,7 +55,7 @@ class TestMarkerContract:
         # idempotent: clearing again is a no-op, returns False
         assert dc.clear_drain_request() is False
 
-    def test_path_respects_lucifex_home(self, home):
+    def test_path_respects_hermes_home(self, home):
         assert dc.drain_request_path() == home / ".drain_request.json"
 
     def test_corrupt_marker_reads_as_present_contentless(self, home):
@@ -150,7 +151,7 @@ class TestInstantiationEpoch:
 
     def test_marker_from_prior_instantiation_reads_as_absent(self, home, monkeypatch):
         # THE NS-570 REGRESSION. A begin-drain marker written by a PREVIOUS
-        # container/VM instantiation survives on the durable LUCIFEX_HOME volume
+        # container/VM instantiation survives on the durable HERMES_HOME volume
         # across a machine restart. The freshly-restarted gateway (new epoch)
         # must treat it as absent, NOT re-engage drain.
         monkeypatch.setattr(dc, "current_instantiation_epoch", lambda: "epoch-OLD")
@@ -238,6 +239,16 @@ def _drain_runner():
 
 
 class TestDrainStateMachine:
+    def test_active_work_count_includes_api_and_cron_work(self, monkeypatch):
+        runner, _ = _drain_runner()
+        runner.adapters = {
+            Platform.API_SERVER: MagicMock(active_agent_work_count=MagicMock(return_value=2))
+        }
+        runner._running_agents = {"session": MagicMock()}
+        monkeypatch.setattr("cron.scheduler.get_running_job_ids", lambda: {"job-1"})
+
+        assert runner._active_work_count() == 4
+
     def test_enter_sets_flag_and_flips_state(self):
         runner, _ = _drain_runner()
         runner._enter_external_drain()
@@ -289,6 +300,26 @@ class TestDrainStateMachine:
 
 
 class TestDrainWatcher:
+    @pytest.mark.asyncio
+    async def test_watcher_persists_aggregate_work_during_external_drain(self, home, monkeypatch):
+        runner, _ = _drain_runner()
+        runner._drain_control_watcher = GatewayRunner._drain_control_watcher.__get__(
+            runner, GatewayRunner
+        )
+        runner._persist_active_agents = MagicMock()
+        dc.write_drain_request()
+        task = asyncio.create_task(runner._drain_control_watcher(interval=0.01))
+        await asyncio.sleep(0.03)
+        runner._running = False
+        await asyncio.sleep(0.02)
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
+
+        runner._persist_active_agents.assert_called()
+
     @pytest.mark.asyncio
     async def test_watcher_enters_then_exits_with_marker(self, home):
         runner, _ = _drain_runner()

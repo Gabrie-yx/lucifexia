@@ -119,6 +119,26 @@ async def test_gateway_stop_drains_running_agents_before_disconnect():
 
 
 @pytest.mark.asyncio
+async def test_gateway_stop_cancels_secondary_reconnects_before_session_drain():
+    runner, _adapter = make_restart_runner()
+    order: list[str] = []
+
+    async def _cancel_secondary_reconnects() -> None:
+        order.append("secondary_reconnect_cancel")
+
+    async def _notify_sessions() -> None:
+        order.append("notify_sessions")
+
+    runner._cancel_secondary_profile_reconnect_tasks = _cancel_secondary_reconnects
+    runner._notify_active_sessions_of_shutdown = _notify_sessions
+
+    with patch("gateway.status.remove_pid_file"), patch("gateway.status.write_runtime_status"):
+        await runner.stop()
+
+    assert order[:2] == ["secondary_reconnect_cancel", "notify_sessions"]
+
+
+@pytest.mark.asyncio
 async def test_gateway_stop_interrupts_after_drain_timeout():
     runner, adapter = make_restart_runner()
     runner._restart_drain_timeout = 0.05
@@ -139,7 +159,7 @@ async def test_gateway_stop_interrupts_after_drain_timeout():
 
 @pytest.mark.asyncio
 async def test_gateway_stop_systemd_service_restart_uses_tempfail(tmp_path, monkeypatch):
-    monkeypatch.setattr(gateway_run, "_lucifex_home", tmp_path)
+    monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
     runner, adapter = make_restart_runner()
     adapter.disconnect = AsyncMock()
     monkeypatch.setenv("INVOCATION_ID", "systemd-test")
@@ -160,7 +180,7 @@ async def test_gateway_stop_systemd_service_restart_uses_tempfail(tmp_path, monk
 
 @pytest.mark.asyncio
 async def test_gateway_stop_launchd_service_restart_keeps_nonzero_exit(tmp_path, monkeypatch):
-    monkeypatch.setattr(gateway_run, "_lucifex_home", tmp_path)
+    monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
     runner, adapter = make_restart_runner()
     adapter.disconnect = AsyncMock()
 
@@ -249,7 +269,7 @@ async def test_idle_in_chat_restart_does_not_send_interruption_warning():
 
 @pytest.mark.asyncio
 async def test_in_chat_restart_does_not_write_home_startup_marker(tmp_path, monkeypatch):
-    monkeypatch.setattr(gateway_run, "_lucifex_home", tmp_path)
+    monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
     runner, adapter = make_restart_runner()
     adapter.disconnect = AsyncMock()
     source = make_restart_source(thread_id="42")
@@ -402,7 +422,7 @@ async def test_signal_initiated_shutdown_persists_running_not_stopped(tmp_path, 
     """Unexpected SIGTERM (container restart / OOM / kill) must persist
     gateway_state=running — NOT stopped, and NOT leave the mid-shutdown
     'draining' marker — so container_boot auto-starts on next boot (#42675)."""
-    monkeypatch.setattr(gateway_run, "_lucifex_home", tmp_path)
+    monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
     runner, adapter = make_restart_runner()
     adapter.disconnect = AsyncMock()
     runner._signal_initiated_shutdown = True  # set by handler on unmarked signal
@@ -423,8 +443,8 @@ async def test_signal_initiated_shutdown_persists_running_not_stopped(tmp_path, 
 @pytest.mark.asyncio
 async def test_operator_initiated_stop_persists_stopped(tmp_path, monkeypatch):
     """A planned stop (marker written → not signal-initiated) must persist
-    gateway_state=stopped so an explicit `lucifex gateway stop` stays down."""
-    monkeypatch.setattr(gateway_run, "_lucifex_home", tmp_path)
+    gateway_state=stopped so an explicit `hermes gateway stop` stays down."""
+    monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
     runner, adapter = make_restart_runner()
     adapter.disconnect = AsyncMock()
     runner._signal_initiated_shutdown = False  # planned stop classification
@@ -442,7 +462,7 @@ async def test_signal_initiated_restart_still_persists_stopped(tmp_path, monkeyp
     """A restart is not a 'stay down' — it persists normally (the new
     process/container brings the gateway back up itself). The suppression
     only applies to a terminal signal-initiated stop, not a restart."""
-    monkeypatch.setattr(gateway_run, "_lucifex_home", tmp_path)
+    monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
     runner, adapter = make_restart_runner()
     adapter.disconnect = AsyncMock()
     runner._signal_initiated_shutdown = True
