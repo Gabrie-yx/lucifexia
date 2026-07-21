@@ -32,6 +32,7 @@ from agent.prompt_builder import (
     GOOGLE_MODEL_OPERATIONAL_GUIDANCE,
     LUCIFEX_AGENT_HELP_GUIDANCE,
     KANBAN_GUIDANCE,
+    LIVE_PREVIEW_GUIDANCE,
     MEMORY_GUIDANCE,
     OPENAI_MODEL_EXECUTION_GUIDANCE,
     PARALLEL_TOOL_CALL_GUIDANCE,
@@ -255,6 +256,7 @@ def build_system_prompt_parts(agent: Any, system_message: Optional[str] = None) 
     lucifex_subscription_prompt = _r.build_lucifex_subscription_prompt(agent.valid_tool_names)
     if lucifex_subscription_prompt:
         stable_parts.append(lucifex_subscription_prompt)
+    stable_parts.append(LIVE_PREVIEW_GUIDANCE)
     # Tool-use enforcement: tells the model to actually call tools instead
     # of describing intended actions.  Controlled by config.yaml
     # agent.tool_use_enforcement:

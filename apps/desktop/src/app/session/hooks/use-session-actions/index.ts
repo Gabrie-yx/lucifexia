@@ -9,7 +9,8 @@ import { type ChatMessage, preserveLocalAssistantErrors, toChatMessages } from '
 import { isMissingRpcMethod } from '@/lib/gateway-rpc'
 import { setSessionYolo } from '@/lib/yolo-session'
 import { clearQueuedPrompts } from '@/store/composer-queue'
-import { $pinnedSessionIds } from '@/store/layout'
+import { $pinnedSessionIds, PREVIEW_PANE_ID, RIGHT_RAIL_PREVIEW_TAB_ID, selectRightRailTab } from '@/store/layout'
+import { setPaneOpen } from '@/store/panes'
 import { clearNotifications, notify, notifyError } from '@/store/notifications'
 import { $activeGatewayProfile, $newChatProfile, ensureGatewayProfile, normalizeProfileKey } from '@/store/profile'
 import { resolveNewSessionCwd, tombstoneSessions, untombstoneSessions } from '@/store/projects'
@@ -403,6 +404,13 @@ export function useSessionActions({
     (item: SidebarNavItem) => {
       if (item.action === 'new-session') {
         startFreshSessionDraft()
+
+        return
+      }
+
+      if (item.action === 'live-preview') {
+        setPaneOpen(PREVIEW_PANE_ID, true)
+        selectRightRailTab(RIGHT_RAIL_PREVIEW_TAB_ID)
 
         return
       }

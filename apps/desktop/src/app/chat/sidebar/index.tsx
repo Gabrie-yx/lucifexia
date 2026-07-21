@@ -148,6 +148,12 @@ const SIDEBAR_NAV: SidebarNavItem[] = [
     keybindActionId: 'session.new'
   },
   {
+    id: 'live-preview',
+    label: 'Live Preview',
+    icon: props => <Codicon name="browser" {...props} />,
+    action: 'live-preview'
+  },
+  {
     id: 'skills',
     label: '',
     icon: props => <Codicon name="symbol-misc" {...props} />,

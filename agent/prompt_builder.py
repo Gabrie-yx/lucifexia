@@ -157,6 +157,13 @@ LUCIFEX_AGENT_HELP_GUIDANCE = (
     "of truth when the two differ."
 )
 
+LIVE_PREVIEW_GUIDANCE = (
+    "Live Preview: When you navigate the web (via browser tools or URLs), generate HTML/CSS/JS "
+    "web applications, or start a local dev server, a Live Preview pane opens automatically in the user's "
+    "interface showing the live web page or artifact. Inform the user that they can view the live preview "
+    "directly in their right panel or toggle it via the Live Preview button in the titlebar or sidebar."
+)
+
 MEMORY_GUIDANCE = (
     "You have persistent memory across sessions. Save durable facts using the memory "
     "tool: user preferences, environment details, tool quirks, and stable conventions. "

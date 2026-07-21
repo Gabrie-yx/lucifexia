@@ -13,7 +13,7 @@ export function isPreviewableTarget(target: string): boolean {
     target &&
     (/^file:\/\//i.test(target) ||
       /^(?:\/|\.{1,2}\/|~\/).+\.html?$/i.test(target) ||
-      /^https?:\/\/(?:localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])/i.test(target))
+      /^https?:\/\//i.test(target))
   )
 }
 

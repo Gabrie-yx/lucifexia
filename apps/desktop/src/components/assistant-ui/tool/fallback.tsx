@@ -36,8 +36,9 @@ import { PrettyLink, LinkifiedText as SharedLinkifiedText, urlSlugTitleLabel } f
 import { AlertCircle, CheckCircle2 } from '@/lib/icons'
 import { normalize } from '@/lib/text'
 import { useEnterAnimation } from '@/lib/use-enter-animation'
-import { cn } from '@/lib/utils'
+import { normalizeOrLocalPreviewTarget } from '@/lib/local-preview'
 import { recordPreviewArtifact } from '@/store/preview-status'
+import { setCurrentSessionPreviewTarget } from '@/store/preview'
 import { $activeSessionId, $currentCwd } from '@/store/session'
 import { $toolInlineDiff } from '@/store/tool-diffs'
 import { $toolRowDismissed, dismissToolRow } from '@/store/tool-dismiss'
@@ -319,13 +320,17 @@ function ToolEntry({ part }: ToolEntryProps) {
       return
     }
 
-    // Read (don't subscribe) session/cwd: this only fires when a previewable
-    // target appears, and subscribing re-rendered every tool row on any session
-    // or cwd change.
     const activeSessionId = $activeSessionId.get()
 
     if (activeSessionId) {
-      recordPreviewArtifact(activeSessionId, previewTarget, $currentCwd.get() || '')
+      const cwd = $currentCwd.get() || ''
+      recordPreviewArtifact(activeSessionId, previewTarget, cwd)
+
+      void normalizeOrLocalPreviewTarget(previewTarget, cwd || undefined).then(preview => {
+        if (preview) {
+          setCurrentSessionPreviewTarget(preview, 'tool-result', previewTarget)
+        }
+      })
     }
   }, [isPending, previewTarget])
 

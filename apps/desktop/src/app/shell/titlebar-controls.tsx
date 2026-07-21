@@ -14,10 +14,14 @@ import { $hapticsMuted, toggleHapticsMuted } from '@/store/haptics'
 import {
   $fileBrowserOpen,
   $sidebarOpen,
+  PREVIEW_PANE_ID,
+  RIGHT_RAIL_PREVIEW_TAB_ID,
+  selectRightRailTab,
   toggleFileBrowserOpen,
   togglePanesFlipped,
   toggleSidebarOpen
 } from '@/store/layout'
+import { setPaneOpen } from '@/store/panes'
 
 import { appViewForPath, isOverlayView, SETTINGS_ROUTE } from '../routes'
 
@@ -196,6 +200,17 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
       onSelect: () => {
         triggerHaptic('open')
         navigate(`${SETTINGS_ROUTE}?tab=keybinds`)
+      }
+    },
+    {
+      icon: <Codicon name="browser" />,
+      id: 'live-preview',
+      label: 'Live Preview',
+      title: 'Abrir Live Preview (Navegador Web / HTML)',
+      onSelect: () => {
+        triggerHaptic('tap')
+        setPaneOpen(PREVIEW_PANE_ID, true)
+        selectRightRailTab(RIGHT_RAIL_PREVIEW_TAB_ID)
       }
     },
     {
