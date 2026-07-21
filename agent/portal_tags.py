@@ -1,6 +1,6 @@
-"""Centralized Nous Portal request tags.
+"""Centralized Lucifex portal request tags.
 
-Every Lucifex request that hits the Nous Portal — main agent loop, auxiliary
+Every Lucifex request that hits the Lucifex portal — main agent loop, auxiliary
 client (compression / titles / vision / web_extract / session_search / etc.),
 and any future code path — must carry the same product-attribution tags so
 Nous can attribute usage to Lucifex Agent and bucket it by client release.
@@ -42,7 +42,7 @@ from typing import List, Optional
 # funnel through ``agent.auxiliary_client.call_llm`` which has no session
 # handle. Rather than threading a ``session_id`` parameter through every one
 # of those call sites (and every future one), the agent loop publishes the
-# active conversation id here and ``nous_portal_tags()`` picks it up as a
+# active conversation id here and ``lucifex_portal_tags()`` picks it up as a
 # fallback whenever no explicit ``session_id`` is passed.
 #
 # ContextVar (not a module global) so concurrent agents in one process —
@@ -52,7 +52,7 @@ from typing import List, Optional
 # MoA fan-out, tool executor) inherit it through the copied Context; bare
 # threads (title generator) capture it explicitly at spawn time.
 _conversation_id: ContextVar[Optional[str]] = ContextVar(
-    "nous_portal_conversation_id", default=None
+    "lucifex_portal_conversation_id", default=None
 )
 
 
@@ -96,7 +96,7 @@ def _lucifex_version() -> str:
 
 
 def lucifex_client_tag() -> str:
-    """Return the ``client=...`` tag for Nous Portal requests.
+    """Return the ``client=...`` tag for Lucifex portal requests.
 
     Format: ``client=lucifex-client-v<MAJOR>.<MINOR>.<PATCH>``.
     """
@@ -117,11 +117,11 @@ def conversation_tag(session_id: str) -> str:
     return f"conversation={session_id}"
 
 
-def nous_portal_tags(session_id: str | None = None) -> List[str]:
-    """Return the canonical list of Nous Portal product tags.
+def lucifex_portal_tags(session_id: str | None = None) -> List[str]:
+    """Return the canonical list of Lucifex portal product tags.
 
     Always returns a fresh list so callers can mutate it freely
-    (e.g. ``merged_extra.setdefault("tags", []).extend(nous_portal_tags())``).
+    (e.g. ``merged_extra.setdefault("tags", []).extend(lucifex_portal_tags())``).
 
     When ``session_id`` is provided, a ``conversation=<session_id>`` tag is
     appended so Portal usage can be attributed to a specific Lucifex

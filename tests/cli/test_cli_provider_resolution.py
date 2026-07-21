@@ -272,7 +272,7 @@ def test_codex_provider_replaces_incompatible_default_model(monkeypatch):
 
 def test_model_flow_nous_prints_subscription_guidance_without_mutating_explicit_tts(monkeypatch, capsys):
     monkeypatch.setattr(
-        "lucifex_cli.nous_subscription.managed_nous_tools_enabled",
+        "lucifex_cli.lucifex_subscription.managed_nous_tools_enabled",
         lambda *args, **kwargs: True,
     )
     config = {
@@ -363,7 +363,7 @@ def test_model_flow_nous_does_not_restore_stale_custom_api_key(tmp_path, monkeyp
         lambda *args, **kwargs: selected_model,
     )
     monkeypatch.setattr(
-        "lucifex_cli.nous_subscription.prompt_enable_tool_gateway",
+        "lucifex_cli.lucifex_subscription.prompt_enable_tool_gateway",
         lambda config: None,
     )
 
@@ -472,13 +472,13 @@ def test_model_flow_anthropic_clears_stale_custom_key_and_mode(tmp_path, monkeyp
 
 
 def test_model_flow_nous_offers_tool_gateway_prompt_when_unconfigured(monkeypatch, capsys):
-    from lucifex_cli.nous_account import NousPortalAccountInfo
+    from lucifex_cli.lucifex_account import LucifexportalAccountInfo
 
     # Entitled account (paid → all tools eligible) drives the offer; the prompt
     # is a per-tool checklist now, so capture the call rather than scrape stdout.
     monkeypatch.setattr(
-        "lucifex_cli.nous_subscription.get_nous_portal_account_info",
-        lambda **kwargs: NousPortalAccountInfo(
+        "lucifex_cli.lucifex_subscription.get_lucifex_portal_account_info",
+        lambda **kwargs: LucifexportalAccountInfo(
             logged_in=True,
             source="account_api",
             fresh=True,

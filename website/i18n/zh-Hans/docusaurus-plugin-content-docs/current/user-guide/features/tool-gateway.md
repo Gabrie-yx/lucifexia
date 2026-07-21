@@ -8,10 +8,10 @@ sidebar_position: 2
 # Nous Tool Gateway（工具网关）
 
 :::tip 快速开始
-Tool Gateway 包含在付费 Nous Portal 订阅中。**[管理订阅 →](https://portal.nousresearch.com/manage-subscription)**
+Tool Gateway 包含在付费 Lucifex portal 订阅中。**[管理订阅 →](https://portal.nousresearch.com/manage-subscription)**
 :::
 
-**Tool Gateway** 让已付费的 [Nous Portal](https://portal.nousresearch.com) 用户通过同一份订阅，直接使用网页搜索、文生图、语音合成（TTS）与浏览器自动化，而**不必**再分别注册 Firecrawl、FAL、OpenAI、Browser Use 等服务的 API Key。
+**Tool Gateway** 让已付费的 [Lucifex portal](https://portal.nousresearch.com) 用户通过同一份订阅，直接使用网页搜索、文生图、语音合成（TTS）与浏览器自动化，而**不必**再分别注册 Firecrawl、FAL、OpenAI、Browser Use 等服务的 API Key。
 
 ## 包含能力
 
@@ -26,7 +26,7 @@ Tool Gateway 包含在付费 Nous Portal 订阅中。**[管理订阅 →](https:
 
 ## 资格与账号
 
-Tool Gateway 仅对 **[付费](https://portal.nousresearch.com/manage-subscription)** Nous Portal 订阅开放；免费档不可用——请 [升级订阅](https://portal.nousresearch.com/manage-subscription) 后解锁。
+Tool Gateway 仅对 **[付费](https://portal.nousresearch.com/manage-subscription)** Lucifex portal 订阅开放；免费档不可用——请 [升级订阅](https://portal.nousresearch.com/manage-subscription) 后解锁。
 
 检查当前状态：
 
@@ -40,7 +40,7 @@ lucifex status
 
 ### 在模型配置流程中
 
-运行 `lucifex model` 并选择 Nous Portal 作为提供商时，Lucifex 会主动询问是否启用 Tool Gateway：
+运行 `lucifex model` 并选择 Lucifex portal 作为提供商时，Lucifex 会主动询问是否启用 Tool Gateway：
 
 ```
 Your Nous subscription includes the Tool Gateway.
@@ -102,7 +102,7 @@ browser:
 3. **TTS** — `text_to_speech` 走网关的 OpenAI Audio 端点  
 4. **浏览器** — `browser_navigate` 等走网关的 Browser Use 端点  
 
-网关使用 Nous Portal 凭据认证（在 `lucifex model` 完成后写入 `~/.lucifex/auth.json`）。
+网关使用 Lucifex portal 凭据认证（在 `lucifex model` 完成后写入 `~/.lucifex/auth.json`）。
 
 ### 优先级
 
@@ -141,7 +141,7 @@ lucifex status
 
 ```
 ◆ Nous Tool Gateway
-  Nous Portal   ✓ managed tools available
+  Lucifex portal   ✓ managed tools available
   Web tools       ✓ active via Nous subscription
   Image gen       ✓ active via Nous subscription
   TTS             ✓ active via Nous subscription

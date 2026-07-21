@@ -182,7 +182,7 @@ class TestPluginRegister:
         self, monkeypatch
     ):
         """Phase 7 follow-up: LUCIFEX_DASHBOARD_PORTAL_URL is optional —
-        defaults to the production Nous Portal. The user shouldn't have
+        defaults to the production Lucifex portal. The user shouldn't have
         to set it for the common production deployment path."""
         monkeypatch.setenv("LUCIFEX_DASHBOARD_OAUTH_CLIENT_ID", "agent:inst1")
         monkeypatch.delenv("LUCIFEX_DASHBOARD_PORTAL_URL", raising=False)

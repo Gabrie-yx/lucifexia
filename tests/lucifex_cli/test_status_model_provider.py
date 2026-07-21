@@ -2,8 +2,8 @@
 
 from types import SimpleNamespace
 
-from lucifex_cli.nous_account import NousPaidServiceAccessInfo, NousPortalAccountInfo
-from lucifex_cli.nous_subscription import NousFeatureState, NousSubscriptionFeatures
+from lucifex_cli.lucifex_account import NousPaidServiceAccessInfo, LucifexportalAccountInfo
+from lucifex_cli.lucifex_subscription import NousFeatureState, NousSubscriptionFeatures
 
 
 def _patch_common_status_deps(monkeypatch, status_mod, tmp_path, *, openai_base_url=""):
@@ -18,7 +18,7 @@ def _patch_common_status_deps(monkeypatch, status_mod, tmp_path, *, openai_base_
         return ""
 
     monkeypatch.setattr(status_mod, "get_env_value", _get_env_value, raising=False)
-    monkeypatch.setattr(auth_mod, "get_nous_auth_status", lambda: {}, raising=False)
+    monkeypatch.setattr(auth_mod, "get_lucifex_auth_status", lambda: {}, raising=False)
     monkeypatch.setattr(auth_mod, "get_codex_auth_status", lambda: {}, raising=False)
     monkeypatch.setattr(
         status_mod.subprocess,
@@ -77,13 +77,13 @@ def test_show_status_reports_managed_nous_features(monkeypatch, capsys, tmp_path
     )
     monkeypatch.setattr(status_mod, "resolve_requested_provider", lambda requested=None: "nous", raising=False)
     monkeypatch.setattr(status_mod, "resolve_provider", lambda requested=None, **kwargs: "nous", raising=False)
-    monkeypatch.setattr(status_mod, "provider_label", lambda provider: "Nous Portal", raising=False)
+    monkeypatch.setattr(status_mod, "provider_label", lambda provider: "Lucifex portal", raising=False)
     monkeypatch.setattr(
         status_mod,
-        "get_nous_subscription_features",
+        "get_lucifex_subscription_features",
         lambda config: NousSubscriptionFeatures(
             subscribed=True,
-            nous_auth_present=True,
+            lucifex_auth_present=True,
             provider_is_nous=True,
             features={
                 "web": NousFeatureState("web", "Web tools", True, True, True, True, False, True, "firecrawl"),
@@ -106,7 +106,7 @@ def test_show_status_reports_managed_nous_features(monkeypatch, capsys, tmp_path
     assert "active via Nous subscription" in out
 
 
-def test_show_status_hides_nous_subscription_section_when_feature_flag_is_off(monkeypatch, capsys, tmp_path):
+def test_show_status_hides_lucifex_subscription_section_when_feature_flag_is_off(monkeypatch, capsys, tmp_path):
     monkeypatch.setattr("lucifex_cli.status.managed_nous_tools_enabled", lambda: False)
     from lucifex_cli import status as status_mod
 
@@ -119,7 +119,7 @@ def test_show_status_hides_nous_subscription_section_when_feature_flag_is_off(mo
     )
     monkeypatch.setattr(status_mod, "resolve_requested_provider", lambda requested=None: "nous", raising=False)
     monkeypatch.setattr(status_mod, "resolve_provider", lambda requested=None, **kwargs: "nous", raising=False)
-    monkeypatch.setattr(status_mod, "provider_label", lambda provider: "Nous Portal", raising=False)
+    monkeypatch.setattr(status_mod, "provider_label", lambda provider: "Lucifex portal", raising=False)
 
     status_mod.show_status(SimpleNamespace(all=False, deep=False))
 
@@ -127,7 +127,7 @@ def test_show_status_hides_nous_subscription_section_when_feature_flag_is_off(mo
     assert "Nous Tool Gateway" not in out
 
 
-def test_show_status_reports_exhausted_nous_credits(monkeypatch, capsys, tmp_path):
+def test_show_status_reports_exhausted_lucifex_credits(monkeypatch, capsys, tmp_path):
     monkeypatch.setattr("lucifex_cli.status.managed_nous_tools_enabled", lambda: False)
     from lucifex_cli import status as status_mod
     import lucifex_cli.auth as auth_mod
@@ -135,7 +135,7 @@ def test_show_status_reports_exhausted_nous_credits(monkeypatch, capsys, tmp_pat
     _patch_common_status_deps(monkeypatch, status_mod, tmp_path)
     monkeypatch.setattr(
         auth_mod,
-        "get_nous_auth_status",
+        "get_lucifex_auth_status",
         lambda: {
             "logged_in": False,
             "access_token": "jwt",
@@ -147,8 +147,8 @@ def test_show_status_reports_exhausted_nous_credits(monkeypatch, capsys, tmp_pat
     )
     monkeypatch.setattr(
         status_mod,
-        "get_nous_portal_account_info",
-        lambda: NousPortalAccountInfo(
+        "get_lucifex_portal_account_info",
+        lambda: LucifexportalAccountInfo(
             logged_in=True,
             source="account_api",
             fresh=True,
@@ -169,7 +169,7 @@ def test_show_status_reports_exhausted_nous_credits(monkeypatch, capsys, tmp_pat
     monkeypatch.setattr(status_mod, "load_config", lambda: {"model": {"provider": "nous"}}, raising=False)
     monkeypatch.setattr(status_mod, "resolve_requested_provider", lambda requested=None: "nous", raising=False)
     monkeypatch.setattr(status_mod, "resolve_provider", lambda requested=None, **kwargs: "nous", raising=False)
-    monkeypatch.setattr(status_mod, "provider_label", lambda provider: "Nous Portal", raising=False)
+    monkeypatch.setattr(status_mod, "provider_label", lambda provider: "Lucifex portal", raising=False)
 
     status_mod.show_status(SimpleNamespace(all=False, deep=False))
 

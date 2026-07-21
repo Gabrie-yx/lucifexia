@@ -444,12 +444,12 @@ def _resolve_relay_identity_token() -> str:
     ``lucifex gateway enroll`` CLI. Two modes, in precedence order:
 
       1. **Generic OIDC client-credentials** (air-gapped / self-hosted-IdP, NO
-         Nous Portal): when ``gateway.idp.token_url`` (or
+         Lucifex portal): when ``gateway.idp.token_url`` (or
          ``GATEWAY_RELAY_IDP_TOKEN_URL``) is configured, obtain a workload access
          token via the OAuth2 ``client_credentials`` grant against the operator's
          own IdP (Entra; Authentik in the sandbox). The connector's Seam-A OIDC
          verifier reads a claim (default ``tid``) off it as the tenant.
-      2. **Nous Portal** (default): ``resolve_nous_access_token()`` — existing
+      2. **Lucifex portal** (default): ``resolve_nous_access_token()`` — existing
          managed/hosted behaviour.
 
     Raises on failure; callers decide whether that's fatal (enroll CLI) or a
@@ -472,7 +472,7 @@ def _resolve_relay_identity_token() -> str:
             token_url = token_url or ""
 
     if not token_url:
-        # Mode 2 — Nous Portal (default, unchanged behaviour).
+        # Mode 2 — Lucifex portal (default, unchanged behaviour).
         from lucifex_cli.auth import resolve_nous_access_token
 
         return resolve_nous_access_token()

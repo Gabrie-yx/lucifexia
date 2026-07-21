@@ -14,7 +14,7 @@ import pytest
 
 import agent.billing_usage as bu
 import agent.subscription_view as sv
-import lucifex_cli.nous_billing as nb
+import lucifex_cli.lucifex_billing as nb
 from agent.subscription_view import CurrentSubscription, SubscriptionState, SubscriptionTier
 from cli import LucifexCLI
 
@@ -164,7 +164,7 @@ def test_insufficient_scope_triggers_stepup_then_replays(cli, monkeypatch, capsy
     monkeypatch.setattr(nb, "put_subscription_pending_change", _put)
     import lucifex_cli.auth as auth
 
-    monkeypatch.setattr(auth, "step_up_nous_billing_scope", lambda **kw: True, raising=False)
+    monkeypatch.setattr(auth, "step_up_lucifex_billing_scope", lambda **kw: True, raising=False)
 
     cli._show_subscription()
     out = capsys.readouterr().out
@@ -188,7 +188,7 @@ def test_stepup_declined_grant_does_not_replay(cli, monkeypatch, capsys):
     monkeypatch.setattr(nb, "put_subscription_pending_change", _put)
     import lucifex_cli.auth as auth
 
-    monkeypatch.setattr(auth, "step_up_nous_billing_scope", lambda **kw: False, raising=False)
+    monkeypatch.setattr(auth, "step_up_lucifex_billing_scope", lambda **kw: False, raising=False)
 
     cli._show_subscription()
     out = capsys.readouterr().out
@@ -229,7 +229,7 @@ def test_bounded_stepup_does_not_loop_on_repeat_denial(cli, monkeypatch, capsys)
     monkeypatch.setattr(nb, "put_subscription_pending_change", _put)
     import lucifex_cli.auth as auth
 
-    monkeypatch.setattr(auth, "step_up_nous_billing_scope", lambda **kw: True, raising=False)
+    monkeypatch.setattr(auth, "step_up_lucifex_billing_scope", lambda **kw: True, raising=False)
 
     cli._show_subscription()
     out = capsys.readouterr().out
@@ -254,7 +254,7 @@ def test_upgrade_transport_failure_is_ambiguous_not_flat_failure(cli, monkeypatc
     monkeypatch.setattr(nb, "post_subscription_preview", lambda **kw: {"effect": "charge_now", "targetTierName": "Ultra", "amountDueNowCents": 4630})
 
     def _boom(**kw):
-        raise nb.BillingError("Could not reach Nous Portal", error="endpoint_unavailable")
+        raise nb.BillingError("Could not reach Lucifex portal", error="endpoint_unavailable")
 
     monkeypatch.setattr(nb, "post_subscription_upgrade", _boom)
 
@@ -308,7 +308,7 @@ def test_upgrade_transport_failure_still_ambiguous_after_narrowing(cli, monkeypa
     monkeypatch.setattr(nb, "post_subscription_preview", lambda **kw: {"effect": "charge_now", "targetTierName": "Ultra", "amountDueNowCents": 4630})
 
     def _net(**kw):
-        raise nb.BillingError("Could not reach Nous Portal: timeout", error="network_error")
+        raise nb.BillingError("Could not reach Lucifex portal: timeout", error="network_error")
 
     monkeypatch.setattr(nb, "post_subscription_upgrade", _net)
 

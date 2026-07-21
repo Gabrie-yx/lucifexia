@@ -1423,8 +1423,8 @@ class TestBuildSystemPrompt:
         else:
             assert False, "Expected a 'Conversation started:' line in the system prompt"
 
-    def test_includes_nous_subscription_prompt(self, agent, monkeypatch):
-        monkeypatch.setattr(run_agent, "build_nous_subscription_prompt", lambda tool_names: "NOUS SUBSCRIPTION BLOCK")
+    def test_includes_lucifex_subscription_prompt(self, agent, monkeypatch):
+        monkeypatch.setattr(run_agent, "build_lucifex_subscription_prompt", lambda tool_names: "NOUS SUBSCRIPTION BLOCK")
         prompt = agent._build_system_prompt()
         assert "NOUS SUBSCRIPTION BLOCK" in prompt
 
@@ -4020,9 +4020,9 @@ class TestHandleMaxIterations:
 
         assert result == "Summary"
         kwargs = agent.client.chat.completions.create.call_args.kwargs
-        from agent.portal_tags import nous_portal_tags
+        from agent.portal_tags import lucifex_portal_tags
 
-        assert kwargs["extra_body"]["tags"] == nous_portal_tags(
+        assert kwargs["extra_body"]["tags"] == lucifex_portal_tags(
             session_id=agent.session_id
         )
         assert kwargs["extra_body"]["provider"] == {
@@ -4044,10 +4044,10 @@ class TestHandleMaxIterations:
 
         assert result == "Summary"
         kwargs = agent.client.chat.completions.create.call_args.kwargs
-        from agent.portal_tags import nous_portal_tags
+        from agent.portal_tags import lucifex_portal_tags
 
         assert kwargs["extra_body"] == {
-            "tags": nous_portal_tags(session_id=agent.session_id)
+            "tags": lucifex_portal_tags(session_id=agent.session_id)
         }
 
     def test_summary_drops_invalid_provider_sort(self, agent):
@@ -6042,7 +6042,7 @@ class TestRetryExhaustion:
         content after retries".
 
         Regression: running a Claude refusal through an OpenAI-compatible
-        portal (Nous Portal fronting Anthropic) returns ``message.refusal``
+        portal (Lucifex portal fronting Anthropic) returns ``message.refusal``
         with empty content. The transport now promotes that to a
         ``content_filter`` finish reason and the loop surfaces it as a terminal
         ``content_policy_blocked`` result instead of retrying a deterministic

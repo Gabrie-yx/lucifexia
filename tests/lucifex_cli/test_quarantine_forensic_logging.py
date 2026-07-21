@@ -6,14 +6,14 @@ Historically this was completely silent — no WARNING+ record at the terminal
 rejection, only a downstream "No access token found" warning once the pool was
 already empty. The Fly log drain is WARNING-only, so nothing about the terminal
 death reached centralized logging. These tests lock in that
-``_quarantine_nous_oauth_state`` now emits a WARNING+ forensic record, and — the
+``_quarantine_lucifex_oauth_state`` now emits a WARNING+ forensic record, and — the
 load-bearing assertion — that the raw refresh token never appears in that output.
 """
 
 import hashlib
 import logging
 
-from lucifex_cli.auth import AuthError, _quarantine_nous_oauth_state
+from lucifex_cli.auth import AuthError, _quarantine_lucifex_oauth_state
 
 
 # A distinctive, obviously-fake refresh token so the redaction assertion is
@@ -49,7 +49,7 @@ def _error():
 def test_quarantine_emits_warning(caplog):
     state = _make_state()
     with caplog.at_level(logging.WARNING, logger="lucifex_cli.auth"):
-        _quarantine_nous_oauth_state(state, _error(), reason="unit_test_quarantine")
+        _quarantine_lucifex_oauth_state(state, _error(), reason="unit_test_quarantine")
 
     warnings = [r for r in caplog.records if r.levelno >= logging.WARNING]
     assert warnings, "expected at least one WARNING+ record from quarantine"
@@ -59,7 +59,7 @@ def test_quarantine_emits_warning(caplog):
 def test_warning_contains_hash_prefix_and_error_code(caplog):
     state = _make_state()
     with caplog.at_level(logging.WARNING, logger="lucifex_cli.auth"):
-        _quarantine_nous_oauth_state(state, _error(), reason="unit_test_quarantine")
+        _quarantine_lucifex_oauth_state(state, _error(), reason="unit_test_quarantine")
 
     text = caplog.text
     assert _EXPECTED_FP in text, (
@@ -73,7 +73,7 @@ def test_raw_refresh_token_never_logged(caplog):
     """Load-bearing redaction-safety test: the raw secret must never appear."""
     state = _make_state()
     with caplog.at_level(logging.DEBUG, logger="lucifex_cli.auth"):
-        _quarantine_nous_oauth_state(state, _error(), reason="unit_test_quarantine")
+        _quarantine_lucifex_oauth_state(state, _error(), reason="unit_test_quarantine")
 
     text = caplog.text
     assert _FAKE_RT not in text, "RAW refresh token leaked into log output!"
@@ -87,7 +87,7 @@ def test_quarantine_no_refresh_token_does_not_throw(caplog):
     state.pop("refresh_token", None)
     with caplog.at_level(logging.WARNING, logger="lucifex_cli.auth"):
         # Must not raise even when there is no refresh token to fingerprint.
-        _quarantine_nous_oauth_state(state, _error(), reason="unit_test_no_rt")
+        _quarantine_lucifex_oauth_state(state, _error(), reason="unit_test_no_rt")
 
     warnings = [r for r in caplog.records if r.levelno >= logging.WARNING]
     assert warnings, "expected a WARNING even when refresh_token is absent"
@@ -98,7 +98,7 @@ def test_quarantine_no_refresh_token_does_not_throw(caplog):
 def test_quarantine_clears_token_material():
     """Regression guard: the quarantine still clears dead token keys."""
     state = _make_state()
-    _quarantine_nous_oauth_state(state, _error(), reason="unit_test_quarantine")
+    _quarantine_lucifex_oauth_state(state, _error(), reason="unit_test_quarantine")
     for key in ("access_token", "refresh_token", "agent_key", "agent_key_id", "expires_at"):
         assert key not in state, f"{key} should have been cleared by quarantine"
     assert state["last_auth_error"]["code"] == "invalid_grant"

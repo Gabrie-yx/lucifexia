@@ -1,4 +1,4 @@
-"""Regression tests for Nous Portal inference_base_url host-allowlist validation.
+"""Regression tests for Lucifex portal inference_base_url host-allowlist validation.
 
 A poisoned ``inference_base_url`` from a Portal refresh response (network
 MITM, malicious response injection) would otherwise be persisted to
@@ -180,7 +180,7 @@ class TestCallSiteWiring:
         bypass at the source layer still gets caught at the forward
         boundary."""
         from pathlib import Path
-        import lucifex_cli.proxy.adapters.nous_portal as _nous_adapter
+        import lucifex_cli.proxy.adapters.lucifex_portal as _nous_adapter
         source = Path(_nous_adapter.__file__).read_text(encoding="utf-8")
         assert "_validate_nous_inference_url_from_network" in source
 
@@ -235,7 +235,7 @@ class TestHealsPoisonedStoredValue:
             "access_token": "tok",
             "refresh_token": "rtok",
             "client_id": "lucifex-cli",
-            "portal_base_url": auth.DEFAULT_NOUS_PORTAL_URL,
+            "portal_base_url": auth.DEFAULT_LUCIFEX_PORTAL_URL,
             "inference_base_url": poisoned,
         }
 
@@ -256,7 +256,7 @@ class TestHealsPoisonedStoredValue:
         monkeypatch.setattr(auth, "_assert_nous_inference_jwt_usable", lambda *a, **k: None)
         monkeypatch.setattr(auth, "_select_nous_invoke_jwt", lambda *a, **k: None)
 
-        result = auth.refresh_nous_oauth_from_state(state, force_refresh=True)
+        result = auth.refresh_lucifex_oauth_from_state(state, force_refresh=True)
 
         assert result["inference_base_url"] == auth.DEFAULT_NOUS_INFERENCE_URL, (
             "rejected Portal URL must heal to the production default, "
@@ -272,7 +272,7 @@ class TestHealsPoisonedStoredValue:
             "access_token": "tok",
             "refresh_token": "rtok",
             "client_id": "lucifex-cli",
-            "portal_base_url": auth.DEFAULT_NOUS_PORTAL_URL,
+            "portal_base_url": auth.DEFAULT_LUCIFEX_PORTAL_URL,
             "inference_base_url": good,
         }
         monkeypatch.setattr(auth, "_nous_invoke_jwt_status", lambda *a, **k: "needs_refresh")
@@ -289,7 +289,7 @@ class TestHealsPoisonedStoredValue:
         monkeypatch.setattr(auth, "_assert_nous_inference_jwt_usable", lambda *a, **k: None)
         monkeypatch.setattr(auth, "_select_nous_invoke_jwt", lambda *a, **k: None)
 
-        result = auth.refresh_nous_oauth_from_state(state, force_refresh=True)
+        result = auth.refresh_lucifex_oauth_from_state(state, force_refresh=True)
         assert result["inference_base_url"] == good
 
 
@@ -339,7 +339,7 @@ class TestEnvOverrideWins:
             "access_token": "tok",
             "refresh_token": "rtok",
             "client_id": "lucifex-cli",
-            "portal_base_url": auth.DEFAULT_NOUS_PORTAL_URL,
+            "portal_base_url": auth.DEFAULT_LUCIFEX_PORTAL_URL,
             "inference_base_url": stored,
             "agent_key": "ak-123",
         }
@@ -449,7 +449,7 @@ class TestProxyAdapterEnvOverride:
         resolution consults the env override before the network validator,
         so a staging override survives the defense-in-depth re-validation."""
         from pathlib import Path
-        import lucifex_cli.proxy.adapters.nous_portal as _nous_adapter
+        import lucifex_cli.proxy.adapters.lucifex_portal as _nous_adapter
 
         source = Path(_nous_adapter.__file__).read_text(encoding="utf-8")
         assert "_nous_inference_env_override()" in source, (

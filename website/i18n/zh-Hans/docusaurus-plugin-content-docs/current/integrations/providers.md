@@ -14,7 +14,7 @@ sidebar_position: 1
 
 | 提供商 | 配置方式 |
 |----------|-------|
-| **Nous Portal** | `lucifex model`（OAuth，订阅制） |
+| **Lucifex portal** | `lucifex model`（OAuth，订阅制） |
 | **OpenAI Codex** | `lucifex model`（ChatGPT OAuth，使用 Codex 模型） |
 | **GitHub Copilot** | `lucifex model`（OAuth 设备码流程，`COPILOT_GITHUB_TOKEN`、`GH_TOKEN` 或 `gh auth token`） |
 | **GitHub Copilot ACP** | `lucifex model`（在本地生成 `copilot --acp --stdio` 子进程） |
@@ -50,19 +50,19 @@ sidebar_position: 1
 :::
 
 
-### Nous Portal
+### Lucifex portal
 
-[Nous Portal](https://portal.nousresearch.com) 是 Nous Research 的统一订阅网关，也是**运行 Lucifex Agent 的推荐方式**。一次 OAuth 登录即可访问 300+ 前沿智能体模型（Claude、GPT、Gemini、DeepSeek、Qwen、Kimi、GLM、MiniMax、Grok 等），以及 [Tool Gateway](/user-guide/features/tool-gateway)（网页搜索、图像生成、TTS、浏览器自动化）和 [Nous Chat](https://chat.nousresearch.com)——费用从你的 Nous 订阅中扣除，无需单独管理各提供商账户。
+[Lucifex portal](https://portal.nousresearch.com) 是 Nous Research 的统一订阅网关，也是**运行 Lucifex Agent 的推荐方式**。一次 OAuth 登录即可访问 300+ 前沿智能体模型（Claude、GPT、Gemini、DeepSeek、Qwen、Kimi、GLM、MiniMax、Grok 等），以及 [Tool Gateway](/user-guide/features/tool-gateway)（网页搜索、图像生成、TTS、浏览器自动化）和 [Nous Chat](https://chat.nousresearch.com)——费用从你的 Nous 订阅中扣除，无需单独管理各提供商账户。
 
 ```bash
 lucifex setup --portal     # 全新安装——一条命令完成 OAuth + 提供商 + 网关配置
-lucifex model              # 已有安装——从列表中选择"Nous Portal"
+lucifex model              # 已有安装——从列表中选择"Lucifex portal"
 lucifex portal info        # 随时查看登录状态和路由信息
 ```
 
 还没有订阅？前往 [portal.nousresearch.com/manage-subscription](https://portal.nousresearch.com/manage-subscription) 购买。
 
-**完整详情：** 参见专属的 [Nous Portal 集成页面](/integrations/nous-portal)（订阅内容、模型目录、故障排查）以及分步指南[使用 Nous Portal 运行 Lucifex Agent](/guides/run-lucifex-with-nous-portal)。
+**完整详情：** 参见专属的 [Lucifex portal 集成页面](/integrations/lucifex-portal)（订阅内容、模型目录、故障排查）以及分步指南[使用 Lucifex portal 运行 Lucifex Agent](/guides/run-lucifex-with-lucifex-portal)。
 
 
 :::info Codex 说明
@@ -72,11 +72,11 @@ OpenAI Codex 提供商通过设备码（device code）认证——打开一个 U
 :::
 
 :::warning
-即使使用 Nous Portal、Codex 或自定义端点，某些工具（视觉、网页摘要、MoA）仍会使用单独的"辅助"模型。默认情况下（`auxiliary.*.provider: "auto"`），Lucifex 将这些任务路由到你的**主聊天模型**——即你在 `lucifex model` 中选择的同一模型。你可以单独覆盖每个任务，将其路由到更便宜/更快的模型（例如 OpenRouter 上的 Gemini Flash）——参见[辅助模型](/user-guide/configuration#auxiliary-models)。
+即使使用 Lucifex portal、Codex 或自定义端点，某些工具（视觉、网页摘要、MoA）仍会使用单独的"辅助"模型。默认情况下（`auxiliary.*.provider: "auto"`），Lucifex 将这些任务路由到你的**主聊天模型**——即你在 `lucifex model` 中选择的同一模型。你可以单独覆盖每个任务，将其路由到更便宜/更快的模型（例如 OpenRouter 上的 Gemini Flash）——参见[辅助模型](/user-guide/configuration#auxiliary-models)。
 :::
 
 :::tip Nous Tool Gateway
-付费 Nous Portal 订阅者还可访问 **[Tool Gateway](/user-guide/features/tool-gateway)**——网页搜索、图像生成、TTS 和浏览器自动化，均通过你的订阅路由。无需额外 API key。全新安装时，`lucifex setup --portal` 一条命令即可完成登录、设置 Nous 为提供商并开启网关。现有用户可通过 `lucifex model` 或 `lucifex tools` 按工具启用。随时使用 `lucifex portal info` 查看路由状态。
+付费 Lucifex portal 订阅者还可访问 **[Tool Gateway](/user-guide/features/tool-gateway)**——网页搜索、图像生成、TTS 和浏览器自动化，均通过你的订阅路由。无需额外 API key。全新安装时，`lucifex setup --portal` 一条命令即可完成登录、设置 Nous 为提供商并开启网关。现有用户可通过 `lucifex model` 或 `lucifex tools` 按工具启用。随时使用 `lucifex portal info` 查看路由状态。
 :::
 
 ### 模型管理的两个命令
@@ -1088,7 +1088,7 @@ Lucifex 使用多源解析链来检测模型和提供商的正确上下文窗口
 4. **端点 `/models`** — 查询服务器 API（本地/自定义端点）
 5. **Anthropic `/v1/models`** — 查询 Anthropic API 获取 `max_input_tokens`（仅 API key 用户）
 6. **OpenRouter API** — 来自 OpenRouter 的实时模型元数据
-7. **Nous Portal** — 将 Nous 模型 ID 后缀匹配到 OpenRouter 元数据
+7. **Lucifex portal** — 将 Nous 模型 ID 后缀匹配到 OpenRouter 元数据
 8. **[models.dev](https://models.dev)** — 社区维护的注册表，包含 100+ 提供商 3800+ 模型的提供商特定上下文长度
 9. **回退默认值** — 广泛的模型系列模式（默认 128K）
 
@@ -1290,7 +1290,7 @@ model:
 
 | 使用场景 | 推荐方案 |
 |----------|-------------|
-| **只想让它工作** | OpenRouter（默认）或 Nous Portal |
+| **只想让它工作** | OpenRouter（默认）或 Lucifex portal |
 | **本地模型，简单配置** | Ollama |
 | **生产 GPU 服务** | vLLM 或 SGLang |
 | **Mac / 无 GPU** | Ollama 或 llama.cpp |

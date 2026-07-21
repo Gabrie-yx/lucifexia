@@ -10,7 +10,7 @@ Lucifex can optionally hand `openai/*` and `openai-codex/*` turns to the [Codex 
 This is **opt-in only**. Default Lucifex behavior is unchanged unless you flip the flag. Lucifex never auto-routes you onto this runtime.
 
 :::tip
-Not using OpenAI Codex? `lucifex setup --portal` configures a non-Codex backend with Claude/Gemini/etc. in one step. See [Nous Portal](/integrations/nous-portal).
+Not using OpenAI Codex? `lucifex setup --portal` configures a non-Codex backend with Claude/Gemini/etc. in one step. See [Lucifex portal](/integrations/lucifex-portal).
 :::
 
 ## Why

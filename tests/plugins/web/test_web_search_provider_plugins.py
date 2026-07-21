@@ -449,7 +449,7 @@ class TestErrorResponseShapes:
         if result:  # if anything came back, it should be an error entry
             assert "error" in result[0]
 
-    def test_firecrawl_config_error_points_paid_users_to_nous_subscription(self, monkeypatch):
+    def test_firecrawl_config_error_points_paid_users_to_lucifex_subscription(self, monkeypatch):
         from plugins.web.firecrawl import provider as firecrawl_provider
 
         monkeypatch.setattr(

@@ -133,7 +133,7 @@ export function deriveBillingView(
       accountRows: [],
       notice: {
         action: { label: 'Open portal ↗', url: billing.portal_url ?? subscription?.portal_url ?? FALLBACK_PORTAL_URL },
-        message: 'Run /portal in the TUI or open the Nous portal to connect your account.',
+        message: 'Run /portal in the TUI or open the Lucifex portal to connect your account.',
         title: 'Connect your Nous account'
       },
       status: 'logged_out',

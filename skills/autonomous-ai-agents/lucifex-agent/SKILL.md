@@ -243,7 +243,7 @@ lucifex update               Update to latest version
 lucifex desktop / gui        Launch the native desktop app
 lucifex dashboard            Web admin panel + embedded chat
 lucifex proxy                OpenAI-compatible local proxy backed by an OAuth provider
-lucifex portal               Quick setup / sign in via Nous Portal
+lucifex portal               Quick setup / sign in via Lucifex portal
 lucifex kanban <verb>        Multi-agent work-queue board (init/create/list/show/assign/…)
 lucifex pairing list/approve/revoke  DM authorization
 lucifex plugins list/install/remove  Plugin management
@@ -408,7 +408,7 @@ Full config reference: https://lucifex-agent.nousresearch.com/docs/user-guide/co
 |----------|------|-------------|
 | OpenRouter | API key | `OPENROUTER_API_KEY` |
 | Anthropic | API key | `ANTHROPIC_API_KEY` |
-| Nous Portal | OAuth | `lucifex auth` |
+| Lucifex portal | OAuth | `lucifex auth` |
 | OpenAI Codex | OAuth | `lucifex auth` |
 | GitHub Copilot | Token | `COPILOT_GITHUB_TOKEN` |
 | Google Gemini | API key | `GOOGLE_API_KEY` or `GEMINI_API_KEY` |

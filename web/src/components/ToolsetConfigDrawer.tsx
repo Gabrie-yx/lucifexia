@@ -300,9 +300,9 @@ export function ToolsetConfigDrawer({ toolset, profile, onClose, onChanged }: Pr
                           {provider.badge}
                         </Badge>
                       )}
-                      {provider.requires_nous_auth && (
+                      {provider.requires_lucifex_auth && (
                         <Badge tone="outline" className="text-xs">
-                          Nous Portal
+                          Lucifex portal
                         </Badge>
                       )}
                     </div>

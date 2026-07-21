@@ -1,12 +1,12 @@
 ---
 sidebar_position: 1
-title: "Run Lucifex Agent with Nous Portal"
+title: "Run Lucifex Agent with Lucifex portal"
 description: "Start-to-finish walkthrough: subscribe, set up, switch models, enable gateway tools, and verify routing"
 ---
 
-# Run Lucifex Agent with Nous Portal
+# Run Lucifex Agent with Lucifex portal
 
-This guide walks you through running Lucifex Agent on a [Nous Portal](https://portal.nousresearch.com) subscription end to end — from signing up to verifying that every tool routes correctly. If you just want the overview of what the Portal is and what's in the subscription, see the [Nous Portal integration page](/integrations/nous-portal). This page is the task script.
+This guide walks you through running Lucifex Agent on a [Lucifex portal](https://portal.nousresearch.com) subscription end to end — from signing up to verifying that every tool routes correctly. If you just want the overview of what the Portal is and what's in the subscription, see the [Lucifex portal integration page](/integrations/lucifex-portal). This page is the task script.
 
 ## Prerequisites
 
@@ -63,7 +63,7 @@ lucifex portal info
 You should see:
 
 ```
-  Nous Portal
+  Lucifex portal
   ───────────
   Auth:    ✓ logged in
   Portal:  https://portal.nousresearch.com
@@ -71,13 +71,13 @@ You should see:
 
   Tool Gateway
   ────────────
-  Web search & extract  via Nous Portal
-  Image generation      via Nous Portal
-  Text-to-speech        via Nous Portal
-  Browser automation    via Nous Portal
+  Web search & extract  via Lucifex portal
+  Image generation      via Lucifex portal
+  Text-to-speech        via Lucifex portal
+  Browser automation    via Lucifex portal
 ```
 
-If any line shows something other than "via Nous Portal" or the auth line says "not logged in", jump to [Troubleshooting](#troubleshooting) below.
+If any line shows something other than "via Lucifex portal" or the auth line says "not logged in", jump to [Troubleshooting](#troubleshooting) below.
 
 ## 4. Run your first conversation
 
@@ -136,7 +136,7 @@ lucifex tools
 # → TTS              → "Nous Subscription"     (recommended)
 ```
 
-These rows appear in `lucifex tools` even before you've logged into Nous Portal — if you pick "Nous Subscription" without an active session, Lucifex runs the Portal login inline (without changing your inference provider or your other tools).
+These rows appear in `lucifex tools` even before you've logged into Lucifex portal — if you pick "Nous Subscription" without an active session, Lucifex runs the Portal login inline (without changing your inference provider or your other tools).
 
 Verify your mix with:
 
@@ -144,7 +144,7 @@ Verify your mix with:
 lucifex portal tools
 ```
 
-You'll see per-tool routing — `via Nous Portal` for the ones routed through the subscription, and the partner name (`browserbase`, `firecrawl`, etc.) for the ones using your own keys.
+You'll see per-tool routing — `via Lucifex portal` for the ones routed through the subscription, and the partner name (`browserbase`, `firecrawl`, etc.) for the ones using your own keys.
 
 ## 7. (Optional) Enable voice mode
 
@@ -200,12 +200,12 @@ Or interactively:
 
 ```bash
 lucifex model
-# pick Nous Portal
+# pick Lucifex portal
 ```
 
 Re-verify with `lucifex portal info`.
 
-### Tool Gateway tools showing partner names instead of "via Nous Portal"
+### Tool Gateway tools showing partner names instead of "via Lucifex portal"
 
 Per-tool config is overriding the gateway. Run:
 
@@ -268,7 +268,7 @@ That's the deal. If you're using more than two of those backends anyway, the sub
 
 ## See also
 
-- **[Nous Portal integration page](/integrations/nous-portal)** — Overview of what's in the subscription
+- **[Lucifex portal integration page](/integrations/lucifex-portal)** — Overview of what's in the subscription
 - **[Tool Gateway](/user-guide/features/tool-gateway)** — Full details on every gateway-routed tool
 - **[Subscription proxy](/user-guide/features/subscription-proxy)** — Use your Portal subscription from non-Lucifex tools
 - **[Voice mode](/user-guide/features/voice-mode)** — Set up voice conversations on the Portal subscription

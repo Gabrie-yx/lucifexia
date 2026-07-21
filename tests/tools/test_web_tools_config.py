@@ -137,7 +137,7 @@ class TestFirecrawlClientConfig:
                     api_url="https://firecrawl-gateway.nousresearch.com",
                 )
 
-    def test_nous_auth_token_respects_lucifex_home_override(self, tmp_path):
+    def test_lucifex_auth_token_respects_lucifex_home_override(self, tmp_path):
         """Auth lookup should read from LUCIFEX_HOME/auth.json, not ~/.lucifex/auth.json."""
         real_home = tmp_path / "real-home"
         (real_home / ".lucifex").mkdir(parents=True)

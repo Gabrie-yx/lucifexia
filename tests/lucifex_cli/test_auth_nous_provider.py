@@ -123,7 +123,7 @@ class TestResolveVerifyFallback:
         )
 
 
-def _setup_nous_auth(
+def _setup_lucifex_auth(
     lucifex_home: Path,
     *,
     access_token: str = "",
@@ -191,7 +191,7 @@ def test_resolve_nous_runtime_credentials_prefers_invoke_jwt_and_mirrors(
 
     lucifex_home = tmp_path / "lucifex"
     token = _invoke_jwt(seconds=3600)
-    _setup_nous_auth(
+    _setup_lucifex_auth(
         lucifex_home,
         access_token=token,
         scope=auth_mod.DEFAULT_NOUS_SCOPE,
@@ -203,8 +203,8 @@ def test_resolve_nous_runtime_credentials_prefers_invoke_jwt_and_mirrors(
     creds = auth_mod.resolve_nous_runtime_credentials()
 
     assert creds["api_key"] == token
-    assert creds["source"] == auth_mod.NOUS_AUTH_PATH_INVOKE_JWT
-    assert creds["auth_path"] == auth_mod.NOUS_AUTH_PATH_INVOKE_JWT
+    assert creds["source"] == auth_mod.LUCIFEX_AUTH_PATH_INVOKE_JWT
+    assert creds["auth_path"] == auth_mod.LUCIFEX_AUTH_PATH_INVOKE_JWT
 
     payload = json.loads((lucifex_home / "auth.json").read_text())
     singleton = payload["providers"]["nous"]
@@ -236,7 +236,7 @@ def test_resolve_nous_runtime_credentials_env_override_wins_live_not_persisted(
     override_url = "https://ai.wildebeest-newton.ts.net/v1"
     network_url = "https://inference-api.nousresearch.com/v1"
     refreshed_token = _invoke_jwt(seconds=3600)
-    _setup_nous_auth(
+    _setup_lucifex_auth(
         lucifex_home,
         access_token=_invoke_jwt(seconds=-60),
         refresh_token="refresh-old",
@@ -270,7 +270,7 @@ def test_resolve_nous_runtime_credentials_env_override_wins_live_not_persisted(
     assert payload["providers"]["nous"]["inference_base_url"] != override_url
     assert payload["credential_pool"]["nous"][0]["inference_base_url"] == network_url
 
-    shared_payload = json.loads((shared_store_env / "nous_auth.json").read_text())
+    shared_payload = json.loads((shared_store_env / "lucifex_auth.json").read_text())
     assert shared_payload["inference_base_url"] == network_url
 
 
@@ -336,7 +336,7 @@ def test_resolve_nous_runtime_credentials_invoke_jwt_is_idempotent(
     creds = auth_mod.resolve_nous_runtime_credentials()
 
     assert creds["api_key"] == token
-    assert creds["source"] == auth_mod.NOUS_AUTH_PATH_INVOKE_JWT
+    assert creds["source"] == auth_mod.LUCIFEX_AUTH_PATH_INVOKE_JWT
     assert auth_path.read_text() == before_content
     assert auth_path.stat().st_mtime_ns == before_mtime
     assert sync_calls == []
@@ -355,7 +355,7 @@ def test_resolve_nous_runtime_credentials_trusts_invoke_jwt_exp_over_stale_metad
 
     lucifex_home = tmp_path / "lucifex"
     token = _invoke_jwt(seconds=3600)
-    _setup_nous_auth(
+    _setup_lucifex_auth(
         lucifex_home,
         access_token=token,
         scope=auth_mod.DEFAULT_NOUS_SCOPE,
@@ -374,7 +374,7 @@ def test_resolve_nous_runtime_credentials_trusts_invoke_jwt_exp_over_stale_metad
     creds = auth_mod.resolve_nous_runtime_credentials()
 
     assert creds["api_key"] == token
-    assert creds["source"] == auth_mod.NOUS_AUTH_PATH_INVOKE_JWT
+    assert creds["source"] == auth_mod.LUCIFEX_AUTH_PATH_INVOKE_JWT
     payload = json.loads((lucifex_home / "auth.json").read_text())
     singleton = payload["providers"]["nous"]
     assert singleton["agent_key"] == token
@@ -390,7 +390,7 @@ def test_resolve_nous_runtime_credentials_does_not_apply_agent_key_ttl_to_invoke
 
     lucifex_home = tmp_path / "lucifex"
     token = _invoke_jwt(seconds=900)
-    _setup_nous_auth(
+    _setup_lucifex_auth(
         lucifex_home,
         access_token=token,
         scope=auth_mod.DEFAULT_NOUS_SCOPE,
@@ -402,7 +402,7 @@ def test_resolve_nous_runtime_credentials_does_not_apply_agent_key_ttl_to_invoke
     creds = auth_mod.resolve_nous_runtime_credentials()
 
     assert creds["api_key"] == token
-    assert creds["source"] == auth_mod.NOUS_AUTH_PATH_INVOKE_JWT
+    assert creds["source"] == auth_mod.LUCIFEX_AUTH_PATH_INVOKE_JWT
     payload = json.loads((lucifex_home / "auth.json").read_text())
     assert payload["providers"]["nous"]["agent_key"] == token
     assert payload["credential_pool"]["nous"][0]["agent_key"] == token
@@ -416,7 +416,7 @@ def test_resolve_nous_runtime_credentials_refreshes_legacy_agent_key_to_invoke_j
 
     lucifex_home = tmp_path / "lucifex"
     refreshed_token = _invoke_jwt(seconds=3600)
-    _setup_nous_auth(
+    _setup_lucifex_auth(
         lucifex_home,
         access_token="legacy-access-token",
         refresh_token="refresh-old",
@@ -447,7 +447,7 @@ def test_resolve_nous_runtime_credentials_refreshes_legacy_agent_key_to_invoke_j
 
     assert refresh_calls == ["refresh-old"]
     assert creds["api_key"] == refreshed_token
-    assert creds["source"] == auth_mod.NOUS_AUTH_PATH_INVOKE_JWT
+    assert creds["source"] == auth_mod.LUCIFEX_AUTH_PATH_INVOKE_JWT
     payload = json.loads((lucifex_home / "auth.json").read_text())
     singleton = payload["providers"]["nous"]
     assert singleton["access_token"] == refreshed_token
@@ -469,7 +469,7 @@ def test_resolve_nous_runtime_credentials_reauths_when_invoke_scope_missing(
         "scope": "inference:mint_agent_key",
         "exp": int(time.time() + 3600),
     })
-    _setup_nous_auth(
+    _setup_lucifex_auth(
         lucifex_home,
         access_token=token,
         refresh_token="",
@@ -526,7 +526,7 @@ def test_removed_legacy_session_env_var_does_not_change_jwt_auth(tmp_path, monke
 
     lucifex_home = tmp_path / "lucifex"
     token = _invoke_jwt(seconds=3600)
-    _setup_nous_auth(
+    _setup_lucifex_auth(
         lucifex_home,
         access_token=token,
         scope=auth_mod.DEFAULT_NOUS_SCOPE,
@@ -591,7 +591,7 @@ def test_nous_inference_auth_logs_do_not_include_secret_values(
     token = _invoke_jwt(seconds=3600)
     refreshed_token = _invoke_jwt(seconds=7200)
     refresh_token = "refresh-secret-token"
-    _setup_nous_auth(
+    _setup_lucifex_auth(
         lucifex_home,
         access_token=token,
         refresh_token=refresh_token,
@@ -625,13 +625,13 @@ def test_nous_inference_auth_logs_do_not_include_secret_values(
     assert refresh_token not in logged
 
 
-def test_get_nous_auth_status_checks_credential_pool(tmp_path, monkeypatch):
-    """get_nous_auth_status() should find Nous credentials in the pool
+def test_get_lucifex_auth_status_checks_credential_pool(tmp_path, monkeypatch):
+    """get_lucifex_auth_status() should find Nous credentials in the pool
     even when the auth store has no Nous provider entry — this is the
     case when login happened via the dashboard device-code flow which
     saves to the pool only.
     """
-    from lucifex_cli.auth import get_nous_auth_status
+    from lucifex_cli.auth import get_lucifex_auth_status
 
     lucifex_home = tmp_path / "lucifex"
     lucifex_home.mkdir(parents=True, exist_ok=True)
@@ -661,13 +661,13 @@ def test_get_nous_auth_status_checks_credential_pool(tmp_path, monkeypatch):
     })
     pool.add_entry(entry)
 
-    status = get_nous_auth_status()
+    status = get_lucifex_auth_status()
     assert status["logged_in"] is True
     assert "example.com" in str(status.get("portal_base_url", ""))
 
 
-def test_get_nous_auth_status_pool_opaque_key_is_not_inference_credential(tmp_path, monkeypatch):
-    from lucifex_cli.auth import get_nous_auth_status, invalidate_nous_auth_status_cache
+def test_get_lucifex_auth_status_pool_opaque_key_is_not_inference_credential(tmp_path, monkeypatch):
+    from lucifex_cli.auth import get_lucifex_auth_status, invalidate_lucifex_auth_status_cache
 
     lucifex_home = tmp_path / "lucifex"
     lucifex_home.mkdir(parents=True, exist_ok=True)
@@ -675,7 +675,7 @@ def test_get_nous_auth_status_pool_opaque_key_is_not_inference_credential(tmp_pa
         "version": 1, "providers": {},
     }))
     monkeypatch.setenv("LUCIFEX_HOME", str(lucifex_home))
-    invalidate_nous_auth_status_cache()
+    invalidate_lucifex_auth_status_cache()
 
     from agent.credential_pool import PooledCredential, load_pool
     pool = load_pool("nous")
@@ -691,7 +691,7 @@ def test_get_nous_auth_status_pool_opaque_key_is_not_inference_credential(tmp_pa
     })
     pool.add_entry(entry)
 
-    status = get_nous_auth_status()
+    status = get_lucifex_auth_status()
 
     assert status["logged_in"] is False
     assert status["inference_credential_present"] is False
@@ -699,17 +699,17 @@ def test_get_nous_auth_status_pool_opaque_key_is_not_inference_credential(tmp_pa
     assert status.get("access_token") is None
     assert status.get("portal_base_url") is None
     assert status.get("inference_base_url") is None
-    invalidate_nous_auth_status_cache()
+    invalidate_lucifex_auth_status_cache()
 
 
-def test_get_nous_auth_status_auth_store_fallback(tmp_path, monkeypatch):
-    """get_nous_auth_status() falls back to auth store when credential
+def test_get_lucifex_auth_status_auth_store_fallback(tmp_path, monkeypatch):
+    """get_lucifex_auth_status() falls back to auth store when credential
     pool is empty.
     """
-    from lucifex_cli.auth import get_nous_auth_status
+    from lucifex_cli.auth import get_lucifex_auth_status
 
     lucifex_home = tmp_path / "lucifex"
-    _setup_nous_auth(lucifex_home, access_token="at-123")
+    _setup_lucifex_auth(lucifex_home, access_token="at-123")
     monkeypatch.setenv("LUCIFEX_HOME", str(lucifex_home))
     monkeypatch.setattr(
         "lucifex_cli.auth.resolve_nous_runtime_credentials",
@@ -721,17 +721,17 @@ def test_get_nous_auth_status_auth_store_fallback(tmp_path, monkeypatch):
         },
     )
 
-    status = get_nous_auth_status()
+    status = get_lucifex_auth_status()
     assert status["logged_in"] is True
     assert status["portal_base_url"] == "https://portal.example.com"
 
 
-def test_get_nous_auth_status_prefers_runtime_auth_store_over_stale_pool(tmp_path, monkeypatch):
-    from lucifex_cli.auth import get_nous_auth_status
+def test_get_lucifex_auth_status_prefers_runtime_auth_store_over_stale_pool(tmp_path, monkeypatch):
+    from lucifex_cli.auth import get_lucifex_auth_status
     from agent.credential_pool import PooledCredential, load_pool
 
     lucifex_home = tmp_path / "lucifex"
-    _setup_nous_auth(lucifex_home, access_token="at-fresh")
+    _setup_lucifex_auth(lucifex_home, access_token="at-fresh")
     monkeypatch.setenv("LUCIFEX_HOME", str(lucifex_home))
 
     pool = load_pool("nous")
@@ -761,18 +761,18 @@ def test_get_nous_auth_status_prefers_runtime_auth_store_over_stale_pool(tmp_pat
         },
     )
 
-    status = get_nous_auth_status()
+    status = get_lucifex_auth_status()
     assert status["logged_in"] is True
     assert status["portal_base_url"] == "https://portal.example.com"
     assert status["inference_base_url"] == "https://inference.example.com/v1"
     assert status["source"] == "runtime:portal"
 
 
-def test_get_nous_auth_status_reports_revoked_refresh_session(tmp_path, monkeypatch):
-    from lucifex_cli.auth import get_nous_auth_status
+def test_get_lucifex_auth_status_reports_revoked_refresh_session(tmp_path, monkeypatch):
+    from lucifex_cli.auth import get_lucifex_auth_status
 
     lucifex_home = tmp_path / "lucifex"
-    _setup_nous_auth(lucifex_home, access_token="at-123")
+    _setup_lucifex_auth(lucifex_home, access_token="at-123")
     monkeypatch.setenv("LUCIFEX_HOME", str(lucifex_home))
 
     def _boom(**kwargs):
@@ -780,18 +780,18 @@ def test_get_nous_auth_status_reports_revoked_refresh_session(tmp_path, monkeypa
 
     monkeypatch.setattr("lucifex_cli.auth.resolve_nous_runtime_credentials", _boom)
 
-    status = get_nous_auth_status()
+    status = get_lucifex_auth_status()
     assert status["logged_in"] is False
     assert status["relogin_required"] is True
     assert "revoked" in status["error"].lower()
     assert status["portal_base_url"] == "https://portal.example.com"
 
 
-def test_get_nous_auth_status_empty_returns_not_logged_in(tmp_path, monkeypatch):
-    """get_nous_auth_status() returns logged_in=False when both pool
+def test_get_lucifex_auth_status_empty_returns_not_logged_in(tmp_path, monkeypatch):
+    """get_lucifex_auth_status() returns logged_in=False when both pool
     and auth store are empty.
     """
-    from lucifex_cli.auth import get_nous_auth_status
+    from lucifex_cli.auth import get_lucifex_auth_status
 
     lucifex_home = tmp_path / "lucifex"
     lucifex_home.mkdir(parents=True, exist_ok=True)
@@ -800,13 +800,13 @@ def test_get_nous_auth_status_empty_returns_not_logged_in(tmp_path, monkeypatch)
     }))
     monkeypatch.setenv("LUCIFEX_HOME", str(lucifex_home))
 
-    status = get_nous_auth_status()
+    status = get_lucifex_auth_status()
     assert status["logged_in"] is False
 
 
 def test_refresh_token_persisted_when_refreshed_jwt_lacks_invoke_scope(tmp_path, monkeypatch):
     lucifex_home = tmp_path / "lucifex"
-    _setup_nous_auth(
+    _setup_lucifex_auth(
         lucifex_home,
         access_token="access-old",
         refresh_token="refresh-old",
@@ -853,7 +853,7 @@ def test_refresh_token_persisted_when_refreshed_jwt_lacks_invoke_scope(tmp_path,
 
 def test_refresh_token_persisted_when_refreshed_token_is_not_jwt(tmp_path, monkeypatch):
     lucifex_home = tmp_path / "lucifex"
-    _setup_nous_auth(
+    _setup_lucifex_auth(
         lucifex_home,
         access_token="access-old",
         refresh_token="refresh-old",
@@ -887,7 +887,7 @@ def test_terminal_refresh_failure_quarantines_tokens(
     from lucifex_cli import auth as auth_mod
 
     lucifex_home = tmp_path / "lucifex"
-    _setup_nous_auth(
+    _setup_lucifex_auth(
         lucifex_home,
         access_token="access-old",
         refresh_token="refresh-old",
@@ -941,7 +941,7 @@ def test_managed_access_token_refresh_failure_quarantines_tokens(
     from lucifex_cli import auth as auth_mod
 
     lucifex_home = tmp_path / "lucifex"
-    _setup_nous_auth(lucifex_home, refresh_token="refresh-old")
+    _setup_lucifex_auth(lucifex_home, refresh_token="refresh-old")
     monkeypatch.setenv("LUCIFEX_HOME", str(lucifex_home))
     from agent.credential_pool import load_pool
 
@@ -979,7 +979,7 @@ def test_managed_access_token_refresh_failure_quarantines_tokens(
 
 def test_unusable_access_token_refresh_uses_latest_rotated_refresh_token(tmp_path, monkeypatch):
     lucifex_home = tmp_path / "lucifex"
-    _setup_nous_auth(
+    _setup_lucifex_auth(
         lucifex_home,
         access_token="access-old",
         refresh_token="refresh-old",
@@ -1016,7 +1016,7 @@ def test_unusable_access_token_refresh_uses_latest_rotated_refresh_token(tmp_pat
 
 
 class TestLoginNousSkipKeepsCurrent:
-    """When a user runs `lucifex model` → Nous Portal → Skip (keep current) after
+    """When a user runs `lucifex model` → Lucifex portal → Skip (keep current) after
     a successful OAuth login, the prior provider and model MUST be preserved.
 
     Regression: previously, _update_config_for_provider was called
@@ -1051,7 +1051,7 @@ class TestLoginNousSkipKeepsCurrent:
         """Patch OAuth + model-list + prompt so _login_nous doesn't hit network."""
         import lucifex_cli.auth as auth_mod
         import lucifex_cli.models as models_mod
-        import lucifex_cli.nous_subscription as ns
+        import lucifex_cli.lucifex_subscription as ns
 
         fake_auth_state = {
             "access_token": "fake-nous-token",
@@ -1180,7 +1180,7 @@ class TestLoginNousSkipKeepsCurrent:
 
 def _full_state_fixture() -> dict:
     """Shape of the dict returned by _nous_device_code_login /
-    refresh_nous_oauth_from_state. Used as helper input."""
+    refresh_lucifex_oauth_from_state. Used as helper input."""
     token = _invoke_jwt(seconds=3600)
     expires_at = _future_iso(3600)
     return {
@@ -1250,7 +1250,7 @@ def test_persist_nous_credentials_writes_both_pool_and_providers(tmp_path, monke
 
 def test_persist_nous_credentials_allows_recovery_from_401(tmp_path, monkeypatch):
     """End-to-end: after persisting via the helper, resolve_nous_runtime_credentials
-    must succeed (not raise "Lucifex is not logged into Nous Portal").
+    must succeed (not raise "Lucifex is not logged into Lucifex portal").
 
     This is the exact path that run_agent.py's `_try_refresh_nous_client_credentials`
     calls after a Nous 401 — before the fix it would raise AuthError because
@@ -1273,7 +1273,7 @@ def test_persist_nous_credentials_allows_recovery_from_401(tmp_path, monkeypatch
 
     # Stub the network-touching steps so we don't actually contact the
     # portal — the point of this test is that state lookup succeeds and
-    # doesn't raise "Lucifex is not logged into Nous Portal".
+    # doesn't raise "Lucifex is not logged into Lucifex portal".
     def _fake_refresh_access_token(*, client, portal_base_url, client_id, refresh_token):
         return {
             "access_token": new_jwt,
@@ -1442,7 +1442,7 @@ def test_persist_nous_credentials_no_label_uses_auto_derived(tmp_path, monkeypat
 def test_refresh_token_reuse_detection_surfaces_actionable_message():
     """Regression for #15099.
 
-    When the Nous Portal server returns ``invalid_grant`` with
+    When the Lucifex portal server returns ``invalid_grant`` with
     ``error_description`` containing "reuse detected", Lucifex must surface an
     actionable message explaining that an external process consumed the
     refresh token.  The default opaque "Refresh token reuse detected; please
@@ -1768,7 +1768,7 @@ def test_try_import_shared_returns_none_on_refresh_failure(
             relogin_required=True,
         )
 
-    monkeypatch.setattr(auth_mod, "refresh_nous_oauth_from_state", _boom)
+    monkeypatch.setattr(auth_mod, "refresh_lucifex_oauth_from_state", _boom)
 
     assert auth_mod._try_import_shared_nous_state() is None
     assert auth_mod._read_shared_nous_state() is None
@@ -1830,7 +1830,7 @@ def test_try_import_shared_rehydrates_on_success(shared_store_env, monkeypatch):
             "agent_key_expires_at": _future_iso(7200),
         }
 
-    monkeypatch.setattr(auth_mod, "refresh_nous_oauth_from_state", _fake_refresh)
+    monkeypatch.setattr(auth_mod, "refresh_lucifex_oauth_from_state", _fake_refresh)
 
     result = auth_mod._try_import_shared_nous_state()
 
@@ -1895,7 +1895,7 @@ def test_shared_store_survives_across_profile_switch(
             "agent_key_expires_at": _future_iso(7200),
         }
 
-    monkeypatch.setattr(auth_mod, "refresh_nous_oauth_from_state", _fake_refresh)
+    monkeypatch.setattr(auth_mod, "refresh_lucifex_oauth_from_state", _fake_refresh)
     result = auth_mod._try_import_shared_nous_state()
     assert result is not None
 
@@ -1924,7 +1924,7 @@ def test_runtime_refresh_uses_newer_shared_token_before_local_stale_token(
     from lucifex_cli import auth as auth_mod
 
     profile_b = tmp_path / "profile_b"
-    _setup_nous_auth(
+    _setup_lucifex_auth(
         profile_b,
         access_token="local-expired-access",
         refresh_token="local-stale-refresh",
@@ -1966,7 +1966,7 @@ def test_runtime_credentials_merges_shared_token_before_empty_local_access_token
     from lucifex_cli import auth as auth_mod
 
     profile_b = tmp_path / "profile_b"
-    _setup_nous_auth(
+    _setup_lucifex_auth(
         profile_b,
         access_token="local-placeholder",
         refresh_token="local-stale-refresh",
@@ -2012,7 +2012,7 @@ def test_runtime_shared_recovery_recomputes_routing_before_force_refresh(
     from lucifex_cli import auth as auth_mod
 
     profile_b = tmp_path / "profile_b"
-    _setup_nous_auth(
+    _setup_lucifex_auth(
         profile_b,
         access_token="local-placeholder",
         refresh_token="local-stale-refresh",
@@ -2074,7 +2074,7 @@ def test_runtime_unusable_local_token_recomputes_shared_routing(
     from lucifex_cli import auth as auth_mod
 
     profile_b = tmp_path / "profile_b"
-    _setup_nous_auth(
+    _setup_lucifex_auth(
         profile_b,
         access_token="local-not-an-invoke-jwt",
         refresh_token="local-stale-refresh",
@@ -2126,7 +2126,7 @@ def test_runtime_refresh_persists_routing_before_jwt_validation_failure(
     from lucifex_cli import auth as auth_mod
 
     profile_b = tmp_path / "profile_b"
-    _setup_nous_auth(
+    _setup_lucifex_auth(
         profile_b,
         access_token="local-unusable",
         refresh_token="local-refresh",
@@ -2170,7 +2170,7 @@ def test_runtime_shared_recovery_honors_inference_env_override(
     from lucifex_cli import auth as auth_mod
 
     profile_b = tmp_path / "profile_b"
-    _setup_nous_auth(
+    _setup_lucifex_auth(
         profile_b,
         access_token="local-placeholder",
         refresh_token="local-stale-refresh",
@@ -2215,7 +2215,7 @@ def test_managed_gateway_access_token_uses_newer_shared_token(
     from lucifex_cli import auth as auth_mod
 
     profile_b = tmp_path / "profile_b"
-    _setup_nous_auth(
+    _setup_lucifex_auth(
         profile_b,
         access_token="local-expired-access",
         refresh_token="local-stale-refresh",
@@ -2240,10 +2240,10 @@ def test_managed_gateway_access_token_uses_newer_shared_token(
     assert profile_state["refresh_token"] == "shared-fresh-refresh"
 
 class TestStalePortalBaseUrlMigration:
-    """_migrate_stale_nous_portal_url auto-corrects stale portal_base_url on load."""
+    """_migrate_stale_lucifex_portal_url auto-corrects stale portal_base_url on load."""
 
     def test_migrates_stale_portal_url_on_load(self, tmp_path, monkeypatch):
-        from lucifex_cli.auth import _load_auth_store, DEFAULT_NOUS_PORTAL_URL
+        from lucifex_cli.auth import _load_auth_store, DEFAULT_LUCIFEX_PORTAL_URL
 
         monkeypatch.setenv("LUCIFEX_HOME", str(tmp_path))
         auth_file = tmp_path / "auth.json"
@@ -2261,10 +2261,10 @@ class TestStalePortalBaseUrlMigration:
 
         store = _load_auth_store(auth_file)
         nous = store["providers"]["nous"]
-        assert nous["portal_base_url"] == DEFAULT_NOUS_PORTAL_URL
+        assert nous["portal_base_url"] == DEFAULT_LUCIFEX_PORTAL_URL
 
     def test_preserves_correct_portal_url(self, tmp_path, monkeypatch):
-        from lucifex_cli.auth import _load_auth_store, DEFAULT_NOUS_PORTAL_URL
+        from lucifex_cli.auth import _load_auth_store, DEFAULT_LUCIFEX_PORTAL_URL
 
         monkeypatch.setenv("LUCIFEX_HOME", str(tmp_path))
         auth_file = tmp_path / "auth.json"
@@ -2273,7 +2273,7 @@ class TestStalePortalBaseUrlMigration:
             "active_provider": "nous",
             "providers": {
                 "nous": {
-                    "portal_base_url": DEFAULT_NOUS_PORTAL_URL,
+                    "portal_base_url": DEFAULT_LUCIFEX_PORTAL_URL,
                     "access_token": "test-token",
                     "refresh_token": "test-refresh",
                 }
@@ -2282,10 +2282,10 @@ class TestStalePortalBaseUrlMigration:
 
         store = _load_auth_store(auth_file)
         nous = store["providers"]["nous"]
-        assert nous["portal_base_url"] == DEFAULT_NOUS_PORTAL_URL
+        assert nous["portal_base_url"] == DEFAULT_LUCIFEX_PORTAL_URL
 
     def test_ignores_other_providers(self, tmp_path, monkeypatch):
-        from lucifex_cli.auth import _load_auth_store, DEFAULT_NOUS_PORTAL_URL
+        from lucifex_cli.auth import _load_auth_store, DEFAULT_LUCIFEX_PORTAL_URL
 
         monkeypatch.setenv("LUCIFEX_HOME", str(tmp_path))
         auth_file = tmp_path / "auth.json"
@@ -2316,7 +2316,7 @@ class TestStalePortalBaseUrlMigration:
         from lucifex_cli import auth as auth_mod
 
         monkeypatch.setenv("LUCIFEX_HOME", str(tmp_path))
-        _setup_nous_auth(
+        _setup_lucifex_auth(
             tmp_path,
             access_token="expired-access",
             refresh_token="valid-refresh",
@@ -2343,13 +2343,13 @@ class TestStalePortalBaseUrlMigration:
         token = auth_mod.resolve_nous_access_token()
         assert token == "refreshed-access"
         assert len(refresh_calls) == 1
-        assert refresh_calls[0] == auth_mod.DEFAULT_NOUS_PORTAL_URL
+        assert refresh_calls[0] == auth_mod.DEFAULT_LUCIFEX_PORTAL_URL
 
     def test_runtime_accepts_localhost(self, tmp_path, monkeypatch):
         from lucifex_cli import auth as auth_mod
 
         monkeypatch.setenv("LUCIFEX_HOME", str(tmp_path))
-        _setup_nous_auth(
+        _setup_lucifex_auth(
             tmp_path,
             access_token="expired-access",
             refresh_token="valid-refresh",
@@ -2390,7 +2390,7 @@ class TestStalePortalBaseUrlMigration:
 
         lucifex_home = tmp_path / "lucifex"
         monkeypatch.setenv("LUCIFEX_HOME", str(lucifex_home))
-        _setup_nous_auth(
+        _setup_lucifex_auth(
             lucifex_home,
             access_token=_invoke_jwt(seconds=-60),
             refresh_token="valid-refresh",
@@ -2420,7 +2420,7 @@ class TestStalePortalBaseUrlMigration:
 
         auth_mod.resolve_nous_runtime_credentials()
         assert len(refresh_calls) == 1
-        assert refresh_calls[0] == auth_mod.DEFAULT_NOUS_PORTAL_URL
+        assert refresh_calls[0] == auth_mod.DEFAULT_LUCIFEX_PORTAL_URL
 
     def test_runtime_credentials_rejects_http_for_production_portal(
         self, tmp_path, monkeypatch,
@@ -2430,7 +2430,7 @@ class TestStalePortalBaseUrlMigration:
 
         lucifex_home = tmp_path / "lucifex"
         monkeypatch.setenv("LUCIFEX_HOME", str(lucifex_home))
-        _setup_nous_auth(
+        _setup_lucifex_auth(
             lucifex_home,
             access_token=_invoke_jwt(seconds=-60),
             refresh_token="valid-refresh",
@@ -2463,4 +2463,4 @@ class TestStalePortalBaseUrlMigration:
         )
 
         auth_mod.resolve_nous_runtime_credentials()
-        assert refresh_calls == [auth_mod.DEFAULT_NOUS_PORTAL_URL]
+        assert refresh_calls == [auth_mod.DEFAULT_LUCIFEX_PORTAL_URL]

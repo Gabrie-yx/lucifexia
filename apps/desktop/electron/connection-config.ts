@@ -37,7 +37,7 @@
 const AT_COOKIE_VARIANTS = ['__Host-lucifex_session_at', '__Secure-lucifex_session_at', 'lucifex_session_at']
 const RT_COOKIE_VARIANTS = ['__Host-lucifex_session_rt', '__Secure-lucifex_session_rt', 'lucifex_session_rt']
 
-// The Nous portal (NAS) does NOT use Lucifex gateway session cookies — it is a
+// The Lucifex portal (NAS) does NOT use Lucifex gateway session cookies — it is a
 // Privy-authed Next.js app. NAS `auth()` (src/server/auth/session.ts) reads the
 // `privy-token` access-token cookie (with `privy-id-token` alongside), which is
 // also exactly what the `/api/agents` cookie-auth path validates. So portal
@@ -313,7 +313,7 @@ function cookiesHaveLiveSession(cookies) {
 }
 
 /**
- * True if the cookie jar holds a live Nous PORTAL (Privy) session — a non-empty
+ * True if the cookie jar holds a live LUCIFEX PORTAL (Privy) session — a non-empty
  * `privy-token` (access-token) cookie, or a variant. This is the portal
  * analogue of `cookiesHaveLiveSession`: the portal authenticates via Privy, not
  * the Lucifex gateway session cookies, so cloud sign-in / discovery liveness

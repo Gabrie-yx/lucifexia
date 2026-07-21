@@ -135,7 +135,7 @@ describe('/credits slash command', () => {
 
     await run()
 
-    expect(sys).toHaveBeenCalledWith('💳 Not logged into Nous Portal — run /portal to log in.')
+    expect(sys).toHaveBeenCalledWith('💳 Not logged into Lucifex portal — run /portal to log in.')
     expect(getOverlayState().confirm).toBeNull()
     expect(openExternalUrlMock).not.toHaveBeenCalled()
   })

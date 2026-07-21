@@ -32,8 +32,8 @@ from agent.billing_view import (
     parse_money,
     validate_charge_amount,
 )
-import lucifex_cli.nous_billing as nb
-from lucifex_cli.nous_billing import (
+import lucifex_cli.lucifex_billing as nb
+from lucifex_cli.lucifex_billing import (
     BillingAuthError,
     BillingError,
     BillingRateLimited,
@@ -417,7 +417,7 @@ def test_portal_base_url_env_override(monkeypatch):
 
 def test_portal_base_url_falls_back_to_state(monkeypatch):
     monkeypatch.delenv("LUCIFEX_PORTAL_BASE_URL", raising=False)
-    monkeypatch.delenv("NOUS_PORTAL_BASE_URL", raising=False)
+    monkeypatch.delenv("LUCIFEX_PORTAL_BASE_URL", raising=False)
     assert (
         resolve_portal_base_url({"portal_base_url": "https://stored.example.com/"})
         == "https://stored.example.com"
@@ -426,7 +426,7 @@ def test_portal_base_url_falls_back_to_state(monkeypatch):
 
 def test_portal_base_url_default(monkeypatch):
     monkeypatch.delenv("LUCIFEX_PORTAL_BASE_URL", raising=False)
-    monkeypatch.delenv("NOUS_PORTAL_BASE_URL", raising=False)
+    monkeypatch.delenv("LUCIFEX_PORTAL_BASE_URL", raising=False)
     assert resolve_portal_base_url() == nb.DEFAULT_PORTAL_BASE_URL
 
 

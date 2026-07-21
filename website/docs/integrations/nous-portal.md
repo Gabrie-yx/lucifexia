@@ -1,12 +1,12 @@
 ---
 sidebar_position: 1
-title: "Nous Portal"
+title: "Lucifex portal"
 description: "One subscription, 300+ frontier models, the Tool Gateway, and Nous Chat — the recommended way to run Lucifex Agent"
 ---
 
-# Nous Portal
+# Lucifex portal
 
-[Nous Portal](https://portal.nousresearch.com) is Nous Research's unified subscription gateway and **the recommended way to run Lucifex Agent**. One OAuth login replaces the juggling act of separate accounts, API keys, and billing relationships across every model lab, search API, image generator, and browser provider you'd otherwise need to wire up by hand.
+[Lucifex portal](https://portal.nousresearch.com) is Nous Research's unified subscription gateway and **the recommended way to run Lucifex Agent**. One OAuth login replaces the juggling act of separate accounts, API keys, and billing relationships across every model lab, search API, image generator, and browser provider you'd otherwise need to wire up by hand.
 
 If you only have time to set up one thing, set up this. The fastest path:
 
@@ -112,7 +112,7 @@ If you already have Lucifex configured with OpenRouter, Anthropic, or any other 
 
 ```bash
 lucifex model
-# pick "Nous Portal" from the provider list
+# pick "Lucifex portal" from the provider list
 # browser opens, sign in, done
 ```
 
@@ -131,7 +131,7 @@ If you use [Lucifex profiles](/user-guide/profiles), the Portal refresh token is
 ### Inspecting what's wired up
 
 ```bash
-lucifex portal            # log in to Nous Portal + set it up (one-shot onboarding)
+lucifex portal            # log in to Lucifex portal + set it up (one-shot onboarding)
 lucifex portal info       # login status, subscription info, model + gateway routing
 lucifex portal status     # alias for `portal info`
 lucifex portal tools      # detailed Tool Gateway catalog with per-tool routing
@@ -143,7 +143,7 @@ lucifex portal open       # open the subscription management page in your browse
 `lucifex portal info` gives you the high-level overview:
 
 ```
-  Nous Portal
+  Lucifex portal
   ───────────
   Auth:    ✓ logged in
   Portal:  https://portal.nousresearch.com
@@ -151,10 +151,10 @@ lucifex portal open       # open the subscription management page in your browse
 
   Tool Gateway
   ────────────
-  Web search & extract  via Nous Portal
-  Image generation      via Nous Portal
-  Text-to-speech        via Nous Portal
-  Browser automation    via Nous Portal
+  Web search & extract  via Lucifex portal
+  Image generation      via Lucifex portal
+  Text-to-speech        via Lucifex portal
+  Browser automation    via Lucifex portal
   Cloud terminal        not configured
 ```
 
@@ -193,7 +193,7 @@ lucifex tools
 # → TTS              → "Nous Subscription"
 ```
 
-The Tool Gateway is opt-in per tool, not all-or-nothing. The managed backends show up in `lucifex tools` whether or not you're logged into Nous Portal — if you pick "Nous Subscription" before authenticating, Lucifex runs the Portal login inline (it won't change your inference provider or touch your other tools). See the [Tool Gateway docs](/user-guide/features/tool-gateway) for the full per-tool configuration matrix.
+The Tool Gateway is opt-in per tool, not all-or-nothing. The managed backends show up in `lucifex tools` whether or not you're logged into Lucifex portal — if you pick "Nous Subscription" before authenticating, Lucifex runs the Portal login inline (it won't change your inference provider or touch your other tools). See the [Tool Gateway docs](/user-guide/features/tool-gateway) for the full per-tool configuration matrix.
 
 ### Subscription management
 
@@ -247,7 +247,7 @@ You haven't completed the OAuth flow, or your refresh token was wiped. Run:
 lucifex portal
 ```
 
-or use `lucifex model` and re-select Nous Portal.
+or use `lucifex model` and re-select Lucifex portal.
 
 ### Got a "re-authentication required" message mid-session
 
@@ -265,7 +265,7 @@ If a model is genuinely missing, [open an issue](https://github.com/NousResearch
 
 ### Bills not appearing on my Portal account
 
-Check `lucifex portal info` first — if it shows you're using a different provider (`Model: currently openrouter` instead of `using Nous as inference provider`), your local config has drifted. Run `lucifex model`, pick Nous Portal, and the next request will route through your subscription.
+Check `lucifex portal info` first — if it shows you're using a different provider (`Model: currently openrouter` instead of `using Nous as inference provider`), your local config has drifted. Run `lucifex model`, pick Lucifex portal, and the next request will route through your subscription.
 
 ## See also
 

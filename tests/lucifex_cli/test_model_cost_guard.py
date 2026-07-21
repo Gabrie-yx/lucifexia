@@ -75,7 +75,7 @@ def test_openai_gpt55_pro_adds_suggestion(monkeypatch):
     assert "did you mean to select openai/gpt-5.5?" in warning.message
 
 
-def test_openai_gpt55_pro_warns_for_nous_portal_pricing(monkeypatch):
+def test_openai_gpt55_pro_warns_for_lucifex_portal_pricing(monkeypatch):
     monkeypatch.setattr("agent.models_dev.get_model_info", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(
         "agent.usage_pricing.fetch_endpoint_model_metadata",

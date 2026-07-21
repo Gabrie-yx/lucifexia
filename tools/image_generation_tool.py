@@ -516,7 +516,7 @@ def _submit_fal_request(model: str, arguments: Dict[str, Any]):
             raise ValueError(
                 f"Nous Subscription gateway rejected model '{model}' "
                 f"(HTTP {status}). This model may not yet be enabled on "
-                f"the Nous Portal's FAL proxy. Either:\n"
+                f"the Lucifex portal's FAL proxy. Either:\n"
                 f"  • Set FAL_KEY in your environment to use FAL.ai directly, or\n"
                 f"  • Pick a different model via `lucifex tools` → Image Generation."
                 f"{gateway_message}"

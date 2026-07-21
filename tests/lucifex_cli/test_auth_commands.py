@@ -178,7 +178,7 @@ def test_auth_add_qwen_oauth_sets_active_provider(tmp_path, monkeypatch):
     assert entry["access_token"] == "qwen-test-token"
 
 
-def test_auth_add_nous_oauth_persists_pool_entry(tmp_path, monkeypatch):
+def test_auth_add_lucifex_oauth_persists_pool_entry(tmp_path, monkeypatch):
     monkeypatch.setenv("LUCIFEX_HOME", str(tmp_path / "lucifex"))
     _write_auth_store(tmp_path, {"version": 1, "providers": {}})
     token = _jwt_with_email("nous@example.com")
@@ -242,7 +242,7 @@ def test_auth_add_nous_oauth_persists_pool_entry(tmp_path, monkeypatch):
     # `lucifex auth add nous` must also populate providers.nous so the
     # 401-recovery path (resolve_nous_runtime_credentials) can refresh an
     # invoke JWT when the token expires. If this mirror is missing, recovery
-    # raises "Lucifex is not logged into Nous Portal" and the agent dies.
+    # raises "Lucifex is not logged into Lucifex portal" and the agent dies.
     singleton = payload["providers"]["nous"]
     assert singleton["access_token"] == token
     assert singleton["refresh_token"] == "refresh-token"
@@ -295,7 +295,7 @@ def test_auth_add_minimax_oauth_starts_login_and_persists_pool_entry(tmp_path, m
     assert entry["base_url"] == "https://api.minimax.io/anthropic"
 
 
-def test_auth_add_nous_oauth_honors_custom_label(tmp_path, monkeypatch):
+def test_auth_add_lucifex_oauth_honors_custom_label(tmp_path, monkeypatch):
     """`lucifex auth add nous --type oauth --label <name>` must preserve the
     custom label end-to-end — it was silently dropped in the first cut of the
     persist_nous_credentials helper because `--label` wasn't threaded through.

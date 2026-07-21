@@ -154,7 +154,7 @@ lucifex-agent/
 │   ├── main.py                   # Punto de entrada, análisis de argumentos, despacho de comandos
 │   ├── config.py                 # Gestión de configuración, migración, definiciones de variables de entorno
 │   ├── setup.py                  # Asistente de configuración interactivo
-│   ├── auth.py                   # Resolución de proveedor, OAuth, Nous Portal
+│   ├── auth.py                   # Resolución de proveedor, OAuth, Lucifex portal
 │   ├── models.py                 # Listas de selección de modelos de OpenRouter
 │   ├── banner.py                 # Banner de bienvenida, arte ASCII
 │   ├── commands.py               # Registro central de comandos de barra (CommandDef), autocompletado, ayudantes del gateway
@@ -206,7 +206,7 @@ lucifex-agent/
 |------|-----------|
 | `~/.lucifex/config.yaml` | Configuración (modelo, terminal, toolsets, compresión, etc.) |
 | `~/.lucifex/.env` | Claves API y secretos |
-| `~/.lucifex/auth.json` | Credenciales OAuth (Nous Portal) |
+| `~/.lucifex/auth.json` | Credenciales OAuth (Lucifex portal) |
 | `~/.lucifex/skills/` | Todas las habilidades activas (incluidas + instaladas desde hub + creadas por el agente) |
 | `~/.lucifex/memories/` | Memoria persistente (MEMORY.md, USER.md) |
 | `~/.lucifex/state.db` | Base de datos de sesiones SQLite |

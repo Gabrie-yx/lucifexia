@@ -86,7 +86,7 @@ function config(overrides: Partial<ToolsetConfig> = {}): ToolsetConfig {
         tag: 'No API key needed',
         env_vars: [],
         post_setup: null,
-        requires_nous_auth: false,
+        requires_lucifex_auth: false,
         is_active: false
       },
       {
@@ -97,7 +97,7 @@ function config(overrides: Partial<ToolsetConfig> = {}): ToolsetConfig {
           { key: 'ELEVENLABS_API_KEY', prompt: 'ElevenLabs API key', url: 'https://x', default: null, is_set: false }
         ],
         post_setup: null,
-        requires_nous_auth: false,
+        requires_lucifex_auth: false,
         is_active: false
       }
     ],
@@ -160,7 +160,7 @@ describe('ToolsetConfigPanel', () => {
               { key: 'VOICE_TOOLS_OPENAI_KEY', prompt: 'OpenAI API key', url: 'https://x', default: null, is_set: true }
             ],
             post_setup: null,
-            requires_nous_auth: false,
+            requires_lucifex_auth: false,
             is_active: true,
             tts_provider: 'openai'
           }
@@ -223,7 +223,7 @@ describe('ToolsetConfigPanel', () => {
             tag: 'Multi-model image generation',
             env_vars: [],
             post_setup: null,
-            requires_nous_auth: false,
+            requires_lucifex_auth: false,
             is_active: true
           }
         ]
@@ -299,7 +299,7 @@ describe('ToolsetConfigPanel', () => {
             tag: 'No API key needed',
             env_vars: [],
             post_setup: null,
-            requires_nous_auth: false,
+            requires_lucifex_auth: false,
             is_active: false
           },
           {
@@ -316,7 +316,7 @@ describe('ToolsetConfigPanel', () => {
               }
             ],
             post_setup: null,
-            requires_nous_auth: false,
+            requires_lucifex_auth: false,
             is_active: true
           }
         ]
@@ -346,7 +346,7 @@ describe('ToolsetConfigPanel', () => {
             tag: 'Stealth local browser',
             env_vars: [],
             post_setup: 'camofox',
-            requires_nous_auth: false,
+            requires_lucifex_auth: false,
             is_active: true
           }
         ]
@@ -395,7 +395,7 @@ describe('ToolsetConfigPanel', () => {
             tag: 'Stealth local browser',
             env_vars: [],
             post_setup: 'camofox',
-            requires_nous_auth: false,
+            requires_lucifex_auth: false,
             is_active: true
           }
         ]
@@ -427,7 +427,7 @@ describe('ToolsetConfigPanel', () => {
             tag: 'Stealth local browser',
             env_vars: [],
             post_setup: 'camofox',
-            requires_nous_auth: false,
+            requires_lucifex_auth: false,
             is_active: true
           }
         ]
@@ -473,7 +473,7 @@ describe('ToolsetConfigPanel', () => {
             tag: 'Stealth local browser',
             env_vars: [],
             post_setup: 'camofox',
-            requires_nous_auth: false,
+            requires_lucifex_auth: false,
             is_active: true,
             status: 'ready'
           }
@@ -507,7 +507,7 @@ describe('ToolsetConfigPanel', () => {
               tag: 'No API key needed',
               env_vars: [],
               post_setup: null,
-              requires_nous_auth: false,
+              requires_lucifex_auth: false,
               is_active: true,
               status: 'ready'
             },
@@ -517,7 +517,7 @@ describe('ToolsetConfigPanel', () => {
               tag: 'Managed OpenAI TTS',
               env_vars: [],
               post_setup: null,
-              requires_nous_auth: true,
+              requires_lucifex_auth: true,
               is_active: false,
               status: 'needs_auth'
             },
@@ -527,7 +527,7 @@ describe('ToolsetConfigPanel', () => {
               tag: 'Lightweight local ONNX TTS',
               env_vars: [],
               post_setup: 'kittentts',
-              requires_nous_auth: false,
+              requires_lucifex_auth: false,
               is_active: false,
               status: 'needs_setup'
             }
@@ -563,7 +563,7 @@ describe('ToolsetConfigPanel', () => {
                 }
               ],
               post_setup: null,
-              requires_nous_auth: false,
+              requires_lucifex_auth: false,
               is_active: false,
               status: 'needs_keys'
             }
@@ -614,7 +614,7 @@ describe('ToolsetConfigPanel', () => {
                 }
               ],
               post_setup: null,
-              requires_nous_auth: false,
+              requires_lucifex_auth: false,
               is_active: true,
               status: 'needs_keys'
             }
@@ -657,7 +657,7 @@ describe('ToolsetConfigPanel', () => {
               tag: 'Headless Chromium, no API key needed',
               env_vars: [],
               post_setup: 'agent_browser',
-              requires_nous_auth: false,
+              requires_lucifex_auth: false,
               is_active: true,
               status: 'ready'
             }
@@ -686,7 +686,7 @@ describe('ToolsetConfigPanel', () => {
               tag: 'Headless Chromium, no API key needed',
               env_vars: [],
               post_setup: 'agent_browser',
-              requires_nous_auth: false,
+              requires_lucifex_auth: false,
               is_active: true,
               status: 'ready'
             }
@@ -722,7 +722,7 @@ describe('ToolsetConfigPanel', () => {
               tag: 'Headless Chromium, no API key needed',
               env_vars: [],
               post_setup: 'agent_browser',
-              requires_nous_auth: false,
+              requires_lucifex_auth: false,
               is_active: true,
               status: 'needs_setup'
             }
@@ -754,18 +754,18 @@ describe('ToolsetConfigPanel', () => {
             tag: 'Managed Browser Use billed to your subscription',
             env_vars: [],
             post_setup: 'agent_browser',
-            requires_nous_auth: true,
+            requires_lucifex_auth: true,
             is_active: false,
             status: 'needs_auth'
           }
         ]
       })
 
-    it('surfaces a sign-in notice when the PUT reports needs_nous_auth', async () => {
+    it('surfaces a sign-in notice when the PUT reports needs_lucifex_auth', async () => {
       // Regression (Windows 11 Capabilities journey): the GUI wrote
       // browser.cloud_provider but skipped the Portal entitlement handshake,
       // so the managed row silently never activated. The endpoint now
-      // reports needs_nous_auth and the panel must surface a sign-in action
+      // reports needs_lucifex_auth and the panel must surface a sign-in action
       // instead of the misleading "provider selected" success toast.
       const { notify } = await import('@/store/notifications')
 
@@ -774,7 +774,7 @@ describe('ToolsetConfigPanel', () => {
         ok: true,
         name: 'browser',
         provider: 'Nous Subscription (Browser Use cloud)',
-        needs_nous_auth: true,
+        needs_lucifex_auth: true,
         feature: 'browser'
       })
 
@@ -806,7 +806,7 @@ describe('ToolsetConfigPanel', () => {
         ok: true,
         name: 'browser',
         provider: 'Nous Subscription (Browser Use cloud)',
-        needs_nous_auth: true,
+        needs_lucifex_auth: true,
         feature: 'browser'
       })
       startOAuthLogin.mockResolvedValue({
@@ -893,7 +893,7 @@ describe('ToolsetConfigPanel', () => {
                 }
               ],
               post_setup: null,
-              requires_nous_auth: false,
+              requires_lucifex_auth: false,
               is_active: true,
               status: 'ready'
             }
@@ -942,7 +942,7 @@ describe('ToolsetConfigPanel', () => {
             tag: 'Free metasearch',
             env_vars: [],
             post_setup: null,
-            requires_nous_auth: false,
+            requires_lucifex_auth: false,
             is_active: true,
             status: 'ready',
             web_backend: 'searxng',
@@ -954,7 +954,7 @@ describe('ToolsetConfigPanel', () => {
             tag: 'Full search + extract',
             env_vars: [],
             post_setup: null,
-            requires_nous_auth: false,
+            requires_lucifex_auth: false,
             is_active: false,
             status: 'ready',
             web_backend: 'firecrawl',

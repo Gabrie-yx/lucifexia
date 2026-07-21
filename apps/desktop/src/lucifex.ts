@@ -1024,9 +1024,9 @@ export interface SelectToolsetProviderResponse {
   capability?: string
   /** Present (true) when a managed Nous row was selected but the Portal
    *  entitlement is missing — the row won't activate until the user signs
-   *  in to Nous Portal. */
-  needs_nous_auth?: boolean
-  /** The managed feature key (e.g. "browser") when needs_nous_auth is set. */
+   *  in to Lucifex portal. */
+  needs_lucifex_auth?: boolean
+  /** The managed feature key (e.g. "browser") when needs_lucifex_auth is set. */
   feature?: string
 }
 

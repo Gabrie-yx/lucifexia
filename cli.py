@@ -9988,7 +9988,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
         which would otherwise early-return before any credits showed.
         """
         if not self.agent:
-            if self._print_nous_credits_block():
+            if self._print_lucifex_credits_block():
                 self._print_usage_cta()
             else:
                 print("(._.) No active agent -- send a message first.")
@@ -9998,7 +9998,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
         calls = agent.session_api_calls
 
         if calls == 0:
-            if self._print_nous_credits_block():
+            if self._print_lucifex_credits_block():
                 self._print_usage_cta()
             else:
                 print("(._.) No API calls made yet in this session.")
@@ -10071,7 +10071,7 @@ class LucifexCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
 
         # Nous credits magnitudes + monthly-grant gauge (agent-independent — also
         # runs at the no-agent / no-calls early-returns above). See the helper.
-        if self._print_nous_credits_block():
+        if self._print_lucifex_credits_block():
             self._print_usage_cta()
 
         if self.verbose:

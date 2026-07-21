@@ -230,7 +230,7 @@ def test_custom_endpoint_models_api_pricing_is_supported(monkeypatch):
     assert float(entry.output_cost_per_million) == 2.0
 
 
-def test_nous_portal_pricing_preserves_vendor_prefixed_model_ids(monkeypatch):
+def test_lucifex_portal_pricing_preserves_vendor_prefixed_model_ids(monkeypatch):
     seen = {}
 
     def _fake_fetch_endpoint_model_metadata(base_url, api_key=None):

@@ -463,7 +463,7 @@ class KreaImageGenProvider(ImageGenProvider):
             logger.error("Krea submit failed (%d): %s", status, err_msg)
             # On a managed 4xx, surface actionable remediation mirroring the
             # FAL managed gateway path: the model may not be enabled/priced on
-            # the Nous Portal, or the gateway's shared Krea key hit its
+            # the Lucifex portal, or the gateway's shared Krea key hit its
             # concurrency cap (429).
             if managed is not None and 400 <= status < 500:
                 hint = (
@@ -471,7 +471,7 @@ class KreaImageGenProvider(ImageGenProvider):
                     if status == 429
                     else (
                         f"Model '{model_id}' may not be enabled/priced on the "
-                        "Nous Portal's Krea gateway. Set KREA_API_KEY to use "
+                        "Lucifex portal's Krea gateway. Set KREA_API_KEY to use "
                         "Krea directly, or pick a different model via "
                         "`lucifex tools` → Image Generation."
                     )

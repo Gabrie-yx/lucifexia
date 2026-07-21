@@ -13,7 +13,7 @@ If you haven't installed Lucifex Agent yet, begin with the [Installation guide](
 :::
 
 :::tip First-time provider setup
-First-time users almost always want `lucifex setup --portal` — one OAuth covers a model plus the four Tool Gateway tools (search/image/TTS/browser). See [Nous Portal](/integrations/nous-portal).
+First-time users almost always want `lucifex setup --portal` — one OAuth covers a model plus the four Tool Gateway tools (search/image/TTS/browser). See [Lucifex portal](/integrations/lucifex-portal).
 :::
 
 ## How to Use This Page

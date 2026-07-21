@@ -268,7 +268,7 @@ const syncNativeTheme = (pref: ThemeMode, rendered: 'light' | 'dark') =>
 // active profile's appearance so a non-default profile relaunch paints its own
 // skin + light/dark mode.
 if (typeof window !== 'undefined') {
-  // Migration: if the stored mode was 'light' (Hermes default), reset to 'dark'.
+  // Migration: if the stored mode was 'light' (Lucifex default), reset to 'dark'.
   // This runs once — after persisting dark, subsequent boots skip this branch.
   try {
     const storedMode = window.localStorage.getItem(MODE_KEY)

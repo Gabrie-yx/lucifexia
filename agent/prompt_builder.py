@@ -1751,10 +1751,10 @@ def build_skills_system_prompt(
     return result
 
 
-def build_nous_subscription_prompt(valid_tool_names: "set[str] | None" = None) -> str:
+def build_lucifex_subscription_prompt(valid_tool_names: "set[str] | None" = None) -> str:
     """Build a compact Nous subscription capability block for the system prompt."""
     try:
-        from lucifex_cli.nous_subscription import get_nous_subscription_features
+        from lucifex_cli.lucifex_subscription import get_lucifex_subscription_features
         from tools.tool_backend_helpers import managed_nous_tools_enabled
     except Exception as exc:
         logger.debug("Failed to import Nous subscription helper: %s", exc)
@@ -1786,7 +1786,7 @@ def build_nous_subscription_prompt(valid_tool_names: "set[str] | None" = None) -
     if valid_names and not (valid_names & relevant_tool_names):
         return ""
 
-    features = get_nous_subscription_features()
+    features = get_lucifex_subscription_features()
 
     def _status_line(feature) -> str:
         if feature.managed_by_nous:
@@ -1794,9 +1794,9 @@ def build_nous_subscription_prompt(valid_tool_names: "set[str] | None" = None) -
         if feature.active:
             current = feature.current_provider or "configured provider"
             return f"- {feature.label}: currently using {current}"
-        if feature.included_by_default and features.nous_auth_present:
+        if feature.included_by_default and features.lucifex_auth_present:
             return f"- {feature.label}: included with Nous subscription, not currently selected"
-        if feature.key == "modal" and features.nous_auth_present:
+        if feature.key == "modal" and features.lucifex_auth_present:
             return f"- {feature.label}: optional via Nous subscription"
         return f"- {feature.label}: not currently available"
 

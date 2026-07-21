@@ -6,7 +6,7 @@ bars (TUI + CLI). User feedback (Jun 2026): the terminal surfaces show
 subscription allowance and separately-purchased top-up dollars distinctly
 visible.
 
-Data source: the NAS account-info fetch (``NousPortalAccountInfo``), whose
+Data source: the NAS account-info fetch (``LucifexportalAccountInfo``), whose
 ``paid_service_access_info`` carries the three dollar magnitudes we render
 (despite the legacy ``*_credits`` field names, these are USD floats):
 
@@ -141,7 +141,7 @@ class UsageModel:
 
 
 def usage_model_from_account(account_info: Any) -> UsageModel:
-    """Build a :class:`UsageModel` from a ``NousPortalAccountInfo``. Fail-open.
+    """Build a :class:`UsageModel` from a ``LucifexportalAccountInfo``. Fail-open.
 
     Returns ``UsageModel(available=False)`` when there's no usable account info
     (logged out, no entitlement block). Never raises.
@@ -246,10 +246,10 @@ def build_usage_model(*, timeout: float = 10.0) -> UsageModel:
     try:
         import concurrent.futures
 
-        from lucifex_cli.nous_account import get_nous_portal_account_info
+        from lucifex_cli.lucifex_account import get_lucifex_portal_account_info
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-            account = pool.submit(get_nous_portal_account_info, force_fresh=True).result(timeout=timeout)
+            account = pool.submit(get_lucifex_portal_account_info, force_fresh=True).result(timeout=timeout)
         return usage_model_from_account(account)
     except Exception:
         logger.debug("usage ▸ portal fetch failed (fail-open)", exc_info=True)

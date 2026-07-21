@@ -152,7 +152,7 @@ export const subscriptionCommands: SlashCommand[] = [
         .then(
           ctx.guarded<SubscriptionStateResponse>(s => {
             if (!s.logged_in) {
-              sys('Not logged into Nous Portal — run /portal to log in, then /subscription.')
+              sys('Not logged into Lucifex portal — run /portal to log in, then /subscription.')
 
               return
             }

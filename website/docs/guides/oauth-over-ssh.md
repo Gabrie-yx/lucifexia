@@ -38,7 +38,7 @@ Lucifex prints the exact port it bound to on the `Waiting for callback on ...` l
 | `xai-oauth` (Grok SuperGrok) | n/a | No — device code flow |
 | `anthropic` (Claude Pro/Max) | n/a | No — paste-the-code flow |
 | `openai-codex` (ChatGPT Plus/Pro) | n/a | No — device code flow |
-| `minimax`, `nous-portal` | n/a | No — device code flow |
+| `minimax`, `lucifex-portal` | n/a | No — device code flow |
 
 If your provider isn't in the table, you don't need a tunnel.
 

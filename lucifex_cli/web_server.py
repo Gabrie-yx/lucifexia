@@ -3241,7 +3241,7 @@ def _safe_call(mod, fn_name: str, default):
 
 
 # ---------------------------------------------------------------------------
-# Portal endpoint — Nous Portal auth + Tool Gateway routing status (read-only).
+# Portal endpoint — Lucifex portal auth + Tool Gateway routing status (read-only).
 # ---------------------------------------------------------------------------
 
 
@@ -3250,21 +3250,21 @@ async def get_portal_status():
     cfg = load_config() or {}
     auth: Dict[str, Any] = {}
     try:
-        from lucifex_cli.auth import get_nous_auth_status
+        from lucifex_cli.auth import get_lucifex_auth_status
 
-        auth = get_nous_auth_status() or {}
+        auth = get_lucifex_auth_status() or {}
     except Exception:
         auth = {}
 
     features = []
     try:
-        from lucifex_cli.nous_subscription import get_nous_subscription_features
+        from lucifex_cli.lucifex_subscription import get_lucifex_subscription_features
 
-        feats = get_nous_subscription_features(cfg)
+        feats = get_lucifex_subscription_features(cfg)
         if feats is not None:
             for feat in feats.items():
                 if getattr(feat, "managed_by_nous", False):
-                    state = "via Nous Portal"
+                    state = "via Lucifex portal"
                 elif getattr(feat, "active", False) and getattr(feat, "current_provider", None):
                     state = feat.current_provider
                 elif getattr(feat, "active", False):
@@ -6446,7 +6446,7 @@ def _apply_model_assignment_sync(
         gateway_tools: list[str] = []
         if provider.strip().lower() == "nous":
             try:
-                from lucifex_cli.nous_subscription import apply_nous_managed_defaults
+                from lucifex_cli.lucifex_subscription import apply_nous_managed_defaults
                 from lucifex_cli.tools_config import _get_platform_tools
 
                 enabled = _get_platform_tools(
@@ -9238,11 +9238,11 @@ def _copilot_acp_status() -> Dict[str, Any]:
 _OAUTH_PROVIDER_CATALOG: tuple[Dict[str, Any], ...] = (
     {
         "id": "nous",
-        "name": "Nous Portal",
+        "name": "Lucifex portal",
         "flow": "device_code",
         "cli_command": "lucifex auth add nous",
         "docs_url": "https://portal.nousresearch.com",
-        "status_fn": None,  # dispatched via auth.get_nous_auth_status
+        "status_fn": None,  # dispatched via auth.get_lucifex_auth_status
     },
     {
         "id": "openai-codex",
@@ -9324,11 +9324,11 @@ def _resolve_provider_status(provider_id: str, status_fn) -> Dict[str, Any]:
     try:
         from lucifex_cli import auth as hauth
         if provider_id == "nous":
-            raw = hauth.get_nous_auth_status()
+            raw = hauth.get_lucifex_auth_status()
             return {
                 "logged_in": bool(raw.get("logged_in")),
-                "source": "nous_portal",
-                "source_label": raw.get("portal_base_url") or "Nous Portal",
+                "source": "lucifex_portal",
+                "source_label": raw.get("portal_base_url") or "Lucifex portal",
                 "token_preview": _truncate_token(raw.get("access_token")),
                 "expires_at": raw.get("access_expires_at"),
                 "has_refresh_token": bool(raw.get("has_refresh_token")),
@@ -9596,10 +9596,10 @@ async def disconnect_oauth_provider(
             return {"ok": bool(cleared), "provider": provider_id}
 
         try:
-            from lucifex_cli.auth import clear_provider_auth, invalidate_nous_auth_status_cache
+            from lucifex_cli.auth import clear_provider_auth, invalidate_lucifex_auth_status_cache
             cleared = clear_provider_auth(provider_id)
             if provider_id == "nous":
-                invalidate_nous_auth_status_cache()
+                invalidate_lucifex_auth_status_cache()
             _log.info("oauth/disconnect: %s (cleared=%s)", provider_id, cleared)
             return {"ok": bool(cleared), "provider": provider_id}
         except Exception as e:
@@ -9903,7 +9903,7 @@ async def _start_device_code_flow(
         pconfig = PROVIDER_REGISTRY["nous"]
         portal_base_url = (
             os.getenv("LUCIFEX_PORTAL_BASE_URL")
-            or os.getenv("NOUS_PORTAL_BASE_URL")
+            or os.getenv("LUCIFEX_PORTAL_BASE_URL")
             or pconfig.portal_base_url
         ).rstrip("/")
         client_id = pconfig.client_id
@@ -10100,7 +10100,7 @@ def _nous_poller(session_id: str) -> None:
     """Background poller that drives a Nous device-code flow to completion."""
     from lucifex_cli.auth import (
         _poll_for_token,
-        refresh_nous_oauth_from_state,
+        refresh_lucifex_oauth_from_state,
     )
     from datetime import datetime, timezone
     import httpx
@@ -10143,7 +10143,7 @@ def _nous_poller(session_id: str) -> None:
             "expires_in": token_ttl,
         }
         with _profile_scope(_oauth_session_profile(session_id)):
-            full_state = refresh_nous_oauth_from_state(
+            full_state = refresh_lucifex_oauth_from_state(
                 auth_state,
                 timeout_seconds=15.0,
                 force_refresh=False,
@@ -14961,7 +14961,7 @@ async def get_toolset_config(name: str, profile: Optional[str] = None):
         web_provider_capabilities,
     )
     from lucifex_cli.config import get_env_value
-    from lucifex_cli.nous_subscription import get_nous_subscription_features
+    from lucifex_cli.lucifex_subscription import get_lucifex_subscription_features
 
     valid = {ts_key for ts_key, _, _ in _get_effective_configurable_toolsets()}
     if name not in valid:
@@ -14978,7 +14978,7 @@ async def get_toolset_config(name: str, profile: Optional[str] = None):
             # Fetch portal/entitlement state once for the whole matrix — the
             # per-provider readiness computation below reuses it instead of
             # re-probing per row.
-            features = get_nous_subscription_features(config, force_fresh=True)
+            features = get_lucifex_subscription_features(config, force_fresh=True)
             for prov in _visible_providers(cat, config, force_fresh=True):
                 env_vars = [
                     {
@@ -15003,7 +15003,7 @@ async def get_toolset_config(name: str, profile: Optional[str] = None):
                     "tag": prov.get("tag", ""),
                     "env_vars": env_vars,
                     "post_setup": prov.get("post_setup"),
-                    "requires_nous_auth": bool(prov.get("requires_nous_auth")),
+                    "requires_lucifex_auth": bool(prov.get("requires_lucifex_auth")),
                     "is_active": is_active,
                     # Honest server-side readiness. The GUI's old client-side
                     # heuristic showed "Ready" for every zero-env-var row —
@@ -15253,12 +15253,12 @@ async def select_toolset_provider(
 
     Managed Nous rows (``managed_nous_feature``) additionally report the
     Portal entitlement state: the CLI flow gates these selections on
-    ``ensure_nous_portal_access`` (inline login), but the GUI has no inline
+    ``ensure_lucifex_portal_access`` (inline login), but the GUI has no inline
     prompt, so selecting one while logged out / unentitled used to write the
     config keys and then never activate (``_is_provider_active`` requires
     ``managed_by_nous``). The response now carries an additive
-    ``needs_nous_auth: true`` + ``feature`` so the client can drive the
-    existing Nous Portal OAuth flow (``POST /api/providers/oauth/nous/start``)
+    ``needs_lucifex_auth: true`` + ``feature`` so the client can drive the
+    existing Lucifex portal OAuth flow (``POST /api/providers/oauth/nous/start``)
     and refetch.
     """
     from lucifex_cli.tools_config import (
@@ -15268,9 +15268,9 @@ async def select_toolset_provider(
         _get_effective_configurable_toolsets,
         _visible_providers,
     )
-    from lucifex_cli.nous_subscription import (
+    from lucifex_cli.lucifex_subscription import (
         MANAGED_FEATURE_COVERAGE_CATEGORY,
-        get_nous_subscription_features,
+        get_lucifex_subscription_features,
     )
 
     valid = {ts_key for ts_key, _, _ in _get_effective_configurable_toolsets()}
@@ -15331,7 +15331,7 @@ async def select_toolset_provider(
             response["capability"] = body.capability
 
         # Entitlement check for managed Nous rows — mirrors the gate the CLI
-        # applies via ensure_nous_portal_access at selection time.
+        # applies via ensure_lucifex_portal_access at selection time.
         cat = TOOL_CATEGORIES.get(name)
         row = None
         if cat:
@@ -15345,7 +15345,7 @@ async def select_toolset_provider(
             )
         managed_feature = (row or {}).get("managed_nous_feature")
         if managed_feature:
-            features = get_nous_subscription_features(config, force_fresh=True)
+            features = get_lucifex_subscription_features(config, force_fresh=True)
             acct = features.account_info
             category = MANAGED_FEATURE_COVERAGE_CATEGORY.get(managed_feature)
             entitled = bool(
@@ -15358,7 +15358,7 @@ async def select_toolset_provider(
                 )
             )
             if not entitled:
-                response["needs_nous_auth"] = True
+                response["needs_lucifex_auth"] = True
                 response["feature"] = managed_feature
     return response
 
@@ -19118,9 +19118,9 @@ def start_server(
     import uvicorn
 
     try:
-        from lucifex_cli.nous_auth_keepalive import start_nous_auth_keepalive
+        from lucifex_cli.lucifex_auth_keepalive import start_lucifex_auth_keepalive
 
-        start_nous_auth_keepalive()
+        start_lucifex_auth_keepalive()
     except Exception as exc:
         _log.debug("Nous auth keepalive did not start: %s", exc)
 
@@ -19173,7 +19173,7 @@ def start_server(
                 "    (hash with: python -c \"from "
                 "plugins.dashboard_auth.basic import hash_password; "
                 "print(hash_password('your-password'))\")\n"
-                "  • OAuth: run `lucifex dashboard register` (Nous Portal) or "
+                "  • OAuth: run `lucifex dashboard register` (Lucifex portal) or "
                 "install a DashboardAuthProvider plugin.\n"
                 "There is no unauthenticated public-bind option — to keep it "
                 "local, bind 127.0.0.1 and tunnel in (SSH / Tailscale)."

@@ -1523,7 +1523,7 @@ def _fallback_entry_unavailable_without_network(agent, fb: dict) -> Optional[str
 
         state = get_provider_auth_state("nous") or {}
     except Exception as exc:
-        return f"nous_auth_unreadable:{type(exc).__name__}"
+        return f"lucifex_auth_unreadable:{type(exc).__name__}"
     access_value = state.get("access_token")
     refresh_value = state.get("refresh_token")
     has_access = isinstance(access_value, str) and bool(access_value.strip())
@@ -2004,7 +2004,7 @@ def handle_max_iterations(agent, messages: list, api_call_count: int) -> str:
                     "effort": "medium"
                 }
         if _is_nous:
-            from agent.portal_tags import nous_portal_tags as _portal_tags
+            from agent.portal_tags import lucifex_portal_tags as _portal_tags
             summary_extra_body["tags"] = _portal_tags()
 
         if agent.api_mode == "codex_responses":

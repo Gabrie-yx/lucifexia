@@ -330,7 +330,7 @@ def _model_flow_moa(config, current_model=""):
 
 
 def _model_flow_nous(config, current_model="", args=None):
-    """Nous Portal provider: ensure logged in, then pick model."""
+    """Lucifex portal provider: ensure logged in, then pick model."""
     from lucifex_cli.auth import (
         get_provider_auth_state,
         _prompt_model_selection,
@@ -348,11 +348,11 @@ def _model_flow_nous(config, current_model="", args=None):
         save_config,
         save_env_value,
     )
-    from lucifex_cli.nous_subscription import prompt_enable_tool_gateway
+    from lucifex_cli.lucifex_subscription import prompt_enable_tool_gateway
 
     state = get_provider_auth_state("nous")
     if not state or not state.get("access_token"):
-        print("Not logged into Nous Portal. Starting login...")
+        print("Not logged into Lucifex portal. Starting login...")
         print()
         try:
             mock_args = argparse.Namespace(
@@ -395,7 +395,7 @@ def _model_flow_nous(config, current_model="", args=None):
 
     model_ids = get_curated_nous_model_ids()
     if not model_ids:
-        print("No curated models available for Nous Portal.")
+        print("No curated models available for Lucifex portal.")
         return
 
     # Verify credentials are still valid (catches expired sessions early)
@@ -406,7 +406,7 @@ def _model_flow_nous(config, current_model="", args=None):
         msg = format_auth_error(exc) if isinstance(exc, AuthError) else str(exc)
         if relogin:
             print(f"Session expired: {msg}")
-            print("Re-authenticating with Nous Portal...\n")
+            print("Re-authenticating with Lucifex portal...\n")
             try:
                 mock_args = argparse.Namespace(
                     portal_url=None,
@@ -445,11 +445,11 @@ def _model_flow_nous(config, current_model="", args=None):
 
     # Resolve portal URL early — needed both for upgrade links and for the
     # freeRecommendedModels endpoint below.
-    _nous_portal_url = ""
+    _lucifex_portal_url = ""
     try:
         _nous_state = get_provider_auth_state("nous")
         if _nous_state:
-            _nous_portal_url = _nous_state.get("portal_base_url", "")
+            _lucifex_portal_url = _nous_state.get("portal_base_url", "")
     except Exception:
         pass
 
@@ -466,14 +466,14 @@ def _model_flow_nous(config, current_model="", args=None):
     unavailable_message = ""
     if free_tier:
         try:
-            from lucifex_cli.nous_account import (
-                format_nous_portal_entitlement_message,
-                get_nous_portal_account_info,
+            from lucifex_cli.lucifex_account import (
+                format_lucifex_portal_entitlement_message,
+                get_lucifex_portal_account_info,
             )
 
-            _account_info = get_nous_portal_account_info(force_fresh=True)
+            _account_info = get_lucifex_portal_account_info(force_fresh=True)
             unavailable_message = (
-                format_nous_portal_entitlement_message(
+                format_lucifex_portal_entitlement_message(
                     _account_info,
                     capability="paid Nous models",
                 )
@@ -482,26 +482,26 @@ def _model_flow_nous(config, current_model="", args=None):
         except Exception:
             unavailable_message = ""
         model_ids, pricing = union_with_portal_free_recommendations(
-            model_ids, pricing, _nous_portal_url,
+            model_ids, pricing, _lucifex_portal_url,
         )
         model_ids, unavailable_models = partition_nous_models_by_tier(
             model_ids, pricing, free_tier=True
         )
     else:
         model_ids, pricing = union_with_portal_paid_recommendations(
-            model_ids, pricing, _nous_portal_url,
+            model_ids, pricing, _lucifex_portal_url,
         )
 
     if not model_ids and not unavailable_models:
-        print("No models available for Nous Portal after filtering.")
+        print("No models available for Lucifex portal after filtering.")
         return
 
     if free_tier and not model_ids:
         print("No free models currently available.")
         if unavailable_models:
-            from lucifex_cli.auth import DEFAULT_NOUS_PORTAL_URL
+            from lucifex_cli.auth import DEFAULT_LUCIFEX_PORTAL_URL
 
-            _url = (_nous_portal_url or DEFAULT_NOUS_PORTAL_URL).rstrip("/")
+            _url = (_lucifex_portal_url or DEFAULT_LUCIFEX_PORTAL_URL).rstrip("/")
             print(unavailable_message or f"Upgrade at {_url} to access paid models.")
         return
 
@@ -514,7 +514,7 @@ def _model_flow_nous(config, current_model="", args=None):
         current_model=current_model,
         pricing=pricing,
         unavailable_models=unavailable_models,
-        portal_url=_nous_portal_url,
+        portal_url=_lucifex_portal_url,
         unavailable_message=unavailable_message,
         confirm_provider="nous",
         confirm_base_url=creds.get("base_url", ""),
@@ -548,7 +548,7 @@ def _model_flow_nous(config, current_model="", args=None):
             save_env_value("OPENAI_BASE_URL", "")
             save_env_value("OPENAI_API_KEY", "")
         save_config(config)
-        print(f"Default model set to: {selected} (via Nous Portal)")
+        print(f"Default model set to: {selected} (via Lucifex portal)")
         # Offer Tool Gateway enablement for paid subscribers
         prompt_enable_tool_gateway(config)
     else:

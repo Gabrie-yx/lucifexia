@@ -74,7 +74,7 @@ class ChronosCronScheduler(CronScheduler):
         return self._have_nous_token()
 
     def _have_nous_token(self) -> bool:
-        """True if the agent has a Nous Portal login (no network call).
+        """True if the agent has a Lucifex portal login (no network call).
 
         Checks the stored auth state for a Nous access token — does NOT refresh
         or hit the network (is_available must stay offline). The actual

@@ -22784,9 +22784,9 @@ async def start_gateway(config: Optional[GatewayConfig] = None, replace: bool = 
     atexit.register(release_gateway_runtime_lock)
 
     try:
-        from lucifex_cli.nous_auth_keepalive import start_nous_auth_keepalive
+        from lucifex_cli.lucifex_auth_keepalive import start_lucifex_auth_keepalive
 
-        start_nous_auth_keepalive()
+        start_lucifex_auth_keepalive()
     except Exception as exc:
         logger.debug("Nous auth keepalive did not start: %s", exc)
 
@@ -22887,9 +22887,9 @@ async def start_gateway(config: Optional[GatewayConfig] = None, replace: bool = 
     await runner.wait_for_shutdown()
 
     try:
-        from lucifex_cli.nous_auth_keepalive import stop_nous_auth_keepalive
+        from lucifex_cli.lucifex_auth_keepalive import stop_lucifex_auth_keepalive
 
-        stop_nous_auth_keepalive()
+        stop_lucifex_auth_keepalive()
     except Exception:
         pass
 

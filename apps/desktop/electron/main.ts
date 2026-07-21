@@ -554,6 +554,9 @@ const BOOT_FAKE_STEP_MS = (() => {
 })()
 
 const APP_NAME = process.env.LUCIFEX_DESKTOP_APP_NAME || 'Lucifex'
+if (process.platform === 'win32') {
+  app.setAppUserModelId('com.nousresearch.lucifex')
+}
 const TITLEBAR_HEIGHT = 34
 const MACOS_TRAFFIC_LIGHTS_HEIGHT = 14
 
@@ -567,10 +570,18 @@ const WINDOW_BUTTON_POSITION = {
 // It's only the pre-layout fallback — the renderer measures the exact overlay
 // width live via the Window Controls Overlay API.
 const APP_ICON_PATHS = [
+  // Windows Shell (taskbar, alt-tab, title bar) reads the icon exclusively
+  // from an .ico file.  PNG entries are silently ignored by the Windows icon
+  // infrastructure, so we list only .ico here and keep the PNG fallbacks for
+  // macOS dock (where .ico isn't usable but nativeImage handles it).
+  process.resourcesPath ? path.join(process.resourcesPath, 'icon.ico') : null,
+  path.join(APP_ROOT, 'assets', 'icon.ico'),
+  path.join(APP_ROOT, 'icon.ico'),
+  path.join(unpackedPathFor(APP_ROOT), 'icon.ico'),
   path.join(APP_ROOT, 'public', 'apple-touch-icon.png'),
   path.join(APP_ROOT, 'dist', 'apple-touch-icon.png'),
   path.join(unpackedPathFor(APP_ROOT), 'dist', 'apple-touch-icon.png')
-]
+].filter(Boolean)
 
 let rendererTitleBarTheme = null
 const terminalSessions = new Map()
@@ -851,7 +862,10 @@ app.setName(APP_NAME)
 // need this, so gate it on Windows. (Fixes: desktop approval/turn notifications
 // never firing on Windows.)
 if (IS_WINDOWS) {
-  app.setAppUserModelId('com.nousresearch.lucifex')
+  // AUMID must match the installed Start Menu shortcut's AUMID, which
+  // electron-builder derives from the build `appId` (com.nousresearch.lucifexia) —
+  // keep this string in sync with package.json `build.appId`.
+  app.setAppUserModelId('com.nousresearch.lucifexia')
 }
 
 // Seed the native About panel with the live Lucifex version. This is refreshed
@@ -4690,6 +4704,9 @@ function registerPowerResumeListeners() {
 }
 
 function getAppIconPath() {
+  // Return a plain file-path string — the Windows shell (taskbar, alt-tab,
+  // window chrome) reads the icon from the path.  Passing a nativeImage here
+  // is silently ignored on Windows for taskbar grouping purposes.
   return APP_ICON_PATHS.find(fileExists)
 }
 
@@ -5188,7 +5205,7 @@ function installMediaPermissions() {
 //   * WebSocket upgrades require a single-use ``?ticket=`` minted at
 //     ``POST /api/auth/ws-ticket`` (cookie-authed). The legacy ``?token=``
 //     path is unconditionally rejected by gated gateways.
-//   * Nous Portal now issues a 24h ROTATING, reuse-detected refresh token
+//   * Lucifex portal now issues a 24h ROTATING, reuse-detected refresh token
 //     alongside the ~15-min access token (Portal NAS #293 / lucifex #37247).
 //     Both are set as HttpOnly cookies (``lucifex_session_at`` ~15 min,
 //     ``lucifex_session_rt`` 24h). When the AT cookie lapses but the RT cookie
@@ -5676,7 +5693,7 @@ async function freshGatewayWsUrl(profile) {
 // --- Lucifex Cloud discovery + silent per-agent sign-in (cloud-auto-discovery
 // Phase 3) ---------------------------------------------------------------
 //
-// The "cloud" connection mode lets a user sign in to the Nous portal ONCE in
+// The "cloud" connection mode lets a user sign in to the Lucifex portal ONCE in
 // the OAuth session partition, then (a) discover their hosted agents and (b)
 // connect to any of them with no second interactive sign-in. Both ride the one
 // portal session cookie living in `persist:lucifex-remote-oauth`:
@@ -5687,18 +5704,18 @@ async function freshGatewayWsUrl(profile) {
 //     with that agent's session cookie — no prompt. Each agent still completes
 //     its own PKCE exchange; SSO removes the human click, not a security check.
 
-// Canonical Nous portal base URL, overridable for staging/dev. Mirrors the CLI
-// convention (lucifex_cli/auth.py DEFAULT_NOUS_PORTAL_URL + the same env names)
+// Canonical Lucifex portal base URL, overridable for staging/dev. Mirrors the CLI
+// convention (lucifex_cli/auth.py DEFAULT_LUCIFEX_PORTAL_URL + the same env names)
 // so a single override flips every Lucifex surface to the same portal.
-const DEFAULT_NOUS_PORTAL_URL = 'https://portal.nousresearch.com'
+const DEFAULT_LUCIFEX_PORTAL_URL = 'https://portal.nousresearch.com'
 
 function resolvePortalBaseUrl() {
-  const raw = process.env.LUCIFEX_PORTAL_BASE_URL || process.env.NOUS_PORTAL_BASE_URL || DEFAULT_NOUS_PORTAL_URL
+  const raw = process.env.LUCIFEX_PORTAL_BASE_URL || process.env.LUCIFEX_PORTAL_BASE_URL || DEFAULT_LUCIFEX_PORTAL_URL
 
   return String(raw).trim().replace(/\/+$/, '')
 }
 
-// Whether the OAuth partition currently holds a live Nous portal session — the
+// Whether the OAuth partition currently holds a live Lucifex portal session — the
 // credential that powers both discovery and the silent cascade. The portal
 // authenticates via PRIVY, not the Lucifex gateway session cookies, so this
 // checks for the `privy-token` cookie on the portal host (NOT
@@ -7348,6 +7365,11 @@ function spawnSecondaryWindow({
 
   if (IS_MAC) {
     win.setWindowButtonPosition?.(WINDOW_BUTTON_POSITION)
+  } else if (icon) {
+    // On Windows/Linux, setIcon() with the .ico path is what pins the correct
+    // icon to the taskbar and alt-tab thumbnail.  getAppIconPath() now returns
+    // a string so we can pass it directly.
+    try { win.setIcon(icon) } catch { /* non-critical */ }
   }
 
   win.once('ready-to-show', () => {
@@ -7564,6 +7586,8 @@ function createWindow() {
     if (icon) {
       app.dock?.setIcon(icon)
     }
+  } else if (icon) {
+    try { mainWindow.setIcon(icon) } catch { /* non-critical */ }
   }
 
   if (!IS_MAC) {

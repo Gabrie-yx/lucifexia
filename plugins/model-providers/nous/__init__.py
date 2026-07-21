@@ -1,19 +1,19 @@
-"""Nous Portal provider profile."""
+"""Lucifex portal provider profile."""
 
 from typing import Any
 
-from agent.portal_tags import nous_portal_tags
+from agent.portal_tags import lucifex_portal_tags
 from providers import register_provider
 from providers.base import ProviderProfile
 
 
 class NousProfile(ProviderProfile):
-    """Nous Portal — product tags, reasoning with Nous-specific omission."""
+    """Lucifex portal — product tags, reasoning with Nous-specific omission."""
 
     def build_extra_body(
         self, *, session_id: str | None = None, **context
     ) -> dict[str, Any]:
-        body: dict[str, Any] = {"tags": nous_portal_tags(session_id=session_id)}
+        body: dict[str, Any] = {"tags": lucifex_portal_tags(session_id=session_id)}
         provider_preferences = context.get("provider_preferences")
         if provider_preferences:
             body["provider"] = provider_preferences

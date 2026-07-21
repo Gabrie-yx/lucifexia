@@ -25,7 +25,7 @@ lucifex chat -q "Hello"
 lucifex chat --model "anthropic/claude-sonnet-4"
 
 # 使用指定提供商
-lucifex chat --provider nous        # 使用 Nous Portal
+lucifex chat --provider nous        # 使用 Lucifex portal
 lucifex chat --provider openrouter  # 强制使用 OpenRouter
 
 # 使用指定工具集

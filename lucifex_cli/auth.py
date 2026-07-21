@@ -1,7 +1,7 @@
 """
 Multi-provider authentication system for Lucifex Agent.
 
-Supports OAuth device code flows (Nous Portal, future: OpenAI Codex) and
+Supports OAuth device code flows (Lucifex portal, future: OpenAI Codex) and
 traditional API key providers (OpenRouter, custom endpoints). Auth state
 is persisted in ~/.lucifex/auth.json with cross-process file locking.
 
@@ -71,15 +71,15 @@ except Exception:
 AUTH_STORE_VERSION = 1
 AUTH_LOCK_TIMEOUT_SECONDS = 15.0
 
-# Nous Portal defaults
-DEFAULT_NOUS_PORTAL_URL = "https://portal.nousresearch.com"
+# Lucifex portal defaults
+DEFAULT_LUCIFEX_PORTAL_URL = "https://portal.nousresearch.com"
 DEFAULT_NOUS_INFERENCE_URL = "https://inference-api.nousresearch.com/v1"
 DEFAULT_NOUS_CLIENT_ID = "lucifex-cli"
 NOUS_INFERENCE_INVOKE_SCOPE = "inference:invoke"
-NOUS_BILLING_MANAGE_SCOPE = "billing:manage"
+LUCIFEX_BILLING_MANAGE_SCOPE = "billing:manage"
 DEFAULT_NOUS_SCOPE = NOUS_INFERENCE_INVOKE_SCOPE
 NOUS_DEVICE_CODE_SOURCE = "device_code"
-NOUS_AUTH_PATH_INVOKE_JWT = "invoke_jwt"
+LUCIFEX_AUTH_PATH_INVOKE_JWT = "invoke_jwt"
 ACCESS_TOKEN_REFRESH_SKEW_SECONDS = 120       # refresh 2 min before expiry
 NOUS_INVOKE_JWT_MIN_TTL_SECONDS = ACCESS_TOKEN_REFRESH_SKEW_SECONDS
 DEVICE_AUTH_POLL_INTERVAL_CAP_SECONDS = 1     # poll at most every 1s
@@ -176,9 +176,9 @@ class ProviderConfig:
 PROVIDER_REGISTRY: Dict[str, ProviderConfig] = {
     "nous": ProviderConfig(
         id="nous",
-        name="Nous Portal",
+        name="Lucifex portal",
         auth_type="oauth_device_code",
-        portal_base_url=DEFAULT_NOUS_PORTAL_URL,
+        portal_base_url=DEFAULT_LUCIFEX_PORTAL_URL,
         inference_base_url=DEFAULT_NOUS_INFERENCE_URL,
         client_id=DEFAULT_NOUS_CLIENT_ID,
         scope=DEFAULT_NOUS_SCOPE,
@@ -845,13 +845,13 @@ def format_auth_error(error: Exception) -> str:
 
 def _format_nous_entitlement_auth_error(error: AuthError) -> str:
     try:
-        from lucifex_cli.nous_account import (
-            format_nous_portal_entitlement_message,
-            get_nous_portal_account_info,
+        from lucifex_cli.lucifex_account import (
+            format_lucifex_portal_entitlement_message,
+            get_lucifex_portal_account_info,
         )
 
-        account_info = get_nous_portal_account_info(force_fresh=True)
-        message = format_nous_portal_entitlement_message(
+        account_info = get_lucifex_portal_account_info(force_fresh=True)
+        message = format_lucifex_portal_entitlement_message(
             account_info,
             capability="Nous model access",
         )
@@ -859,7 +859,7 @@ def _format_nous_entitlement_auth_error(error: AuthError) -> str:
             return message
     except Exception:
         pass
-    return f"{error} Check credits or billing in Nous Portal, then retry."
+    return f"{error} Check credits or billing in Lucifex portal, then retry."
 
 
 def _token_fingerprint(token: Any) -> Optional[str]:
@@ -1133,15 +1133,15 @@ def _load_auth_store(auth_file: Optional[Path] = None) -> Dict[str, Any]:
     ):
         raw.setdefault("providers", {})
         if isinstance(raw.get("providers"), dict):
-            _migrate_stale_nous_portal_url(raw["providers"])
+            _migrate_stale_lucifex_portal_url(raw["providers"])
         return raw
 
     # Migrate from PR's "systems" format if present
     if isinstance(raw, dict) and isinstance(raw.get("systems"), dict):
         systems = raw["systems"]
         providers = {}
-        if "nous_portal" in systems:
-            providers["nous"] = systems["nous_portal"]
+        if "lucifex_portal" in systems:
+            providers["nous"] = systems["lucifex_portal"]
         return {"version": AUTH_STORE_VERSION, "providers": providers,
                 "active_provider": "nous" if providers else None}
 
@@ -1980,17 +1980,17 @@ _NOUS_STALE_PORTAL_HOSTS: FrozenSet[str] = frozenset({
     "api.nousresearch.com",
 })
 
-# Allowlist of valid Nous Portal hosts. A portal_base_url outside this
+# Allowlist of valid Lucifex portal hosts. A portal_base_url outside this
 # set is treated as a misconfiguration and falls back to the default.
 # "localhost" / "127.0.0.1" are valid for local development and testing.
-_NOUS_PORTAL_ALLOWED_HOSTS: FrozenSet[str] = frozenset({
+_LUCIFEX_PORTAL_ALLOWED_HOSTS: FrozenSet[str] = frozenset({
     "portal.nousresearch.com",
     "localhost",
     "127.0.0.1",
 })
 
 
-def _migrate_stale_nous_portal_url(providers: Dict[str, Any]) -> None:
+def _migrate_stale_lucifex_portal_url(providers: Dict[str, Any]) -> None:
     nous = providers.get("nous")
     if not isinstance(nous, dict):
         return
@@ -1999,13 +1999,13 @@ def _migrate_stale_nous_portal_url(providers: Dict[str, Any]) -> None:
         parsed = urlparse(stored)
         if parsed.hostname in _NOUS_STALE_PORTAL_HOSTS:
             logger.warning(
-                "auth: migrating stale nous portal_base_url %s -> %s",
-                stored, DEFAULT_NOUS_PORTAL_URL,
+                "auth: migrating stale lucifex portal_base_url %s -> %s",
+                stored, DEFAULT_LUCIFEX_PORTAL_URL,
             )
-            nous["portal_base_url"] = DEFAULT_NOUS_PORTAL_URL
+            nous["portal_base_url"] = DEFAULT_LUCIFEX_PORTAL_URL
 
 
-# Allowlist of hosts the Nous Portal proxy is willing to forward inference
+# Allowlist of hosts the Lucifex portal proxy is willing to forward inference
 # JWTs to. Sending a bearer anywhere else would leak it.
 #
 # This is consulted only for URLs coming from the NETWORK side (Portal
@@ -2078,17 +2078,17 @@ def _nous_inference_env_override() -> Optional[str]:
     return _optional_base_url(os.getenv("NOUS_INFERENCE_BASE_URL"))
 
 
-def _nous_portal_env_override() -> Optional[str]:
+def _lucifex_portal_env_override() -> Optional[str]:
     """Return the user/deployment-set Portal base URL override, if any.
 
     Mirrors ``_nous_inference_env_override()``: ``LUCIFEX_PORTAL_BASE_URL`` /
-    ``NOUS_PORTAL_BASE_URL`` are the documented dev/staging escape hatch for
-    pointing Lucifex at a non-production Nous Portal (e.g. a hosted agent
+    ``LUCIFEX_PORTAL_BASE_URL`` are the documented dev/staging escape hatch for
+    pointing Lucifex at a non-production Lucifex portal (e.g. a hosted agent
     provisioned on nous-account-service's `staging` environment, which stamps
     ``LUCIFEX_PORTAL_BASE_URL=https://portal.staging-nousresearch.com`` into
     the container env). The env source is trusted (the OS user/deployment
     set it themselves), so — like the inference override — it must NOT be
-    gated by ``_NOUS_PORTAL_ALLOWED_HOSTS``: that allowlist exists to reject
+    gated by ``_LUCIFEX_PORTAL_ALLOWED_HOSTS``: that allowlist exists to reject
     an untrusted NETWORK-provided value (a poisoned portal_base_url
     persisted to auth.json), not a value the operator explicitly configured.
 
@@ -2096,7 +2096,7 @@ def _nous_portal_env_override() -> Optional[str]:
     neither env var is set/blank.
     """
     return _optional_base_url(
-        os.getenv("LUCIFEX_PORTAL_BASE_URL") or os.getenv("NOUS_PORTAL_BASE_URL")
+        os.getenv("LUCIFEX_PORTAL_BASE_URL") or os.getenv("LUCIFEX_PORTAL_BASE_URL")
     )
 
 
@@ -2190,7 +2190,7 @@ def _assert_nous_inference_jwt_usable(
     if reason is None:
         return
     raise AuthError(
-        "Nous Portal access token is not a usable inference JWT "
+        "Lucifex portal access token is not a usable inference JWT "
         f"({reason}). Re-authenticate with: lucifex auth add nous",
         provider="nous",
         code=reason,
@@ -4706,7 +4706,7 @@ def _poll_for_token(
 
 
 # =============================================================================
-# Nous Portal — token refresh and model discovery
+# Lucifex portal — token refresh and model discovery
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -4714,8 +4714,8 @@ def _poll_for_token(
 # so a new `lucifex --profile <name> auth add nous --type oauth` can one-tap
 # import instead of running the full device-code flow every time.
 #
-# File lives at ${LUCIFEX_SHARED_AUTH_DIR}/nous_auth.json, defaulting to
-# ``<lucifex-root>/shared/nous_auth.json`` where ``<lucifex-root>`` is what
+# File lives at ${LUCIFEX_SHARED_AUTH_DIR}/lucifex_auth.json, defaulting to
+# ``<lucifex-root>/shared/lucifex_auth.json`` where ``<lucifex-root>`` is what
 # ``get_default_lucifex_root()`` returns — ``~/.lucifex`` on Linux/macOS,
 # ``%LOCALAPPDATA%\lucifex`` on native Windows, or the Docker/custom root.
 # It is OUTSIDE any named profile's LUCIFEX_HOME so named profiles (which
@@ -4728,7 +4728,7 @@ def _poll_for_token(
 # gracefully and the user falls back to the normal device-code flow.
 # -----------------------------------------------------------------------------
 
-NOUS_SHARED_STORE_FILENAME = "nous_auth.json"
+NOUS_SHARED_STORE_FILENAME = "lucifex_auth.json"
 _nous_shared_lock_holder = threading.local()
 
 
@@ -4805,7 +4805,7 @@ def _nous_shared_store_lock(timeout_seconds: float = AUTH_LOCK_TIMEOUT_SECONDS):
         yield
 
 
-def _merge_shared_nous_oauth_state(state: Dict[str, Any]) -> bool:
+def _merge_shared_lucifex_oauth_state(state: Dict[str, Any]) -> bool:
     """Copy fresher shared OAuth tokens into a profile-local Nous state."""
     shared = _read_shared_nous_state()
     if not shared:
@@ -4865,7 +4865,7 @@ def _write_shared_nous_state(state: Dict[str, Any]) -> None:
         "token_type": state.get("token_type") or "Bearer",
         "scope": state.get("scope") or DEFAULT_NOUS_SCOPE,
         "client_id": state.get("client_id") or DEFAULT_NOUS_CLIENT_ID,
-        "portal_base_url": state.get("portal_base_url") or DEFAULT_NOUS_PORTAL_URL,
+        "portal_base_url": state.get("portal_base_url") or DEFAULT_LUCIFEX_PORTAL_URL,
         "inference_base_url": state.get("inference_base_url") or DEFAULT_NOUS_INFERENCE_URL,
         "obtained_at": state.get("obtained_at"),
         "expires_at": state.get("expires_at"),
@@ -5001,7 +5001,7 @@ def _is_terminal_codex_oauth_refresh_error(exc: Exception) -> bool:
     )
 
 
-def _quarantine_nous_oauth_state(
+def _quarantine_lucifex_oauth_state(
     state: Dict[str, Any],
     error: AuthError,
     *,
@@ -5083,7 +5083,7 @@ def _quarantine_nous_oauth_state(
         "at": datetime.now(timezone.utc).isoformat(),
     }
     _clear_shared_nous_state(reason)
-    invalidate_nous_auth_status_cache()
+    invalidate_lucifex_auth_status_cache()
 
 
 def _quarantine_nous_pool_entries(
@@ -5141,14 +5141,14 @@ def _try_import_shared_nous_state(
             if not shared:
                 return None
 
-            # Build a full state dict so refresh_nous_oauth_from_state has every
+            # Build a full state dict so refresh_lucifex_oauth_from_state has every
             # field it needs. force_refresh=True gets us a fresh access_token
             # for this profile.
             state: Dict[str, Any] = {
                 "access_token": shared.get("access_token"),
                 "refresh_token": shared.get("refresh_token"),
                 "client_id": shared.get("client_id") or DEFAULT_NOUS_CLIENT_ID,
-                "portal_base_url": shared.get("portal_base_url") or DEFAULT_NOUS_PORTAL_URL,
+                "portal_base_url": shared.get("portal_base_url") or DEFAULT_LUCIFEX_PORTAL_URL,
                 "inference_base_url": shared.get("inference_base_url") or DEFAULT_NOUS_INFERENCE_URL,
                 "token_type": shared.get("token_type") or "Bearer",
                 "scope": shared.get("scope") or DEFAULT_NOUS_SCOPE,
@@ -5162,7 +5162,7 @@ def _try_import_shared_nous_state(
             def _persist_shared_refresh(updated_state: Dict[str, Any], _reason: str) -> None:
                 _write_shared_nous_state(updated_state)
 
-            refreshed = refresh_nous_oauth_from_state(
+            refreshed = refresh_lucifex_oauth_from_state(
                 state,
                 timeout_seconds=timeout_seconds,
                 force_refresh=True,
@@ -5223,7 +5223,7 @@ def _refresh_access_token(
     description = str(error_payload.get("error_description") or "Refresh token exchange failed")
     relogin = code in {"invalid_grant", "invalid_token", "refresh_token_reused"}
 
-    # Detect the OAuth 2.1 "refresh token reuse" signal from the Nous portal
+    # Detect the OAuth 2.1 "refresh token reuse" signal from the Lucifex portal
     # server and surface an actionable message.  This fires when an external
     # process (health-check script, monitoring tool, custom self-heal hook)
     # called POST /api/oauth/token with Lucifex's refresh_token without
@@ -5233,7 +5233,7 @@ def _refresh_access_token(
     lowered = description.lower()
     if code == "refresh_token_reused" or "reuse" in lowered or "reuse detected" in lowered:
         description = (
-            "Nous Portal detected refresh-token reuse and revoked this session.\n"
+            "Lucifex portal detected refresh-token reuse and revoked this session.\n"
             "This usually means an external process (monitoring script, "
             "custom self-heal hook, or another Lucifex install sharing "
             "~/.lucifex/auth.json) called POST /api/oauth/token with Lucifex's "
@@ -5324,7 +5324,7 @@ def resolve_nous_access_token(
     ca_bundle: Optional[str] = None,
     refresh_skew_seconds: int = ACCESS_TOKEN_REFRESH_SKEW_SECONDS,
 ) -> str:
-    """Resolve a refresh-aware Nous Portal access token for managed tool gateways."""
+    """Resolve a refresh-aware Lucifex portal access token for managed tool gateways."""
     with _provider_state_transaction("nous") as (
         auth_store,
         state,
@@ -5333,45 +5333,45 @@ def resolve_nous_access_token(
 
         if not state:
             raise AuthError(
-                "Lucifex is not logged into Nous Portal.",
+                "Lucifex is not logged into Lucifex portal.",
                 provider="nous",
                 relogin_required=True,
             )
 
-        # LUCIFEX_PORTAL_BASE_URL / NOUS_PORTAL_BASE_URL is the trusted
+        # LUCIFEX_PORTAL_BASE_URL / LUCIFEX_PORTAL_BASE_URL is the trusted
         # operator/deployment override (mirrors NOUS_INFERENCE_BASE_URL) and
         # must win OUTRIGHT — including over a stored value — and bypass the
         # host allowlist entirely, since the allowlist exists to reject an
         # untrusted network-provided value, not one the operator configured.
         # Only fall through to the stored/default value + allowlist gate when
         # no override is set.
-        env_portal_override = _nous_portal_env_override()
+        env_portal_override = _lucifex_portal_env_override()
         if env_portal_override:
             portal_base_url = env_portal_override.rstrip("/")
         else:
             portal_base_url = (
                 _optional_base_url(state.get("portal_base_url"))
-                or DEFAULT_NOUS_PORTAL_URL
+                or DEFAULT_LUCIFEX_PORTAL_URL
             ).rstrip("/")
 
             parsed_portal_url = urlparse(portal_base_url)
-            if parsed_portal_url.hostname and parsed_portal_url.hostname not in _NOUS_PORTAL_ALLOWED_HOSTS:
+            if parsed_portal_url.hostname and parsed_portal_url.hostname not in _LUCIFEX_PORTAL_ALLOWED_HOSTS:
                 logger.warning(
                     "auth: ignoring invalid portal_base_url %r (host %r not in allowlist), using default",
                     portal_base_url, parsed_portal_url.hostname,
                 )
-                portal_base_url = DEFAULT_NOUS_PORTAL_URL
+                portal_base_url = DEFAULT_LUCIFEX_PORTAL_URL
 
         client_id = str(state.get("client_id") or DEFAULT_NOUS_CLIENT_ID)
         verify = _resolve_verify(insecure=insecure, ca_bundle=ca_bundle, auth_state=state)
 
         with _nous_shared_store_lock(timeout_seconds=max(timeout_seconds + 5.0, AUTH_LOCK_TIMEOUT_SECONDS)):
-            merged_shared = _merge_shared_nous_oauth_state(state)
+            merged_shared = _merge_shared_lucifex_oauth_state(state)
             access_token = state.get("access_token")
             refresh_token = state.get("refresh_token")
             if not isinstance(access_token, str) or not access_token:
                 raise AuthError(
-                    "No access token found for Nous Portal login.",
+                    "No access token found for Lucifex portal login.",
                     provider="nous",
                     relogin_required=True,
                 )
@@ -5403,7 +5403,7 @@ def resolve_nous_access_token(
                     )
                 except AuthError as exc:
                     if _is_terminal_nous_refresh_error(exc):
-                        _quarantine_nous_oauth_state(
+                        _quarantine_lucifex_oauth_state(
                             state,
                             exc,
                             reason="managed_access_token_refresh_failure",
@@ -5439,7 +5439,7 @@ def resolve_nous_access_token(
             return state["access_token"]
 
 
-def refresh_nous_oauth_pure(
+def refresh_lucifex_oauth_pure(
     access_token: str,
     refresh_token: str,
     client_id: str,
@@ -5468,7 +5468,7 @@ def refresh_nous_oauth_pure(
         "access_token": access_token,
         "refresh_token": refresh_token,
         "client_id": client_id or DEFAULT_NOUS_CLIENT_ID,
-        "portal_base_url": (portal_base_url or DEFAULT_NOUS_PORTAL_URL).rstrip("/"),
+        "portal_base_url": (portal_base_url or DEFAULT_LUCIFEX_PORTAL_URL).rstrip("/"),
         "inference_base_url": (inference_base_url or DEFAULT_NOUS_INFERENCE_URL).rstrip("/"),
         "token_type": token_type or "Bearer",
         "scope": scope or DEFAULT_NOUS_SCOPE,
@@ -5495,7 +5495,7 @@ def refresh_nous_oauth_pure(
             if not isinstance(refresh_token_value, str) or not refresh_token_value:
                 if current_invoke_jwt_status is not None:
                     raise AuthError(
-                        "Nous Portal access token is not a usable inference JWT "
+                        "Lucifex portal access token is not a usable inference JWT "
                         f"({current_invoke_jwt_status}) and no refresh token is available. "
                         "Re-authenticate with: lucifex auth add nous",
                         provider="nous",
@@ -5503,7 +5503,7 @@ def refresh_nous_oauth_pure(
                         relogin_required=True,
                     )
                 raise AuthError(
-                    "No refresh token is available for Nous Portal.",
+                    "No refresh token is available for Lucifex portal.",
                     provider="nous",
                     relogin_required=True,
                 )
@@ -5542,20 +5542,20 @@ def refresh_nous_oauth_pure(
     return state
 
 
-def refresh_nous_oauth_from_state(
+def refresh_lucifex_oauth_from_state(
     state: Dict[str, Any],
     *,
     timeout_seconds: float = 15.0,
     force_refresh: bool = False,
     on_state_update: Optional[Callable[[Dict[str, Any], str], None]] = None,
 ) -> Dict[str, Any]:
-    """Refresh Nous OAuth from a state dict. Thin wrapper around refresh_nous_oauth_pure."""
+    """Refresh Nous OAuth from a state dict. Thin wrapper around refresh_lucifex_oauth_pure."""
     tls = state.get("tls") or {}
-    return refresh_nous_oauth_pure(
+    return refresh_lucifex_oauth_pure(
         state.get("access_token", ""),
         state.get("refresh_token", ""),
         state.get("client_id", "lucifex-cli"),
-        state.get("portal_base_url", DEFAULT_NOUS_PORTAL_URL),
+        state.get("portal_base_url", DEFAULT_LUCIFEX_PORTAL_URL),
         state.get("inference_base_url", DEFAULT_NOUS_INFERENCE_URL),
         token_type=state.get("token_type", "Bearer"),
         scope=state.get("scope", DEFAULT_NOUS_SCOPE),
@@ -5665,7 +5665,7 @@ def resolve_nous_runtime_credentials(
     ):
 
         if not state:
-            raise AuthError("Lucifex is not logged into Nous Portal.",
+            raise AuthError("Lucifex is not logged into Lucifex portal.",
                             provider="nous", relogin_required=True)
 
         persisted_state = dict(state)
@@ -5676,15 +5676,15 @@ def resolve_nous_runtime_credentials(
             portal_url = (
                 _optional_base_url(state.get("portal_base_url"))
                 or os.getenv("LUCIFEX_PORTAL_BASE_URL")
-                or os.getenv("NOUS_PORTAL_BASE_URL")
-                or DEFAULT_NOUS_PORTAL_URL
+                or os.getenv("LUCIFEX_PORTAL_BASE_URL")
+                or DEFAULT_LUCIFEX_PORTAL_URL
             ).rstrip("/")
 
             # A persisted/stale portal_base_url is where the refresh token gets
             # POSTed on refresh — reject any host outside the allowlist so a
             # poisoned value can't exfiltrate the bearer, healing to the default.
             # Trusted operator env overrides bypass this network-value gate.
-            env_portal_override = _nous_portal_env_override()
+            env_portal_override = _lucifex_portal_env_override()
             if env_portal_override:
                 portal_url = env_portal_override.rstrip("/")
             else:
@@ -5699,7 +5699,7 @@ def resolve_nous_runtime_credentials(
                 )
                 if (
                     not portal_host
-                    or portal_host not in _NOUS_PORTAL_ALLOWED_HOSTS
+                    or portal_host not in _LUCIFEX_PORTAL_ALLOWED_HOSTS
                     or not trusted_scheme
                 ):
                     logger.warning(
@@ -5708,7 +5708,7 @@ def resolve_nous_runtime_credentials(
                         portal_url,
                         portal_host,
                     )
-                    portal_url = DEFAULT_NOUS_PORTAL_URL
+                    portal_url = DEFAULT_LUCIFEX_PORTAL_URL
 
             # Re-validate persisted network-provenance on every shared merge.
             # The env override is runtime-only and must never be persisted.
@@ -5793,7 +5793,7 @@ def resolve_nous_runtime_credentials(
                 with _nous_shared_store_lock(
                     timeout_seconds=max(timeout_seconds + 5.0, AUTH_LOCK_TIMEOUT_SECONDS)
                 ):
-                    if _merge_shared_nous_oauth_state(state):
+                    if _merge_shared_lucifex_oauth_state(state):
                         access_token = state.get("access_token")
                         refresh_token = state.get("refresh_token")
                         (
@@ -5805,7 +5805,7 @@ def resolve_nous_runtime_credentials(
                         _persist_state("runtime_shared_merge_missing_access_token")
 
             if not isinstance(access_token, str) or not access_token:
-                raise AuthError("No access token found for Nous Portal login.",
+                raise AuthError("No access token found for Lucifex portal login.",
                                 provider="nous", relogin_required=True)
 
             invoke_jwt_status = _nous_invoke_jwt_status(
@@ -5815,7 +5815,7 @@ def resolve_nous_runtime_credentials(
             )
             if force_refresh or invoke_jwt_status is not None:
                 with _nous_shared_store_lock(timeout_seconds=max(timeout_seconds + 5.0, AUTH_LOCK_TIMEOUT_SECONDS)):
-                    if _merge_shared_nous_oauth_state(state):
+                    if _merge_shared_lucifex_oauth_state(state):
                         access_token = state.get("access_token")
                         refresh_token = state.get("refresh_token")
                         (
@@ -5835,7 +5835,7 @@ def resolve_nous_runtime_credentials(
                         if not isinstance(refresh_token, str) or not refresh_token:
                             reason = invoke_jwt_status or "force_refresh"
                             raise AuthError(
-                                "Nous Portal access token is not a usable inference JWT "
+                                "Lucifex portal access token is not a usable inference JWT "
                                 f"({reason}) and no refresh token is available. "
                                 "Re-authenticate with: lucifex auth add nous",
                                 provider="nous",
@@ -5857,7 +5857,7 @@ def resolve_nous_runtime_credentials(
                             )
                         except AuthError as exc:
                             if _is_terminal_nous_refresh_error(exc):
-                                _quarantine_nous_oauth_state(
+                                _quarantine_lucifex_oauth_state(
                                     state,
                                     exc,
                                     reason="runtime_access_refresh_failure",
@@ -5876,7 +5876,7 @@ def resolve_nous_runtime_credentials(
                         state["refresh_token"] = refreshed.get("refresh_token") or refresh_token
                         state["token_type"] = refreshed.get("token_type") or state.get("token_type") or "Bearer"
                         state["scope"] = refreshed.get("scope") or state.get("scope")
-                        # Heal a poisoned stored value (see refresh_nous_oauth_pure):
+                        # Heal a poisoned stored value (see refresh_lucifex_oauth_pure):
                         # reject → reset to production default, don't keep a stale
                         # staging host that re-validates to None every refresh.
                         # This (validated, network-provenance) value is what gets
@@ -5957,11 +5957,11 @@ def resolve_nous_runtime_credentials(
         "key_id": state.get("agent_key_id"),
         "expires_at": expires_at,
         "expires_in": expires_in,
-        "source": NOUS_AUTH_PATH_INVOKE_JWT,
+        "source": LUCIFEX_AUTH_PATH_INVOKE_JWT,
         # Preserve the public semantic source label while exposing the concrete
         # store separately for diagnostics. Refresh persistence uses
         # state_source_path internally and must not overload this field.
-        "auth_path": NOUS_AUTH_PATH_INVOKE_JWT,
+        "auth_path": LUCIFEX_AUTH_PATH_INVOKE_JWT,
         "state_path": str(state_source_path or _auth_file_path()),
     }
 
@@ -5970,7 +5970,7 @@ def resolve_nous_runtime_credentials(
 # Status helpers
 # =============================================================================
 
-def _empty_nous_auth_status() -> Dict[str, Any]:
+def _empty_lucifex_auth_status() -> Dict[str, Any]:
     return {
         "logged_in": False,
         "portal_base_url": None,
@@ -5994,11 +5994,11 @@ def _snapshot_nous_pool_status() -> Dict[str, Any]:
 
         pool = load_pool("nous")
         if not pool or not pool.has_credentials():
-            return _empty_nous_auth_status()
+            return _empty_lucifex_auth_status()
 
         entries = list(pool.entries())
         if not entries:
-            return _empty_nous_auth_status()
+            return _empty_lucifex_auth_status()
 
         def _entry_sort_key(entry: Any) -> tuple[float, float, int]:
             agent_exp = _parse_iso_timestamp(getattr(entry, "agent_key_expires_at", None)) or 0.0
@@ -6009,7 +6009,7 @@ def _snapshot_nous_pool_status() -> Dict[str, Any]:
         entry = max(entries, key=_entry_sort_key)
         runtime_key = getattr(entry, "runtime_api_key", None)
         if not runtime_key:
-            return _empty_nous_auth_status()
+            return _empty_lucifex_auth_status()
         access_token = getattr(entry, "access_token", None)
         auth_type = str(getattr(entry, "auth_type", "") or "").strip().lower()
         refresh_token = getattr(entry, "refresh_token", None)
@@ -6021,7 +6021,7 @@ def _snapshot_nous_pool_status() -> Dict[str, Any]:
         if is_portal_oauth:
             portal_status_url = (
                 getattr(entry, "portal_base_url", None)
-                or DEFAULT_NOUS_PORTAL_URL
+                or DEFAULT_LUCIFEX_PORTAL_URL
             )
 
         return {
@@ -6039,11 +6039,11 @@ def _snapshot_nous_pool_status() -> Dict[str, Any]:
             "source": f"pool:{label}",
         }
     except Exception:
-        return _empty_nous_auth_status()
+        return _empty_lucifex_auth_status()
 
 
 # ── Process-level memo for get_nous_auth_status() ──
-# get_nous_auth_status() validates state by calling resolve_nous_runtime_credentials(),
+# get_lucifex_auth_status() validates state by calling resolve_nous_runtime_credentials(),
 # which does a synchronous OAuth refresh POST to portal.nousresearch.com. That can take
 # ~350ms even on the failure path, and read-only UI surfaces (`lucifex tools`, status panels,
 # subscription-feature checks) call it many times per render — `lucifex tools` → "All Platforms"
@@ -6051,8 +6051,8 @@ def _snapshot_nous_pool_status() -> Dict[str, Any]:
 # single-use refresh tokens. Cache the snapshot for a few seconds, keyed on the auth.json
 # path + mtime so that profile switches do not share a process memo and
 # `lucifex auth login/logout/add/remove` invalidate naturally on the next call.
-_NOUS_AUTH_STATUS_CACHE_TTL = 15.0  # seconds
-_nous_auth_status_cache: Optional[Tuple[float, str, Optional[float], Dict[str, Any]]] = None
+_LUCIFEX_AUTH_STATUS_CACHE_TTL = 15.0  # seconds
+_lucifex_auth_status_cache: Optional[Tuple[float, str, Optional[float], Dict[str, Any]]] = None
 
 
 def _auth_file_cache_key() -> Tuple[str, Optional[float]]:
@@ -6069,19 +6069,19 @@ def _auth_file_cache_key() -> Tuple[str, Optional[float]]:
         return auth_file_key, None
 
 
-def invalidate_nous_auth_status_cache() -> None:
-    """Clear the get_nous_auth_status() process-level memo.
+def invalidate_lucifex_auth_status_cache() -> None:
+    """Clear the get_lucifex_auth_status() process-level memo.
 
     Call this from any code path that mutates Nous auth state without going
     through resolve_nous_runtime_credentials() (e.g. tests). Login/logout
     flows touch auth.json, so the mtime check below invalidates them
     automatically — explicit invalidation is the belt-and-braces option.
     """
-    global _nous_auth_status_cache
-    _nous_auth_status_cache = None
+    global _lucifex_auth_status_cache
+    _lucifex_auth_status_cache = None
 
 
-def get_nous_auth_status() -> Dict[str, Any]:
+def get_lucifex_auth_status() -> Dict[str, Any]:
     """Status snapshot for Nous auth.
 
     Prefer the auth-store provider state, because that is the live source of
@@ -6094,28 +6094,28 @@ def get_nous_auth_status() -> Dict[str, Any]:
     so menu/status surfaces that ask repeatedly don't trigger one refresh POST
     per call. Login/logout flows write to auth.json and therefore invalidate
     the cache automatically; tests can also call
-    ``invalidate_nous_auth_status_cache()`` explicitly.
+    ``invalidate_lucifex_auth_status_cache()`` explicitly.
     """
-    global _nous_auth_status_cache
+    global _lucifex_auth_status_cache
     now = time.monotonic()
     auth_file_key, mtime = _auth_file_cache_key()
-    cached = _nous_auth_status_cache
+    cached = _lucifex_auth_status_cache
     if cached is not None:
         cached_at, cached_auth_file_key, cached_mtime, cached_status = cached
         if (
             cached_auth_file_key == auth_file_key
             and cached_mtime == mtime
-            and (now - cached_at) < _NOUS_AUTH_STATUS_CACHE_TTL
+            and (now - cached_at) < _LUCIFEX_AUTH_STATUS_CACHE_TTL
         ):
             return dict(cached_status)
 
-    status = _compute_nous_auth_status()
-    _nous_auth_status_cache = (now, auth_file_key, mtime, dict(status))
+    status = _compute_lucifex_auth_status()
+    _lucifex_auth_status_cache = (now, auth_file_key, mtime, dict(status))
     return status
 
 
-def _compute_nous_auth_status() -> Dict[str, Any]:
-    """Uncached implementation of get_nous_auth_status(). See that function."""
+def _compute_lucifex_auth_status() -> Dict[str, Any]:
+    """Uncached implementation of get_lucifex_auth_status(). See that function."""
     state = get_provider_auth_state("nous")
     if state:
         base_status = {
@@ -6216,7 +6216,7 @@ def get_nous_session_validity() -> str:
                 return NOUS_SESSION_TERMINAL
 
     try:
-        status = get_nous_auth_status()
+        status = get_lucifex_auth_status()
     except Exception:
         # Status computation itself failed — indeterminate, not terminal.
         return NOUS_SESSION_UNKNOWN
@@ -6414,7 +6414,7 @@ def get_auth_status(provider_id: Optional[str] = None) -> Dict[str, Any]:
     if target == "spotify":
         return get_spotify_auth_status()
     if target == "nous":
-        return get_nous_auth_status()
+        return get_lucifex_auth_status()
     if target == "openai-codex":
         return get_codex_auth_status()
     if target == "xai-oauth":
@@ -6918,7 +6918,7 @@ def _prompt_model_selection(
         choices.append("Enter custom model name")
         choices.append("Skip (keep current)")
 
-        _upgrade_url = (portal_url or DEFAULT_NOUS_PORTAL_URL).rstrip("/")
+        _upgrade_url = (portal_url or DEFAULT_LUCIFEX_PORTAL_URL).rstrip("/")
         unavailable_footer = unavailable_message.strip()
         if not unavailable_footer and _unavailable:
             unavailable_footer = f"Upgrade at {_upgrade_url} for paid models"
@@ -6972,7 +6972,7 @@ def _prompt_model_selection(
     print(f"  {n + 2:>{num_width}}. Skip (keep current)")
 
     if _unavailable:
-        _upgrade_url = (portal_url or DEFAULT_NOUS_PORTAL_URL).rstrip("/")
+        _upgrade_url = (portal_url or DEFAULT_LUCIFEX_PORTAL_URL).rstrip("/")
         unavailable_footer = unavailable_message.strip() or (
             f"Unavailable models (requires paid tier — upgrade at {_upgrade_url})"
         )
@@ -8002,7 +8002,7 @@ def _nous_device_code_login(
     portal_base_url = (
         portal_base_url
         or os.getenv("LUCIFEX_PORTAL_BASE_URL")
-        or os.getenv("NOUS_PORTAL_BASE_URL")
+        or os.getenv("LUCIFEX_PORTAL_BASE_URL")
         or pconfig.portal_base_url
     ).rstrip("/")
     requested_inference_url = (
@@ -8105,7 +8105,7 @@ def _nous_device_code_login(
         "agent_key_obtained_at": None,
     }
     try:
-        return refresh_nous_oauth_from_state(
+        return refresh_lucifex_oauth_from_state(
             auth_state,
             timeout_seconds=timeout_seconds,
             force_refresh=False,
@@ -8113,7 +8113,7 @@ def _nous_device_code_login(
     except AuthError as exc:
         if exc.code == "subscription_required":
             portal_url = auth_state.get(
-                "portal_base_url", DEFAULT_NOUS_PORTAL_URL
+                "portal_base_url", DEFAULT_LUCIFEX_PORTAL_URL
             ).rstrip("/")
             message = format_auth_error(exc)
             print()
@@ -8140,10 +8140,10 @@ def nous_token_has_billing_scope() -> bool:
     scope = state.get("scope")
     if not isinstance(scope, str):
         return False
-    return NOUS_BILLING_MANAGE_SCOPE in scope.split()
+    return LUCIFEX_BILLING_MANAGE_SCOPE in scope.split()
 
 
-def step_up_nous_billing_scope(
+def step_up_lucifex_billing_scope(
     *,
     open_browser: bool = True,
     timeout_seconds: float = 15.0,
@@ -8177,8 +8177,8 @@ def step_up_nous_billing_scope(
     for tok in (prior_scope.split() or [NOUS_INFERENCE_INVOKE_SCOPE, "tool:invoke"]):
         if tok and tok not in requested:
             requested.append(tok)
-    if NOUS_BILLING_MANAGE_SCOPE not in requested:
-        requested.append(NOUS_BILLING_MANAGE_SCOPE)
+    if LUCIFEX_BILLING_MANAGE_SCOPE not in requested:
+        requested.append(LUCIFEX_BILLING_MANAGE_SCOPE)
     scope = " ".join(requested)
 
     auth_state = _nous_device_code_login(
@@ -8207,11 +8207,11 @@ def step_up_nous_billing_scope(
         pass
 
     granted = auth_state.get("scope")
-    return isinstance(granted, str) and NOUS_BILLING_MANAGE_SCOPE in granted.split()
+    return isinstance(granted, str) and LUCIFEX_BILLING_MANAGE_SCOPE in granted.split()
 
 
 def _login_nous(args, pconfig: ProviderConfig) -> None:
-    """Nous Portal device authorization flow."""
+    """Lucifex portal device authorization flow."""
     timeout_seconds = getattr(args, "timeout", None) or 15.0
     insecure = bool(getattr(args, "insecure", False))
     ca_bundle = (
@@ -8319,14 +8319,14 @@ def _login_nous(args, pconfig: ProviderConfig) -> None:
                 _portal_for_recs = auth_state.get("portal_base_url", "")
                 if free_tier:
                     try:
-                        from lucifex_cli.nous_account import (
-                            format_nous_portal_entitlement_message,
-                            get_nous_portal_account_info,
+                        from lucifex_cli.lucifex_account import (
+                            format_lucifex_portal_entitlement_message,
+                            get_lucifex_portal_account_info,
                         )
 
-                        _account_info = get_nous_portal_account_info(force_fresh=True)
+                        _account_info = get_lucifex_portal_account_info(force_fresh=True)
                         unavailable_message = (
-                            format_nous_portal_entitlement_message(
+                            format_lucifex_portal_entitlement_message(
                                 _account_info,
                                 capability="paid Nous models",
                             )
@@ -8366,11 +8366,11 @@ def _login_nous(args, pconfig: ProviderConfig) -> None:
                     confirm_api_key=runtime_key,
                 )
             elif unavailable_models:
-                _url = (_portal or DEFAULT_NOUS_PORTAL_URL).rstrip("/")
+                _url = (_portal or DEFAULT_LUCIFEX_PORTAL_URL).rstrip("/")
                 print("No free models currently available.")
                 print(unavailable_message or f"Upgrade at {_url} to access paid models.")
             else:
-                print("No curated models available for Nous Portal.")
+                print("No curated models available for Lucifex portal.")
         except Exception as exc:
             message = format_auth_error(exc) if isinstance(exc, AuthError) else str(exc)
             print()
@@ -8395,7 +8395,7 @@ def _login_nous(args, pconfig: ProviderConfig) -> None:
                 _save_auth_store(auth_store)
             print()
             print("No provider change. Nous credentials saved for future use.")
-            print("  Run `lucifex model` again to switch to Nous Portal.")
+            print("  Run `lucifex model` again to switch to Lucifex portal.")
             return
 
         config_path = _update_config_for_provider(

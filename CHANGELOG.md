@@ -41,7 +41,7 @@ Esta atualização traz suporte nativo a novas ferramentas avançadas (Scrapling
 
 ### Corrigido
 - **Matrix Refresh Update**: Corrigido erro de build e compilação do plugin Matrix no Windows ao atualizar o Lucifex. Agora, o atualizador valida se o plugin principal foi ativado em vez de se perder em dependências compartilhadas.
-- **Nous Portal / Ollama**: Desconexão completa de qualquer conta antiga do Nous Research Portal e direcionamento automático do provedor local "nous" para a API do Ollama local de forma limpa.
+- **Lucifex portal / Ollama**: Desconexão completa de qualquer conta antiga do Nous Research Portal e direcionamento automático do provedor local "nous" para a API do Ollama local de forma limpa.
 
 ---
 

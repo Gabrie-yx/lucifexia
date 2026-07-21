@@ -17,7 +17,7 @@ _VALID_MODAL_MODES = {"auto", "direct", "managed"}
 def managed_nous_tools_enabled(*, force_fresh: bool = False) -> bool:
     """Return True when the user is entitled to the Nous Tool Gateway.
 
-    Entitlement is paid Nous Portal service access OR a live free tool pool
+    Entitlement is paid Lucifex portal service access OR a live free tool pool
     (``tool_gateway_entitled``). Per-category coverage (the pool funds image but
     not video, etc.) is narrowed by callers via ``tool_gateway_entitled_for``;
     this coarse gate only answers "is any managed tool usable at all".
@@ -28,12 +28,12 @@ def managed_nous_tools_enabled(*, force_fresh: bool = False) -> bool:
     reflect a just-purchased subscription, credits, or pool grant immediately.
     """
     try:
-        from lucifex_cli.nous_account import get_nous_portal_account_info
+        from lucifex_cli.lucifex_account import get_lucifex_portal_account_info
 
         if force_fresh:
-            account_info = get_nous_portal_account_info(force_fresh=True)
+            account_info = get_lucifex_portal_account_info(force_fresh=True)
         else:
-            account_info = get_nous_portal_account_info()
+            account_info = get_lucifex_portal_account_info()
         if not account_info.logged_in:
             return False
         return account_info.tool_gateway_entitled
@@ -48,13 +48,13 @@ def nous_tool_gateway_unavailable_message(
 ) -> str:
     """Return account-aware guidance for an unavailable Nous Tool Gateway path."""
     try:
-        from lucifex_cli.nous_account import (
-            format_nous_portal_entitlement_message,
-            get_nous_portal_account_info,
+        from lucifex_cli.lucifex_account import (
+            format_lucifex_portal_entitlement_message,
+            get_lucifex_portal_account_info,
         )
 
-        account_info = get_nous_portal_account_info(force_fresh=force_fresh)
-        message = format_nous_portal_entitlement_message(
+        account_info = get_lucifex_portal_account_info(force_fresh=force_fresh)
+        message = format_lucifex_portal_entitlement_message(
             account_info,
             capability=capability,
         )
@@ -64,7 +64,7 @@ def nous_tool_gateway_unavailable_message(
         pass
     return (
         f"{capability} is unavailable. Run `lucifex model` to refresh your "
-        "Nous Portal login and billing status."
+        "Lucifex portal login and billing status."
     )
 
 

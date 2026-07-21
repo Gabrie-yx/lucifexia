@@ -386,7 +386,7 @@ Profiles 使用 `~/.lucifex/profiles/<name>/`，布局相同。
 |----------|------|-------------|
 | OpenRouter | API key | `OPENROUTER_API_KEY` |
 | Anthropic | API key | `ANTHROPIC_API_KEY` |
-| Nous Portal | OAuth | `lucifex auth` |
+| Lucifex portal | OAuth | `lucifex auth` |
 | OpenAI Codex | OAuth | `lucifex auth` |
 | GitHub Copilot | Token | `COPILOT_GITHUB_TOKEN` |
 | Google Gemini | API key | `GOOGLE_API_KEY` 或 `GEMINI_API_KEY` |

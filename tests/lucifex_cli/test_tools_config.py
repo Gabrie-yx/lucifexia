@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 import pytest
 
-from lucifex_cli.nous_account import NousPortalAccountInfo
+from lucifex_cli.lucifex_account import LucifexportalAccountInfo
 from lucifex_cli.tools_config import (
     _DEFAULT_OFF_TOOLSETS,
     _apply_toolset_change,
@@ -724,12 +724,12 @@ def test_save_platform_tools_still_preserves_mcp_with_platform_default_present()
     assert "terminal" not in saved
 
 
-def test_visible_providers_include_nous_subscription_when_logged_in(monkeypatch):
+def test_visible_providers_include_lucifex_subscription_when_logged_in(monkeypatch):
     config = {"model": {"provider": "nous"}}
 
     monkeypatch.setattr(
-        "lucifex_cli.nous_subscription.get_nous_portal_account_info",
-        lambda: NousPortalAccountInfo(
+        "lucifex_cli.lucifex_subscription.get_lucifex_portal_account_info",
+        lambda: LucifexportalAccountInfo(
             logged_in=True,
             source="jwt",
             fresh=False,
@@ -743,11 +743,11 @@ def test_visible_providers_include_nous_subscription_when_logged_in(monkeypatch)
     # sorts first so a fresh-install Enter lands on the free local backend).
     assert any(p["name"].startswith("Nous Subscription") for p in providers)
     # "Local Browser" must be the index-0 default so pressing Enter never
-    # walks a user into a paid Nous Portal login.
+    # walks a user into a paid Lucifex portal login.
     assert providers[0]["name"] == "Local Browser"
 
 
-def test_visible_providers_show_nous_subscription_when_logged_out(monkeypatch):
+def test_visible_providers_show_lucifex_subscription_when_logged_out(monkeypatch):
     """Nous-managed Tool Gateway rows are always listed, even logged out.
 
     Selecting one triggers an inline Portal login (entitlement is checked at
@@ -756,8 +756,8 @@ def test_visible_providers_show_nous_subscription_when_logged_out(monkeypatch):
     config = {"model": {"provider": "openrouter"}}
 
     monkeypatch.setattr(
-        "lucifex_cli.nous_subscription.get_nous_portal_account_info",
-        lambda: NousPortalAccountInfo(
+        "lucifex_cli.lucifex_subscription.get_lucifex_portal_account_info",
+        lambda: LucifexportalAccountInfo(
             logged_in=False,
             source="none",
             fresh=False,
@@ -770,17 +770,17 @@ def test_visible_providers_show_nous_subscription_when_logged_out(monkeypatch):
     assert any(p["name"].startswith("Nous Subscription") for p in providers)
 
 
-def test_visible_providers_show_nous_subscription_when_paid_access_is_false(monkeypatch):
+def test_visible_providers_show_lucifex_subscription_when_paid_access_is_false(monkeypatch):
     """Logged-in-but-unpaid users still see the managed rows.
 
     The paid-access gate moved from visibility to selection time — the row is
-    shown; ``ensure_nous_portal_access`` blocks activation if still unpaid.
+    shown; ``ensure_lucifex_portal_access`` blocks activation if still unpaid.
     """
     config = {"model": {"provider": "nous"}}
 
     monkeypatch.setattr(
-        "lucifex_cli.nous_subscription.get_nous_portal_account_info",
-        lambda: NousPortalAccountInfo(
+        "lucifex_cli.lucifex_subscription.get_lucifex_portal_account_info",
+        lambda: LucifexportalAccountInfo(
                 logged_in=True,
                 source="jwt",
                 fresh=False,
@@ -793,14 +793,14 @@ def test_visible_providers_show_nous_subscription_when_paid_access_is_false(monk
     assert any(p["name"].startswith("Nous Subscription") for p in providers)
 
 
-def test_visible_providers_force_fresh_shows_nous_subscription_after_upgrade(monkeypatch):
+def test_visible_providers_force_fresh_shows_lucifex_subscription_after_upgrade(monkeypatch):
     calls = []
 
     def fake_subscription_features(config, *, force_fresh=False):
         calls.append(("features", force_fresh))
         return SimpleNamespace(
-            nous_auth_present=True,
-            account_info=NousPortalAccountInfo(
+            lucifex_auth_present=True,
+            account_info=LucifexportalAccountInfo(
                 logged_in=True,
                 source="account_api" if force_fresh else "jwt",
                 fresh=force_fresh,
@@ -810,7 +810,7 @@ def test_visible_providers_force_fresh_shows_nous_subscription_after_upgrade(mon
         )
 
     monkeypatch.setattr(
-        "lucifex_cli.tools_config.get_nous_subscription_features",
+        "lucifex_cli.tools_config.get_lucifex_subscription_features",
         fake_subscription_features,
     )
 
@@ -844,8 +844,7 @@ def test_fresh_install_browser_default_is_free_local_not_paid_nous():
     backend, never the paid Nous Subscription gateway.
 
     Regression: the Nous row used to sort first, so the menu cursor defaulted
-    to index 0 (Nous) and pressing Enter walked users straight into a Nous
-    Portal login for a paid offering (Javier's bug, June 2026).
+    to index 0 (Nous) and pressing Enter walked users straight into a Lucifex portal login for a paid offering (Javier's bug, June 2026).
     """
     from lucifex_cli.tools_config import _detect_active_provider_index
 
@@ -986,7 +985,7 @@ def test_configure_single_platform_configures_selected_tool_missing_provider(mon
 
 
 def test_first_install_nous_auto_configures_managed_defaults(monkeypatch):
-    monkeypatch.setattr("lucifex_cli.nous_subscription.managed_nous_tools_enabled", lambda: True)
+    monkeypatch.setattr("lucifex_cli.lucifex_subscription.managed_nous_tools_enabled", lambda: True)
     config = {
         "model": {"provider": "nous"},
         "platform_toolsets": {"cli": []},
@@ -1020,8 +1019,8 @@ def test_first_install_nous_auto_configures_managed_defaults(monkeypatch):
         lambda: ["cli"],
     )
     monkeypatch.setattr(
-        "lucifex_cli.nous_subscription.get_nous_portal_account_info",
-        lambda *args, **kwargs: NousPortalAccountInfo(
+        "lucifex_cli.lucifex_subscription.get_lucifex_portal_account_info",
+        lambda *args, **kwargs: LucifexportalAccountInfo(
             logged_in=True,
             source="jwt",
             fresh=False,
@@ -1050,7 +1049,7 @@ def test_first_install_nous_auto_configures_video_gen(monkeypatch):
     video_gen.use_gateway so the FAL plugin can route through the gateway
     at runtime.  Regression test for the bug where video_gen was marked as
     auto-configured but no config was actually written."""
-    monkeypatch.setattr("lucifex_cli.nous_subscription.managed_nous_tools_enabled", lambda: True)
+    monkeypatch.setattr("lucifex_cli.lucifex_subscription.managed_nous_tools_enabled", lambda: True)
     config = {
         "model": {"provider": "nous"},
         "platform_toolsets": {"cli": []},
@@ -1080,8 +1079,8 @@ def test_first_install_nous_auto_configures_video_gen(monkeypatch):
         lambda: ["cli"],
     )
     monkeypatch.setattr(
-        "lucifex_cli.nous_subscription.get_nous_portal_account_info",
-        lambda *args, **kwargs: NousPortalAccountInfo(
+        "lucifex_cli.lucifex_subscription.get_lucifex_portal_account_info",
+        lambda *args, **kwargs: LucifexportalAccountInfo(
             logged_in=True,
             source="jwt",
             fresh=False,
@@ -1552,7 +1551,7 @@ def test_reconfigure_provider_syncs_use_gateway(monkeypatch, provider, config_ke
     # Managed providers run the inline Portal entitlement gate; treat the user
     # as already entitled so the test exercises the use_gateway sync.
     monkeypatch.setattr(
-        "lucifex_cli.nous_subscription.ensure_nous_portal_access",
+        "lucifex_cli.lucifex_subscription.ensure_lucifex_portal_access",
         lambda **kwargs: True,
     )
     config = {}
@@ -1593,14 +1592,14 @@ def test_reconfigure_provider_runs_post_setup_for_env_var_providers(
 
 
 # ---------------------------------------------------------------------------
-# Inline Nous Portal login gate on managed-provider selection
+# Inline Lucifex portal login gate on managed-provider selection
 # ---------------------------------------------------------------------------
 
 
 def test_configure_managed_provider_blocks_when_not_entitled(monkeypatch):
     """Selecting a Nous-managed backend without paid access writes no config."""
     monkeypatch.setattr(
-        "lucifex_cli.nous_subscription.ensure_nous_portal_access",
+        "lucifex_cli.lucifex_subscription.ensure_lucifex_portal_access",
         lambda **kwargs: False,
     )
     provider = {
@@ -1620,7 +1619,7 @@ def test_configure_managed_provider_blocks_when_not_entitled(monkeypatch):
 def test_configure_managed_provider_enables_when_entitled(monkeypatch):
     """Once entitled, selecting the managed backend sets use_gateway=True."""
     monkeypatch.setattr(
-        "lucifex_cli.nous_subscription.ensure_nous_portal_access",
+        "lucifex_cli.lucifex_subscription.ensure_lucifex_portal_access",
         lambda **kwargs: True,
     )
     provider = {
@@ -1638,7 +1637,7 @@ def test_configure_managed_provider_enables_when_entitled(monkeypatch):
 
 
 def test_configure_non_managed_provider_skips_portal_gate(monkeypatch):
-    """A self-hosted provider must never trigger the Nous Portal login gate."""
+    """A self-hosted provider must never trigger the Lucifex portal login gate."""
     called = {"gate": False}
 
     def _boom(**kwargs):
@@ -1646,7 +1645,7 @@ def test_configure_non_managed_provider_skips_portal_gate(monkeypatch):
         return False
 
     monkeypatch.setattr(
-        "lucifex_cli.nous_subscription.ensure_nous_portal_access", _boom
+        "lucifex_cli.lucifex_subscription.ensure_lucifex_portal_access", _boom
     )
     provider = {"name": "Tavily", "web_backend": "tavily", "env_vars": []}
     config = {}
@@ -1934,15 +1933,15 @@ def test_save_platform_tools_disabling_a_toolset_does_not_touch_disabled_toolset
 
 def _fake_features(*, logged_in: bool, paid: bool = True):
     account = (
-        NousPortalAccountInfo(
+        LucifexportalAccountInfo(
             logged_in=True, source="jwt", fresh=False, paid_service_access=paid
         )
         if logged_in
-        else NousPortalAccountInfo(
+        else LucifexportalAccountInfo(
             logged_in=False, source="none", fresh=False, paid_service_access=None
         )
     )
-    return SimpleNamespace(nous_auth_present=logged_in, account_info=account)
+    return SimpleNamespace(lucifex_auth_present=logged_in, account_info=account)
 
 
 def test_provider_readiness_env_vars_gate_keys(monkeypatch):
@@ -1965,7 +1964,7 @@ def test_provider_readiness_managed_nous_row_needs_auth_when_logged_out():
     provider = {
         "name": "Nous Subscription",
         "env_vars": [],
-        "requires_nous_auth": True,
+        "requires_lucifex_auth": True,
         "managed_nous_feature": "tts",
     }
     status = provider_readiness_status(
@@ -1978,7 +1977,7 @@ def test_provider_readiness_managed_nous_row_ready_when_entitled():
     provider = {
         "name": "Nous Subscription",
         "env_vars": [],
-        "requires_nous_auth": True,
+        "requires_lucifex_auth": True,
         "managed_nous_feature": "tts",
     }
     status = provider_readiness_status(
@@ -1992,7 +1991,7 @@ def test_provider_readiness_managed_nous_row_needs_auth_when_unentitled():
     provider = {
         "name": "Nous Subscription",
         "env_vars": [],
-        "requires_nous_auth": True,
+        "requires_lucifex_auth": True,
         "managed_nous_feature": "video_gen",
     }
     status = provider_readiness_status(
@@ -2106,12 +2105,12 @@ def test_provider_readiness_agent_browser_tracks_local_install(monkeypatch):
     provider = {"name": "Local Browser", "env_vars": [], "post_setup": "agent_browser"}
 
     monkeypatch.setattr(
-        "lucifex_cli.nous_subscription._local_browser_runnable", lambda: False
+        "lucifex_cli.lucifex_subscription._local_browser_runnable", lambda: False
     )
     assert provider_readiness_status(provider, {}) == "needs_setup"
 
     monkeypatch.setattr(
-        "lucifex_cli.nous_subscription._local_browser_runnable", lambda: True
+        "lucifex_cli.lucifex_subscription._local_browser_runnable", lambda: True
     )
     assert provider_readiness_status(provider, {}) == "ready"
 
@@ -2122,12 +2121,12 @@ def test_provider_readiness_cloud_browser_hook_tracks_cli_only(monkeypatch):
     provider = {"name": "Browserbase", "env_vars": [], "post_setup": "browserbase"}
 
     monkeypatch.setattr(
-        "lucifex_cli.nous_subscription._has_agent_browser", lambda: False
+        "lucifex_cli.lucifex_subscription._has_agent_browser", lambda: False
     )
     assert provider_readiness_status(provider, {}) == "needs_setup"
 
     monkeypatch.setattr(
-        "lucifex_cli.nous_subscription._has_agent_browser", lambda: True
+        "lucifex_cli.lucifex_subscription._has_agent_browser", lambda: True
     )
     assert provider_readiness_status(provider, {}) == "ready"
 

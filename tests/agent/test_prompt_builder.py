@@ -16,7 +16,7 @@ from agent.prompt_builder import (
     _find_git_root,
     _strip_yaml_frontmatter,
     build_skills_system_prompt,
-    build_nous_subscription_prompt,
+    build_lucifex_subscription_prompt,
     build_context_files_prompt,
     CONTEXT_FILE_MAX_CHARS,
     _dynamic_context_file_max_chars,
@@ -34,7 +34,7 @@ from agent.prompt_builder import (
     PLATFORM_HINTS,
     WSL_ENVIRONMENT_HINT,
 )
-from lucifex_cli.nous_subscription import NousFeatureState, NousSubscriptionFeatures
+from lucifex_cli.lucifex_subscription import NousFeatureState, NousSubscriptionFeatures
 
 
 # =========================================================================
@@ -640,10 +640,10 @@ class TestBuildNousSubscriptionPrompt:
     def test_includes_active_subscription_features(self, monkeypatch):
         monkeypatch.setattr("tools.tool_backend_helpers.managed_nous_tools_enabled", lambda: True)
         monkeypatch.setattr(
-            "lucifex_cli.nous_subscription.get_nous_subscription_features",
+            "lucifex_cli.lucifex_subscription.get_lucifex_subscription_features",
             lambda config=None: NousSubscriptionFeatures(
                 subscribed=True,
-                nous_auth_present=True,
+                lucifex_auth_present=True,
                 provider_is_nous=True,
                 features={
                     "web": NousFeatureState("web", "Web tools", True, True, True, True, False, True, "firecrawl"),
@@ -657,7 +657,7 @@ class TestBuildNousSubscriptionPrompt:
             ),
         )
 
-        prompt = build_nous_subscription_prompt({"web_search", "browser_navigate"})
+        prompt = build_lucifex_subscription_prompt({"web_search", "browser_navigate"})
 
         assert "Browser Use" in prompt
         assert "Modal execution is optional" in prompt
@@ -666,10 +666,10 @@ class TestBuildNousSubscriptionPrompt:
     def test_non_subscriber_prompt_includes_relevant_upgrade_guidance(self, monkeypatch):
         monkeypatch.setattr("tools.tool_backend_helpers.managed_nous_tools_enabled", lambda: True)
         monkeypatch.setattr(
-            "lucifex_cli.nous_subscription.get_nous_subscription_features",
+            "lucifex_cli.lucifex_subscription.get_lucifex_subscription_features",
             lambda config=None: NousSubscriptionFeatures(
                 subscribed=False,
-                nous_auth_present=False,
+                lucifex_auth_present=False,
                 provider_is_nous=False,
                 features={
                     "web": NousFeatureState("web", "Web tools", True, False, False, False, False, True, ""),
@@ -683,7 +683,7 @@ class TestBuildNousSubscriptionPrompt:
             ),
         )
 
-        prompt = build_nous_subscription_prompt({"image_generate"})
+        prompt = build_lucifex_subscription_prompt({"image_generate"})
 
         assert "suggest Nous subscription as one option" in prompt
         assert "Do not mention subscription unless" in prompt
@@ -691,7 +691,7 @@ class TestBuildNousSubscriptionPrompt:
     def test_feature_flag_off_returns_empty_prompt(self, monkeypatch):
         monkeypatch.setattr("tools.tool_backend_helpers.managed_nous_tools_enabled", lambda: False)
 
-        prompt = build_nous_subscription_prompt({"web_search"})
+        prompt = build_lucifex_subscription_prompt({"web_search"})
 
         assert prompt == ""
 

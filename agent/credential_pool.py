@@ -899,7 +899,7 @@ class CredentialPool:
         ``resolve_nous_runtime_credentials``, it writes fresh tokens to
         auth.json under ``_auth_store_lock``.  The pool entry's tokens
         become stale.  This method detects that and adopts the newer pair,
-        avoiding a "refresh token reuse" revocation on the Nous Portal.
+        avoiding a "refresh token reuse" revocation on the Lucifex portal.
         """
         if self.provider != "nous" or entry.source != "device_code":
             return entry
@@ -1433,7 +1433,7 @@ class CredentialPool:
                             store_refresh = str(state.get("refresh_token") or "").strip()
                             entry_refresh = str(entry.refresh_token or "").strip()
                             if not store_refresh or store_refresh == entry_refresh:
-                                auth_mod._quarantine_nous_oauth_state(
+                                auth_mod._quarantine_lucifex_oauth_state(
                                     state,
                                     exc,
                                     reason="credential_pool_refresh_failure",

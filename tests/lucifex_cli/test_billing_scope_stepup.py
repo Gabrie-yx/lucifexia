@@ -6,9 +6,9 @@ import pytest
 
 import lucifex_cli.auth as auth
 from lucifex_cli.auth import (
-    NOUS_BILLING_MANAGE_SCOPE,
+    LUCIFEX_BILLING_MANAGE_SCOPE,
     nous_token_has_billing_scope,
-    step_up_nous_billing_scope,
+    step_up_lucifex_billing_scope,
 )
 
 
@@ -47,7 +47,7 @@ def test_has_scope_no_substring_false_positive(monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# step_up_nous_billing_scope
+# step_up_lucifex_billing_scope
 # ---------------------------------------------------------------------------
 
 
@@ -90,10 +90,10 @@ def test_step_up_requests_billing_scope_and_reuses_prior_urls(monkeypatch, _stub
 
     monkeypatch.setattr(auth, "_nous_device_code_login", _fake_login)
 
-    granted = step_up_nous_billing_scope()
+    granted = step_up_lucifex_billing_scope()
     assert granted is True
     # Requested scope must include billing:manage, preserving prior scopes.
-    assert NOUS_BILLING_MANAGE_SCOPE in captured["scope"].split()
+    assert LUCIFEX_BILLING_MANAGE_SCOPE in captured["scope"].split()
     assert "inference:invoke" in captured["scope"].split()
     # Reuses the prior credential's deployment URLs (so a preview stays a preview).
     assert captured["portal_base_url"] == "https://preview.example.com"
@@ -108,7 +108,7 @@ def test_step_up_returns_false_when_downscoped(monkeypatch, _stub_persist):
         "_nous_device_code_login",
         lambda **kw: {"scope": "inference:invoke", "access_token": "t"},
     )
-    assert step_up_nous_billing_scope() is False
+    assert step_up_lucifex_billing_scope() is False
 
 
 def test_step_up_falls_back_to_standard_scope_when_no_prior(monkeypatch, _stub_persist):
@@ -120,11 +120,11 @@ def test_step_up_falls_back_to_standard_scope_when_no_prior(monkeypatch, _stub_p
         return {"scope": "inference:invoke tool:invoke billing:manage"}
 
     monkeypatch.setattr(auth, "_nous_device_code_login", _fake_login)
-    step_up_nous_billing_scope()
+    step_up_lucifex_billing_scope()
     requested = captured["scope"].split()
     assert "inference:invoke" in requested
     assert "tool:invoke" in requested
-    assert NOUS_BILLING_MANAGE_SCOPE in requested
+    assert LUCIFEX_BILLING_MANAGE_SCOPE in requested
 
 
 # ---------------------------------------------------------------------------
@@ -145,7 +145,7 @@ def test_step_up_forwards_on_verification_callback(monkeypatch, _stub_persist):
     def _cb(url, code):
         pass
 
-    step_up_nous_billing_scope(on_verification=_cb)
+    step_up_lucifex_billing_scope(on_verification=_cb)
     # The callback must be threaded straight through to the device-code login.
     assert captured["on_verification"] is _cb
 

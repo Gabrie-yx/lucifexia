@@ -88,7 +88,7 @@ describe('/subscription slash command', () => {
 
     await run('')
 
-    expect(printed(sys)).toContain('Not logged into Nous Portal')
+    expect(printed(sys)).toContain('Not logged into Lucifex portal')
     expect(getOverlayState().subscription).toBeNull()
   })
 

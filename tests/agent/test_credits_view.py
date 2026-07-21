@@ -15,15 +15,15 @@ import pytest
 
 import agent.account_usage as account_usage
 from agent.account_usage import CreditsView, build_credits_view
-from lucifex_cli.nous_account import NousPortalAccountInfo, NousPaidServiceAccessInfo
+from lucifex_cli.lucifex_account import LucifexportalAccountInfo, NousPaidServiceAccessInfo
 
 
-def _account(**kwargs) -> NousPortalAccountInfo:
+def _account(**kwargs) -> LucifexportalAccountInfo:
     kwargs.setdefault("logged_in", True)
     kwargs.setdefault("source", "account_api")
     kwargs.setdefault("fresh", True)
     kwargs.setdefault("portal_base_url", "https://portal.example.test")
-    return NousPortalAccountInfo(**kwargs)
+    return LucifexportalAccountInfo(**kwargs)
 
 
 @pytest.fixture
@@ -36,7 +36,7 @@ def _logged_in_account(monkeypatch):
 
     def _install(account):
         monkeypatch.setattr(
-            "lucifex_cli.nous_account.get_nous_portal_account_info",
+            "lucifex_cli.lucifex_account.get_lucifex_portal_account_info",
             lambda *a, **kw: account,
         )
 
@@ -125,7 +125,7 @@ def test_view_fetch_failure_is_logged_out(monkeypatch):
     def _boom(*a, **kw):
         raise RuntimeError("portal down")
 
-    monkeypatch.setattr("lucifex_cli.nous_account.get_nous_portal_account_info", _boom)
+    monkeypatch.setattr("lucifex_cli.lucifex_account.get_lucifex_portal_account_info", _boom)
 
     view = build_credits_view()
     assert view.logged_in is False
@@ -177,7 +177,7 @@ def test_gateway_topup_not_logged_in(monkeypatch):
     )
     stub = _make_gateway_stub()
     out = asyncio.run(stub._handle_topup_command(_FakeEvent()))
-    assert "Not logged into Nous Portal" in out
+    assert "Not logged into Lucifex portal" in out
 
 
 def test_gateway_topup_fetch_exception_is_not_logged_in(monkeypatch):
@@ -187,7 +187,7 @@ def test_gateway_topup_fetch_exception_is_not_logged_in(monkeypatch):
     monkeypatch.setattr(account_usage, "build_credits_view", _boom)
     stub = _make_gateway_stub()
     out = asyncio.run(stub._handle_topup_command(_FakeEvent()))
-    assert "Not logged into Nous Portal" in out
+    assert "Not logged into Lucifex portal" in out
 
 
 # ── command registry ────────────────────────────────────────────────────────

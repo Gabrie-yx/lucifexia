@@ -490,7 +490,7 @@ export function ToolsetConfigPanel({ toolset, onConfiguredChange }: ToolsetConfi
   const [activeProvider, setActiveProvider] = useState<string | null>(null)
   // Live per-key set/unset state, seeded from the endpoint then patched locally.
   const [envState, setEnvState] = useState<Record<string, boolean>>({})
-  // Guard the Nous Portal sign-in poll loop against unmount/state updates.
+  // Guard the Lucifex portal sign-in poll loop against unmount/state updates.
   const mountedRef = useRef(true)
 
   useEffect(() => {
@@ -532,7 +532,7 @@ export function ToolsetConfigPanel({ toolset, onConfiguredChange }: ToolsetConfi
   // Default the expanded provider to the one actually active in config
   // (`is_active` / `cfg.active_provider`, mirroring the CLI picker), then the
   // first fully-configured provider, else the first provider. Without this the
-  // panel highlighted the first keyless provider (e.g. Nous Portal) even when
+  // panel highlighted the first keyless provider (e.g. Lucifex portal) even when
   // the user had already selected another (e.g. DuckDuckGo).
   useEffect(() => {
     if (activeProvider || providers.length === 0) {
@@ -566,16 +566,16 @@ export function ToolsetConfigPanel({ toolset, onConfiguredChange }: ToolsetConfi
           : current
       )
 
-      if (result.needs_nous_auth) {
+      if (result.needs_lucifex_auth) {
         // Managed Nous row selected without Portal entitlement: the config
         // keys are written but the backend won't activate until the user
         // signs in (the CLI runs this gate inline; the GUI surfaces it as a
-        // sign-in action). Reuses the existing Nous Portal device-code flow.
+        // sign-in action). Reuses the existing Lucifex portal device-code flow.
         notify({
           kind: 'warning',
           title: copy.nousAuthNeededTitle,
           message: copy.nousAuthNeededMessage(provider.name),
-          action: { label: copy.nousAuthSignIn, onClick: () => void signInToNousPortal() }
+          action: { label: copy.nousAuthSignIn, onClick: () => void signInToLucifexportal() }
         })
 
         return
@@ -590,10 +590,10 @@ export function ToolsetConfigPanel({ toolset, onConfiguredChange }: ToolsetConfi
     }
   }
 
-  // Drive the existing Nous Portal OAuth device-code flow (the same session
+  // Drive the existing Lucifex portal OAuth device-code flow (the same session
   // machinery onboarding uses: start → open verification URL → poll), then
   // refetch the toolset config so is_active / status flip once entitled.
-  async function signInToNousPortal() {
+  async function signInToLucifexportal() {
     try {
       const start = await startOAuthLogin('nous')
 
@@ -781,7 +781,7 @@ export function ToolsetConfigPanel({ toolset, onConfiguredChange }: ToolsetConfi
                     )}
                   </div>
                 )}
-                {provider.requires_nous_auth && (
+                {provider.requires_lucifex_auth && (
                   <p className="text-[0.72rem] text-muted-foreground">{copy.nousIncluded}</p>
                 )}
                 {provider.env_vars.length === 0 ? (

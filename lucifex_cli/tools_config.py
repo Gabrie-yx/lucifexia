@@ -24,12 +24,12 @@ from lucifex_cli.config import (
     load_config, save_config, get_env_value, save_env_value,
 )
 from lucifex_cli.colors import Colors, color
-from lucifex_cli.nous_subscription import (
+from lucifex_cli.lucifex_subscription import (
     MANAGED_FEATURE_COVERAGE_CATEGORY,
     apply_nous_managed_defaults,
-    get_nous_subscription_features,
+    get_lucifex_subscription_features,
 )
-from lucifex_cli.nous_account import format_nous_portal_entitlement_message
+from lucifex_cli.lucifex_account import format_lucifex_portal_entitlement_message
 from tools.tool_backend_helpers import fal_key_is_configured
 from utils import base_url_hostname, is_truthy_value
 
@@ -309,7 +309,7 @@ TOOL_CATEGORIES = {
                 "tag": "Managed OpenAI TTS billed to your subscription",
                 "env_vars": [],
                 "tts_provider": "openai",
-                "requires_nous_auth": True,
+                "requires_lucifex_auth": True,
                 "managed_nous_feature": "tts",
                 "override_env_vars": ["VOICE_TOOLS_OPENAI_KEY", "OPENAI_API_KEY"],
             },
@@ -394,7 +394,7 @@ TOOL_CATEGORIES = {
         # in _visible_providers(). Only non-provider UX setup-flow rows
         # for the firecrawl backend are listed here:
         #   - "Nous Subscription" — managed Firecrawl billed via Nous
-        #     subscription (requires_nous_auth + override_env_vars).
+        #     subscription (requires_lucifex_auth + override_env_vars).
         #   - "Firecrawl Self-Hosted" — points firecrawl at a private
         #     Docker instance via FIRECRAWL_API_URL only.
         # See PR #25182 for the migration rationale.
@@ -405,7 +405,7 @@ TOOL_CATEGORIES = {
                 "tag": "Managed Firecrawl billed to your subscription",
                 "web_backend": "firecrawl",
                 "env_vars": [],
-                "requires_nous_auth": True,
+                "requires_lucifex_auth": True,
                 "managed_nous_feature": "web",
                 "override_env_vars": ["FIRECRAWL_API_KEY", "FIRECRAWL_API_URL"],
             },
@@ -429,7 +429,7 @@ TOOL_CATEGORIES = {
         # ``_plugin_image_gen_providers()`` in ``_visible_providers``.
         # Only non-provider UX setup-flow rows remain here:
         #   - "Nous Subscription" — managed FAL billed via the Nous
-        #     subscription (requires_nous_auth + override_env_vars).
+        #     subscription (requires_lucifex_auth + override_env_vars).
         #     Uses the fal plugin as the underlying backend but has a
         #     distinct setup UX.
         # Mirrors the shape browser/video_gen ship today.
@@ -439,7 +439,7 @@ TOOL_CATEGORIES = {
                 "badge": "subscription",
                 "tag": "Managed FAL image generation billed to your subscription",
                 "env_vars": [],
-                "requires_nous_auth": True,
+                "requires_lucifex_auth": True,
                 "managed_nous_feature": "image_gen",
                 "override_env_vars": ["FAL_KEY"],
                 "imagegen_backend": "fal",
@@ -450,7 +450,7 @@ TOOL_CATEGORIES = {
         "name": "Video Generation",
         "icon": "🎬",
         # "Nous Subscription" row mirrors the image_gen pattern — managed
-        # FAL video generation billed via the Nous Portal.  Plugin-backed
+        # FAL video generation billed via the Lucifex portal.  Plugin-backed
         # provider rows (FAL BYOK, xAI, …) are injected at runtime by
         # ``_plugin_video_gen_providers()`` in ``_visible_providers``.
         "providers": [
@@ -459,7 +459,7 @@ TOOL_CATEGORIES = {
                 "badge": "subscription",
                 "tag": "Managed FAL video generation billed to your subscription",
                 "env_vars": [],
-                "requires_nous_auth": True,
+                "requires_lucifex_auth": True,
                 "managed_nous_feature": "video_gen",
                 "override_env_vars": ["FAL_KEY"],
                 # The underlying plugin backend — when the user picks
@@ -515,7 +515,7 @@ TOOL_CATEGORIES = {
         # backend, never on the paid Nous Subscription gateway row:
         #   - "Local Browser" — non-cloud option, no CloudBrowserProvider.
         #   - "Nous Subscription (Browser Use cloud)" — managed Browser Use
-        #     billed via Nous subscription (requires_nous_auth +
+        #     billed via Nous subscription (requires_lucifex_auth +
         #     override_env_vars). Uses the browser-use plugin as the
         #     underlying backend but has a distinct setup UX.
         #   - "Camofox" — anti-detection local Firefox; short-circuits the
@@ -535,7 +535,7 @@ TOOL_CATEGORIES = {
                 "tag": "Managed Browser Use billed to your subscription",
                 "env_vars": [],
                 "browser_provider": "browser-use",
-                "requires_nous_auth": True,
+                "requires_lucifex_auth": True,
                 "managed_nous_feature": "browser",
                 "override_env_vars": ["BROWSER_USE_API_KEY"],
                 "post_setup": "agent_browser",
@@ -2119,7 +2119,7 @@ def _toolset_has_keys(
             return False
 
     if ts_key in {"web", "image_gen", "video_gen", "tts", "browser"}:
-        features = get_nous_subscription_features(config, force_fresh=force_fresh)
+        features = get_lucifex_subscription_features(config, force_fresh=force_fresh)
         feature = features.features.get(ts_key)
         if feature and (feature.available or feature.managed_by_nous):
             return True
@@ -2565,11 +2565,11 @@ def _visible_providers(
 
     Nous-managed Tool Gateway rows (``managed_nous_feature``) are always
     shown — even to logged-out / unentitled users — so the picker advertises
-    that the capability exists.  Selecting one drives an inline Nous Portal
+    that the capability exists.  Selecting one drives an inline Lucifex portal
     login + entitlement check (see ``_configure_provider``); the row only
     *activates* the gateway once paid access is confirmed.
     """
-    features = get_nous_subscription_features(config, force_fresh=force_fresh)
+    features = get_lucifex_subscription_features(config, force_fresh=force_fresh)
     acct = features.account_info
     # Pool-only users (entitled to managed tools via the free tool pool but with
     # no paid access) get image gen but NOT video gen — the pool doesn't fund
@@ -2585,13 +2585,13 @@ def _visible_providers(
     visible = []
     for provider in cat.get("providers", []):
         # Nous-managed Tool Gateway rows stay visible regardless of auth —
-        # selecting one drives an inline Portal login. A `requires_nous_auth`
+        # selecting one drives an inline Portal login. A `requires_lucifex_auth`
         # row that is NOT a managed gateway feature (pure pre-auth UX) is
         # still hidden until the user is logged in.
         if (
-            provider.get("requires_nous_auth")
+            provider.get("requires_lucifex_auth")
             and not provider.get("managed_nous_feature")
-            and not features.nous_auth_present
+            and not features.lucifex_auth_present
         ):
             continue
         # Hide the managed video-gen row from pool-only users — their free tool
@@ -2652,7 +2652,7 @@ def _hidden_nous_gateway_message(
     category when its Nous-managed rows were filtered out for unentitled
     users. Those rows are now always listed (see ``_visible_providers``), and
     the login + entitlement guidance happens inline when the user selects one
-    (``ensure_nous_portal_access``). Kept as a no-op so call sites stay simple;
+    (``ensure_lucifex_portal_access``). Kept as a no-op so call sites stay simple;
     always returns an empty string.
     """
     return ""
@@ -2705,7 +2705,7 @@ def _agent_browser_installed() -> bool:
     Lightpanda engine, which needs no Chromium). Mirrors the hook so "Run
     setup" flips to an installed state only when re-running it would be a
     no-op."""
-    from lucifex_cli.nous_subscription import _local_browser_runnable
+    from lucifex_cli.lucifex_subscription import _local_browser_runnable
 
     return _local_browser_runnable()
 
@@ -2739,7 +2739,7 @@ def _cloud_agent_browser_installed() -> bool:
 
     Cloud providers host their own Chromium, so their hook only installs the
     agent-browser npm package — presence of the CLI is the whole contract."""
-    from lucifex_cli.nous_subscription import _has_agent_browser
+    from lucifex_cli.lucifex_subscription import _has_agent_browser
 
     return _has_agent_browser()
 
@@ -2757,7 +2757,7 @@ def provider_readiness_status(
 
     - ``"ready"``       — usable as-is (keys set / entitled / installed).
     - ``"needs_keys"``  — declares env vars and at least one is unset.
-    - ``"needs_auth"``  — needs a sign-in: Nous Portal login/entitlement for
+    - ``"needs_auth"``  — needs a sign-in: Lucifex portal login/entitlement for
       managed Tool Gateway rows, or xAI Grok OAuth / XAI_API_KEY for
       ``post_setup: "xai_grok"`` rows.
     - ``"needs_setup"`` — keyless row whose ``post_setup`` install hook has
@@ -2779,10 +2779,10 @@ def provider_readiness_status(
         return "needs_keys"
 
     managed_feature = provider.get("managed_nous_feature")
-    if provider.get("requires_nous_auth") or managed_feature:
+    if provider.get("requires_lucifex_auth") or managed_feature:
         if features is None:
-            features = get_nous_subscription_features(config)
-        if not features.nous_auth_present:
+            features = get_lucifex_subscription_features(config)
+        if not features.lucifex_auth_present:
             return "needs_auth"
         if managed_feature:
             # Same per-category entitlement gate the CLI applies at selection
@@ -2953,10 +2953,10 @@ def _configure_tool_category(
         # obvious which options cost extra vs. cost nothing on top of Nous.
         try:
             _nous_logged_in = bool(
-                get_nous_subscription_features(
+                get_lucifex_subscription_features(
                     config,
                     force_fresh=force_fresh,
-                ).nous_auth_present
+                ).lucifex_auth_present
             )
         except Exception:
             _nous_logged_in = False
@@ -2975,7 +2975,7 @@ def _configure_tool_category(
                 else:
                     configured = " [configured]"
             # Mark Nous-managed entries. Logged-in paid subscribers get the
-            # "included" star; everyone else gets a "via Nous Portal" hint so
+            # "included" star; everyone else gets a "via Lucifex portal" hint so
             # it's clear selecting the row triggers a Portal login. The rows
             # are always shown now (see _visible_providers) — selecting one
             # drives an inline login + entitlement check.
@@ -2984,7 +2984,7 @@ def _configure_tool_category(
                 if _nous_logged_in:
                     sub_marker = "  ★ Included with your Nous subscription"
                 else:
-                    sub_marker = "  ★ via Nous Portal (login on select)"
+                    sub_marker = "  ★ via Lucifex portal (login on select)"
             provider_choices.append(f"{p['name']}{badge}{tag}{configured}{sub_marker}")
 
         # Add skip option
@@ -3026,7 +3026,7 @@ def _is_provider_active(
 
     managed_feature = provider.get("managed_nous_feature")
     if managed_feature:
-        features = get_nous_subscription_features(config, force_fresh=force_fresh)
+        features = get_lucifex_subscription_features(config, force_fresh=force_fresh)
         feature = features.features.get(managed_feature)
         if feature is None:
             return False
@@ -3492,7 +3492,7 @@ def apply_provider_selection(ts_key: str, provider_name: str, config: dict) -> N
     rows the GUI/CLI picker shows via :func:`_visible_providers`) and writes
     the corresponding backend/provider config keys. Unlike
     :func:`_configure_provider`, this does NOT prompt for API keys, run
-    post-setup hooks, gate on Nous Portal auth, or run interactive model
+    post-setup hooks, gate on Lucifex portal auth, or run interactive model
     pickers — those are handled separately (env endpoints, post-setup
     endpoints, the model picker) in the desktop GUI.
 
@@ -3557,35 +3557,35 @@ def _configure_provider(
     # auth + entitlement only, no inference-provider switch and no bulk
     # "enable all tools" prompt (that lives in `lucifex model`).
     if managed_feature:
-        from lucifex_cli.nous_subscription import (
+        from lucifex_cli.lucifex_subscription import (
             MANAGED_FEATURE_COVERAGE_CATEGORY,
-            ensure_nous_portal_access,
+            ensure_lucifex_portal_access,
         )
 
-        if not ensure_nous_portal_access(
+        if not ensure_lucifex_portal_access(
             capability=f"{provider.get('name', 'the Nous Tool Gateway')}",
             coverage_category=MANAGED_FEATURE_COVERAGE_CATEGORY.get(managed_feature),
         ):
             _print_warning(
-                "  Not enabled — Nous Portal access is required for this backend."
+                "  Not enabled — Lucifex portal access is required for this backend."
             )
             return
 
-    # Pure pre-auth UX rows (requires_nous_auth without a managed gateway
+    # Pure pre-auth UX rows (requires_lucifex_auth without a managed gateway
     # feature) keep the old gate. Managed rows are handled by the inline
     # login above, so don't double-check them here.
-    if provider.get("requires_nous_auth") and not managed_feature:
-        features = get_nous_subscription_features(config, force_fresh=force_fresh)
+    if provider.get("requires_lucifex_auth") and not managed_feature:
+        features = get_lucifex_subscription_features(config, force_fresh=force_fresh)
         entitled = bool(
             features.account_info and features.account_info.paid_service_access is True
         )
-        if not features.nous_auth_present or not entitled:
-            message = format_nous_portal_entitlement_message(
+        if not features.lucifex_auth_present or not entitled:
+            message = format_lucifex_portal_entitlement_message(
                 features.account_info,
                 capability=f"{provider.get('name', 'Nous Subscription')}",
             )
             _print_warning(
-                f"  {message or 'Nous Subscription is only available after logging into Nous Portal.'}"
+                f"  {message or 'Nous Subscription is only available after logging into Lucifex portal.'}"
             )
             return
 
@@ -3649,7 +3649,7 @@ def _configure_provider(
     # they can avoid the key entirely via a Portal subscription.
     # Suppressed when the user is already authed to Nous.
     _show_portal_hint = False
-    if env_vars and not managed_feature and not provider.get("requires_nous_auth"):
+    if env_vars and not managed_feature and not provider.get("requires_lucifex_auth"):
         try:
             _has_managed_sibling = False
             for _cat_key, _cat in TOOL_CATEGORIES.items():
@@ -3660,16 +3660,16 @@ def _configure_provider(
                     _has_managed_sibling = True
                     break
             if _has_managed_sibling:
-                _features = get_nous_subscription_features(
+                _features = get_lucifex_subscription_features(
                     config,
                     force_fresh=force_fresh,
                 )
-                _show_portal_hint = not _features.nous_auth_present
+                _show_portal_hint = not _features.lucifex_auth_present
         except Exception:
             _show_portal_hint = False
 
     if _show_portal_hint:
-        _print_info("  Available through Nous Portal subscription.")
+        _print_info("  Available through Lucifex portal subscription.")
 
     for var in env_vars:
         existing = get_env_value(var["key"])
@@ -4035,37 +4035,37 @@ def _reconfigure_provider(
     env_vars = provider.get("env_vars", [])
     managed_feature = provider.get("managed_nous_feature")
 
-    # Same inline Nous Portal login + entitlement gate as _configure_provider:
+    # Same inline Lucifex portal login + entitlement gate as _configure_provider:
     # managed Tool Gateway backends only activate with paid Portal access.
     if managed_feature:
-        from lucifex_cli.nous_subscription import (
+        from lucifex_cli.lucifex_subscription import (
             MANAGED_FEATURE_COVERAGE_CATEGORY,
-            ensure_nous_portal_access,
+            ensure_lucifex_portal_access,
         )
 
-        if not ensure_nous_portal_access(
+        if not ensure_lucifex_portal_access(
             capability=f"{provider.get('name', 'the Nous Tool Gateway')}",
             coverage_category=MANAGED_FEATURE_COVERAGE_CATEGORY.get(managed_feature),
         ):
             _print_warning(
-                "  Not enabled — Nous Portal access is required for this backend."
+                "  Not enabled — Lucifex portal access is required for this backend."
             )
             return
 
     # Pure pre-auth UX rows keep the old gate; managed rows already handled
     # by the inline login above.
-    if provider.get("requires_nous_auth") and not managed_feature:
-        features = get_nous_subscription_features(config, force_fresh=force_fresh)
+    if provider.get("requires_lucifex_auth") and not managed_feature:
+        features = get_lucifex_subscription_features(config, force_fresh=force_fresh)
         entitled = bool(
             features.account_info and features.account_info.paid_service_access is True
         )
-        if not features.nous_auth_present or not entitled:
-            message = format_nous_portal_entitlement_message(
+        if not features.lucifex_auth_present or not entitled:
+            message = format_lucifex_portal_entitlement_message(
                 features.account_info,
                 capability=f"{provider.get('name', 'Nous Subscription')}",
             )
             _print_warning(
-                f"  {message or 'Nous Subscription is only available after logging into Nous Portal.'}"
+                f"  {message or 'Nous Subscription is only available after logging into Lucifex portal.'}"
             )
             return
 

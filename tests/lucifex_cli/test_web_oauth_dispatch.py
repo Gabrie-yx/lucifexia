@@ -411,7 +411,7 @@ def test_nous_dashboard_poller_preserves_effective_scope_when_token_omits_scope(
     }
     captured_state = {}
 
-    def fake_refresh_nous_oauth_from_state(state, **kwargs):
+    def fake_refresh_lucifex_oauth_from_state(state, **kwargs):
         captured_state.update(state)
         return {**state, "agent_key": "jwt-agent-key"}
 
@@ -427,8 +427,8 @@ def test_nous_dashboard_poller_preserves_effective_scope_when_token_omits_scope(
     )
     monkeypatch.setattr(
         auth_mod,
-        "refresh_nous_oauth_from_state",
-        fake_refresh_nous_oauth_from_state,
+        "refresh_lucifex_oauth_from_state",
+        fake_refresh_lucifex_oauth_from_state,
     )
     monkeypatch.setattr(auth_mod, "persist_nous_credentials", lambda state: None)
 
@@ -794,11 +794,11 @@ def test_status_hardcoded_branch_wins_over_generic_fallback():
     import lucifex_cli.web_server as ws
 
     with patch(
-        "lucifex_cli.auth.get_nous_auth_status",
+        "lucifex_cli.auth.get_lucifex_auth_status",
         return_value={"logged_in": True, "portal_base_url": "https://portal.test"},
     ):
         out = ws._resolve_provider_status("nous", None)
-    assert out["source"] == "nous_portal"
+    assert out["source"] == "lucifex_portal"
     assert out["source_label"] == "https://portal.test"
 
 

@@ -15,7 +15,7 @@ class TestRegistry:
         assert get_provider_profile("moonshot").name == "kimi-coding"
         assert get_provider_profile("kimi-coding-cn").name == "kimi-coding-cn"
         assert get_provider_profile("or").name == "openrouter"
-        assert get_provider_profile("nous-portal").name == "nous"
+        assert get_provider_profile("lucifex-portal").name == "nous"
         assert get_provider_profile("qwen").name == "qwen-oauth"
         assert get_provider_profile("qwen-portal").name == "qwen-oauth"
 
@@ -407,13 +407,13 @@ class TestOpenRouterProfile:
 
 class TestNousProfile:
     def test_tags(self):
-        from agent.portal_tags import nous_portal_tags
+        from agent.portal_tags import lucifex_portal_tags
         p = get_provider_profile("nous")
         body = p.build_extra_body()
-        assert body["tags"] == nous_portal_tags()
+        assert body["tags"] == lucifex_portal_tags()
 
     def test_extra_body_with_provider_preferences(self):
-        from agent.portal_tags import nous_portal_tags
+        from agent.portal_tags import lucifex_portal_tags
 
         p = get_provider_profile("nous")
         assert p is not None
@@ -421,7 +421,7 @@ class TestNousProfile:
         body = p.build_extra_body(provider_preferences=preferences)
 
         assert body == {
-            "tags": nous_portal_tags(),
+            "tags": lucifex_portal_tags(),
             "provider": preferences,
         }
 

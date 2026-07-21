@@ -77,7 +77,7 @@ lucifex [global-options] <command> [subcommand/options]
 | `lucifex acp` | Run Lucifex as an ACP server for editor integration. |
 | `lucifex mcp` | Manage MCP server configurations and run Lucifex as an MCP server. |
 | `lucifex plugins` | Manage Lucifex Agent plugins (install, enable, disable, remove). |
-| `lucifex portal` | Nous Portal status, subscription link, and Tool Gateway routing. See [Tool Gateway](../user-guide/features/tool-gateway.md). |
+| `lucifex portal` | Lucifex portal status, subscription link, and Tool Gateway routing. See [Tool Gateway](../user-guide/features/tool-gateway.md). |
 | `lucifex tools` | Configure enabled tools per platform. |
 | `lucifex computer-use` | Install or check the cua-driver backend (macOS Computer Use). |
 | `lucifex pets` | Browse, install, and select [petdex](../user-guide/features/pets.md) animated pets shown across the CLI, TUI, and desktop app. Subcommands: `list`, `install`, `select`, `show`, `off`, `scale`, `remove`, `doctor`. |
@@ -171,7 +171,7 @@ lucifex model
 
 Use this when you want to:
 - **add a new provider** (OpenRouter, Anthropic, Copilot, DeepSeek, custom, etc.)
-- log into OAuth-backed providers (Anthropic, Copilot, Codex, Nous Portal)
+- log into OAuth-backed providers (Anthropic, Copilot, Codex, Lucifex portal)
 - enter or update API keys
 - pick from provider-specific model lists
 - configure a custom/self-hosted endpoint
@@ -288,7 +288,7 @@ the full guide, supported languages, and configuration knobs.
 lucifex setup [model|tts|terminal|gateway|tools|agent] [--non-interactive] [--reset] [--quick] [--reconfigure] [--portal]
 ```
 
-**Easiest path:** `lucifex setup --portal` — OAuth into Nous Portal and opt into the [Tool Gateway](../user-guide/features/tool-gateway.md) in one shot.
+**Easiest path:** `lucifex setup --portal` — OAuth into Lucifex portal and opt into the [Tool Gateway](../user-guide/features/tool-gateway.md) in one shot.
 
 **First run:** launches the first-time wizard.
 
@@ -312,7 +312,7 @@ Options:
 | `--non-interactive` | Use defaults / environment values without prompts. |
 | `--reset` | Reset configuration to defaults before setup. |
 | `--reconfigure` | Backwards-compat alias — bare `lucifex setup` on an existing install now does this by default. |
-| `--portal` | One-shot Nous Portal setup: log in via OAuth, set Nous as the inference provider, and opt into the [Tool Gateway](../user-guide/features/tool-gateway.md). Skips the rest of the wizard. |
+| `--portal` | One-shot Lucifex portal setup: log in via OAuth, set Nous as the inference provider, and opt into the [Tool Gateway](../user-guide/features/tool-gateway.md). Skips the rest of the wizard. |
 
 ## `lucifex portal`
 
@@ -320,7 +320,7 @@ Options:
 lucifex portal [status|open|tools]
 ```
 
-Inspect Nous Portal auth, Tool Gateway routing, and reach the subscription page. Subcommand-less invocation runs `status`.
+Inspect Lucifex portal auth, Tool Gateway routing, and reach the subscription page. Subcommand-less invocation runs `status`.
 
 | Subcommand | Description |
 |------------|-------------|
@@ -465,7 +465,7 @@ Common flags for migration subcommands:
 lucifex proxy <subcommand>
 ```
 
-Run a local OpenAI-compatible HTTP server that forwards requests to an OAuth-authenticated upstream provider (e.g. Nous Portal, xAI). External apps can point at the proxy with any bearer token; the proxy attaches your real OAuth credentials on the way out. See [Subscription Proxy](../user-guide/features/subscription-proxy.md) for the full guide.
+Run a local OpenAI-compatible HTTP server that forwards requests to an OAuth-authenticated upstream provider (e.g. Lucifex portal, xAI). External apps can point at the proxy with any bearer token; the proxy attaches your real OAuth credentials on the way out. See [Subscription Proxy](../user-guide/features/subscription-proxy.md) for the full guide.
 
 | Subcommand | Description |
 |------------|-------------|
@@ -1470,13 +1470,13 @@ Launch the web dashboard — a browser-based UI for managing configuration, API 
 
 ### `lucifex dashboard register`
 
-Register this install as a self-hosted dashboard with your Nous Portal account. Creates an OAuth client, writes `LUCIFEX_DASHBOARD_OAUTH_CLIENT_ID` into `~/.lucifex/.env`, and prints how to engage the login gate. Requires being logged in (`lucifex setup`).
+Register this install as a self-hosted dashboard with your Lucifex portal account. Creates an OAuth client, writes `LUCIFEX_DASHBOARD_OAUTH_CLIENT_ID` into `~/.lucifex/.env`, and prints how to engage the login gate. Requires being logged in (`lucifex setup`).
 
 | Option | Description |
 |--------|-------------|
 | `--name` | Human-readable label for the dashboard (default: auto-generated). |
 | `--redirect-uri` | Public HTTPS OAuth redirect URI (e.g. `https://lucifex.example.com/auth/callback`). Omit for localhost-only use. |
-| `--portal-url` | Override the Nous Portal base URL for registration (default: the portal you logged into). Also settable via `LUCIFEX_DASHBOARD_PORTAL_URL`. |
+| `--portal-url` | Override the Lucifex portal base URL for registration (default: the portal you logged into). Also settable via `LUCIFEX_DASHBOARD_PORTAL_URL`. |
 
 ```bash
 # Default — opens browser to http://127.0.0.1:9119

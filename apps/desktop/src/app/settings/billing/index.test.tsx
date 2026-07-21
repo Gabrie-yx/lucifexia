@@ -264,7 +264,7 @@ describe('BillingSettings', () => {
     renderBilling()
 
     expect(await screen.findByText('Connect your Nous account')).toBeTruthy()
-    expect(screen.getByText('Run /portal in the TUI or open the Nous portal to connect your account.')).toBeTruthy()
+    expect(screen.getByText('Run /portal in the TUI or open the Lucifex portal to connect your account.')).toBeTruthy()
     expect(screen.queryByText('Payment method')).toBeNull()
     expect(screen.queryByText('Usage')).toBeNull()
   })

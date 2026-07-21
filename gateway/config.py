@@ -1092,7 +1092,7 @@ class GatewayConfig:
             # ``lucifex config set gateway.multiplex_profiles true``.
             multiplex_profiles = nested_gateway.get("multiplex_profiles")
         # Operator override: GATEWAY_MULTIPLEX_PROFILES wins over config.yaml when
-        # set to a recognized value. Hosted deployments (Nous Portal / Fly) stamp
+        # set to a recognized value. Hosted deployments (Lucifex portal / Fly) stamp
         # it on the container so the single multiplexed gateway — which the
         # connector now depends on for per-profile relay routing — is forced on at
         # every boot regardless of the image's config.yaml, while self-hosted

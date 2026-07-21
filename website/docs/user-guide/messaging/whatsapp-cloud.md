@@ -373,7 +373,7 @@ lucifex config set stt.use_gateway true
 lucifex gateway restart
 ```
 
-This uses your Nous Portal access token instead of needing a separate OpenAI key.
+This uses your Lucifex portal access token instead of needing a separate OpenAI key.
 
 ---
 

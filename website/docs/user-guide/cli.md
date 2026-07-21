@@ -9,7 +9,7 @@ description: "Master the Lucifex Agent terminal interface — commands, keybindi
 Lucifex Agent's CLI is a full terminal user interface (TUI) — not a web UI. It features multiline editing, slash-command autocomplete, conversation history, interrupt-and-redirect, and streaming tool output. Built for people who live in the terminal.
 
 :::tip First-time setup
-One command — `lucifex setup --portal` — and you're ready to `lucifex chat`. See [Nous Portal](/integrations/nous-portal).
+One command — `lucifex setup --portal` — and you're ready to `lucifex chat`. See [Lucifex portal](/integrations/lucifex-portal).
 :::
 
 :::tip
@@ -29,7 +29,7 @@ lucifex chat -q "Hello"
 lucifex chat --model "anthropic/claude-sonnet-4"
 
 # With a specific provider
-lucifex chat --provider nous        # Use Nous Portal
+lucifex chat --provider nous        # Use Lucifex portal
 lucifex chat --provider openrouter  # Force OpenRouter
 
 # With specific toolsets

@@ -3863,7 +3863,7 @@ class TestWebServerEndpoints:
         """Switching the main provider to Nous calls apply_nous_managed_defaults
         (mirroring the CLI's post-model-selection Tool Gateway routing) and
         surfaces the routed tools in the response."""
-        import lucifex_cli.nous_subscription as ns
+        import lucifex_cli.lucifex_subscription as ns
 
         called = {}
 
@@ -3890,7 +3890,7 @@ class TestWebServerEndpoints:
 
     def test_set_model_main_non_nous_skips_gateway_defaults(self, monkeypatch):
         """Non-Nous providers must NOT trigger Tool Gateway auto-routing."""
-        import lucifex_cli.nous_subscription as ns
+        import lucifex_cli.lucifex_subscription as ns
 
         def boom(*args, **kwargs):  # pragma: no cover - must not be called
             raise AssertionError("apply_nous_managed_defaults called for non-nous provider")
@@ -4341,7 +4341,7 @@ class TestWebServerEndpoints:
 
     def test_set_model_main_gateway_failure_does_not_block_save(self, monkeypatch):
         """A Portal/gateway hiccup must never prevent saving the model."""
-        import lucifex_cli.nous_subscription as ns
+        import lucifex_cli.lucifex_subscription as ns
 
         def boom(*args, **kwargs):
             raise RuntimeError("portal unreachable")
@@ -5614,12 +5614,12 @@ class TestNewEndpoints:
         state so keyless ≠ ready.
         """
         import lucifex_cli.tools_config as tools_config
-        from lucifex_cli.nous_account import NousPortalAccountInfo
+        from lucifex_cli.lucifex_account import LucifexportalAccountInfo
 
-        # Logged out of Nous Portal → managed subscription rows need sign-in.
+        # Logged out of Lucifex portal → managed subscription rows need sign-in.
         monkeypatch.setattr(
-            "lucifex_cli.nous_subscription.get_nous_portal_account_info",
-            lambda *a, **k: NousPortalAccountInfo(
+            "lucifex_cli.lucifex_subscription.get_lucifex_portal_account_info",
+            lambda *a, **k: LucifexportalAccountInfo(
                 logged_in=False, source="none", fresh=False, paid_service_access=None
             ),
         )
@@ -5735,20 +5735,20 @@ class TestNewEndpoints:
         )
         assert resp.status_code == 400
 
-    def test_select_managed_nous_provider_reports_needs_nous_auth(self, monkeypatch):
-        """Selecting a managed Nous row while logged out flags needs_nous_auth.
+    def test_select_managed_nous_provider_reports_needs_lucifex_auth(self, monkeypatch):
+        """Selecting a managed Nous row while logged out flags needs_lucifex_auth.
 
         Regression: the GUI PUT wrote browser.cloud_provider + use_gateway
         but skipped the Portal entitlement handshake the CLI runs inline
-        (ensure_nous_portal_access) — so the row never activated and nothing
+        (ensure_lucifex_portal_access) — so the row never activated and nothing
         told the user to sign in. The endpoint now reports the entitlement
         gap so the client can drive the existing Nous OAuth flow.
         """
-        from lucifex_cli.nous_account import NousPortalAccountInfo
+        from lucifex_cli.lucifex_account import LucifexportalAccountInfo
 
         monkeypatch.setattr(
-            "lucifex_cli.nous_subscription.get_nous_portal_account_info",
-            lambda *a, **k: NousPortalAccountInfo(
+            "lucifex_cli.lucifex_subscription.get_lucifex_portal_account_info",
+            lambda *a, **k: LucifexportalAccountInfo(
                 logged_in=False, source="none", fresh=False, paid_service_access=None
             ),
         )
@@ -5760,7 +5760,7 @@ class TestNewEndpoints:
         assert resp.status_code == 200
         data = resp.json()
         assert data["ok"] is True
-        assert data["needs_nous_auth"] is True
+        assert data["needs_lucifex_auth"] is True
         assert data["feature"] == "browser"
         # The selection is still persisted — activation is what's gated.
         from lucifex_cli.config import load_config
@@ -5768,12 +5768,12 @@ class TestNewEndpoints:
         assert cfg["browser"]["cloud_provider"] == "browser-use"
 
     def test_select_managed_nous_provider_entitled_no_auth_flag(self, monkeypatch):
-        """A signed-in, entitled subscriber gets no needs_nous_auth field."""
-        from lucifex_cli.nous_account import NousPortalAccountInfo
+        """A signed-in, entitled subscriber gets no needs_lucifex_auth field."""
+        from lucifex_cli.lucifex_account import LucifexportalAccountInfo
 
         monkeypatch.setattr(
-            "lucifex_cli.nous_subscription.get_nous_portal_account_info",
-            lambda *a, **k: NousPortalAccountInfo(
+            "lucifex_cli.lucifex_subscription.get_lucifex_portal_account_info",
+            lambda *a, **k: LucifexportalAccountInfo(
                 logged_in=True, source="jwt", fresh=True, paid_service_access=True
             ),
         )
@@ -5785,9 +5785,9 @@ class TestNewEndpoints:
         assert resp.status_code == 200
         data = resp.json()
         assert data["ok"] is True
-        assert "needs_nous_auth" not in data
+        assert "needs_lucifex_auth" not in data
 
-    def test_select_unmanaged_provider_has_no_nous_auth_field(self):
+    def test_select_unmanaged_provider_has_no_lucifex_auth_field(self):
         """Non-managed rows never carry the entitlement fields."""
         resp = self.client.put(
             "/api/tools/toolsets/web/provider",
@@ -5796,7 +5796,7 @@ class TestNewEndpoints:
         assert resp.status_code == 200
         data = resp.json()
         assert data["ok"] is True
-        assert "needs_nous_auth" not in data
+        assert "needs_lucifex_auth" not in data
         assert "feature" not in data
 
     def test_select_toolset_provider_unknown_toolset_returns_400(self):

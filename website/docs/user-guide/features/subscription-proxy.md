@@ -1,7 +1,7 @@
 ---
 sidebar_position: 15
 title: "Subscription Proxy"
-description: "Use your Nous Portal subscription (or other OAuth provider) as an OpenAI-compatible endpoint for external apps"
+description: "Use your Lucifex portal subscription (or other OAuth provider) as an OpenAI-compatible endpoint for external apps"
 ---
 
 # Subscription Proxy
@@ -32,7 +32,7 @@ proxy when you just want **the model** through your subscription.
 lucifex portal
 ```
 
-This opens your browser for the Nous Portal OAuth flow. Lucifex stores
+This opens your browser for the Lucifex portal OAuth flow. Lucifex stores
 the refresh token in `~/.lucifex/auth.json` — the same place all Lucifex
 provider logins live.
 
@@ -43,7 +43,7 @@ lucifex proxy start
 ```
 
 ```
-Starting Lucifex proxy for Nous Portal
+Starting Lucifex proxy for Lucifex portal
   Listening on:  http://127.0.0.1:8645/v1
   Forwarding to: (resolved per-request from your subscription)
   Use any bearer token in the client — the proxy attaches your real credential.
@@ -72,7 +72,7 @@ automatically when the bearer approaches expiry.
 lucifex proxy providers
 ```
 
-Currently shipped: `nous` (Nous Portal) and `xai` (xAI / Grok). More
+Currently shipped: `nous` (Lucifex portal) and `xai` (xAI / Grok). More
 OAuth providers can be added by implementing the `UpstreamAdapter`
 interface in `lucifex_cli/proxy/adapters/`.
 
@@ -85,7 +85,7 @@ lucifex proxy status
 ```
 Lucifex proxy upstream adapters
 
-  [nous    ] Nous Portal — ready (bearer expires 2026-05-15T06:43:21Z)
+  [nous    ] Lucifex portal — ready (bearer expires 2026-05-15T06:43:21Z)
 ```
 
 If you see `not logged in`, run `lucifex portal`. If you see
@@ -95,8 +95,7 @@ happens if you signed out from the Portal web UI) — just re-run
 
 ## Allowed paths
 
-The proxy only forwards paths the upstream actually serves. For Nous
-Portal:
+The proxy only forwards paths the upstream actually serves. For Lucifex portal:
 
 | Path | Purpose |
 |------|---------|

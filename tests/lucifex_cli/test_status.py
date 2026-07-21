@@ -28,7 +28,7 @@ def test_show_status_termux_gateway_section_skips_systemctl(monkeypatch, capsys,
     monkeypatch.setattr(status_mod, "resolve_requested_provider", lambda requested=None: "openai-codex", raising=False)
     monkeypatch.setattr(status_mod, "resolve_provider", lambda requested=None, **kwargs: "openai-codex", raising=False)
     monkeypatch.setattr(status_mod, "provider_label", lambda provider: "OpenAI Codex", raising=False)
-    monkeypatch.setattr(auth_mod, "get_nous_auth_status", lambda: {}, raising=False)
+    monkeypatch.setattr(auth_mod, "get_lucifex_auth_status", lambda: {}, raising=False)
     monkeypatch.setattr(auth_mod, "get_codex_auth_status", lambda: {}, raising=False)
     monkeypatch.setattr(auth_mod, "get_xai_oauth_auth_status", lambda: {}, raising=False)
     monkeypatch.setattr(gateway_mod, "find_gateway_pids", lambda exclude_pids=None: [], raising=False)
@@ -46,7 +46,7 @@ def test_show_status_termux_gateway_section_skips_systemctl(monkeypatch, capsys,
     assert "systemd (user)" not in output
 
 
-def test_show_status_reports_nous_auth_error(monkeypatch, capsys, tmp_path):
+def test_show_status_reports_lucifex_auth_error(monkeypatch, capsys, tmp_path):
     from lucifex_cli import status as status_mod
     import lucifex_cli.auth as auth_mod
     import lucifex_cli.gateway as gateway_mod
@@ -59,7 +59,7 @@ def test_show_status_reports_nous_auth_error(monkeypatch, capsys, tmp_path):
     monkeypatch.setattr(status_mod, "provider_label", lambda provider: "OpenAI Codex", raising=False)
     monkeypatch.setattr(
         auth_mod,
-        "get_nous_auth_status",
+        "get_lucifex_auth_status",
         lambda: {
             "logged_in": False,
             "portal_base_url": "https://portal.nousresearch.com",
@@ -78,7 +78,7 @@ def test_show_status_reports_nous_auth_error(monkeypatch, capsys, tmp_path):
     status_mod.show_status(SimpleNamespace(all=False, deep=False))
 
     output = capsys.readouterr().out
-    assert "Nous Portal   ✗ not logged in (run: lucifex portal)" in output
+    assert "Lucifex portal   ✗ not logged in (run: lucifex portal)" in output
     assert "Error:      Refresh session has been revoked" in output
     assert "Access exp:" in output
     assert "Key exp:" in output
@@ -86,7 +86,7 @@ def test_show_status_reports_nous_auth_error(monkeypatch, capsys, tmp_path):
 
 def test_show_status_reports_nous_inference_key_without_portal_login(monkeypatch, capsys, tmp_path):
     from lucifex_cli import status as status_mod
-    from lucifex_cli.nous_account import NousPortalAccountInfo
+    from lucifex_cli.lucifex_account import LucifexportalAccountInfo
     import lucifex_cli.auth as auth_mod
     import lucifex_cli.gateway as gateway_mod
 
@@ -98,7 +98,7 @@ def test_show_status_reports_nous_inference_key_without_portal_login(monkeypatch
     monkeypatch.setattr(status_mod, "provider_label", lambda provider: "OpenAI Codex", raising=False)
     monkeypatch.setattr(
         auth_mod,
-        "get_nous_auth_status",
+        "get_lucifex_auth_status",
         lambda: {
             "logged_in": False,
             "inference_credential_present": True,
@@ -110,8 +110,8 @@ def test_show_status_reports_nous_inference_key_without_portal_login(monkeypatch
     )
     monkeypatch.setattr(
         status_mod,
-        "get_nous_portal_account_info",
-        lambda: NousPortalAccountInfo(
+        "get_lucifex_portal_account_info",
+        lambda: LucifexportalAccountInfo(
             logged_in=False,
             source="inference_key",
             fresh=False,
@@ -129,7 +129,7 @@ def test_show_status_reports_nous_inference_key_without_portal_login(monkeypatch
     status_mod.show_status(SimpleNamespace(all=False, deep=False))
 
     output = capsys.readouterr().out
-    assert "Nous Portal   ✗ not logged in (Nous inference key configured)" in output
+    assert "Lucifex portal   ✗ not logged in (Nous inference key configured)" in output
     assert "Inference:  https://inference.example.com/v1" in output
     assert "Nous inference credentials are configured" in output
 
@@ -150,7 +150,7 @@ def _base_xai_mocks(monkeypatch, tmp_path):
     monkeypatch.setattr(status_mod, "resolve_requested_provider", lambda requested=None: "openai-codex", raising=False)
     monkeypatch.setattr(status_mod, "resolve_provider", lambda requested=None, **kwargs: "openai-codex", raising=False)
     monkeypatch.setattr(status_mod, "provider_label", lambda provider: "OpenAI Codex", raising=False)
-    monkeypatch.setattr(auth_mod, "get_nous_auth_status", lambda: {}, raising=False)
+    monkeypatch.setattr(auth_mod, "get_lucifex_auth_status", lambda: {}, raising=False)
     monkeypatch.setattr(auth_mod, "get_codex_auth_status", lambda: {}, raising=False)
     monkeypatch.setattr(auth_mod, "get_qwen_auth_status", lambda: {}, raising=False)
     monkeypatch.setattr(auth_mod, "get_minimax_oauth_auth_status", lambda: {}, raising=False)
@@ -315,14 +315,14 @@ class TestShowStatusXaiOAuth:
         """Nous/Codex/MiniMax rows must still appear when xAI import fails."""
         import lucifex_cli.auth as auth_mod
         status_mod = _base_xai_mocks(monkeypatch, tmp_path)
-        monkeypatch.setattr(auth_mod, "get_nous_auth_status",
+        monkeypatch.setattr(auth_mod, "get_lucifex_auth_status",
                             lambda: {"logged_in": True}, raising=False)
         monkeypatch.delattr(auth_mod, "get_xai_oauth_auth_status", raising=False)
 
         status_mod.show_status(SimpleNamespace(all=False, deep=False))
         out = capsys.readouterr().out
 
-        assert "Nous Portal" in out
+        assert "Lucifex portal" in out
         assert "MiniMax OAuth" in out
 
     def test_status_function_exception_does_not_crash(self, monkeypatch, capsys, tmp_path):

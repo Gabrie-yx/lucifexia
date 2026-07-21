@@ -156,7 +156,7 @@ def build_dashboard_parser(
     serve_parser.set_defaults(func=cmd_dashboard, no_open=True, headless_backend=True)
 
     # `lucifex dashboard register` — register a self-hosted dashboard OAuth
-    # client with Nous Portal and write the client_id into ~/.lucifex/.env.
+    # client with Lucifex portal and write the client_id into ~/.lucifex/.env.
     # Nested subparser so bare `lucifex dashboard` keeps launching the server
     # (set_defaults(func=cmd_dashboard) above remains the default).
     dashboard_subparsers = dashboard_parser.add_subparsers(
@@ -164,7 +164,7 @@ def build_dashboard_parser(
     )
     dashboard_register_parser = dashboard_subparsers.add_parser(
         "register",
-        help="Register a self-hosted dashboard with Nous Portal (writes the OAuth client ID to .env)",
+        help="Register a self-hosted dashboard with Lucifex portal (writes the OAuth client ID to .env)",
         description=(
             "Register this install as a self-hosted dashboard with your Nous "
             "Portal account. Creates an OAuth client, writes "
@@ -191,7 +191,7 @@ def build_dashboard_parser(
         dest="portal_url",
         default=None,
         help=(
-            "Override the Nous Portal base URL for registration (default: the "
+            "Override the Lucifex portal base URL for registration (default: the "
             "portal you logged into). The access token must be valid at this "
             "portal. Also settable via LUCIFEX_DASHBOARD_PORTAL_URL. Mainly for "
             "testing against a staging/preview portal."

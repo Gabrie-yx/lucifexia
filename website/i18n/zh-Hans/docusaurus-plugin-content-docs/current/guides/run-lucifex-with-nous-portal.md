@@ -1,12 +1,12 @@
 ---
 sidebar_position: 1
-title: "通过 Nous Portal 运行 Lucifex Agent"
+title: "通过 Lucifex portal 运行 Lucifex Agent"
 description: "完整操作指南：订阅、配置、切换模型、启用 gateway 工具并验证路由"
 ---
 
-# 通过 Nous Portal 运行 Lucifex Agent
+# 通过 Lucifex portal 运行 Lucifex Agent
 
-本指南带你从头到尾完成在 [Nous Portal](https://portal.nousresearch.com) 订阅下运行 Lucifex Agent 的全过程——从注册账号到验证每个工具的路由是否正确。如果你只想了解 Portal 的概述及订阅内容，请参阅 [Nous Portal 集成页面](/integrations/nous-portal)。本页是操作步骤脚本。
+本指南带你从头到尾完成在 [Lucifex portal](https://portal.nousresearch.com) 订阅下运行 Lucifex Agent 的全过程——从注册账号到验证每个工具的路由是否正确。如果你只想了解 Portal 的概述及订阅内容，请参阅 [Lucifex portal 集成页面](/integrations/lucifex-portal)。本页是操作步骤脚本。
 
 ## 前提条件
 
@@ -63,7 +63,7 @@ lucifex portal info
 你应该看到：
 
 ```
-  Nous Portal
+  Lucifex portal
   ───────────
   Auth:    ✓ logged in
   Portal:  https://portal.nousresearch.com
@@ -71,13 +71,13 @@ lucifex portal info
 
   Tool Gateway
   ────────────
-  Web search & extract  via Nous Portal
-  Image generation      via Nous Portal
-  Text-to-speech        via Nous Portal
-  Browser automation    via Nous Portal
+  Web search & extract  via Lucifex portal
+  Image generation      via Lucifex portal
+  Text-to-speech        via Lucifex portal
+  Browser automation    via Lucifex portal
 ```
 
-如果任何一行显示的不是"via Nous Portal"，或者 auth 行显示"not logged in"，请跳至下方的[故障排查](#troubleshooting)。
+如果任何一行显示的不是"via Lucifex portal"，或者 auth 行显示"not logged in"，请跳至下方的[故障排查](#troubleshooting)。
 
 ## 4. 运行第一次对话
 
@@ -142,7 +142,7 @@ lucifex tools
 lucifex portal tools
 ```
 
-你将看到每个工具的路由情况——通过订阅路由的工具显示 `via Nous Portal`，使用你自己密钥的工具显示合作方名称（`browserbase`、`firecrawl` 等）。
+你将看到每个工具的路由情况——通过订阅路由的工具显示 `via Lucifex portal`，使用你自己密钥的工具显示合作方名称（`browserbase`、`firecrawl` 等）。
 
 ## 7. （可选）启用语音模式
 
@@ -197,12 +197,12 @@ lucifex config set model.provider nous
 
 ```bash
 lucifex model
-# 选择 Nous Portal
+# 选择 Lucifex portal
 ```
 
 使用 `lucifex portal info` 重新验证。
 
-### Tool Gateway 工具显示合作方名称而非"via Nous Portal"
+### Tool Gateway 工具显示合作方名称而非"via Lucifex portal"
 
 按工具的配置覆盖了 gateway 设置。运行：
 
@@ -265,7 +265,7 @@ lucifex auth logout nous       # 清除本地 refresh token
 
 ## 另请参阅
 
-- **[Nous Portal 集成页面](/integrations/nous-portal)** — 订阅内容概述
+- **[Lucifex portal 集成页面](/integrations/lucifex-portal)** — 订阅内容概述
 - **[Tool Gateway](/user-guide/features/tool-gateway)** — 每个 gateway 路由工具的完整说明
 - **[订阅代理](/user-guide/features/subscription-proxy)** — 在非 Lucifex 工具中使用你的 Portal 订阅
 - **[语音模式](/user-guide/features/voice-mode)** — 在 Portal 订阅上配置语音对话

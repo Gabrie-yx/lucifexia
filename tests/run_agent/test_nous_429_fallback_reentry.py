@@ -11,7 +11,7 @@ rate-limit message: the turn dies with the generic retry-exhaustion error.
 
 The fix sets ``retry_count = max(0, max_retries - 1)`` so the loop body runs
 exactly once more: the guard sees the breaker state recorded by
-``record_nous_rate_limit()`` moments earlier and either activates a fallback
+``record_lucifex_rate_limit()`` moments earlier and either activates a fallback
 provider (resetting retry_count) or returns the explicit rate-limit failure.
 """
 from __future__ import annotations
@@ -55,10 +55,10 @@ class TestSourceUsesReentrantAssignment:
         src = inspect.getsource(conversation_loop)
         # Locate the genuine-rate-limit branch.
         match = re.search(
-            r"if _genuine_nous_rate_limit:\n(?:.*\n)*?\s*continue\n",
+            r"if _genuine_lucifex_rate_limit:\n(?:.*\n)*?\s*continue\n",
             src,
         )
-        # There are two `if _genuine_nous_rate_limit` sites (record + branch);
+        # There are two `if _genuine_lucifex_rate_limit` sites (record + branch);
         # the regex above finds the first block ending in `continue`, which is
         # the retry-count branch.
         assert match is not None, (

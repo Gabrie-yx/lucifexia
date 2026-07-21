@@ -15,11 +15,11 @@ from lucifex_cli.auth import AuthError, resolve_provider
 from lucifex_cli.colors import Colors, color
 from lucifex_cli.config import get_env_path, get_env_value, get_lucifex_home, load_config
 from lucifex_cli.models import provider_label
-from lucifex_cli.nous_account import (
-    format_nous_portal_entitlement_message,
-    get_nous_portal_account_info,
+from lucifex_cli.lucifex_account import (
+    format_lucifex_portal_entitlement_message,
+    get_lucifex_portal_account_info,
 )
-from lucifex_cli.nous_subscription import get_nous_subscription_features
+from lucifex_cli.lucifex_subscription import get_lucifex_subscription_features
 from lucifex_cli.runtime_provider import resolve_requested_provider
 from lucifex_constants import OPENROUTER_MODELS_URL
 from tools.tool_backend_helpers import managed_nous_tools_enabled
@@ -194,12 +194,12 @@ def show_status(args):
 
     try:
         from lucifex_cli.auth import (
-            get_nous_auth_status,
+            get_lucifex_auth_status,
             get_codex_auth_status,
             get_qwen_auth_status,
             get_minimax_oauth_auth_status,
         )
-        nous_status = get_nous_auth_status()
+        nous_status = get_lucifex_auth_status()
         codex_status = get_codex_auth_status()
         qwen_status = get_qwen_auth_status()
         minimax_status = get_minimax_oauth_auth_status()
@@ -209,7 +209,7 @@ def show_status(args):
         qwen_status = {}
         minimax_status = {}
 
-    nous_account_info = None
+    lucifex_account_info = None
     if (
         nous_status.get("logged_in")
         or nous_status.get("access_token")
@@ -218,17 +218,17 @@ def show_status(args):
         or nous_status.get("error_code")
     ):
         try:
-            nous_account_info = get_nous_portal_account_info()
+            lucifex_account_info = get_lucifex_portal_account_info()
         except Exception:
-            nous_account_info = None
+            lucifex_account_info = None
 
     nous_logged_in = bool(
         nous_status.get("logged_in")
-        or (nous_account_info and nous_account_info.logged_in)
+        or (lucifex_account_info and lucifex_account_info.logged_in)
     )
     nous_inference_present = bool(
         nous_status.get("inference_credential_present")
-        or (nous_account_info and nous_account_info.inference_credential_present)
+        or (lucifex_account_info and lucifex_account_info.inference_credential_present)
     )
     nous_error = nous_status.get("error")
     if nous_logged_in:
@@ -238,13 +238,13 @@ def show_status(args):
     else:
         nous_label = "not logged in (run: lucifex portal)"
     print(
-        f"  {'Nous Portal':<12}  {check_mark(nous_logged_in)} "
+        f"  {'Lucifex portal':<12}  {check_mark(nous_logged_in)} "
         f"{nous_label}"
     )
     portal_url = nous_status.get("portal_base_url") or "(unknown)"
     inference_url = (
         nous_status.get("inference_base_url")
-        or (nous_account_info.inference_base_url if nous_account_info else None)
+        or (lucifex_account_info.inference_base_url if lucifex_account_info else None)
     )
     access_exp = _format_iso_timestamp(nous_status.get("access_expires_at"))
     key_exp = _format_iso_timestamp(nous_status.get("agent_key_expires_at"))
@@ -330,22 +330,22 @@ def show_status(args):
     # Nous Subscription Features
     # =========================================================================
     if managed_nous_tools_enabled():
-        features = get_nous_subscription_features(config)
+        features = get_lucifex_subscription_features(config)
         print()
         print(color("◆ Nous Tool Gateway", Colors.CYAN, Colors.BOLD))
-        if not features.nous_auth_present:
-            print("  Nous Portal   ✗ not logged in")
+        if not features.lucifex_auth_present:
+            print("  Lucifex portal   ✗ not logged in")
         else:
-            print("  Nous Portal   ✓ managed tools available")
+            print("  Lucifex portal   ✓ managed tools available")
         for feature in features.items():
             if feature.managed_by_nous:
                 state = "active via Nous subscription"
             elif feature.active:
                 current = feature.current_provider or "configured provider"
                 state = f"active via {current}"
-            elif feature.included_by_default and features.nous_auth_present:
+            elif feature.included_by_default and features.lucifex_auth_present:
                 state = "included by subscription, not currently selected"
-            elif feature.key == "modal" and features.nous_auth_present:
+            elif feature.key == "modal" and features.lucifex_auth_present:
                 state = "available via subscription (optional)"
             else:
                 state = "not configured"
@@ -355,8 +355,8 @@ def show_status(args):
         # Portal account information, cannot enable the Tool Gateway.
         print()
         print(color("◆ Nous Tool Gateway", Colors.CYAN, Colors.BOLD))
-        message = format_nous_portal_entitlement_message(
-            nous_account_info,
+        message = format_lucifex_portal_entitlement_message(
+            lucifex_account_info,
             capability="managed web, image, TTS, STT, browser, and Modal tools",
         )
         if message:

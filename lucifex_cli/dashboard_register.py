@@ -1,12 +1,12 @@
 """``lucifex dashboard register`` — register a self-hosted dashboard OAuth client.
 
-Automates what a user otherwise does by hand: open the Nous Portal
+Automates what a user otherwise does by hand: open the Lucifex portal
 ``/local-dashboards`` page in a browser, click "register", copy the
 resulting ``agent:{id}`` OAuth client ID, and paste it into ``~/.lucifex/.env``
 as ``LUCIFEX_DASHBOARD_OAUTH_CLIENT_ID``.
 
 This command:
-  1. Resolves a fresh Nous Portal access token from the existing login
+  1. Resolves a fresh Lucifex portal access token from the existing login
      (``~/.lucifex/auth.json``), refreshing it if needed. Fails fast with a
      "run `lucifex setup`" hint when the user isn't logged in.
   2. POSTs to ``{portal}/api/oauth/self-hosted-client`` with that bearer
@@ -79,13 +79,13 @@ def _resolve_portal_base_url(override: Optional[str] = None) -> str:
     if isinstance(override, str) and override.strip():
         return override.rstrip("/")
     try:
-        from lucifex_cli.auth import DEFAULT_NOUS_PORTAL_URL, get_provider_auth_state
+        from lucifex_cli.auth import DEFAULT_LUCIFEX_PORTAL_URL, get_provider_auth_state
 
         state = get_provider_auth_state("nous") or {}
         base = state.get("portal_base_url")
         if isinstance(base, str) and base.strip():
             return base.rstrip("/")
-        return str(DEFAULT_NOUS_PORTAL_URL).rstrip("/")
+        return str(DEFAULT_LUCIFEX_PORTAL_URL).rstrip("/")
     except Exception:
         return "https://portal.nousresearch.com"
 
@@ -154,7 +154,7 @@ def _register_self_hosted_client(
             pass
         if exc.code == 401:
             raise RuntimeError(
-                "Nous Portal rejected the access token (401). "
+                "Lucifex portal rejected the access token (401). "
                 "Try `lucifex auth add nous` to re-authenticate."
             ) from exc
         if exc.code == 403:
@@ -168,7 +168,7 @@ def _register_self_hosted_client(
         ) from exc
     except urllib.error.URLError as exc:
         raise RuntimeError(
-            f"Could not reach Nous Portal at {portal_base_url}: {exc.reason}"
+            f"Could not reach Lucifex portal at {portal_base_url}: {exc.reason}"
         ) from exc
 
     if not isinstance(payload, dict) or not payload.get("client_id"):
@@ -228,7 +228,7 @@ def _print_post_register_hint(
 
 
 def cmd_dashboard_register(args) -> None:
-    """Register a self-hosted dashboard OAuth client with Nous Portal."""
+    """Register a self-hosted dashboard OAuth client with Lucifex portal."""
     from lucifex_cli.auth import AuthError, resolve_nous_access_token
     from lucifex_cli.config import get_env_value, is_managed, save_env_value
 
@@ -250,13 +250,13 @@ def cmd_dashboard_register(args) -> None:
         access_token = resolve_nous_access_token()
     except AuthError as exc:
         if getattr(exc, "relogin_required", False):
-            print("✗ You're not logged into Nous Portal.")
+            print("✗ You're not logged into Lucifex portal.")
             print("  Run `lucifex setup` (or `lucifex auth add nous`) first, then retry.")
         else:
-            print(f"✗ Could not resolve a Nous Portal access token: {exc}")
+            print(f"✗ Could not resolve a Lucifex portal access token: {exc}")
         sys.exit(1)
     except Exception as exc:
-        print(f"✗ Could not resolve a Nous Portal access token: {exc}")
+        print(f"✗ Could not resolve a Lucifex portal access token: {exc}")
         sys.exit(1)
 
     # Portal override: explicit --portal-url flag wins, else the

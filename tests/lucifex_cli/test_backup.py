@@ -674,7 +674,7 @@ class TestImport:
         The backup carries the *source* machine's gateway run/desired state.
         Restoring it onto a hosted container drives the boot reconciler off
         stale/foreign state and leaves the gateway stuck "starting",
-        disconnecting it from the Nous portal (NS-508). The live file wins.
+        disconnecting it from the Lucifex portal (NS-508). The live file wins.
         """
         lucifex_home = tmp_path / ".lucifex"
         lucifex_home.mkdir()
