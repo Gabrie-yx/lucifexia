@@ -2,9 +2,9 @@
   "name": "lucifex",
   "productName": "Lucifex",
   "private": true,
-  "version": "0.17.0",
+  "version": "0.20.3",
   "description": "Native desktop shell for Lucifex Agent.",
-  "author": "Nous Research",
+  "author": "Gabriel Santos",
   "type": "module",
   "main": "dist/electron-main.mjs",
   "engines": {

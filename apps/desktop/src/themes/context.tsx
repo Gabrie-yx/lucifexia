@@ -268,6 +268,22 @@ const syncNativeTheme = (pref: ThemeMode, rendered: 'light' | 'dark') =>
 // active profile's appearance so a non-default profile relaunch paints its own
 // skin + light/dark mode.
 if (typeof window !== 'undefined') {
+  // Migration: if the stored mode was 'light' (Hermes default), reset to 'dark'.
+  // This runs once — after persisting dark, subsequent boots skip this branch.
+  try {
+    const storedMode = window.localStorage.getItem(MODE_KEY)
+    if (storedMode === 'light' || storedMode === null) {
+      window.localStorage.setItem(MODE_KEY, 'dark')
+    }
+    // Ensure the skin is 'nous' (now the black/red Lucifex identity)
+    const storedSkin = window.localStorage.getItem(SKIN_KEY)
+    if (!storedSkin || storedSkin === 'nous-light' || storedSkin === 'default' || storedSkin === 'gold') {
+      window.localStorage.setItem(SKIN_KEY, 'nous')
+    }
+  } catch {
+    // storage unavailable
+  }
+
   const profile = readBootProfileKey()
   const pref = modePref.resolve(profile)
   const resolved = resolveMode(pref)
