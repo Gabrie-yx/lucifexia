@@ -62,15 +62,6 @@ export function LiveBrowserPane() {
         // null = 304 Not Modified — image unchanged, keep current state
         if (res === null) return
         if (res.data_url && typeof res.timestamp === 'number' && res.timestamp !== lastMtime) {
-          // Reject screenshots that predate the current session start.
-          // This prevents a leftover latest_browser.png from a previous session
-          // from appearing as a valid "current" screenshot when a new session opens.
-          if (res.timestamp < sessionStartedAtRef.current) {
-            // Stale screenshot from a previous session — silently skip.
-            // Update lastMtime so we don't keep re-fetching the same stale file.
-            lastMtime = res.timestamp
-            return
-          }
           lastMtime = res.timestamp
           setDataUrl(res.data_url)
           setTimestamp(res.timestamp)
@@ -79,9 +70,9 @@ export function LiveBrowserPane() {
           }
         }
 
-        // Active = screenshot taken within the last 30 seconds
+        // Active = screenshot taken within the last 60 seconds
         const diff = Date.now() / 1000 - (res.timestamp || 0)
-        setActive(!!res.data_url && diff < 30)
+        setActive(!!res.data_url && diff < 60)
       } catch (err) {
         console.error('Failed to poll latest browser screenshot:', err)
       }
@@ -90,8 +81,9 @@ export function LiveBrowserPane() {
     // Initial poll
     void poll()
 
-    // Poll every 1.2 s. Slightly offset from 1000ms to stagger with other timers.
-    const timer = setInterval(() => { void poll() }, 1200)
+    // Poll every 400ms for real-time live streaming.
+    const timer = setInterval(() => { void poll() }, 400)
+
 
     return () => {
       cancelled = true

@@ -604,12 +604,15 @@ $previewTarget.listen(target => target && revealPreview())
 $filePreviewTarget.listen(target => target && revealPreview())
 $paneStates.listen(states => {
   if (states['preview']?.open) {
-    revealPreview()
-  } else if (states['files']?.open || states['file-browser']?.open) {
+    dismissTreePane('files')
+    dismissTreePane('file-browser')
+    revealTreePane('preview')
+  } else if (states['files']?.open) {
     dismissTreePane('preview')
     revealTreePane('files')
   }
 })
+
 
 
 // ---------------------------------------------------------------------------
