@@ -21,6 +21,7 @@ import {
   PreviewConsoleTitlebarIcon
 } from './preview-console'
 import { type ConsoleEntry, createPreviewConsoleState } from './preview-console-state'
+import { LiveBrowserPane } from './live-browser-pane'
 import { LocalFilePreview, PreviewEmptyState } from './preview-file'
 
 type PreviewWebview = HTMLElement & {
@@ -128,6 +129,10 @@ export function PreviewPane({
   setTitlebarToolGroup,
   target
 }: PreviewPaneProps) {
+  if (target.kind === 'url') {
+    return <LiveBrowserPane />
+  }
+
   const { t } = useI18n()
   const copy = t.preview.web
   const [consoleState] = useState(() => createPreviewConsoleState())
