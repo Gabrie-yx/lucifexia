@@ -21,13 +21,14 @@ import {
   PreviewConsoleTitlebarIcon
 } from './preview-console'
 import { type ConsoleEntry, createPreviewConsoleState } from './preview-console-state'
-import { LiveBrowserPane } from './live-browser-pane'
+import { fetchBrowserLatest } from '@/lucifex'
 import { LocalFilePreview, PreviewEmptyState } from './preview-file'
 
 type PreviewWebview = HTMLElement & {
   closeDevTools?: () => void
   getURL?: () => string
   isDevToolsOpened?: () => boolean
+  loadURL?: (url: string) => void
   openDevTools?: () => void
   reload?: () => void
   reloadIgnoringCache?: () => void
@@ -129,9 +130,7 @@ export function PreviewPane({
   setTitlebarToolGroup,
   target
 }: PreviewPaneProps) {
-  if (target.kind === 'url') {
-    return <LiveBrowserPane />
-  }
+
 
   const { t } = useI18n()
   const copy = t.preview.web
@@ -153,6 +152,33 @@ export function PreviewPane({
   const [localReloadKey, setLocalReloadKey] = useState(0)
   const isWebPreview = target.kind === 'url' || (target.previewKind === 'html' && target.renderMode !== 'source')
   const currentLabel = compactUrl(currentUrl)
+
+  useEffect(() => {
+    if (!isWebPreview) return
+
+    let cancelled = false
+    const checkAiUrl = async () => {
+      if (document.hidden) return
+      try {
+        const res = await fetchBrowserLatest()
+        if (cancelled || !res || !res.url) return
+        const aiUrl = res.url.trim()
+        if (aiUrl && aiUrl !== 'about:blank' && aiUrl.startsWith('http') && aiUrl !== currentUrl) {
+          setCurrentUrl(aiUrl)
+          if (webviewRef.current?.loadURL) {
+            webviewRef.current.loadURL(aiUrl)
+          }
+        }
+      } catch {}
+    }
+
+    const timer = setInterval(() => { void checkAiUrl() }, 500)
+    return () => {
+      cancelled = true
+      clearInterval(timer)
+    }
+  }, [currentUrl, isWebPreview])
+
 
   const previewLabel =
     target.label && target.label.replace(/\/$/, '') !== currentLabel.replace(/\/$/, '') ? target.label : currentLabel
