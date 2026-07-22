@@ -8410,20 +8410,26 @@ ipcMain.handle('lucifex:api', async (_event, request) => {
       const jsonPath = path.join(cacheDir, 'latest_browser.json')
       const pngPath = path.join(cacheDir, 'latest_browser.png')
 
+      let timestamp = Date.now() / 1000
+      let url = 'about:blank'
+      let dataUrl: string | undefined = undefined
+
+      if (fs.existsSync(jsonPath)) {
+        try {
+          const meta = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'))
+          if (meta.timestamp) timestamp = meta.timestamp
+          if (meta.url) url = meta.url
+        } catch {}
+      }
+
       if (fs.existsSync(pngPath)) {
-        const imgBuffer = fs.readFileSync(pngPath)
-        const dataUrl = `data:image/png;base64,${imgBuffer.toString('base64')}`
-        let timestamp = Date.now() / 1000
-        let url = 'about:blank'
+        try {
+          const imgBuffer = fs.readFileSync(pngPath)
+          dataUrl = `data:image/png;base64,${imgBuffer.toString('base64')}`
+        } catch {}
+      }
 
-        if (fs.existsSync(jsonPath)) {
-          try {
-            const meta = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'))
-            if (meta.timestamp) timestamp = meta.timestamp
-            if (meta.url) url = meta.url
-          } catch {}
-        }
-
+      if (url !== 'about:blank' || dataUrl) {
         return {
           data_url: dataUrl,
           timestamp,
@@ -8441,6 +8447,7 @@ ipcMain.handle('lucifex:api', async (_event, request) => {
       url: 'about:blank'
     }
   }
+
 
 
   const tornDownProfile = await prepareProfileDeleteRequest(request)
