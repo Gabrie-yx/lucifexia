@@ -2619,9 +2619,42 @@ def _run_browser_command(
             fallback_result = _chrome_fallback_screenshot(task_id, args or [], timeout)
         else:
             fallback_result = _run_chrome_fallback_command(task_id, command, args, timeout)
-        return _annotate_lightpanda_fallback(fallback_result, fallback_reason)
+        result = _annotate_lightpanda_fallback(fallback_result, fallback_reason)
+
+    try:
+        if isinstance(result, dict) and result.get("success"):
+            data = result.get("data") or {}
+            page_url = str(data.get("url") or data.get("page_url") or (args[0] if command in ("open", "navigate") and args else ""))
+            img_path = data.get("path") or data.get("screenshot_path")
+            _update_latest_browser_feed(url=page_url, image_path_or_bytes=img_path)
+    except Exception:
+        pass
 
     return result
+
+
+def _update_latest_browser_feed(url: str = "", image_path_or_bytes: Any = None) -> None:
+    """Save the latest browser screenshot and metadata to ~/.lucifex/cache/ for live UI streaming."""
+    try:
+        cache_dir = Path(get_lucifex_home()) / "cache"
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        meta_file = cache_dir / "latest_browser.json"
+        img_file = cache_dir / "latest_browser.png"
+
+        now = time.time()
+        meta = {"url": url or "about:blank", "timestamp": now}
+        with open(meta_file, "w", encoding="utf-8") as f:
+            json.dump(meta, f)
+
+        if image_path_or_bytes:
+            if isinstance(image_path_or_bytes, (str, Path)) and os.path.exists(image_path_or_bytes):
+                shutil.copy2(str(image_path_or_bytes), str(img_file))
+            elif isinstance(image_path_or_bytes, bytes) and len(image_path_or_bytes) > 0:
+                with open(img_file, "wb") as f:
+                    f.write(image_path_or_bytes)
+    except Exception as exc:
+        logger.debug("Failed to update latest browser feed: %s", exc)
+
 
 
 def _store_full_snapshot(snapshot_text: str) -> Optional[str]:

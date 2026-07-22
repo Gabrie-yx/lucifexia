@@ -8403,6 +8403,46 @@ ipcMain.handle('lucifex:api', async (_event, request) => {
     return rerouted
   }
 
+  if (request?.path === '/api/browser/latest') {
+    try {
+      const lucifexHome = getLucifexHome()
+      const cacheDir = path.join(lucifexHome, 'cache')
+      const jsonPath = path.join(cacheDir, 'latest_browser.json')
+      const pngPath = path.join(cacheDir, 'latest_browser.png')
+
+      if (fs.existsSync(pngPath)) {
+        const imgBuffer = fs.readFileSync(pngPath)
+        const dataUrl = `data:image/png;base64,${imgBuffer.toString('base64')}`
+        let timestamp = Date.now() / 1000
+        let url = 'about:blank'
+
+        if (fs.existsSync(jsonPath)) {
+          try {
+            const meta = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'))
+            if (meta.timestamp) timestamp = meta.timestamp
+            if (meta.url) url = meta.url
+          } catch {}
+        }
+
+        return {
+          data_url: dataUrl,
+          timestamp,
+          active: true,
+          url
+        }
+      }
+    } catch (err) {
+      console.error('Error serving /api/browser/latest in main.ts:', err)
+    }
+
+    return {
+      active: false,
+      timestamp: Date.now() / 1000,
+      url: 'about:blank'
+    }
+  }
+
+
   const tornDownProfile = await prepareProfileDeleteRequest(request)
 
   const profile = request?.profile
