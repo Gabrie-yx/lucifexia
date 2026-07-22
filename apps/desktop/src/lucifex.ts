@@ -1590,3 +1590,15 @@ export function runDebugShare(): Promise<DebugShareResponse> {
     timeoutMs: 120_000
   })
 }
+
+export async function fetchBrowserLatest(_etag?: string): Promise<{ data_url?: string; timestamp?: number; active?: boolean; url?: string } | null> {
+  try {
+    return await window.lucifexDesktop.api<{ data_url?: string; timestamp?: number; active?: boolean; url?: string }>({
+      path: '/api/browser/latest',
+      method: 'GET'
+    })
+  } catch {
+    return null
+  }
+}
+

@@ -58,7 +58,9 @@ import {
   type TileDock
 } from '@/store/session-states'
 import { broadcastSessionsChanged } from '@/store/session-sync'
+import { showLivePreview } from '@/store/preview'
 import { isWatchWindow } from '@/store/windows'
+
 import type { SessionCreateResponse, SessionResumeResponse, UsageStats } from '@/types/lucifex'
 
 import { NEW_CHAT_ROUTE, sessionRoute, SETTINGS_ROUTE } from '../../../routes'
@@ -409,11 +411,10 @@ export function useSessionActions({
       }
 
       if (item.action === 'live-preview') {
-        setPaneOpen(PREVIEW_PANE_ID, true)
-        selectRightRailTab(RIGHT_RAIL_PREVIEW_TAB_ID)
-
+        showLivePreview()
         return
       }
+
 
       if (item.route) {
         navigate(item.route)

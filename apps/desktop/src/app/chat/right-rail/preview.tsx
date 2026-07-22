@@ -38,6 +38,8 @@ import { PreviewPane } from './preview-pane'
 
 export const PREVIEW_RAIL_MIN_WIDTH = '18rem'
 export const PREVIEW_RAIL_MAX_WIDTH = '38rem'
+export const PREVIEW_RAIL_PANE_WIDTH = '24rem'
+
 
 interface ChatPreviewRailProps {
   onRestartServer?: (url: string, context?: string) => Promise<string>
@@ -66,14 +68,17 @@ export function ChatPreviewRail({ onRestartServer, setTitlebarToolGroup }: ChatP
   const previewTarget = useStore($previewTarget)
   const dirtyPreviewUrls = useStore($dirtyPreviewUrls)
 
+  const effectivePreviewTarget = useMemo<PreviewTarget>(
+    () => previewTarget ?? { kind: 'url', label: 'Live Browser', source: 'manual', url: 'https://www.google.com' },
+    [previewTarget]
+  )
+
   const tabs = useMemo<readonly RailTab[]>(
     () => [
-      ...(previewTarget
-        ? [{ id: RIGHT_RAIL_PREVIEW_TAB_ID, label: t.preview.tab, target: previewTarget } as RailTab]
-        : []),
+      { id: RIGHT_RAIL_PREVIEW_TAB_ID, label: t.preview.tab, target: effectivePreviewTarget } as RailTab,
       ...filePreviewTabs.map(({ id, target }) => ({ id, label: tabLabelFor(target), target }) as RailTab)
     ],
-    [filePreviewTabs, previewTarget, t.preview.tab]
+    [effectivePreviewTarget, filePreviewTabs, t.preview.tab]
   )
 
   const activeTab = tabs.find(tab => tab.id === activeTabId) ?? tabs[0]
@@ -87,6 +92,7 @@ export function ChatPreviewRail({ onRestartServer, setTitlebarToolGroup }: ChatP
   if (!activeTab) {
     return null
   }
+
 
   const isPreview = activeTab.id === RIGHT_RAIL_PREVIEW_TAB_ID
 

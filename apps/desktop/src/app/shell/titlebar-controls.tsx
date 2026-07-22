@@ -23,7 +23,9 @@ import {
 } from '@/store/layout'
 import { setPaneOpen } from '@/store/panes'
 
+import { showLivePreview } from '@/store/preview'
 import { appViewForPath, isOverlayView, SETTINGS_ROUTE } from '../routes'
+
 
 import { titlebarButtonClass } from './titlebar'
 
@@ -209,9 +211,9 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
       title: 'Abrir Live Preview (Navegador Web / HTML)',
       onSelect: () => {
         triggerHaptic('tap')
-        setPaneOpen(PREVIEW_PANE_ID, true)
-        selectRightRailTab(RIGHT_RAIL_PREVIEW_TAB_ID)
+        showLivePreview()
       }
+
     },
     {
       actionId: 'nav.settings',
@@ -249,29 +251,13 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
           ))}
       </div>
 
-      {/*
-        Pane-scoped tools (preview's monitor / devtools / refresh / X) render
-        as their own fixed cluster. AppShell sets --shell-preview-toolbar-gap
-        to either the static cluster's width (file-browser closed → cluster
-        sits flush against system tools) or the file-browser pane's width
-        (file-browser open → cluster sits flush against the file-browser pane,
-        i.e. at the preview pane's right edge). No margin hacks needed.
-      */}
-      {visiblePaneTools.length > 0 && (
-        <div
-          aria-label={t.shell.paneControls}
-          className="fixed top-[calc(var(--titlebar-controls-top)+var(--right-rail-top-inset,0px))] right-[calc(var(--titlebar-tools-right)+var(--shell-preview-toolbar-gap,0))] z-70 flex flex-row items-center gap-x-1 pointer-events-auto select-none [-webkit-app-region:no-drag]"
-        >
-          {visiblePaneTools.map(tool => (
-            <TitlebarToolButton key={tool.id} navigate={navigate} tool={tool} />
-          ))}
-        </div>
-      )}
-
       <div
         aria-label={t.shell.appControls}
         className="fixed right-(--titlebar-tools-right) top-(--titlebar-controls-top) z-70 flex flex-row items-center justify-end gap-x-1 pointer-events-auto select-none [-webkit-app-region:no-drag]"
       >
+        {visiblePaneTools.map(tool => (
+          <TitlebarToolButton key={tool.id} navigate={navigate} tool={tool} />
+        ))}
         {visibleSystemTools.map(tool => (
           <TitlebarToolButton key={tool.id} navigate={navigate} tool={tool} />
         ))}
@@ -280,6 +266,7 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
     </>
   )
 }
+
 
 function TitlebarToolButton({ navigate, tool }: { navigate: ReturnType<typeof useNavigate>; tool: TitlebarTool }) {
   // Titlebar actions never show an active background — state reads from the

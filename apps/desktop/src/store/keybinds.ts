@@ -141,3 +141,9 @@ export function beginCapture(actionId: string): void {
 export function endCapture(): void {
   $capture.set(null)
 }
+
+export const $keybindPanelOpen = atom<boolean>(false)
+export function closeKeybindPanel(): void {
+  $keybindPanelOpen.set(false)
+}
+

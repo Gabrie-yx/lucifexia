@@ -125,14 +125,28 @@ export function setPaneOpen(id: string, open: boolean) {
     return
   }
 
-  $paneStates.set({ ...current, [id]: { ...existing, open } })
+  const next = { ...current, [id]: { ...existing, open } }
+
+  // Preview and files/file-browser are mutually exclusive right-rail panes — opening one closes the other.
+  if (open) {
+    if (id === 'preview') {
+      if (next['files']?.open) next['files'] = { ...next['files'], open: false }
+      if (next['file-browser']?.open) next['file-browser'] = { ...next['file-browser'], open: false }
+    } else if (id === 'files' || id === 'file-browser') {
+      if (next['preview']?.open) next['preview'] = { ...next['preview'], open: false }
+    }
+  }
+
+
+  $paneStates.set(next)
 }
 
 export function togglePane(id: string) {
   const current = $paneStates.get()
   const existing = current[id]
-  $paneStates.set({ ...current, [id]: { ...existing, open: !(existing?.open ?? false) } })
+  setPaneOpen(id, !(existing?.open ?? false))
 }
+
 
 export function setPaneWidthOverride(id: string, width: number | undefined) {
   const current = $paneStates.get()

@@ -28,6 +28,12 @@ export const LOCALE_OPTIONS = [
     name: '日本語',
     englishName: 'Japanese',
     configValue: 'ja'
+  },
+  {
+    id: 'pt',
+    name: 'Português (Brasil)',
+    englishName: 'Portuguese',
+    configValue: 'pt'
   }
 ] as const satisfies readonly { configValue: string; englishName: string; id: Locale; name: string }[]
 
@@ -64,8 +70,14 @@ const LOCALE_ALIASES: Record<string, Locale> = {
   zh_hant_hk: 'zh-hant',
   ja: 'ja',
   'ja-jp': 'ja',
-  ja_jp: 'ja'
+  ja_jp: 'ja',
+  pt: 'pt',
+  'pt-br': 'pt',
+  pt_br: 'pt',
+  'pt-pt': 'pt',
+  pt_pt: 'pt'
 }
+
 
 export function isLocale(value: unknown): value is Locale {
   return typeof value === 'string' && LOCALE_OPTIONS.some(locale => locale.id === value)

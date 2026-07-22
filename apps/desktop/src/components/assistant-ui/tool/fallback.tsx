@@ -2,6 +2,8 @@
 
 import { type ToolCallMessagePartProps, useAuiState } from '@assistant-ui/react'
 import { useStore } from '@nanostores/react'
+import { cn } from '@/lib/utils'
+
 import {
   Children,
   createContext,

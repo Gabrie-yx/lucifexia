@@ -49,7 +49,9 @@ import {
   SIDEBAR_DEFAULT_WIDTH,
   SIDEBAR_MAX_WIDTH
 } from '@/store/layout'
+import { $paneStates } from '@/store/panes'
 import { $filePreviewTarget, $previewTarget, closeRightRail } from '@/store/preview'
+
 import { $reviewOpen, closeReview, REVIEW_PANE_ID } from '@/store/review'
 import { $currentCwd, $selectedStoredSessionId, $sessions, sessionMatchesStoredId } from '@/store/session'
 import { $sessionColorById, sessionColorFor } from '@/store/session-color'
@@ -200,7 +202,8 @@ registry.registerMany([
     // reveal anyway (position-aware).
     data: {
       placement: 'right',
-      dock: { pane: 'files', pos: 'left' },
+      dock: { pane: 'workspace', pos: 'right' },
+
       width: 'clamp(18rem, 36vw, 32rem)',
       minWidth: PREVIEW_RAIL_MIN_WIDTH,
       maxWidth: PREVIEW_RAIL_MAX_WIDTH
@@ -547,9 +550,11 @@ bindPaneCollapse(
 // closing the last preview tab closes the pane; a new target opens + fronts
 // it). Same visibility binding as every other self-managed surface, driven
 // by the live targets instead of a toggle.
-const $previewVisible = computed([$previewTarget, $filePreviewTarget], (target, fileTarget) =>
-  Boolean(target || fileTarget)
+const $previewVisible = computed(
+  [$previewTarget, $filePreviewTarget, $paneStates],
+  (target, fileTarget, states) => Boolean(target || fileTarget || states['preview']?.open)
 )
+
 
 bindPaneVisibility('preview', $previewVisible, closeRightRail)
 
@@ -591,12 +596,21 @@ registerPaneCloser('files', () =>
 // somewhere pins it there instead (until a preset/reset). Then reveal: open
 // the side, unhide, front — a NEW target while already visible still fronts.
 const revealPreview = () => {
-  dockPaneBeside('preview', 'files')
+  dismissTreePane('files')
   revealTreePane('preview')
 }
 
 $previewTarget.listen(target => target && revealPreview())
 $filePreviewTarget.listen(target => target && revealPreview())
+$paneStates.listen(states => {
+  if (states['preview']?.open) {
+    revealPreview()
+  } else if (states['files']?.open || states['file-browser']?.open) {
+    dismissTreePane('preview')
+    revealTreePane('files')
+  }
+})
+
 
 // ---------------------------------------------------------------------------
 
@@ -656,12 +670,13 @@ export function ContribController() {
               className="pointer-events-auto absolute z-10 flex w-max items-center gap-2 [-webkit-app-region:no-drag]"
               style={{
                 right:
-                  'max(calc(var(--workspace-right, 0px) + 0.5rem), calc(var(--titlebar-tools-right, 0.75rem) + 4 * (var(--titlebar-control-size, 1.25rem) + 0.25rem) + 0.5rem))'
+                  'max(calc(var(--workspace-right, 0px) + 0.5rem), calc(var(--titlebar-tools-right, 0.75rem) + 6 * (var(--titlebar-control-size, 1.25rem) + 0.25rem) + 0.5rem))'
               }}
             >
               <Slot area="titleBar.right" />
             </div>
           </div>
+
 
           <LayoutTreeRoot />
 

@@ -514,7 +514,22 @@ export function closeRightRail() {
   setPaneOpen(PREVIEW_PANE_ID, false)
 }
 
+export function showLivePreview(url = 'https://www.google.com') {
+  if (!$previewTarget.get()) {
+    $previewTarget.set({
+      kind: 'url',
+      label: 'Live Browser',
+      source: 'manual',
+      url
+    })
+  }
+
+  setPaneOpen(PREVIEW_PANE_ID, true)
+  selectRightRailTab(RIGHT_RAIL_PREVIEW_TAB_ID)
+}
+
 export function clearSessionPreviewRegistry() {
+
   $sessionPreviewRegistry.set({})
   setPreviewTarget(null)
   $filePreviewTabs.set([])

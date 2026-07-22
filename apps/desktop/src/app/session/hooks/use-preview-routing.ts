@@ -10,8 +10,10 @@ import {
   getSessionPreviewRecord,
   progressPreviewServerRestart,
   requestPreviewReload,
-  setPreviewTarget
+  setPreviewTarget,
+  showLivePreview
 } from '@/store/preview'
+
 import { $currentCwd } from '@/store/session'
 import type { RpcEvent } from '@/types/lucifex'
 
@@ -57,15 +59,16 @@ export function usePreviewRouting({
   // open on their own.
   useEffect(() => {
     if (currentView !== 'chat' || !previewSessionId) {
-      setPreviewTarget(null)
-
       return
     }
 
     const record = getSessionPreviewRecord(previewSessionId)
 
-    setPreviewTarget(record?.normalized ?? null)
+    if (record?.normalized) {
+      setPreviewTarget(record.normalized)
+    }
   }, [currentView, previewRegistry, previewSessionId])
+
 
   const restartPreviewServer = useCallback(
     async (url: string, context?: string) => {
@@ -119,15 +122,36 @@ export function usePreviewRouting({
         return
       }
 
-      // Only refresh an already-open live preview when a file changes; never
-      // open one unprompted. (Preview links are surfaced from the tool row into
-      // the status stack — see tool-fallback.tsx.)
-      if ($previewTarget.get()?.kind === 'url' && gatewayEventCompletedFileDiff(event)) {
-        requestPreviewReload()
+      // Real-time live preview update: refresh or route live preview on any browser tool, agent action, or file diff event while the AI is active.
+      const eventType = String(event.type || '')
+      const isBrowserOrToolEvent =
+        eventType.includes('browser') ||
+        eventType.includes('tool') ||
+        eventType.includes('agent') ||
+        eventType.includes('preview') ||
+        gatewayEventCompletedFileDiff(event)
+
+      if (isBrowserOrToolEvent) {
+        const payload = asRecord(event.payload)
+        const url =
+          typeof payload?.url === 'string'
+            ? payload.url
+            : typeof payload?.target_url === 'string'
+            ? payload.target_url
+            : typeof payload?.href === 'string'
+            ? payload.href
+            : null
+
+        if (url && url.startsWith('http')) {
+          showLivePreview(url)
+        } else {
+          requestPreviewReload()
+        }
       }
     },
     [activeSessionIdRef, baseHandleGatewayEvent]
   )
+
 
   return { handleDesktopGatewayEvent, restartPreviewServer }
 }

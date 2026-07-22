@@ -90,7 +90,9 @@ export const pt = defineLocale({
       useLocalGateway: 'Usar gateway local',
       openLogs: 'Abrir logs',
       repairHint: 'O reparo executa o instalador novamente e pode levar alguns minutos.',
-      remoteSignInHint: 'Abre a janela de login do gateway. Use o gateway local para voltar ao backend local.',
+      remoteSignInHint: (signInLabel: string) =>
+        `Faz logout da sessão remota salva e abre ${signInLabel}. Use o gateway local para voltar ao backend local.`,
+
       hideRecentLogs: 'Ocultar logs recentes',
       showRecentLogs: 'Ver logs recentes',
       signedInTitle: 'Conectado',

@@ -3193,8 +3193,11 @@ def browser_type(ref: str, text: str, task_id: Optional[str] = None) -> str:
     if not ref.startswith("@"):
         ref = f"@{ref}"
 
-    # Use fill command (clears then types)
+    # Try fill command first; if un-activatable or on React controlled inputs, fallback to type command for key events
     result = _run_browser_command(effective_task_id, "fill", [ref, text])
+    if not result.get("success"):
+        result = _run_browser_command(effective_task_id, "type", [ref, text])
+
 
     from agent.display import (
         redact_browser_typed_text_for_display,

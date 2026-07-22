@@ -38,12 +38,18 @@ export const CHAT_SIDEBAR_PANE_ID = 'chat-sidebar'
 export const FILE_BROWSER_PANE_ID = 'file-browser'
 export const PREVIEW_PANE_ID = 'preview'
 export const RIGHT_RAIL_PREVIEW_TAB_ID = 'preview'
+export const RIGHT_RAIL_BROWSER_TAB_ID = 'browser'
 
-export type RightRailTabId = typeof RIGHT_RAIL_PREVIEW_TAB_ID | `file:${string}`
+export const setSidebarOverlayMounted = (_mounted: boolean) => {}
+
+
+export type RightRailTabId = typeof RIGHT_RAIL_PREVIEW_TAB_ID | typeof RIGHT_RAIL_BROWSER_TAB_ID | 'browser' | `file:${string}`
+
 
 ensurePaneRegistered(CHAT_SIDEBAR_PANE_ID, { open: true })
 ensurePaneRegistered(FILE_BROWSER_PANE_ID, { open: false })
-ensurePaneRegistered(PREVIEW_PANE_ID, { open: true })
+ensurePaneRegistered(PREVIEW_PANE_ID, { open: false })
+
 
 export const $sidebarOpen: ReadableAtom<boolean> = computed(
   $paneStates,

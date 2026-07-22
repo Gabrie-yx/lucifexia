@@ -5,3 +5,5 @@
  * and slide the pane over the grid.
  */
 export const PANE_TOGGLE_REVEAL_EVENT = 'lucifex:pane-toggle-reveal'
+export * from './pane-shell'
+

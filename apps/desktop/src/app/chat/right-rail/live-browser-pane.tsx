@@ -61,7 +61,7 @@ export function LiveBrowserPane() {
         if (cancelled) return
         // null = 304 Not Modified — image unchanged, keep current state
         if (res === null) return
-        if (res.data_url && res.timestamp !== lastMtime) {
+        if (res.data_url && typeof res.timestamp === 'number' && res.timestamp !== lastMtime) {
           // Reject screenshots that predate the current session start.
           // This prevents a leftover latest_browser.png from a previous session
           // from appearing as a valid "current" screenshot when a new session opens.
@@ -78,6 +78,7 @@ export function LiveBrowserPane() {
             setCurrentUrl(res.url)
           }
         }
+
         // Active = screenshot taken within the last 30 seconds
         const diff = Date.now() / 1000 - (res.timestamp || 0)
         setActive(!!res.data_url && diff < 30)
