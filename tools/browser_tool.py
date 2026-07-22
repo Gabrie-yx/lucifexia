@@ -2633,7 +2633,7 @@ def _run_browser_command(
     return result
 
 
-def _update_latest_browser_feed(url: str = "", image_path_or_bytes: Any = None) -> None:
+def _update_latest_browser_feed(url: str = "", image_path_or_bytes: Any = None, task_id: str = "") -> None:
     """Save the latest browser screenshot and metadata to ~/.lucifex/cache/ for live UI streaming."""
     try:
         cache_dir = Path(get_lucifex_home()) / "cache"
@@ -2652,8 +2652,35 @@ def _update_latest_browser_feed(url: str = "", image_path_or_bytes: Any = None) 
             elif isinstance(image_path_or_bytes, bytes) and len(image_path_or_bytes) > 0:
                 with open(img_file, "wb") as f:
                     f.write(image_path_or_bytes)
+        elif task_id:
+            threading.Thread(target=_async_feed_screenshot, args=(task_id, url), daemon=True).start()
     except Exception as exc:
         logger.debug("Failed to update latest browser feed: %s", exc)
+
+
+def _async_feed_screenshot(task_id: str, url: str) -> None:
+    try:
+        cache_dir = Path(get_lucifex_home()) / "cache"
+        meta_file = cache_dir / "latest_browser.json"
+        img_file = cache_dir / "latest_browser.png"
+        shot_file = cache_dir / f"feed_tmp_{task_id}.png"
+
+        res = _run_browser_command(task_id, "screenshot", [str(shot_file)], timeout=6)
+        if isinstance(res, dict) and res.get("success"):
+            data = res.get("data") or {}
+            shot_path = data.get("path") or str(shot_file)
+            if os.path.exists(shot_path):
+                shutil.copy2(shot_path, str(img_file))
+                meta = {"url": url or "about:blank", "timestamp": time.time()}
+                with open(meta_file, "w", encoding="utf-8") as f:
+                    json.dump(meta, f)
+                try:
+                    os.unlink(shot_path)
+                except OSError:
+                    pass
+    except Exception as e:
+        logger.debug("Async feed screenshot failed: %s", e)
+
 
 
 
