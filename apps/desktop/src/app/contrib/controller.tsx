@@ -547,16 +547,11 @@ bindPaneCollapse(
 )
 
 // Preview EXISTS only while something is previewed (old-shell semantics:
-// closing the last preview tab closes the pane; a new target opens + fronts
-// it). Same visibility binding as every other self-managed surface, driven
-// by the live targets instead of a toggle.
-const $previewVisible = computed(
-  [$previewTarget, $filePreviewTarget, $paneStates],
-  (target, fileTarget, states) => Boolean(target || fileTarget || states['preview']?.open)
-)
+registerPaneCloser('preview', () => {
+  setPaneOpen('preview', false)
+  dismissTreePane('preview')
+})
 
-
-bindPaneVisibility('preview', $previewVisible, closeRightRail)
 
 // Logs are optional chrome: off by default, toggled from ⌘K, persisted.
 const $logsOpen = persistentAtom('lucifex.desktop.logsOpen', false, Codecs.bool)

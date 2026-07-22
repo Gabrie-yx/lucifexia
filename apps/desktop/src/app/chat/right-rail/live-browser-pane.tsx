@@ -36,14 +36,9 @@ export function LiveBrowserPane() {
     }
     if (prevSessionRef.current !== sessionId) {
       prevSessionRef.current = sessionId
-      // Record the wall-clock time the new session started so we can
-      // filter out stale screenshots from the previous session.
       sessionStartedAtRef.current = Date.now() / 1000
-      setDataUrl(null)
-      setTimestamp(0)
-      setActive(false)
-      setCurrentUrl('about:blank')
     }
+
   }, [sessionId])
 
   useEffect(() => {
@@ -150,9 +145,10 @@ export function LiveBrowserPane() {
         {dataUrl ? (
           <img
             alt="Browser View"
-            className="w-full h-auto block select-none pointer-events-none transition-opacity duration-300"
+            className="w-full h-auto block select-none pointer-events-none"
             src={dataUrl}
           />
+
         ) : (
           <div className="flex flex-col items-center justify-center p-8 absolute inset-0 text-center animate-fade-in">
             <div className="grid size-12 place-items-center rounded-full bg-primary/5 text-primary border border-primary/10 shadow-[0_0_15px_rgba(var(--primary-rgb),0.05)]">
