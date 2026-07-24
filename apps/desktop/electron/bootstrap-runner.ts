@@ -233,7 +233,7 @@ function downloadInstallScript(ref, destPath) {
   // ref so local builds can still bootstrap without pretending the all-zero
   // placeholder is a real GitHub commit.
   const scriptName = installScriptName()
-  const url = `https://raw.githubusercontent.com/NousResearch/lucifex-agent/${ref}/scripts/${scriptName}`
+  const url = `https://raw.githubusercontent.com/Gabrie-yx/lucifexia/${ref}/scripts/${scriptName}`
 
   return new Promise((resolve, reject) => {
     fs.mkdirSync(path.dirname(destPath), { recursive: true })
@@ -249,6 +249,10 @@ function downloadInstallScript(ref, destPath) {
           https
             .get(res.headers.location, res2 => {
               if (res2.statusCode !== 200) {
+                if (ref !== 'main') {
+                  downloadInstallScript('main', destPath).then(resolve).catch(reject)
+                  return
+                }
                 reject(
                   new Error(
                     `Failed to download ${scriptName}: HTTP ${res2.statusCode} from redirect ${res.headers.location}`
@@ -281,10 +285,16 @@ function downloadInstallScript(ref, destPath) {
             void 0
           }
 
+          if (ref !== 'main') {
+            downloadInstallScript('main', destPath).then(resolve).catch(reject)
+            return
+          }
+
           reject(new Error(`Failed to download ${scriptName}: HTTP ${res.statusCode} from ${url}`))
 
           return
         }
+
 
         res.pipe(out)
         out.on('finish', () => {
