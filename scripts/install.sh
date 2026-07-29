@@ -213,7 +213,8 @@ print_banner() {
     echo "┌─────────────────────────────────────────────────────────┐"
     echo "│             ⚕ Lucifex Agent Installer                    │"
     echo "├─────────────────────────────────────────────────────────┤"
-    echo "│  An open source AI agent by Nous Research.              │"
+    echo "│  An open source AI agent by Lucifexia.                  │"
+
     echo "└─────────────────────────────────────────────────────────┘"
     echo -e "${NC}"
 }
@@ -1824,7 +1825,8 @@ copy_config_templates() {
     # here is self-healing, but keep them in sync to avoid a churn on first run.
     if [ ! -f "$LUCIFEX_HOME/SOUL.md" ]; then
         cat > "$LUCIFEX_HOME/SOUL.md" << 'SOUL_EOF'
-You are Lucifex Agent, an intelligent AI assistant created by Nous Research. You are helpful, knowledgeable, and direct. You assist users with a wide range of tasks including answering questions, writing and editing code, analyzing information, creative work, and executing actions via your tools. You communicate clearly, admit uncertainty when appropriate, and prioritize being genuinely useful over being verbose unless otherwise directed below. Be targeted and efficient in your exploration and investigations.
+You are Lucifex Agent, an intelligent AI assistant created by Lucifexia. You are helpful, knowledgeable, and direct. You assist users with a wide range of tasks including answering questions, writing and editing code, analyzing information, creative work, and executing actions via your tools. You communicate clearly, admit uncertainty when appropriate, and prioritize being genuinely useful over being verbose unless otherwise directed below. Be targeted and efficient in your exploration and investigations.
+
 SOUL_EOF
         log_success "Created ~/.lucifex/SOUL.md (edit to customize personality)"
     fi
@@ -1844,16 +1846,18 @@ SOUL_EOF
         log_info "  Future 'lucifex update' runs will not inject bundled skills. Delete the marker to opt back in."
     else
         log_info "Syncing bundled skills to ~/.lucifex/skills/ ..."
-        if "$INSTALL_DIR/venv/bin/python" "$INSTALL_DIR/tools/skills_sync.py" 2>/dev/null; then
-            log_success "Skills synced to ~/.lucifex/skills/"
+        mkdir -p "$LUCIFEX_HOME/skills"
+        if [ -d "$INSTALL_DIR/skills" ]; then
+            cp -r "$INSTALL_DIR/skills/"* "$LUCIFEX_HOME/skills/" 2>/dev/null || true
+            log_success "Bundled skills copied to ~/.lucifex/skills/"
+        fi
+        if PYTHONPATH="$INSTALL_DIR" "$INSTALL_DIR/venv/bin/python" "$INSTALL_DIR/tools/skills_sync.py"; then
+            log_success "Skills manifest synced to ~/.lucifex/skills/"
         else
-            # Fallback: simple directory copy if Python sync fails
-            if [ -d "$INSTALL_DIR/skills" ] && [ ! "$(ls -A "$LUCIFEX_HOME/skills/" 2>/dev/null | grep -v '.bundled_manifest')" ]; then
-                cp -r "$INSTALL_DIR/skills/"* "$LUCIFEX_HOME/skills/" 2>/dev/null || true
-                log_success "Skills copied to ~/.lucifex/skills/"
-            fi
+            log_warn "Skills manifest sync encountered a warning, but skills files were copied successfully."
         fi
     fi
+
 }
 
 find_system_browser() {

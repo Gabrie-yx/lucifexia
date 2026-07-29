@@ -876,7 +876,8 @@ if (IS_WINDOWS) {
 app.setAboutPanelOptions({
   applicationName: APP_NAME,
   applicationVersion: resolveLucifexVersion(),
-  copyright: 'Copyright © 2026 Nous Research'
+  copyright: 'Copyright © 2026 Lucifexia'
+
 })
 
 // Custom scheme for streaming local media (video/audio) into the renderer.

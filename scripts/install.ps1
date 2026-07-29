@@ -210,7 +210,8 @@ function Write-Banner {
     Write-Host "+---------------------------------------------------------+" -ForegroundColor Magenta
     Write-Host "|             * Lucifex Agent Installer                    |" -ForegroundColor Magenta
     Write-Host "+---------------------------------------------------------+" -ForegroundColor Magenta
-    Write-Host "|  An open source AI agent by Nous Research.              |" -ForegroundColor Magenta
+    Write-Host "|  An open source AI agent by Lucifexia.                  |" -ForegroundColor Magenta
+
     Write-Host "+---------------------------------------------------------+" -ForegroundColor Magenta
     Write-Host ""
 }
@@ -2423,7 +2424,8 @@ function Copy-ConfigTemplates {
         # upgrades the old comment-only scaffold to this text on next run, so
         # drift is self-healing, but keep them in sync to avoid first-run churn.
         $soulContent = @"
-You are Lucifex Agent, an intelligent AI assistant created by Nous Research. You are helpful, knowledgeable, and direct. You assist users with a wide range of tasks including answering questions, writing and editing code, analyzing information, creative work, and executing actions via your tools. You communicate clearly, admit uncertainty when appropriate, and prioritize being genuinely useful over being verbose unless otherwise directed below. Be targeted and efficient in your exploration and investigations.
+You are Lucifex Agent, an intelligent AI assistant created by Lucifexia. You are helpful, knowledgeable, and direct. You assist users with a wide range of tasks including answering questions, writing and editing code, analyzing information, creative work, and executing actions via your tools. You communicate clearly, admit uncertainty when appropriate, and prioritize being genuinely useful over being verbose unless otherwise directed below. Be targeted and efficient in your exploration and investigations.
+
 "@
         $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
         [System.IO.File]::WriteAllText($soulPath, $soulContent, $utf8NoBom)
@@ -2432,23 +2434,27 @@ You are Lucifex Agent, an intelligent AI assistant created by Nous Research. You
     
     Write-Success "Configuration directory ready: $LucifexHome"
     
-    # Seed bundled skills into $LucifexHome\skills (manifest-based, one-time per skill)
+    # Seed bundled skills into $LucifexHome\skills
     Write-Info "Syncing bundled skills to $LucifexHome\skills ..."
+    $bundledSkills = "$InstallDir\skills"
+    $userSkills = "$LucifexHome\skills"
+    New-Item -ItemType Directory -Force -Path $userSkills | Out-Null
+    if (Test-Path $bundledSkills) {
+        Copy-Item -Path "$bundledSkills\*" -Destination $userSkills -Recurse -Force -ErrorAction SilentlyContinue
+        Write-Success "Bundled skills copied to $LucifexHome\skills"
+    }
+
     $pythonExe = "$InstallDir\venv\Scripts\python.exe"
     if (Test-Path $pythonExe) {
         try {
-            & $pythonExe "$InstallDir\tools\skills_sync.py" 2>$null
-            Write-Success "Skills synced to $LucifexHome\skills"
+            $env:PYTHONPATH = "$InstallDir"
+            & $pythonExe "$InstallDir\tools\skills_sync.py"
+            Write-Success "Skills manifest synced to $LucifexHome\skills"
         } catch {
-            # Fallback: simple directory copy
-            $bundledSkills = "$InstallDir\skills"
-            $userSkills = "$LucifexHome\skills"
-            if ((Test-Path $bundledSkills) -and -not (Get-ChildItem $userSkills -Exclude '.bundled_manifest' -ErrorAction SilentlyContinue)) {
-                Copy-Item -Path "$bundledSkills\*" -Destination $userSkills -Recurse -Force -ErrorAction SilentlyContinue
-                Write-Success "Skills copied to $LucifexHome\skills"
-            }
+            Write-Warn "Skills manifest sync encountered a warning, but skills files were copied successfully."
         }
     }
+
 }
 
 function Install-NodeDeps {
