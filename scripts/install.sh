@@ -1845,12 +1845,16 @@ SOUL_EOF
         log_info "Skipping bundled skills (--no-skills). Wrote $LUCIFEX_HOME/.no-bundled-skills"
         log_info "  Future 'lucifex update' runs will not inject bundled skills. Delete the marker to opt back in."
     else
-        log_info "Syncing bundled skills to ~/.lucifex/skills/ ..."
+        log_info "Syncing bundled & optional skills to ~/.lucifex/skills/ ..."
         mkdir -p "$LUCIFEX_HOME/skills"
         if [ -d "$INSTALL_DIR/skills" ]; then
             cp -r "$INSTALL_DIR/skills/"* "$LUCIFEX_HOME/skills/" 2>/dev/null || true
-            log_success "Bundled skills copied to ~/.lucifex/skills/"
         fi
+        if [ -d "$INSTALL_DIR/optional-skills" ]; then
+            cp -r "$INSTALL_DIR/optional-skills/"* "$LUCIFEX_HOME/skills/" 2>/dev/null || true
+        fi
+        log_success "Bundled and optional skills copied to ~/.lucifex/skills/"
+
         if PYTHONPATH="$INSTALL_DIR" "$INSTALL_DIR/venv/bin/python" "$INSTALL_DIR/tools/skills_sync.py"; then
             log_success "Skills manifest synced to ~/.lucifex/skills/"
         else

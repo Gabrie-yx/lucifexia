@@ -2434,15 +2434,20 @@ You are Lucifex Agent, an intelligent AI assistant created by Lucifexia. You are
     
     Write-Success "Configuration directory ready: $LucifexHome"
     
-    # Seed bundled skills into $LucifexHome\skills
-    Write-Info "Syncing bundled skills to $LucifexHome\skills ..."
+    # Seed bundled and optional skills into $LucifexHome\skills
+    Write-Info "Syncing bundled & optional skills to $LucifexHome\skills ..."
     $bundledSkills = "$InstallDir\skills"
+    $optionalSkills = "$InstallDir\optional-skills"
     $userSkills = "$LucifexHome\skills"
     New-Item -ItemType Directory -Force -Path $userSkills | Out-Null
     if (Test-Path $bundledSkills) {
         Copy-Item -Path "$bundledSkills\*" -Destination $userSkills -Recurse -Force -ErrorAction SilentlyContinue
-        Write-Success "Bundled skills copied to $LucifexHome\skills"
     }
+    if (Test-Path $optionalSkills) {
+        Copy-Item -Path "$optionalSkills\*" -Destination $userSkills -Recurse -Force -ErrorAction SilentlyContinue
+    }
+    Write-Success "Bundled and optional skills copied to $LucifexHome\skills"
+
 
     $pythonExe = "$InstallDir\venv\Scripts\python.exe"
     if (Test-Path $pythonExe) {

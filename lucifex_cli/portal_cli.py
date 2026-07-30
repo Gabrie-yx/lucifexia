@@ -168,24 +168,12 @@ def _cmd_tools(args) -> int:
 
 
 def _cmd_login(args) -> int:
-    """Run the one-shot Lucifex portal onboarding (login + model + provider + tools).
-
-    This is the human-readable front door for `lucifex auth add nous --type
-    oauth`. It reuses the exact wiring behind `lucifex setup --portal` (which in
-    turn runs the same Nous flow as the first-time quick setup), so the
-    commands stay in lockstep: device-code login, pick a Nous model, switch the
-    inference provider to Nous, then offer the Tool Gateway opt-in.
-    """
-    from lucifex_cli.setup import _run_portal_one_shot
-
-    config = load_config() or {}
-    try:
-        _run_portal_one_shot(config)
-    except (KeyboardInterrupt, EOFError):
-        print()
-        print("Portal setup cancelled.")
-        return 1
+    """Show coming soon / disabled notice for Lucifexia proprietary model."""
+    print(color("\n[!] Lucifex Portal (Modelo Próprio - Lucifexia AI) está desabilitado.", Colors.YELLOW))
+    print("Nossa Inteligência Artificial proprietária está em desenvolvimento e estará disponível em breve.")
+    print("Para utilizar o Lucifexia agora, configure outro provedor como OpenAI, OpenRouter, Anthropic, Gemini ou Grok (ex: `lucifex setup`).\n")
     return 0
+
 
 
 def portal_command(args) -> int:

@@ -40,11 +40,12 @@ export const CONTROL_TEXT = 'text-xs'
 export const PROVIDER_GROUPS: ProviderPrefix[] = [
   {
     prefix: 'NOUS_',
-    name: 'Lucifex portal',
-    description: 'Hosted Lucifex & Nous-trained models',
-    docsUrl: 'https://portal.nousresearch.com',
-    priority: 0
+    name: 'Lucifex Portal (Modelo Próprio - Em Breve)',
+    description: 'IA proprietária da Lucifexia em desenvolvimento (Desabilitado)',
+    docsUrl: 'https://github.com/Gabrie-yx/lucifexia',
+    priority: 999
   },
+
   {
     prefix: 'FIREWORKS_',
     name: 'Fireworks AI',

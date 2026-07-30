@@ -532,8 +532,16 @@ def sync_skills(quiet: bool = False) -> dict:
 
     SKILLS_DIR.mkdir(parents=True, exist_ok=True)
     manifest = _read_manifest()
-    bundled_skills = _discover_bundled_skills(bundled_dir)
-    bundled_names = {name for name, _ in bundled_skills}
+    bundled_skills = [(name, path, bundled_dir) for name, path in _discover_bundled_skills(bundled_dir)]
+    optional_dir = _get_optional_dir()
+    if optional_dir.exists():
+        existing_names = {name for name, _, _ in bundled_skills}
+        for name, path in _discover_bundled_skills(optional_dir):
+            if name not in existing_names:
+                bundled_skills.append((name, path, optional_dir))
+                existing_names.add(name)
+    bundled_names = {name for name, _, _ in bundled_skills}
+
     suppressed = _read_suppressed_names()
     # Index of skills already provided by external_dirs (skip writing them)
     external_index = _build_external_skill_index()
@@ -545,7 +553,7 @@ def sync_skills(quiet: bool = False) -> dict:
     suppressed_skipped: List[str] = []
     skipped = 0
 
-    for skill_name, skill_src in bundled_skills:
+    for skill_name, skill_src, origin_dir in bundled_skills:
         # Curator-pruned built-ins: do not re-seed. The suppression list
         # (~/.lucifex/skills/.curator_suppressed) is written when the curator
         # archives a bundled skill with curator.prune_builtins enabled. Without
@@ -555,7 +563,8 @@ def sync_skills(quiet: bool = False) -> dict:
             suppressed_skipped.append(skill_name)
             continue
 
-        dest = _compute_relative_dest(skill_src, bundled_dir)
+        dest = _compute_relative_dest(skill_src, origin_dir)
+
         bundled_hash = _dir_hash(skill_src)
 
         # Recover an orphaned backup before classifying. If a previous
