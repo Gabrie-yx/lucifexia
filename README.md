@@ -201,7 +201,7 @@ lucifex claw migrate --overwrite  # Migra sobrescrevendo conflitos
 
 ## 📜 Créditos & Atribuição
 
-O **Lucifexia** foi desenvolvido a partir da arquitetura de agente criada pela equipe da **Nous Research** no projeto open-source **Hermes Agent** (disponibilizado sob a licença **MIT**).
+O **Lucifexia** foi desenvolvido a partir da arquitetura de agente criada pela equipe da **Nous Research** no projeto open-source **Lucifex Agent** (disponibilizado sob a licença **MIT**).
 
 Desejamos registrar nossa profunda admiração e agradecimento à **Nous Research** e a toda a comunidade de código aberto por desenvolverem o núcleo do agente sobre o qual expandimos a identidade visual, a aplicação Desktop Electron, os ajustes de interface e as customizações do **Lucifexia**.
 
